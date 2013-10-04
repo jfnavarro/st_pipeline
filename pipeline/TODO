@@ -1,0 +1,9 @@
+Add better error handling.
+Refactor and optimize findIndexes
+Add more mapping and annotation tools
+Validate and optimize the quality filtering function
+For Map Reduce version, add more steps, split pipeline workflow in steps and run them separately.
+Unify parameter parsing for all runners.
+For Map Reduce version make reducers merge the json file (if possible)
+For Map Reduce version, process and output reads.json as well.
+For Map Reduce version, create custom streamers for fastq format and json format.

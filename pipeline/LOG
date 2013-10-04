@@ -1,0 +1,9 @@
+Version 0.1.1
+* code refactored and modularized
+* add argparse for parameters parsing
+* add API for Amazon EMR and terminal version
+* better error handling
+* optimized code
+* new version of FindIndexes
+* remove dependencies
+* added proper installers and documentation
