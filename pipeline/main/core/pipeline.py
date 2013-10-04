@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-# @Created by Jose Fernandez
+"""
+    Copyright (C) 2012  Spatial Transcriptomics AB,
+    read LICENSE for licensing terms. 
+    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+
+"""
 """ This is the main API for the ST pipeline, it needs a bunch of files and parameters in order
 to run the jobs, input files are fastq, output files are json. It logs everything into a file.
 """

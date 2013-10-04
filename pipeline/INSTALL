@@ -1,29 +1,42 @@
-To install cmake and boost 
-sudo apt-get install libboost-dev cmake (ubuntu)
-sudo port install libboost-dev cmake (MAC)
+- In order to be able to compile programs in ubuntu you need to have the build-essentials :
 
-To install findIndexes: 
+sudo apt-get install build-essential
+
+- In order to be able to compile programs in MAC you need to have xcode, xcode terminal programs
+and macports
+
+https://developer.apple.com/xcode/
+
+http://www.macports.org/
+
+- To install cmake and boost :
+
+sudo apt-get install libboost-dev cmake (ubuntu)
+sudo port install boost cmake (MAC)
+
+- To install findIndexes (path to binaries must be in your PATH variable): 
 
 cd findIndexes
 mkdir build
 cd build
 cmake ../
+make
 cp findIndexes /path/to/binaries
 
-To install bowtie2
+- To install bowtie2 :
+
 cd bowtie2-sources
 make
 cp bowtie2* /path/to/binaries
 
-To install Pysam and HTSeq and Mrjob(optional) (Unix)
-sudo apt-get -y install python-dev python-numpy python-matplotlib python-setuptools (Ubuntu)
-sudo port install python-dev python-numpy python-matplotlib python-setuptools (Mac)
+- To install Pysam and HTSeq :
 
+sudo apt-get -y install python-dev python-numpy python-matplotlib python-setuptools (Ubuntu)
+sudo port install py-numpy py-matplotlib py-setuptools py-pysam (Mac)
 sudo easy_install -U pip
 sudo easy_install -U cython
 sudo easy_install -U distribute
 sudo pip install HTSeq 
-sudo pip install mrjob #if we need it
 
 To install pipeline
 cd pipeline

@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-# @Created by Jose Fernandez
+"""
+    Copyright (C) 2012  Spatial Transcriptomics AB,
+    read LICENSE for licensing terms. 
+    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+
+"""
 
 """ This class contains wrappers to make systems call for different annotation tools
 most of the options can be passed as arguments

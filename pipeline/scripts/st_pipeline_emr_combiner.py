@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-#@Created by Jose Fernandez Navarrro <jose.fernandez.navarro@scilifelab.se>
+"""
+    Copyright (C) 2012  Spatial Transcriptomics AB,
+    read LICENSE for licensing terms. 
+    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+
+"""
 
 ''' This is the Amazon EMR wrapper for the combiner function to run the Map Reduce version of the ST pipeline'''
 

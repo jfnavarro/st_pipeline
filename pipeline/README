@@ -7,93 +7,38 @@ containing the ids (from the array-chip-plate), plus the optional configuration 
 The output will be two json files, one containing
 the features (id,cordinates,gene) and another one containing the raw reads and the id.
 
-There are currently two modes of running the pipeline. It can be run in a single node using
-the terminal version or it can be run in several nodes using Map-Reduce with either Mrjob or 
-the Amazon EMR api.
-
-NOTE : the Map Reduce version of the pipeline (Mrjob and amazon) require the fastq input files
-to be processed and merged with the Java tool called pairReadsHadoop
-
-NOTE : the bootstrap script for amazon and Mrjob needs to have the compressed source code of bowtie2, 
-findIndexes and pipeline libraries
-Therefore, you must keep these updated in the S3 bucket
-
 To Install the ST pipeline (read INSTALL and DEPENDENCIES)
 
 To get help :
 
-type python run.py -h to see help of terminal version
-type python mrjob_run.py to see help of mrjob version
-type python amazon_mapper.py to see help of the amazon version
+type st_pipeline_run.py -h to see help of terminal version
 
 **************************** RUN FROM THE TERMINAL (single instance version) *************************************
 
 As simple as typing on the terminal : 
 
-python st_pipeline_run.py file1.fastq file2.fastq --ids ids.txt --ref-map genome/genome
+st_pipeline_run.py file1.fastq file2.fastq --ids ids.txt --ref-map genome/genome
 --ref-annotation annotation.gtf --expName "test" --verbose --allowed-missed 3 --allowed-kimer 7 
 
 
------------------------MAP REDUCE VERSION-----------------------------------------------------------------
+NOTE : see here list of parameters
 
-You need a s3 bucket with the input files, genome, annotation, ids, boostrap file, scripts and dependencies.
-The output, logs and temps will be placed in the s3 bucket.
-
-What is needed :
-
-- boostrap.sh
-- bowtie2-source.tar.gz
-- findIndexes.tar.gz
-- pipeline.tar.gz
-- st_pipeline_emr_mapper.py (amazon emr version)
-- st_pipeline_emr_combiner.py (amazon emr version)
-- st_pipeline_emr_reducer.py (amazon emr version)
-- input files, genome, annotation and id
-
-Instance types :
-
-- Master node : m1.medium
-- Slave node : m1.xlarge
-
-***** RUN MAP REDUCE WITH AMAZON AND MRJOB (check mrjob.conf for extra configuration********
-
-Type (toy example) :
-
-python st_pipeline_mrjob_run.py -r emr s3n://stpipelinedev/experiments/emrtest/
-								  --conf-path ../mrjob.conf 
-								  --bootstrap-mrjob 
-								  --file s3n://stpipelinedev/config/idfiles/ids.txt#ids.txt 
-								  --file s3n://stpipelinedev/config/annotations/annotation.gtf#annotation.gtf 
-								  --archive s3n://stpipelinedev/config/genomes/mouse/genome.tar.gz#genome
-								  --archive s3n://stpipelinedev/config/contaminant_genomes/R5s/rnagenome.tar.gz#rnagenome #if used 
-								  --output-dir="s3n://stpipelinedev/experiments/emrtest/output" 
-								  --no-output 
-								  --s3-log-uri="s3n://stpipelinedev/log"
-								  --s3-scratch-uri="s3n://stpipelinedev/tmp"
-								  --base-tmp-dir="/tmp/"
-								  --ec2-instance-type="m1.xlarge"
-								  --ec2-core-instance-type="m1.medium"
-								  --num-ec2-instances="3"
-								  --bootstrap-action="s3n://stpipelinedev/scripts/bootstrap.sh" 
-								  --ids="ids.txt" 
-								  --ref_annotation="annotation.gtf" 
-								  --ref_map="genome/genome" 
-								  --enable-emr-debugging 
-								  --contaminant-bowtie2-index="rnagenome/rnagenome" 
-								  
-***** RUN MAP REDUCE WITH AMAZON EMR *******
-
-Use this set up of parameters (toy example) :
-
-Input : s3n://stpipelinedev/experiments/emrtest/
-Output : s3n://stpipelinedev/experiments/emrtest/output
-Mapper : s3n://stpipelinedev/scripts/st_pipeline_emr_mapper.py --ids ids.txt --contaminant-bowtie2-index rnagenome/rnagenome --ref-annotation annotation.gtf --ref-map genome/genome 
-Combiner : s3n://stpipelinedev/scripts/st_pipeline_emr_combiner.py
-Reducer : s3n://stpipelinedev/scripts/st_pipeline_emr_reducer.py
-Log : s3n://stpipelinedev/log
-
--cacheArchive s3n://stpipelinedev/config/genomes/mouse/genome.tar.gz#genome
--cacheFile s3n://stpipelinedev/config/annotations/annotation.gtf#annotation.gtf
--cacheFile s3n://stpipelinedev/config/idfiles/ids.txt#ids.txt
--cacheArchive s3n://stpipelinedev/config/contaminant_genomes/R5s/rnagenome.tar.gz#rnagenome #if used   
---bootstrap-action="s3n://stpipelinedev/scripts/bootstrap.sh"
+usage: st_pipeline_run.py [-h] [--output-folder OUTPUT_FOLDER] [--ids IDS]
+                          [--ref-map REF_MAP]
+                          [--ref-annotation REF_ANNOTATION]
+                          [--expName EXPNAME]
+                          [--allowed-missed ALLOWED_MISSED]
+                          [--allowed-kimer ALLOWED_KIMER]
+                          [--min-length-qual-trimming MIN_LENGTH_QUAL_TRIMMING]
+                          [--mapping-fw-trimming MAPPING_FW_TRIMMING]
+                          [--mapping-rv-trimming MAPPING_RV_TRIMMING]
+                          [--length-id LENGTH_ID]
+                          [--contaminant-bowtie2-index CONTAMINANT_BOWTIE2_INDEX]
+                          [--qual-64] [--htseq-mode HTSEQ_MODE]
+                          [--htseq-no-ambiguous] [--start-id START_ID]
+                          [--error-id ERROR_ID] [--no-clean-up] [--verbose]
+                          [--bowtie-threads BOWTIE_THREADS]
+                          [--min-quality-trimming MIN_QUALITY_TRIMMING]
+                          [--discard-fw] [--discard-rv] [--bowtie2-discordant]
+                          [--bin-path BIN_PATH] [--log-file LOG_FILE]
+                          input input

@@ -91,7 +91,7 @@ DOWNLOAD_URL = "http://www.dowload.spatialtranscriptomics.com"
 LICENSE = 'GPL'
 CLASSIFIERS = [
   "Programming Language :: Python",
-  "License :: OSI Approved :: GNU General Public License (GPL)",
+  "License :: OSI Approved :: GNU General Public License (LGPL)",
   "Operating System :: POSIX :: Linux",
   "Topic :: Scientific/Engineering :: Bio-Informatics",
   "Intended Audience :: Science/Research",
