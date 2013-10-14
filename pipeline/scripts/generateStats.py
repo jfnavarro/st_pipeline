@@ -10,7 +10,7 @@ import os
 import sys
 
 if len(sys.argv) == 2:
-        input = str(sys.argv[1])
+    input = str(sys.argv[1])
 else:
     print "Wrong number of parameters"
     sys.exit(1)
@@ -25,6 +25,7 @@ unique_events = set()
 unique_barcodes = set()
 unique_genes = set()
 count = 0
+
 for line in filehandler.readlines():
     #['4', '13', 'Mycbp2', 'CGCTACCCTGATTCGACC', '1216']
     cols = line.split()
