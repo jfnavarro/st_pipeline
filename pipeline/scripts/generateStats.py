@@ -32,10 +32,10 @@ for line in filehandler.readlines():
     if(len(cols) != 5):
         print "There was an error parsing the file"
         break
-    unique_events.add((str(cols[2]),str(cols[3])))
+    unique_events.add( (str(cols[2]), str(cols[3]) ) )
     unique_barcodes.add(str(cols[3]))
     unique_genes.add(str(cols[2]))
-    count += 1
+    count += int(cols[4])
     
 print "Stats for file " + str(input)
 print "Unique Genes " + str(len(unique_genes))
