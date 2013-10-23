@@ -56,7 +56,7 @@ class Pipeline():
         self.logger = None
         self.logfile = ""
         #Hossein
-        self.output_folder=""
+        self.output_folder = ""
         
     def sanityCheck(self):
         
@@ -228,7 +228,7 @@ class Pipeline():
             and some useful stats and plots
         '''
         self.logger.info("Start Creating databases")
-        args = ['createDataset.py',str(mapFile),str(dbName),str(self.output_folder)]
+        args = ['createDataset.py', '--input', str(mapFile), '--name', str(dbName), '--output', str(self.output_folder)]
         proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdout, errmsg) = proc.communicate()
         ##TODO should check for errors

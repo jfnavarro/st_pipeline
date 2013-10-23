@@ -14,9 +14,9 @@ from main.common.fastq_utils import *
 from main.common.utils import *
 import sys
 
-def main(input, out, fixed_lenght = 300):
+def main(input, out, fixed_length):
     
-    if not os.path.isfile(input) or not not os.path.isfile(out):
+    if not os.path.isfile(input) or out == "":
         print "Wrong parameters"
         sys.exit(1)
         
@@ -28,11 +28,11 @@ def main(input, out, fixed_lenght = 300):
         head = record[0]
         seq = record[1]
         qual = record[2]
-        seq_lenght = len(seq)
-        while(seq_lenght < fixed_lenght):
+        seq_length = int(len(seq))
+        while(seq_length < int(fixed_length)):
             seq += "L"
-            qual += "L"
-            seq_lenght += 1       
+            qual += "B"
+            seq_length += 1       
         new_record = (head, seq, qual)
         out_writer.send(new_record)
         
@@ -46,7 +46,7 @@ if __name__ == '__main__':
                         help='Name of the input file (fastq)')
     parser.add_argument('-o', '--out', type=str,
                         help='Name of merged output file')
-    parser.add_argument('-l', '--length', type=int, help='fixed length of the reads')
+    parser.add_argument('-l', '--length', type=int, help='fixed length of the reads', default=300)
 
     args = parser.parse_args()
     main(args.input, args.out, args.length)

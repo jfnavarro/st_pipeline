@@ -11,10 +11,11 @@
 import sys
 import os
 import json
+import argparse
 
 def usage():
     print "Usage:"
-    print "createDataset.py read_with_barcodes(output from findIndexes) expName"
+    print "createDataset.py read_with_barcodes(output from findIndexes) expName outputfolder"
     print "This scripts generates json files containing the reads and the transcripts that mapped to barcodes"
 
 def getNameToIdMap(NameToIdFile):
@@ -68,12 +69,15 @@ def getIdMap(nameToId):
             
     return idMap
 
-def main(NameToIdFile,dbName, output_folder):
+def main(NameToIdFile, dbName, output_folder):
     
-    if(not os.path.isfile(NameToIdFile)):
+    if not os.path.isfile(NameToIdFile):
         sys.stderr.write("Error, one of the input file/s not present")
         sys.exit()
 
+    if not os.path.isdir(output_folder):
+        output_folder = "."
+        
     nameToId = getNameToIdMap(NameToIdFile)
     idMap = getIdMap(nameToId)
     
@@ -112,8 +116,8 @@ def main(NameToIdFile,dbName, output_folder):
     
     filename = dbName + "_barcodes.json"
     filenameReads = dbName + "_reads.json"
-    filehandler = open(output_folder+'/'+filename, "w")
-    filehandlerReads = open(output_folder+'/'+filenameReads, "w")
+    filehandler = open(os.path.join(output_folder,filename), "w")
+    filehandlerReads = open(os.path.join(output_folder,filenameReads), "w")
     #write well formed json file
     json.dump(json_barcodes,filehandler,separators=(',', ': '))    
     json.dump(json_reads,filehandlerReads,separators=(',', ': '))    
@@ -121,9 +125,14 @@ def main(NameToIdFile,dbName, output_folder):
     filehandlerReads.close()    
         
 if __name__ == "__main__":
-    if len(sys.argv) == 4:
-        main(sys.argv[1],sys.argv[2],sys.argv[3])
-    else:
-        usage()
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-i','--input', type=str,
+                        help='Input files containing the records (Name,chromosome,gene,barcode,x,y,Qul,Read)')
+    parser.add_argument('-o', '--out', type=str,
+                        help='Path of the output folder (default is .)')
+    parser.add_argument('-n', '--name', type=str,
+                        help='Name of the output files')
+
+    args = parser.parse_args()
+    main(args.input, args.name, args.out)
                                     

@@ -5,11 +5,15 @@
     Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
 
 """
-""" Script to generate a fastq file from ids files.
+""" Script to converted demupltiplexed sam file into a tab-delimited file.
 """
+
 import argparse
+from main.core import mapping
+from main.common.fastq_utils import *
 from main.common.utils import *
 import sys
+import pysam
 
 def main(input, out):
     
@@ -17,23 +21,31 @@ def main(input, out):
         print "Wrong parameters"
         sys.exit(1)
         
-    inputfile = safeOpenFile(input,"r")
-    outfile = safeOpenFile(out,"w")
+    outfile = safeOpenFile(out,"w")    
+    input = pysam.Samfile(input, "r")
     
-    for line in inputfile.readlines():
-        split = line.split()
-        head = str(split[0]) + ":" + str(split[1]) + ":" + str(split[2]) 
-        seq = str(split[0])
-        outfile.write(">" + head + "\n")
-        outfile.write(seq + "\n")
-        
-    inputfile.close()
+    for read in input:
+        # filtering out unmapped reads
+        if not read.is_unmapped:
+            sequence = read.seq
+            quality = read.qual
+            header = read.qname
+            print header
+            print read.mrnm
+            print read.rname
+            print read.tid
+            print read.tags
+        else:
+            # not mapped stuff discard
+            pass  
+            
+    input.close()
     outfile.close()
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-i', '--input', type=str,
-                        help='Name of the input file (ids)')
+                        help='Name of the input file (fastq)')
     parser.add_argument('-o', '--out', type=str,
                         help='Name of merged output file')
 
