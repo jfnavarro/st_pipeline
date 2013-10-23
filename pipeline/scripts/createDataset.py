@@ -99,7 +99,7 @@ def main(NameToIdFile,dbName, output_folder):
             unique_genes.add(str(g))
             unique_barcodes.add(str(Id))
             total_record += 1
-            total_barcodes += int(idMap[Id][g][0])
+            total_barcodes += int(hits)
     
     if(total_record == 0):
         sys.stderr.write("Error: the number of transcripts present is 0\n")
