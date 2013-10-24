@@ -17,7 +17,7 @@ import pysam
 
 def main(input, out):
     
-    if not os.path.isfile(input) or out == "":
+    if input is None or out is None or not os.path.isfile(input) or out == "":
         print "Wrong parameters"
         sys.exit(1)
         
@@ -34,6 +34,7 @@ def main(input, out):
             print read.mrnm
             print read.rname
             print read.tid
+            print input.getrname(read.tid)
             print read.tags
         else:
             # not mapped stuff discard

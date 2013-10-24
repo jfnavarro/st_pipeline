@@ -13,7 +13,7 @@ import sys
 
 def main(input, out):
     
-    if not os.path.isfile(input) or out == "":
+    if input is None or out is None or not os.path.isfile(input) or out == "":
         print "Wrong parameters"
         sys.exit(1)
         
