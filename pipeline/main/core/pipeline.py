@@ -81,7 +81,7 @@ class Pipeline():
             raise RuntimeError("Error, programs not found")
             
     def load_parameters(self):
-        
+      
         #TODO load the parameters here instead of forcing users to do so from outside
         
         # create a logger

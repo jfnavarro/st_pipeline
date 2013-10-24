@@ -8,6 +8,7 @@ cd findIndexes
 mkdir build
 cd build
 cmake ../
+make
 cp findIndexes /path/to/binaries
 
 To install bowtie2
