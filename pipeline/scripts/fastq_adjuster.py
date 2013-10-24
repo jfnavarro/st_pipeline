@@ -32,7 +32,7 @@ def main(input, out, fixed_length):
         seq_length = int(len(seq))
         while(seq_length < int(fixed_length)):
             seq += "L"
-            qual += "B"
+            qual += "L"
             seq_length += 1       
         new_record = (head, seq, qual)
         out_writer.send(new_record)
