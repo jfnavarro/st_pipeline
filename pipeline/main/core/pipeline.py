@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-# @Created by Jose Fernandez
+"""
+    Copyright (C) 2012  Spatial Transcriptomics AB,
+    read LICENSE for licensing terms. 
+    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+
+"""
 """ This is the main API for the ST pipeline, it needs a bunch of files and parameters in order
 to run the jobs, input files are fastq, output files are json. It logs everything into a file.
 """
@@ -51,7 +56,7 @@ class Pipeline():
         self.logger = None
         self.logfile = ""
         #Hossein
-        self.output_folder=""
+        self.output_folder = ""
         
     def sanityCheck(self):
         
@@ -223,7 +228,7 @@ class Pipeline():
             and some useful stats and plots
         '''
         self.logger.info("Start Creating databases")
-        args = ['createDataset.py',str(mapFile),str(dbName),str(self.output_folder)]
+        args = ['createDataset.py', '--input', str(mapFile), '--name', str(dbName), '--output', str(self.output_folder)]
         proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdout, errmsg) = proc.communicate()
         ##TODO should check for errors

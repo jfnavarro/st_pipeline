@@ -1,0 +1,74 @@
+There are currently two modes of running the pipeline. It can be run in a single node using
+the terminal version or it can be run in several nodes using Map-Reduce with either Mrjob or 
+the Amazon EMR api.
+
+NOTE : the Map Reduce version of the pipeline (Mrjob and amazon) require the fastq input files
+to be processed and merged with the Java tool called pairReadsHadoop
+
+NOTE : the bootstrap script for amazon and Mrjob needs to have the compressed source code of bowtie2, 
+findIndexes and pipeline libraries
+Therefore, you must keep these updated in the S3 bucket
+
+-----------------------MAP REDUCE VERSION-----------------------------------------------------------------
+
+You need a s3 bucket with the input files, genome, annotation, ids, boostrap file, scripts and dependencies.
+The output, logs and temps will be placed in the s3 bucket.
+
+What is needed :
+
+- boostrap.sh
+- bowtie2-source.tar.gz
+- findIndexes.tar.gz
+- pipeline.tar.gz
+- st_pipeline_emr_mapper.py (amazon emr version)
+- st_pipeline_emr_combiner.py (amazon emr version)
+- st_pipeline_emr_reducer.py (amazon emr version)
+- input files, genome, annotation and id
+
+Instance types :
+
+- Master node : m1.medium
+- Slave node : m1.xlarge
+
+***** RUN MAP REDUCE WITH AMAZON AND MRJOB (check mrjob.conf for extra configuration********
+
+Type (toy example) :
+
+python st_pipeline_mrjob_run.py -r emr s3n://stpipelinedev/experiments/emrtest/
+								  --conf-path ../mrjob.conf 
+								  --bootstrap-mrjob 
+								  --file s3n://stpipelinedev/config/idfiles/ids.txt#ids.txt 
+								  --file s3n://stpipelinedev/config/annotations/annotation.gtf#annotation.gtf 
+								  --archive s3n://stpipelinedev/config/genomes/mouse/genome.tar.gz#genome
+								  --archive s3n://stpipelinedev/config/contaminant_genomes/R5s/rnagenome.tar.gz#rnagenome #if used 
+								  --output-dir="s3n://stpipelinedev/experiments/emrtest/output" 
+								  --no-output 
+								  --s3-log-uri="s3n://stpipelinedev/log"
+								  --s3-scratch-uri="s3n://stpipelinedev/tmp"
+								  --base-tmp-dir="/tmp/"
+								  --ec2-instance-type="m1.xlarge"
+								  --ec2-core-instance-type="m1.medium"
+								  --num-ec2-instances="3"
+								  --bootstrap-action="s3n://stpipelinedev/scripts/bootstrap.sh" 
+								  --ids="ids.txt" 
+								  --ref_annotation="annotation.gtf" 
+								  --ref_map="genome/genome" 
+								  --enable-emr-debugging 
+								  --contaminant-bowtie2-index="rnagenome/rnagenome" 
+								  
+***** RUN MAP REDUCE WITH AMAZON EMR *******
+
+Use this set up of parameters (toy example) :
+
+Input : s3n://stpipelinedev/experiments/emrtest/
+Output : s3n://stpipelinedev/experiments/emrtest/output
+Mapper : s3n://stpipelinedev/scripts/st_pipeline_emr_mapper.py --ids ids.txt --contaminant-bowtie2-index rnagenome/rnagenome --ref-annotation annotation.gtf --ref-map genome/genome 
+Combiner : s3n://stpipelinedev/scripts/st_pipeline_emr_combiner.py
+Reducer : s3n://stpipelinedev/scripts/st_pipeline_emr_reducer.py
+Log : s3n://stpipelinedev/log
+
+-cacheArchive s3n://stpipelinedev/config/genomes/mouse/genome.tar.gz#genome
+-cacheFile s3n://stpipelinedev/config/annotations/annotation.gtf#annotation.gtf
+-cacheFile s3n://stpipelinedev/config/idfiles/ids.txt#ids.txt
+-cacheArchive s3n://stpipelinedev/config/contaminant_genomes/R5s/rnagenome.tar.gz#rnagenome #if used   
+--bootstrap-action="s3n://stpipelinedev/scripts/bootstrap.sh"

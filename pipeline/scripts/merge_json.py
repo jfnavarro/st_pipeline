@@ -1,5 +1,10 @@
 #! /usr/bin/env python
-# @Created by Jose Fernandez
+"""
+    Copyright (C) 2012  Spatial Transcriptomics AB,
+    read LICENSE for licensing terms. 
+    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+
+"""
 """ Script for merging json ST-data files.
 
 The major point is to merge (feature, gene, expression) triples from several

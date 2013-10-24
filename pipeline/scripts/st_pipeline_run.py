@@ -1,5 +1,10 @@
 #! /usr/bin/env python
-# @Created by Jose Fernandez
+"""
+    Copyright (C) 2012  Spatial Transcriptomics AB,
+    read LICENSE for licensing terms. 
+    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+
+"""
 """ This is a terminal based API to run the ST pipeline on a single node
 """
 
@@ -15,7 +20,7 @@ def main(argv):
     #create a parser
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('input', nargs=2)
-    parser.add_argument('--output-folder', default="merged.json", help='Name of the output folder')
+    parser.add_argument('--output-folder', help='Name of the output folder')
     parser.add_argument('--ids', default="",help='the name of the file containing the barcodes and the coordinates')
     parser.add_argument('--ref-map', default="", help= "<path_to_bowtie2_indexes>] = reference genome name for the genome that you want to use to align the reads")
     parser.add_argument('--ref-annotation', default="",help="select the reference(htseq requires a GTF file annotation file that you want to use to annotate")
@@ -73,7 +78,8 @@ def main(argv):
     pipeline.Fastq_fw = options.input[0]
     pipeline.Fastq_rv = options.input[1]
     #Hossein
-    pipeline.output_folder=options.output_folder
+    if os.path.isdir(options.output_folder): #Jose : check that is a folder and pass the abs path
+        pipeline.output_folder = os.path.abspath(options.output_folder)
         
     #should capture exceptions and deal with them here
     pipeline.load_parameters()

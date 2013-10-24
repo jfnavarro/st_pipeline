@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-# @Created by Jose Fernandez
+"""
+    Copyright (C) 2012  Spatial Transcriptomics AB,
+    read LICENSE for licensing terms. 
+    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+
+"""
 
 """ This class contains some functions to deal with fastq files
 """
@@ -57,7 +62,8 @@ def readfq(fp): # this is a generator function
                     last = l[:-1] # save this line
                     break
         if not last: break
-        name, seqs, last = last[1:].partition(" ")[0], [], None
+        #name, seqs, last = last[1:].partition(" ")[0], [], None
+        name, seqs, last = last[1:], [], None
         for l in fp: # read the sequence
             if l[0] in '@+>':
                 last = l[:-1]
