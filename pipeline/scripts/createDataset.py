@@ -6,17 +6,14 @@
 
 """
 
-""" Complete definition here
+""" 
+    Scripts that parses a tab delimited file with the format (Name,chromosome,gene,barcode,x,y,Qul,Read)
+    into two json files one containing the features and another one containing the reads
 """
 import sys
 import os
 import json
 import argparse
-
-def usage():
-    print "Usage:"
-    print "createDataset.py read_with_barcodes(output from findIndexes) expName outputfolder"
-    print "This scripts generates json files containing the reads and the transcripts that mapped to barcodes"
 
 def getNameToIdMap(NameToIdFile):
     ''' Parse the output from the barcode mapper, 
@@ -71,11 +68,11 @@ def getIdMap(nameToId):
 
 def main(NameToIdFile, dbName, output_folder):
     
-    if not os.path.isfile(NameToIdFile):
-        sys.stderr.write("Error, one of the input file/s not present")
+    if  NameToIdFile is None or dbName is None or not os.path.isfile(NameToIdFile):
+        sys.stderr.write("Error, one of the input file/s not present\n")
         sys.exit()
 
-    if not os.path.isdir(output_folder):
+    if output_folder is None or not os.path.isdir(output_folder):
         output_folder = "."
         
     nameToId = getNameToIdMap(NameToIdFile)
@@ -116,6 +113,7 @@ def main(NameToIdFile, dbName, output_folder):
     
     filename = dbName + "_barcodes.json"
     filenameReads = dbName + "_reads.json"
+    #jose (use generic folder joining)
     filehandler = open(os.path.join(output_folder,filename), "w")
     filehandlerReads = open(os.path.join(output_folder,filenameReads), "w")
     #write well formed json file

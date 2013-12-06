@@ -1,9 +1,16 @@
 #!/usr/bin/env python
-""" Super-ultra-extreme simple and basic stats generator for csv output files
-for the ST pipeline in Amazon. 
-Run it like python generateStats file.csv
 
-Author : Jose Fernandez Navarro
+"""
+    Copyright (C) 2012  Spatial Transcriptomics AB,
+    read LICENSE for licensing terms. 
+    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+
+"""
+
+""" 
+    Super-ultra-extreme simple and basic stats generator for csv output files
+    for the ST pipeline in Amazon. 
+    Run it like python generateStats file.csv
 """
 
 import os
