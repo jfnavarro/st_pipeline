@@ -9,11 +9,7 @@
 ''' This is the Amazon EMR wrapper for the reducer function to run the Map Reduce version of the ST pipeline'''
 
 import sys
-#import json
 from collections import defaultdict
-#from main.common.json_utils import json_iterator
-#from main.common.json_utils import write_json
-
 #TODO : write json file? 
 #TODO : check the json features get merged properly
 

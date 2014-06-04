@@ -37,7 +37,7 @@ def main(argv):
     parser.add_argument('--htseq-no-ambiguous', action="store_true", help="When using htseq discard reads annotating ambiguous genes")
     parser.add_argument('--start-id', default=0, help="start position of BARCODE ID [0]")
     parser.add_argument('--error-id', default=0, help="Id positional error [0]")
-    parser.add_argument('--no-clean-up', action="store_true", default=False, help="do not remove temporary files at the end (useful for debugging)")
+    parser.add_argument('--no-clean-up', action="store_false", default=True, help="do not remove temporary files at the end (useful for debugging)")
     parser.add_argument('--verbose', action="store_true", default=False, help="show extra information on the log")
     parser.add_argument('--bowtie-threads', default=8, help="Number of threads to run the mapper")
     parser.add_argument('--min-quality-trimming', default=20, help="minimum quality for trimming")
@@ -77,8 +77,7 @@ def main(argv):
         pipeline.logfile = os.path.abspath(options.log_file)                
     pipeline.Fastq_fw = options.input[0]
     pipeline.Fastq_rv = options.input[1]
-    #Hossein
-    if os.path.isdir(options.output_folder): #Jose : check that is a folder and pass the abs path
+    if os.path.isdir(options.output_folder): 
         pipeline.output_folder = os.path.abspath(options.output_folder)
         
     #should capture exceptions and deal with them here

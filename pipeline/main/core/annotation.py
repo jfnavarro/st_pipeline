@@ -6,7 +6,7 @@
 
 """
 
-""" This class contains wrappers to make systems call for different annotation tools
+""" This class contains wrappers to make systems calls for different annotation tools
 most of the options can be passed as arguments
 """
 
@@ -20,7 +20,7 @@ from main.common.utils import *
 import HTSeq
     
 def annotateReadsWithHTSeq(samFile, gtfFile, mode):
-    ''' Annotate the reads using htseq-count utility 
+    ''' Annotate the reads using htseq-count tool 
     '''
     logger = logging.getLogger("STPipeline")
     

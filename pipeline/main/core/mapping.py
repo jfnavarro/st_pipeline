@@ -6,9 +6,10 @@
 
 """
 
-""" This class contains wrappers to make systems call for different aligners
+""" This class contains wrappers to make systems calls for different aligners
 most of the options can be passed as arguments
 """
+
 import logging 
 import os
 import sys
@@ -18,7 +19,7 @@ from main.common.fastq_utils import *
 import pysam
     
 def bowtie2Map(fw, rv, ref_map, trim = 42, cores = 8, qual64 = False, discordant = False):  
-    ''' maps pair end reads against given genome using bowtie2 
+    ''' maps pair end reads against a given genome using bowtie2 
     '''
     
     logger = logging.getLogger("STPipeline")
@@ -135,12 +136,12 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False):
             logger.error("Error: input Sam file contains not paired reads")
             raise RuntimeError("Error: input Sam file contains not paired reads")
 
-        if(read.is_proper_pair and not read.mate_is_unmapped):
+        if read.is_proper_pair and not read.mate_is_unmapped:
             # if read is a concordant pair and is mapped write
             output.write(read)
-        elif(not read.is_proper_pair and not read.is_unmapped):
+        elif not read.is_proper_pair and not read.is_unmapped:
             # if read is a discordant mapped pair or uniquely mapped (mixed mode bowtie2)
-            if(read.is_read1 and not discard_fw):
+            if read.is_read1 and not discard_fw :
                 # if read is forward and I dont want to discard it
                 output.write(read)
             elif(read.is_read2 and not discard_rw):
@@ -165,7 +166,7 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False):
     return outputFileSam
 
 def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e):
-    ''' barcode mapping with old findindexes 
+    ''' barcode demultiplexing mapping with old findindexes 
     '''
     
     logger = logging.getLogger("STPipeline")

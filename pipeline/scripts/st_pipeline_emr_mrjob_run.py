@@ -8,6 +8,8 @@
 
 ''' This is a wrapper that uses MrJob to run the ST pipeline using Map-Reduce on Amazon'''
 
+"""CURRENTLY NOT BEING USED"""
+
 import sys
 from mrjob.job import MRJob
 from mrjob.util import bash_wrap

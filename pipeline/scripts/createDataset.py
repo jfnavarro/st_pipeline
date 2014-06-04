@@ -18,6 +18,7 @@ import argparse
 def getNameToIdMap(NameToIdFile):
     ''' Parse the output from the barcode mapper, 
         VERY CAREFULL, the order of columns has to be like this  = Name,chromosome,gene,barcode,x,y,Qul,Read 
+        TODO : refactor this, no need to rely on columns 
     '''
     nameToId = dict()
     inF = open(NameToIdFile,'r')
