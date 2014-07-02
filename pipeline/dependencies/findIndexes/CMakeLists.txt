@@ -2,7 +2,7 @@
 # NAME AND VERSION
 ###############################################################################
 project(findIndexes)
-cmake_minimum_required(VERSION 2.7)
+cmake_minimum_required(VERSION 2.6)
 enable_language(C)
 enable_language(CXX)
 

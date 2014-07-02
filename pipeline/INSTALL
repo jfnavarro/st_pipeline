@@ -47,3 +47,4 @@ If you have problem executing :
 export PATH=$PATH:~/path/to/binaries  #findIndexes, bowtie and createDataset.py
 export PYTHONPATH=$PATH:~/poath/to/pipeline #path to the python source 
 
+NOTE : for Uppmax 

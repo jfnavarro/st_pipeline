@@ -34,10 +34,10 @@ def trim_quality(record, trim_distance, min_qual = 20,
     phred = 64 if qual64 else 33
     
     for qual in qscore[::-1]:
-        if ( ord(qual) - phred ) < min_qual:
+        if (ord(qual) - phred) < min_qual:
             nbases +=1
     
-    if ( (len(sequence) - (trim_distance + nbases)) >= min_length):
+    if ((len(sequence) - (trim_distance + nbases)) >= min_length):
         new_seq = record[1][:(len(sequence) - nbases)]
         new_qual = record[2][:(len(sequence) - nbases)]
         return name,new_seq,new_qual
@@ -131,7 +131,6 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
     total_reads = 0
     dropped_fw = 0
     dropped_rw = 0
-    nbases = int(trim_fw) - int(trim_rw)
 
     for line1, line2 in izip(readfq(fw_file), readfq(rw_file)):
         total_reads += 1
@@ -150,8 +149,8 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
 
         if line2_trimmed is not None:
             # Add the barcode and polyTs from fw only if rw has not been completely trimmed
-            new_seq = line1[1][:nbases] + line2_trimmed[1]
-            new_qual = line1[2][:nbases] + line2_trimmed[2]
+            new_seq = line1[1][:trim_fw] + line2_trimmed[1][trim_rw:]
+            new_qual = line1[2][:trim_fw] + line2_trimmed[2][trim_rw:]
             record = (line2_trimmed[0], new_seq, new_qual)
             out_rw_writer.send(record)
 

@@ -114,7 +114,7 @@ def main(NameToIdFile, dbName, output_folder):
     
     filename = dbName + "_barcodes.json"
     filenameReads = dbName + "_reads.json"
-    #jose (use generic folder joining)
+
     filehandler = open(os.path.join(output_folder,filename), "w")
     filehandlerReads = open(os.path.join(output_folder,filenameReads), "w")
     #write well formed json file

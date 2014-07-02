@@ -6,7 +6,7 @@
 
 """
 """ This is the main API for the ST pipeline, it needs a bunch of files and parameters in order
-to run the jobs, input files are fastq, output files are json. It logs everything into a file.
+to run the jobs, input files are fastq, output files are json. It logs status into a file.
 """
 import sys
 from main.common.utils import *
@@ -120,12 +120,13 @@ class Pipeline():
         self.logger.info("Annotation Tool :  HTSeq")
   
     def run_pipeline(self,chunks):
-        """ this function is called for Map Reduce jobs, that wants to run the pipelien,
+        """ this function is called for Map Reduce jobs, when we want to run the pipeline,
         once all the streaming has been done
         in the input, it will iterate trough the chunks, create temp fastq files
         and call the pipeline on them, it will then parse the output and send
         the json formated features to the reducer
         """
+        #TODO refactor and optimize this
         for val in chunks:
             temp_name = tempfile.mktemp(prefix='stpipeline_temp_', suffix=str(random.random()), dir='') 
             new_filename = temp_name + "_1.fastq"

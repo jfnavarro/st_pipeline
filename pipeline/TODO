@@ -2,6 +2,8 @@ Add better error handling.
 Refactor and optimize findIndexes
 Add more mapping and annotation tools
 Validate and optimize the quality filtering function
+Validate and benchmark all the pipeline stats
+ADD unit-test, URGENT
 For Map Reduce version, add more steps, split pipeline workflow in steps and run them separately.
 Unify parameter parsing for all runners.
 For Map Reduce version make reducers merge the json file (if possible)

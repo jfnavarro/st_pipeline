@@ -7,3 +7,9 @@ Version 0.1.1
 * new version of FindIndexes
 * remove dependencies
 * added proper installers and documentation
+
+Version 0.1.2
+* Added extra parameters
+* Fixed some typos
+* Fixed a bug that caused to remove some bases from the 
+barcode ID in the rw reads
