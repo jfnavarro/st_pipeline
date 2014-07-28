@@ -1,4 +1,4 @@
-- In order to be able to compile programs in ubuntu you need to have the build-essentials :
+- In order to be able to compile programs in Ubuntu you need to have the build-essentials :
 
 sudo apt-get install build-essential
 
@@ -14,6 +14,8 @@ http://www.macports.org/
 sudo apt-get install libboost-dev cmake (ubuntu)
 sudo port install boost cmake (MAC)
 
+- For Uppmax you do not need to install Cmake nor Boost or any building packages
+
 - To install findIndexes (path to binaries must be in your PATH variable): 
 
 cd findIndexes
@@ -23,7 +25,7 @@ cmake ../
 make
 cp findIndexes /path/to/binaries
 
-- To install bowtie2 :
+- To install bowtie2 (not needed in Uppmax) :
 
 cd bowtie2-sources
 make
@@ -38,6 +40,15 @@ sudo easy_install -U cython
 sudo easy_install -U distribute
 sudo pip install HTSeq 
 
+- For Uppmax you can install Pysam and HTSeq using a virtual environment
+Run : /home/dahlo/uppmaxScripts/pythonVirtualEnv/python-virtualenv-installer
+Logout
+Login
+Run : module unload python && mkvirtualenv --no-site-packages --python=/sw/comp/python/2.7_kalkyl/bin/python devel
+Run : pip install numpy
+      pip install pysam
+      pip install HTSeq
+
 To install pipeline
 cd pipeline
 python setup.py build
@@ -46,5 +57,3 @@ python setup.py install
 If you have problem executing :
 export PATH=$PATH:~/path/to/binaries  #findIndexes, bowtie and createDataset.py
 export PYTHONPATH=$PATH:~/poath/to/pipeline #path to the python source 
-
-NOTE : for Uppmax 

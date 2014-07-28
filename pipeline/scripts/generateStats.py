@@ -15,6 +15,7 @@
 
 import os
 import sys
+import json
 
 if len(sys.argv) == 2:
     input = str(sys.argv[1])
@@ -26,13 +27,14 @@ if not input.endswith("csv"):
     print "You must use csv files"
     sys.exit(1)
 
-filehandler = open(input,"r")
+#filehandler = open(input,"r")
 
 unique_events = set()
 unique_barcodes = set()
 unique_genes = set()
 count = 0
 
+        
 for line in filehandler.readlines():
     #['4', '13', 'Mycbp2', 'CGCTACCCTGATTCGACC', '1216']
     cols = line.split()
@@ -43,7 +45,7 @@ for line in filehandler.readlines():
     unique_barcodes.add(str(cols[3]))
     unique_genes.add(str(cols[2]))
     count += int(cols[4])
-    
+     
 print "Stats for file " + str(input)
 print "Unique Genes " + str(len(unique_genes))
 print "Unique Barcodes " + str(len(unique_barcodes))
