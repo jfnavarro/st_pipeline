@@ -17,20 +17,35 @@ To install the st_pipeline on Uppmax follow the instructions below:
     pip install pysam
     pip install HTSeq
 
-7) download the pipeline file on your computer from:
+7) Install FindIndexes if not installed already :
+
+	cd pipeline/dependencies/findIndexes
+	mkdir build
+	cd build
+	cmake ../
+	make
+	cp findIndexes /path/to/binaries (folder where you can install binaries present in your PATH)
+
+8) Install bowtie2 (not needed but this will install newer version) :
+
+	cd pipeline/dependencies/bowtie2-sources
+	make
+	cp bowtie2* /path/to/binaries
+
+9) download the pipeline file on your computer from:
     https://docs.google.com/a/scilifelab.se/file/d/0B5uSKaLRpzQZS2x6M3NBQ1NSaWM/edit?usp=sharing
 
-8) copy zip-file to your uppmax home folder
+10) copy zip-file to your uppmax home folder
 
-9) unzip the file on uppmax
+11) unzip the file on uppmax
     password: avgohe52 
 
-10) run the commands:
+12) run the commands:
       cd pipeline
       python setup.py build
       python setup.py install
 
-11) test by running the command:
+13) test by running the command:
       st_pipeline_run.py
 
      The output it should look like this:

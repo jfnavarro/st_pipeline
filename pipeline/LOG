@@ -13,3 +13,6 @@ Version 0.1.2
 * Fixed some typos
 * Fixed a bug that caused to remove some bases from the 
 barcode ID in the rw reads
+
+Version 0.1.3
+* Fixed a error with new version of HTSeq-count that will discard more reads

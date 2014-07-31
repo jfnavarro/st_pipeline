@@ -34,7 +34,15 @@ def annotateReadsWithHTSeq(samFile, gtfFile, mode):
     
     discard_output = open(os.devnull,"w")
     
-    args = ['htseq-count',"-m",mode,"-s","no","-i","gene_id" ,"-o",outputFile,samFile,gtfFile]
+    #-q (suppress warning reports)
+    #-a (min quality)
+    #-f (format)
+    #-m (annotation mode)
+    #-s (strandeness)
+    #-i (attribute in GFF to be used as ID)
+    #-t (feature type to be used in GFF)
+    args = ['htseq-count',"-q", "-a", 0, "-f", "sam", -m , mode, "-s", "no", "-t", 
+            "exon", "-i", "gene_id" , "-o", outputFile, samFile, gtfFile]
     subprocess.check_call(args,stdout=discard_output, stderr=subprocess.PIPE)
     
     if not os.path.isfile(outputFile) or os.path.getsize(outputFile) == 0:
