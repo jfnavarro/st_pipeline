@@ -143,7 +143,7 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
         if line1_trimmed is not None:
             out_fw_writer.send(line1_trimmed)
         else:
-            # I want to write fake sequence so bowtie wont fail
+            # write fake sequence so bowtie wont fail for having rw and fw with different lenghts
             out_fw_writer.send(getFake(line1))
             dropped_fw += 1
 
@@ -155,7 +155,7 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
             out_rw_writer.send(record)
 
         else:
-            # I want to write fake sequence so bowtie wont fail
+            # write fake sequence so bowtie wont fail for having rw and fw with different lenghts
             out_rw_writer.send(getFake(line2))
             dropped_rw += 1  
     
@@ -199,7 +199,6 @@ def fastq_sorter(fastq_file):
         if line[0] == "@":
             if data != '':
                 allData.append((header,data))
-    
             header = line.strip()[1:]
             data = line
         else:

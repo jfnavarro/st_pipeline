@@ -41,7 +41,10 @@ def annotateReadsWithHTSeq(samFile, gtfFile, mode):
     #-s (strandeness)
     #-i (attribute in GFF to be used as ID)
     #-t (feature type to be used in GFF)
-    args = ['htseq-count',"-q", "-a", 0, "-f", "sam", -m , mode, "-s", "no", "-t", 
+    #-r (input sorted order : name - pos)
+    ##TODO make sure the sorting is correct and not affecting results
+    ##TODO make sure having a fw or rw missing in a pair is not affecting results
+    args = ['htseq-count',"-r", "name", "-q", "-a", 0, "-f", "sam", "-m" , mode, "-s", "no", "-t", 
             "exon", "-i", "gene_id" , "-o", outputFile, samFile, gtfFile]
     subprocess.check_call(args,stdout=discard_output, stderr=subprocess.PIPE)
     

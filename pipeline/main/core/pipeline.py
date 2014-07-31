@@ -55,7 +55,6 @@ class Pipeline():
         self.path = ""
         self.logger = None
         self.logfile = ""
-        #Hossein
         self.output_folder = ""
         
     def sanityCheck(self):
@@ -127,6 +126,7 @@ class Pipeline():
         the json formated features to the reducer
         """
         #TODO refactor and optimize this
+        #TODO do mapping using gene as KEY
         for val in chunks:
             temp_name = tempfile.mktemp(prefix='stpipeline_temp_', suffix=str(random.random()), dir='') 
             new_filename = temp_name + "_1.fastq"
@@ -181,6 +181,7 @@ class Pipeline():
         #starting time
         start_exe_time = globaltime.getTimestamp()
         self.logger.info("Starting the pipeline : " + str(start_exe_time))
+        
         # add BC and PolyT from FW reads to the RW reads and apply quality filter
         Fastq_fw_trimmed, Fastq_rv_trimmed = reformatRawReads(self.Fastq_fw, self.Fastq_rv, 
                                                               self.trimming_fw_bowtie,
@@ -189,9 +190,11 @@ class Pipeline():
         # First, do mapping against genome of both strands
         sam_mapped = bowtie2Map(Fastq_fw_trimmed, Fastq_rv_trimmed, self.ref_map, 
                                 self.trimming_fw_bowtie, self.threads, self.qual64, self.discordant)
+        
         ## filter unmapped and discordant reads
         sam_filtered = filterUnmapped(sam_mapped, self.discard_fw, self.discard_rv)
         if self.clean: safeRemove(sam_mapped)  
+        
         ##annotate using htseq count
         annotatedFile = annotateReadsWithHTSeq(sam_filtered, self.ref_annotation, self.htseq_mode)
         if self.clean: safeRemove(sam_filtered)
@@ -209,13 +212,13 @@ class Pipeline():
     
         if self.clean: safeRemove(Fastq_fw_trimmed)
         if self.clean: safeRemove(Fastq_rv_trimmed)
+        
         # Map against the barcodes
         mapFile = getTrToIdMap(withTr, self.ids, self.allowed_missed, self.allowed_kimera, 
                                self.s, self.l, self.e)
         if self.clean: safeRemove(withTr)
     
         # create json files with the results
-        
         self.createDataset(mapFile, self.expName)
         if self.clean: safeRemove(mapFile)
         

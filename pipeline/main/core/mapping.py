@@ -34,8 +34,8 @@ def bowtie2Map(fw, rv, ref_map, trim = 42, cores = 8, qual64 = False, discordant
     
     qual_flags = ["--phred64"] if qual64 else ["--phred33"] 
     core_flags = ["-p", str(cores)] if cores > 1 else []
-    trim_flags = ["--trim5",trim] 
-    io_flags   = ["-q","-X",2000,"--sensitive"] ##500 (default) is too selective
+    trim_flags = ["--trim5", trim] 
+    io_flags   = ["-q", "-X", 2000, "--sensitive"] ##500 (default) is too selective
     io_flags  += ["--no-discordant"] if discordant else []
 
     args = ['bowtie2']
@@ -131,21 +131,21 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False):
     output = pysam.Samfile(outputFileSam, 'wh', header=input.header)
 
     for read in input:
-        # filtering out pair end reads
+        # filtering out not pair end reads
         if not read.is_paired:
             logger.error("Error: input Sam file contains not paired reads")
             raise RuntimeError("Error: input Sam file contains not paired reads")
 
         if read.is_proper_pair and not read.mate_is_unmapped:
-            # if read is a concordant pair and is mapped write
+            # if read is a concordant pair and it is mapped,
             output.write(read)
         elif not read.is_proper_pair and not read.is_unmapped:
             # if read is a discordant mapped pair or uniquely mapped (mixed mode bowtie2)
-            if read.is_read1 and not discard_fw :
-                # if read is forward and I dont want to discard it
+            if read.is_read1 and not discard_fw:
+                # if read is forward and we dont want to discard it
                 output.write(read)
-            elif(read.is_read2 and not discard_rw):
-                # if read is reverse and I dont want to discard it
+            elif read.is_read2 and not discard_rw:
+                # if read is reverse and we dont want to discard it
                 output.write(read)
             else:
                 # I want to discard both forward and reverse and unmapped
