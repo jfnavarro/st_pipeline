@@ -75,7 +75,7 @@ def main(argv):
     pipeline.discordant = options.bowtie2_discordant
     pipeline.contaminant_bt2_index = options.contaminant_bowtie2_index
     pipeline.path = options.bin_path
-    if options.log_file is not None and fileOk(options.log_file):
+    if options.log_file is not None:
         pipeline.logfile = os.path.abspath(options.log_file)         
     pipeline.Fastq_fw = options.fastq_files[0]
     pipeline.Fastq_rv = options.fastq_files[1]

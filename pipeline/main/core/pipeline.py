@@ -89,7 +89,7 @@ class Pipeline():
         #TODO load the parameters here instead of forcing users to do so from outside
         
         # create a logger
-        if self.logfile is not None and fileOk(self.logfile):
+        if self.logfile is not None:
             logging.basicConfig(filename=self.logfile ,level=logging.DEBUG)
         else:
             logging.basicConfig(level=logging.DEBUG)
