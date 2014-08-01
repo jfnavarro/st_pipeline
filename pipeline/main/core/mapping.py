@@ -25,12 +25,12 @@ def bowtie2Map(fw, rv, ref_map, trim = 42, cores = 8, qual64 = False, discordant
     logger = logging.getLogger("STPipeline")
     
     if fw.endswith(".fastq") and rv.endswith(".fastq"):
-        outputFile = replaceExtension(fw,".sam")
+        outputFile = replaceExtension(getCleanFileName(fw),".sam")
     else:
         logger.error("Error: Input format not recognized " + fw + " , " + rv)
-        raise RuntimeError("Error: Input format not recognized")
+        raise RuntimeError("Error: Input format not recognized " + fw + " , " + rv + "\n")
     
-    logger.info("Start Bowtie2 Mapping, output = " + outputFile)
+    logger.info("Start Bowtie2 Mapping")
     
     qual_flags = ["--phred64"] if qual64 else ["--phred33"] 
     core_flags = ["-p", str(cores)] if cores > 1 else []
@@ -72,11 +72,11 @@ def bowtie2_contamination_map(fastq, contaminant_index, trim=42, cores=8, qual64
     logger = logging.getLogger("STPipeline")
 
     if fastq.endswith(".fastq"):
-        contaminated_file = replaceExtension(fastq,"_contaminated.sam")
-        clean_fastq = replaceExtension(fastq,"_clean.fastq")
+        contaminated_file = replaceExtension(getCleanFileName(fastq),"_contaminated.sam")
+        clean_fastq = replaceExtension(getCleanFileName(fastq),"_clean.fastq")
     else:
         logger.error("Error: Input format not recognized " + fastq)
-        raise RuntimeError("Error: Input format not recognized")
+        raise RuntimeError("Error: Input format not recognized " + fastq + "\n")
 
     logger.info("Start Bowtie2 Mapping rRNA")
     
@@ -99,7 +99,7 @@ def bowtie2_contamination_map(fastq, contaminant_index, trim=42, cores=8, qual64
         logger.error("Error: output file is not present " + contaminated_file + " , " + clean_fastq)
         logger.error(stdout)
         logger.error(errmsg)
-        raise RuntimeError("Error: output file is not present")
+        raise RuntimeError("Error: output file is not present " + contaminated_file + " , " + clean_fastq + "\n")
     else:
         procOut = [x for x in errmsg.split("\n") if x.find("Warning") == -1 and x.find("Error") == -1]
         logger.info('Contaminant mapping stats against ' +
@@ -116,10 +116,12 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False):
     ''' filter unmapped and discordant reads
     '''
     
+    #TODO could optimize that by telling bowtie2 to not report unmapped reads
+    
     logger = logging.getLogger("STPipeline")
 
     if sam.endswith(".sam"):
-        outputFileSam = replaceExtension(sam,'_filtered.sam')
+        outputFileSam = replaceExtension(getCleanFileName(sam),'_filtered.sam')
     else:
         logger.error("Error: Input format not recognized " + sam)
         raise RuntimeError("Error: Input format not recognized")
@@ -130,6 +132,7 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False):
     input = pysam.Samfile(sam, "r")
     output = pysam.Samfile(outputFileSam, 'wh', header=input.header)
 
+    dropped = 0
     for read in input:
         # filtering out not pair end reads
         if not read.is_paired:
@@ -149,9 +152,11 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False):
                 output.write(read)
             else:
                 # I want to discard both forward and reverse and unmapped
+                dropped += 1
                 pass
         else:
             # not mapped stuff discard
+            dropped += 1
             pass  
             
     input.close()
@@ -159,9 +164,9 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False):
 
     if not fileOk(outputFileSam):
         logger.error("Error: output file is not present " + outputFileSam)
-        raise RuntimeError("Error: output file is not present")
+        raise RuntimeError("Error: output file is not present " + outputFileSam + "\n")
     
-    logger.info("End converting Sam to Bam and filtering unmapped")
+    logger.info("End converting Sam to Bam and filtering unmapped, dropped reads = " + str(dropped))
     
     return outputFileSam
 
@@ -172,12 +177,14 @@ def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e):
     logger = logging.getLogger("STPipeline")
     
     if not fileOk(readsContainingTr) or not fileOk(idFile):
-        logger.error("Error: Input files not present , transcript file = " + readsContainingTr + " ids = " + idFile)
-        raise RuntimeError("Error: Input format not recognized")
+        logger.error("Error: Input files not present, transcript file = " 
+                     + readsContainingTr + " ids = " + idFile)
+        raise RuntimeError("Error: Input format not recognized transcript file = " 
+                           + readsContainingTr + " ids = " + idFile + "\n")
     
     logger.info("Start Mapping against the barcodes")
     
-    outputFile = replaceExtension(readsContainingTr,'_nameMap.txt')
+    outputFile = replaceExtension(getCleanFileName(readsContainingTr),'_nameMap.txt')
 
     args = ['findIndexes',
             "-m", str(m), "-k", str(k), "-s", str(s),
@@ -187,11 +194,11 @@ def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e):
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout, errmsg) = proc.communicate()
  
-    if not os.path.isfile(outputFile) or os.path.getsize(outputFile) == 0:
+    if not fileOk(outputFile):
         logger.error("Error: output file is not present " + outputFile)
         logger.error(stdout)
         logger.error(errmsg)
-        raise Exception("Error: output file is not present")
+        raise Exception("Error: output file is not present " + outputFile + "\n")
     else:
         procOut = stdout.split("\n")
         logger.info('Barcode Mapping stats :')

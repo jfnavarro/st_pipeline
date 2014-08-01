@@ -39,10 +39,10 @@ class Pipeline():
         self.e = 0
         self.threads = 8
         self.verbose = False
-        self.ids = ""
-        self.ref_map = ""
-        self.ref_annotation = ""
-        self.expName = ""
+        self.ids = None
+        self.ref_map = None
+        self.ref_annotation = None
+        self.expName = None
         self.htseq_mode = "intersection-nonempty"
         self.htseq_no_ambiguous = False
         self.qual64 = False
@@ -50,18 +50,18 @@ class Pipeline():
         self.discard_rv = False
         self.discordant = False
         self.contaminant_bt2_index = None
-        self.Fastq_fw = ""
-        self.Fastq_rv = ""
-        self.path = ""
+        self.Fastq_fw = None
+        self.Fastq_rv = None
+        self.path = None
         self.logger = None
-        self.logfile = ""
-        self.output_folder = ""
+        self.logfile = None
+        self.output_folder = None
         
     def sanityCheck(self):
         
         conds = {"FW": fileOk(self.Fastq_fw), "RV": fileOk(self.Fastq_rv), 
                  "ids": fileOk(self.ids), "ref": fileOk(self.ref_annotation), 
-                 "map": self.ref_map != "", "Exp Name":  self.expName != ""}
+                 "map": self.ref_map is not None, "Exp Name":  self.expName is not None}
         
         conds["htseq_gtf"] = self.ref_annotation.endswith("gtf")
         conds["htseq_mode"] = self.htseq_mode in ["union","intersection-nonempty","intersection-strict"]
@@ -89,14 +89,14 @@ class Pipeline():
         #TODO load the parameters here instead of forcing users to do so from outside
         
         # create a logger
-        if(self.logfile != ""):
+        if self.logfile is not None and fileOk(self.logfile):
             logging.basicConfig(filename=self.logfile ,level=logging.DEBUG)
         else:
             logging.basicConfig(level=logging.DEBUG)
         self.logger = logging.getLogger(self.__class__.LogName)
         
         #load the given path into the system PATH
-        if os.path.isdir(self.path): 
+        if self.path is not None and os.path.isdir(self.path): 
             os.environ["PATH"] += os.pathsep + self.path
             
         #show parameters information and write them to stats
@@ -203,12 +203,15 @@ class Pipeline():
         withTr = getAnnotatedReadsFastq(annotatedFile, Fastq_fw_trimmed, 
                                         Fastq_rv_trimmed, self.htseq_no_ambiguous)
         if self.clean: safeRemove(annotatedFile)
+        
         # Filter out contaminated reads with Bowtie2
         if self.contaminant_bt2_index: 
+            oldWithTr = withTr
             withTr, contaminated_sam = bowtie2_contamination_map(withTr, self.contaminant_bt2_index,
                                                                  trim=self.trimming_fw_bowtie,
                                                                  cores=self.threads, qual64=self.qual64)
             if self.clean: safeRemove(contaminated_sam)
+            if self.clean: safeRemove(oldWithTr)
     
         if self.clean: safeRemove(Fastq_fw_trimmed)
         if self.clean: safeRemove(Fastq_rv_trimmed)
@@ -231,14 +234,15 @@ class Pipeline():
             create json files with the barcodes and cordinates and json file with the raw reads
             and some useful stats and plots
         '''
-        self.logger.info("Start Creating databases")
-        args = ['createDataset.py', '--input', str(mapFile), '--name', str(dbName), '--output', str(self.output_folder)]
+        self.logger.info("Start Creating dataset")
+        args = ['createDataset.py', '--input', str(mapFile), '--name', str(dbName)]
+        if self.output_folder is not None: args += ['--output', str(self.output_folder)]
         proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdout, errmsg) = proc.communicate()
         ##TODO should check for errors
         procOut = stdout.split("\n")
-        self.logger.info('Create Database stats :')
+        self.logger.info('Create dataset stats :')
         for line in procOut: 
             self.logger.info(str(line))
-        self.logger.info("Finish Creating databases")
+        self.logger.info("Finish Creating dataset")
         return   

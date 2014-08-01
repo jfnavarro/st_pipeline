@@ -37,7 +37,7 @@ def trim_quality(record, trim_distance, min_qual = 20,
         if (ord(qual) - phred) < min_qual:
             nbases +=1
     
-    if ((len(sequence) - (trim_distance + nbases)) >= min_length):
+    if (len(sequence) - (trim_distance + nbases)) >= min_length:
         new_seq = record[1][:(len(sequence) - nbases)]
         new_qual = record[2][:(len(sequence) - nbases)]
         return name,new_seq,new_qual
@@ -110,15 +110,15 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
     """
     
     logger = logging.getLogger("STPipeline")
-
+    
     if fw.endswith(".fastq") and rw.endswith(".fastq"):
-        out_rw = replaceExtension(rw,'_formated.fastq')
-        out_fw = replaceExtension(fw,'_formated.fastq')
+        out_rw = replaceExtension(getCleanFileName(rw),'_formated.fastq')
+        out_fw = replaceExtension(getCleanFileName(fw),'_formated.fastq')
     else:
         logger.error("Error: Input format not recognized " + out_fw + " , " + out_rw)
-        raise Exception("Error: Input format not recognized")
+        raise Exception("Error: Input format not recognized " + out_fw + " , " + out_rw + "\n")
 
-    logger.info("Start Reformating and Filtering raw reads")
+    logger.info("Start Reformatting and Filtering raw reads")
     
     out_fw_handle = safeOpenFile(out_fw, 'w')
     out_fw_writer = writefq(out_fw_handle)
@@ -168,7 +168,7 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
     
     if not fileOk(out_fw) or not fileOk(out_rw):
         logger.error("Error: output file is not present " + out_fw + " , " + out_rw)
-        raise RuntimeError("Error: output file is not present")
+        raise RuntimeError("Error: output file is not present " + out_fw + " , " + out_rw + "\n")
     else:
         logger.info("Trimming stats fw 1 : " + str(dropped_fw) + " reads have been dropped on the forward reads!")
         perc1 = '{percent:.2%}'.format(percent= float(dropped_fw) / float(total_reads) )
@@ -177,7 +177,7 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
         perc2 = '{percent:.2%}'.format(percent= float(dropped_rw) / float(total_reads) )
         logger.info("Trimming stats rw 2 : you just lost about " + perc2 + " of your data on the reverse reads!")
         
-    logger.info("Finish Reformating and Filtering raw reads")
+    logger.info("Finish Reformatting and Filtering raw reads")
     
     return out_fw, out_rw
 
@@ -186,10 +186,17 @@ def fastq_sorter(fastq_file):
     by the header name (not good for big files)
     '''
 
-    #@TODO check if the file is fastq
+    logger = logging.getLogger("STPipeline")
+
+    if fastq_file.endswith(".fastq"):
+        outName = getCleanFileName(replaceExtension(fastq_file,"_sorted.fastq"))
+    else:
+        logger.error("Error: Input format not recognized " + fastq_file)
+        raise Exception("Error: Input format not recognized " + fastq_file + "\n")
+
+    logger.info("Start sorting fastq file")
     
     inFile = safeOpenFile(fastq_file,'r')
-    outName = replaceExtension(fastq_file,"_sorted.fastq")
     outFile = safeOpenFile(outName,'w')
     header = ''
     data = ''
@@ -209,9 +216,14 @@ def fastq_sorter(fastq_file):
     for item in allData:
         outFile.write(item)
     
+    if not fileOk(outFile):
+        logger.error("Error: output file is not present " + outFile)
+        raise RuntimeError("Error: output file is not present " + outFile + "\n")
+    
     outFile.close()
     inFile.close()
     
-    #@TODO check if the file is correctly generated
+    logger.info("End sorting fastq file")
+    
     return outName
 

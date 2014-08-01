@@ -127,11 +127,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-i','--input', type=str,
                         help='Input files containing the records (Name,chromosome,gene,barcode,x,y,Qul,Read)')
-    parser.add_argument('-o', '--out', type=str,
+    parser.add_argument('-o', '--output', type=str,
                         help='Path of the output folder (default is .)')
     parser.add_argument('-n', '--name', type=str,
                         help='Name of the output files')
 
     args = parser.parse_args()
-    main(args.input, args.name, args.out)
+    main(args.input, args.name, args.output)
                                     

@@ -7,15 +7,14 @@
 """
 """ Module for parsing and dealing with ST data formats.
 """
+
 import json
-#import cjson
 
 def serialize(feature_gene, hits):
     doc = {}
     doc['y'], doc['x'], doc['gene'], doc['barcode'] = feature_gene
     doc['hits'] = hits
     return json.loads(doc)
-    #return cjson.encode(doc)
 
 def write_json(out,hits):
     with open(out, 'w') as out_file:
@@ -27,7 +26,6 @@ def json_iterator(json_file):
     """
     with open(json_file) as fh:
         for line in json.loads(fh.readlines()[0]):
-        #for line in cjson.decode(fh.readlines()[0]):
             yield line
 
 def save_json(data, json_file):
@@ -55,8 +53,6 @@ def load_json(json_file):
     data = []
     with open(json_file) as fh:
         for line in json.loads(fh.readlines()[0]):
-        #for line in cjson.decode(fh.readlines()[0]): ##faster but annoying dependency
             data.append(json.loads(line))
-            #data.append(cjson.decode(line))
     return data
 

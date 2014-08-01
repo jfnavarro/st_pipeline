@@ -19,7 +19,7 @@ _ntuple_diskusage = namedtuple('usage', 'total used free')
 def which(program):
     """ check that a program exists and is executable """
     def is_exe(fpath):
-        return os.path.exists(fpath) and os.access(fpath, os.X_OK)
+        return fpath is not None and os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
     def ext_candidates(fpath):
         yield fpath
@@ -42,10 +42,10 @@ def which(program):
 def Using(point):
     """ returns memory usage at a certain point 
     """
-    usage=resource.getrusage(resource.RUSAGE_SELF)
+    usage = resource.getrusage(resource.RUSAGE_SELF)
     return '''%s: usertime=%s systime=%s mem=%s mb
            '''%(point,usage[0],usage[1],
-                (usage[2]*resource.getpagesize())/1000000.0) 
+                (usage[2]*resource.getpagesize()) / 1000000.0) 
            
            
 class TimeStamper(object):
@@ -96,24 +96,22 @@ def safeRemove(filename):
     ''' safely remove a file 
     '''
     try:
-        if(os.path.isfile(filename)):
+        if filename is not None and os.path.isfile(filename):
             os.remove(filename)
     except UnboundLocalError:
         pass
         
-def safeOpenFile(filename,atrib):
+def safeOpenFile(filename, atrib):
     ''' safely opens a file 
-    ''' 
-    if(atrib.find("w") != -1):
+    '''
+    if atrib.find("w") != -1:
         safeRemove(filename)
         usage = disk_usage('/')
         if(usage.free <= 1073741824): ## at least 1GB
-            sys.stderr.write("Error : no free space available\n")
-            sys.exit()
+            raise RuntimeError("Error : no free space available\n")
     elif(atrib.find("r") != -1):
-        if(not os.path.isfile(filename)):  # is present?
-            sys.stderr.write("Error : " + filename + " not found\n")
-            sys.exit()
+        if filename is None or not os.path.isfile(filename):  # is present?
+            raise RuntimeError("Error : wrong filename\n")
     else:
         raise RuntimeError("Error : wrong attribute " + atrib + " opening file\n")
 
@@ -124,10 +122,7 @@ def safeOpenFile(filename,atrib):
 def fileOk(_file):
     ''' checks file exists and is not zero size
     '''
-    if(not os.path.isfile(_file) or os.path.getsize(_file) == 0):
-        return False
-    else:
-        return True
+    return _file is not None and os.path.isfile(_file) and not os.path.getsize(_file) == 0
     
 def replaceExtension(filename,extension):
     ''' replace the extesion of filename 
@@ -144,7 +139,6 @@ def stripExtension(string):
     f = string.rsplit('.', 1)
     if(f[0].find("/") != -1):
         return f[0].rsplit('/', 1)[1]
-
     else:
         return f[0]
 
@@ -152,3 +146,7 @@ def getExtension(string):
     f = string.rsplit('.', 1)
     return f[1]
 
+def getCleanFileName(path):
+    ''' extracts and returns the filename from a complete path '''
+    head, tail = os.path.split(path)
+    return tail

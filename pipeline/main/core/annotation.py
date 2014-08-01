@@ -25,10 +25,10 @@ def annotateReadsWithHTSeq(samFile, gtfFile, mode):
     logger = logging.getLogger("STPipeline")
     
     if samFile.endswith(".sam"):
-        outputFile = replaceExtension(samFile,'_gene.sam')
+        outputFile = replaceExtension(getCleanFileName(samFile),'_gene.sam')
     else:
         logger.error("Error: Input format not recognized " + samFile)
-        raise RuntimeError("Error: Input format not recognized")
+        raise RuntimeError("Error: Input format not recognized " + samFile + "\n")
     
     logger.info("Start Annotating reads with HTSeq")
     
@@ -44,13 +44,13 @@ def annotateReadsWithHTSeq(samFile, gtfFile, mode):
     #-r (input sorted order : name - pos)
     ##TODO make sure the sorting is correct and not affecting results
     ##TODO make sure having a fw or rw missing in a pair is not affecting results
-    args = ['htseq-count',"-r", "name", "-q", "-a", 0, "-f", "sam", "-m" , mode, "-s", "no", "-t", 
-            "exon", "-i", "gene_id" , "-o", outputFile, samFile, gtfFile]
+    args = ['htseq-count',"-r", "name", "-q", "-a", "0", "-f", "sam", "-m" , mode, "-s", "no", "-t", 
+            "exon", "-i","gene_id" , "-o", outputFile, samFile, gtfFile]
     subprocess.check_call(args,stdout=discard_output, stderr=subprocess.PIPE)
     
-    if not os.path.isfile(outputFile) or os.path.getsize(outputFile) == 0:
+    if not fileOk(outputFile):
         logger.error("Error: output file is not present " + outputFile)
-        raise Exception("Error: output file is not present")
+        raise RuntimeError("Error: output file is not present " + outputFile + "\n")
         
     logger.info("Finish Annotating reads with HTSeq")
     
@@ -60,8 +60,11 @@ def getAllMappedReadsBed(mapWithGeneFile):
     ''' creates a map with the read names that are annotated and mapped and 
         their mapping scores,chromosome and gene
     '''
+    #@todo check input format and correctness, same for output
+    logger = logging.getLogger("STPipeline")
     mapped = dict()
-    inF = safeOpenFile(mapWithGeneFile,'r')
+    inF = getCleanFileName(safeOpenFile(mapWithGeneFile,'r'))
+    dropped = 0
     for line in inF:
         cols = line.rstrip().split('\t')
         try:
@@ -69,12 +72,16 @@ def getAllMappedReadsBed(mapWithGeneFile):
             mapping_quality = int(cols[4])
             gene_name = str(cols[18])
             chromosome = str(cols[0])
-            if(gene_name != '.'): 
+            if gene_name != '.': 
                 mapped[cleanHeader] = (mapping_quality,gene_name,chromosome)  # there should not be collisions
+            else:
+                dropped += 1
         except ValueError:
+            dropped += 1
             pass
 
     inF.close()
+    logger.info("Created map of annotated reads, dropped : " + str(dropped) + " reads")  
     return mapped
 
 def getAllMappedReadsSam(annot_reads, htseq_no_ambiguous = False):
@@ -82,18 +89,22 @@ def getAllMappedReadsSam(annot_reads, htseq_no_ambiguous = False):
         their mapping scores,chromosome and gene
         We assume the gtf file has its gene ids replaced by gene names
     '''
-    filter_htseq = ["no_feature","ambiguous",
-              "too_low_aQual","not_aligned",
-              "alignment_not_unique"]
+    
+    logger = logging.getLogger("STPipeline")
+    
+    filter_htseq = ["__no_feature","__ambiguous",
+              "__too_low_aQual","__not_aligned",
+              "__alignment_not_unique"]
     
     mapped = dict()
     sam = HTSeq.SAM_Reader(annot_reads)
-    
+    dropped = 0
     for alig in sam:
         
         gene_name = str(alig.optional_field("XF"))
         if gene_name in filter_htseq or not alig.aligned or \
-        (htseq_no_ambiguous and gene_name.find("ambiguous") != -1):
+        (htseq_no_ambiguous and gene_name.find("__ambiguous") != -1):
+            dropped += 1
             continue
         
         strand = str(alig.pe_which)
@@ -106,16 +117,19 @@ def getAllMappedReadsSam(annot_reads, htseq_no_ambiguous = False):
             chromosome = alig.mate_start.chrom 
         else:
             chromosome = "Unknown"
-            
+        
+        #add this to distinct first to second pair in the HASH since read names are the same
         if strand == "first":
             name += "/1"
         elif strand == "second":
             name += "/2"
         else:
+            droppped += 1
             continue ## not possible
         
         mapped[name] = (mapping_quality,gene_name,chromosome)  # there should not be collisions
-        
+      
+    logger.info("Created map of annotated reads, dropped : " + str(dropped) + " reads")  
     return mapped
 
 def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous = False):  
@@ -127,10 +141,10 @@ def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous = False):
     
     if  annot_reads.endswith(".sam")  \
         and fw.endswith(".fastq") and rv.endswith(".fastq"):
-        outputFile = replaceExtension(fw,'_withTranscript.fastq')
+        outputFile = replaceExtension(getCleanFileName(fw),'_withTranscript.fastq')
     else:
         logger.error("Error: Input format not recognized " + annot_reads + " , " + fw + " , " + rv)
-        raise RuntimeError("Error: Input format not recognized")
+        raise RuntimeError("Error: Input format not recognized " + annot_reads + " , " + fw + " , " + rv + "\n")
 
     logger.info("Start Mapping to Transcripts")
     
@@ -150,9 +164,14 @@ def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous = False):
     #from the raw fw and rv reads write the records that have been mapped and annotated 
     for line1,line2 in izip( readfq(fw_file) , readfq(rv_file) ):
 
-        #we add this to match the reads to the extra symbol added by bowtie in pair end mode
-        name1 = (line1[0] + "/1") if line1[0].find("/1") == -1 else line1[0]
-        name2 = (line2[0] + "/2") if line2[0].find("/2") == -1 else line2[0]
+        #bowtie2 will truncate white spaces in header name according to SAM format
+        raw_name1 = line1[0].split(" ")[0]
+        raw_name2 = line2[0].split(" ")[0]
+        
+        #we add this to match the reads to the extra symbol added in the annotation
+        #TODO the find() could be removed
+        name1 = (raw_name1 + "/1") if raw_name1.find("/1") == -1 else raw_name1
+        name2 = (raw_name2 + "/2") if raw_name2.find("/2") == -1 else raw_name2
         mappedFW = mapped.has_key(name1)
         mappedRV = mapped.has_key(name2)
         
@@ -184,7 +203,7 @@ def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous = False):
     
     if not fileOk(outputFile):
         logger.error("Error: output file is not present " + outputFile)
-        raise RuntimeError("Error: output file is not present")
+        raise RuntimeError("Error: output file is not present " + outputFile + "\n")
     else:
         logger.info('Total reads mapping to a transcript : ' + str(readMappingToTranscript))
         
