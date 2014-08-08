@@ -118,8 +118,8 @@ def main(NameToIdFile, dbName, output_folder):
     filehandler = open(os.path.join(output_folder,filename), "w")
     filehandlerReads = open(os.path.join(output_folder,filenameReads), "w")
     #write well formed json file
-    json.dump(json_barcodes,filehandler,separators=(',', ': '))    
-    json.dump(json_reads,filehandlerReads,separators=(',', ': '))    
+    json.dump(json_barcodes,filehandler, indent=2, separators=(',', ': '))    
+    json.dump(json_reads,filehandlerReads, indent=2, separators=(',', ': '))    
     filehandler.close()
     filehandlerReads.close()    
         
