@@ -45,8 +45,8 @@ python setup.py build
 python setup.py install
 
 If you have problem executing :
-export PATH=$PATH:~/path/to/binaries  #findIndexes, bowtie and createDataset.py
-export PYTHONPATH=$PATH:~/poath/to/pipeline #path to the python source 
+export PATH=$PATH:~/path/to/binaries  #findIndexes and bowtie 
+export PYTHONPATH=$PATH:~/path/to/pipeline #path to the python source 
 
 Test by running the command:
       st_pipeline_run.py
