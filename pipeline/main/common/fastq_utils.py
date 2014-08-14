@@ -102,7 +102,7 @@ def writefq(fp):  # This is a coroutine
         return
 
 def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
-                     min_qual=20, min_length=28, qual64=False):
+                     min_qual=20, min_length=28, qual64=False, outputFolder=None):
     """ Converts reads in rw file appending the first (distance - trim)
     bases of fw and also add FW or RW string to reads names
     It also performs a bwa qualitry trim of the fw and rw reads, when
@@ -113,7 +113,12 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
     
     if fw.endswith(".fastq") and rw.endswith(".fastq"):
         out_rw = replaceExtension(getCleanFileName(rw),'_formated.fastq')
+        if outputFolder is not None and os.path.isdir(outputFolder) : 
+            out_rw = os.path.join(outputFolder, out_rw)
+            
         out_fw = replaceExtension(getCleanFileName(fw),'_formated.fastq')
+        if outputFolder is not None and os.path.isdir(outputFolder): 
+            out_fw = os.path.join(outputFolder, out_fw)
     else:
         logger.error("Error: Input format not recognized " + out_fw + " , " + out_rw)
         raise Exception("Error: Input format not recognized " + out_fw + " , " + out_rw + "\n")

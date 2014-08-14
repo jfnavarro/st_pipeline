@@ -46,6 +46,7 @@ def main(argv):
     parser.add_argument('--bin-path', help="Path to folder where binary executables are present (system path by default)")
     parser.add_argument('--log-file', help="Name of the file that we want to use to store the logs (default output to screen)")
     parser.add_argument('--output-folder', help='Path of the output folder')
+    parser.add_argument('--temp-folder', help='Path of the location for temporary files')
     
     #parse arguments
     options = parser.parse_args()
@@ -81,7 +82,9 @@ def main(argv):
     pipeline.Fastq_rv = options.fastq_files[1]
     if options.output_folder is not None and os.path.isdir(options.output_folder): 
         pipeline.output_folder = os.path.abspath(options.output_folder)
-        
+    if options.temp_folder is not None and os.path.isdir(options.temp_folder): 
+        pipeline.temp_folder = os.path.abspath(options.temp_folder)
+               
     #should capture exceptions and deal with them here
     pipeline.load_parameters()
     pipeline.sanityCheck()

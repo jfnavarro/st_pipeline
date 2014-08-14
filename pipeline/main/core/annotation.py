@@ -19,13 +19,15 @@ from main.common.fastq_utils import *
 from main.common.utils import *
 import HTSeq
     
-def annotateReadsWithHTSeq(samFile, gtfFile, mode):
+def annotateReadsWithHTSeq(samFile, gtfFile, mode, outputFolder=None):
     ''' Annotate the reads using htseq-count tool 
     '''
     logger = logging.getLogger("STPipeline")
     
     if samFile.endswith(".sam"):
         outputFile = replaceExtension(getCleanFileName(samFile),'_gene.sam')
+        if outputFolder is not None and os.path.isdir(outputFolder): 
+            outputFile = os.path.join(outputFolder, outputFile)
     else:
         logger.error("Error: Input format not recognized " + samFile)
         raise RuntimeError("Error: Input format not recognized " + samFile + "\n")
@@ -132,7 +134,7 @@ def getAllMappedReadsSam(annot_reads, htseq_no_ambiguous = False):
     logger.info("Created map of annotated reads, dropped : " + str(dropped) + " reads")  
     return mapped
 
-def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous = False):  
+def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous = False, outputFolder=None):  
     ''' I get the forward and reverse reads,qualities and sequences that are annotated
         and mapped (present in annot_reads)
     '''
@@ -142,6 +144,8 @@ def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous = False):
     if  annot_reads.endswith(".sam")  \
         and fw.endswith(".fastq") and rv.endswith(".fastq"):
         outputFile = replaceExtension(getCleanFileName(fw),'_withTranscript.fastq')
+        if outputFolder is not None and os.path.isdir(outputFolder): 
+            outputFile = os.path.join(outputFolder, outputFile)
     else:
         logger.error("Error: Input format not recognized " + annot_reads + " , " + fw + " , " + rv)
         raise RuntimeError("Error: Input format not recognized " + annot_reads + " , " + fw + " , " + rv + "\n")

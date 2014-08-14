@@ -18,7 +18,7 @@ from main.common.utils import *
 from main.common.fastq_utils import *
 import pysam
     
-def bowtie2Map(fw, rv, ref_map, trim = 42, cores = 8, qual64 = False, discordant = False):  
+def bowtie2Map(fw, rv, ref_map, trim = 42, cores = 8, qual64 = False, discordant = False, outputFolder=None):  
     ''' maps pair end reads against a given genome using bowtie2 
     '''
     
@@ -26,6 +26,8 @@ def bowtie2Map(fw, rv, ref_map, trim = 42, cores = 8, qual64 = False, discordant
     
     if fw.endswith(".fastq") and rv.endswith(".fastq"):
         outputFile = replaceExtension(getCleanFileName(fw),".sam")
+        if outputFolder is not None and os.path.isdir(outputFolder): 
+            outputFile = os.path.join(outputFolder, outputFile)
     else:
         logger.error("Error: Input format not recognized " + fw + " , " + rv)
         raise RuntimeError("Error: Input format not recognized " + fw + " , " + rv + "\n")
@@ -64,7 +66,7 @@ def bowtie2Map(fw, rv, ref_map, trim = 42, cores = 8, qual64 = False, discordant
     return outputFile
 
 
-def bowtie2_contamination_map(fastq, contaminant_index, trim=42, cores=8, qual64=False):
+def bowtie2_contamination_map(fastq, contaminant_index, trim=42, cores=8, qual64=False, outputFolder=None):
     """ Maps reads against contaminant genome index with Bowtie2 and returns
     the fastq of unaligned reads.
     """
@@ -73,7 +75,12 @@ def bowtie2_contamination_map(fastq, contaminant_index, trim=42, cores=8, qual64
 
     if fastq.endswith(".fastq"):
         contaminated_file = replaceExtension(getCleanFileName(fastq),"_contaminated.sam")
+        if outputFolder is not None and os.path.isdir(outputFolder): 
+            contaminated_file = os.path.join(outputFolder, contaminated_file)
+            
         clean_fastq = replaceExtension(getCleanFileName(fastq),"_clean.fastq")
+        if outputFolder is not None and os.path.isdir(outputFolder): 
+            clean_fastq = os.path.join(outputFolder, clean_fastq)
     else:
         logger.error("Error: Input format not recognized " + fastq)
         raise RuntimeError("Error: Input format not recognized " + fastq + "\n")
@@ -112,7 +119,7 @@ def bowtie2_contamination_map(fastq, contaminant_index, trim=42, cores=8, qual64
 
     return clean_fastq, contaminated_file
 
-def filterUnmapped(sam, discard_fw=False, discard_rw=False):
+def filterUnmapped(sam, discard_fw=False, discard_rw=False, outputFolder=None):
     ''' filter unmapped and discordant reads
     '''
     
@@ -122,6 +129,8 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False):
 
     if sam.endswith(".sam"):
         outputFileSam = replaceExtension(getCleanFileName(sam),'_filtered.sam')
+        if outputFolder is not None and os.path.isdir(outputFolder): 
+            outputFileSam = os.path.join(outputFolder, outputFileSam)
     else:
         logger.error("Error: Input format not recognized " + sam)
         raise RuntimeError("Error: Input format not recognized")
@@ -170,7 +179,7 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False):
     
     return outputFileSam
 
-def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e):
+def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e, outputFolder=None):
     ''' barcode demultiplexing mapping with old findindexes 
     '''
     
@@ -185,7 +194,9 @@ def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e):
     logger.info("Start Mapping against the barcodes")
     
     outputFile = replaceExtension(getCleanFileName(readsContainingTr),'_nameMap.txt')
-
+    if outputFolder is not None and os.path.isdir(outputFolder): 
+        outputFile = os.path.join(outputFolder, outputFile)
+    
     args = ['findIndexes',
             "-m", str(m), "-k", str(k), "-s", str(s),
             "-l", str(l), "-o", str(outputFile), idFile,

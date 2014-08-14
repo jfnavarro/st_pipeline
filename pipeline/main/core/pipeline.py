@@ -56,6 +56,7 @@ class Pipeline():
         self.logger = None
         self.logfile = None
         self.output_folder = None
+        self.temp_folder = None
         
     def sanityCheck(self):
         
@@ -186,22 +187,22 @@ class Pipeline():
         Fastq_fw_trimmed, Fastq_rv_trimmed = reformatRawReads(self.Fastq_fw, self.Fastq_rv, 
                                                               self.trimming_fw_bowtie,
                                                               self.trimming_rw_bowtie, self.min_quality_trimming,
-                                                              self.min_length_trimming, self.qual64)
+                                                              self.min_length_trimming, self.qual64, self.temp_folder)
         # First, do mapping against genome of both strands
         sam_mapped = bowtie2Map(Fastq_fw_trimmed, Fastq_rv_trimmed, self.ref_map, 
-                                self.trimming_fw_bowtie, self.threads, self.qual64, self.discordant)
+                                self.trimming_fw_bowtie, self.threads, self.qual64, self.discordant, self.temp_folder)
         
         ## filter unmapped and discordant reads
-        sam_filtered = filterUnmapped(sam_mapped, self.discard_fw, self.discard_rv)
+        sam_filtered = filterUnmapped(sam_mapped, self.discard_fw, self.discard_rv, self.temp_folder)
         if self.clean: safeRemove(sam_mapped)  
         
         ##annotate using htseq count
-        annotatedFile = annotateReadsWithHTSeq(sam_filtered, self.ref_annotation, self.htseq_mode)
+        annotatedFile = annotateReadsWithHTSeq(sam_filtered, self.ref_annotation, self.htseq_mode, self.temp_folder)
         if self.clean: safeRemove(sam_filtered)
     
         # get raw reads and quality from the forward and reverse reads
         withTr = getAnnotatedReadsFastq(annotatedFile, Fastq_fw_trimmed, 
-                                        Fastq_rv_trimmed, self.htseq_no_ambiguous)
+                                        Fastq_rv_trimmed, self.htseq_no_ambiguous, self.temp_folder)
         if self.clean: safeRemove(annotatedFile)
         
         # Filter out contaminated reads with Bowtie2
@@ -209,7 +210,7 @@ class Pipeline():
             oldWithTr = withTr
             withTr, contaminated_sam = bowtie2_contamination_map(withTr, self.contaminant_bt2_index,
                                                                  trim=self.trimming_fw_bowtie,
-                                                                 cores=self.threads, qual64=self.qual64)
+                                                                 cores=self.threads, qual64=self.qual64, self.temp_folder)
             if self.clean: safeRemove(contaminated_sam)
             if self.clean: safeRemove(oldWithTr)
     
@@ -218,7 +219,7 @@ class Pipeline():
         
         # Map against the barcodes
         mapFile = getTrToIdMap(withTr, self.ids, self.allowed_missed, self.allowed_kimera, 
-                               self.s, self.l, self.e)
+                               self.s, self.l, self.e, self.temp_folder)
         if self.clean: safeRemove(withTr)
     
         # create json files with the results
