@@ -9,6 +9,7 @@ the features (id,cordinates,gene) and another one containing the raw reads and t
 
 To Install the ST pipeline (read INSTALL and DEPENDENCIES)
 
+
 To get help :
 
 type st_pipeline_run.py -h to see help of terminal version
