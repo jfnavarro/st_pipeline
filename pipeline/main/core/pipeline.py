@@ -210,7 +210,7 @@ class Pipeline():
             oldWithTr = withTr
             withTr, contaminated_sam = bowtie2_contamination_map(withTr, self.contaminant_bt2_index,
                                                                  trim=self.trimming_fw_bowtie,
-                                                                 cores=self.threads, qual64=self.qual64, self.temp_folder)
+                                                                 cores=self.threads, qual64=self.qual64, outputFolder=self.temp_folder)
             if self.clean: safeRemove(contaminated_sam)
             if self.clean: safeRemove(oldWithTr)
     
