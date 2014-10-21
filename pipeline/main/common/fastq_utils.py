@@ -175,12 +175,14 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
         logger.error("Error: output file is not present " + out_fw + " , " + out_rw)
         raise RuntimeError("Error: output file is not present " + out_fw + " , " + out_rw + "\n")
     else:
+        logger.info("Trimming stats total reads : " + str(total_reads))
         logger.info("Trimming stats fw 1 : " + str(dropped_fw) + " reads have been dropped on the forward reads!")
         perc1 = '{percent:.2%}'.format(percent= float(dropped_fw) / float(total_reads) )
         logger.info("Trimming stats fw 2 : you just lost about " + perc1 + " of your data on the forward reads!")
         logger.info("Trimming stats rw 1 : " + str(dropped_rw) + " reads have been dropped on the reverse reads!") 
         perc2 = '{percent:.2%}'.format(percent= float(dropped_rw) / float(total_reads) )
         logger.info("Trimming stats rw 2 : you just lost about " + perc2 + " of your data on the reverse reads!")
+        logger.info("Trimming stats reads remaining: " + str(total_reads - dropped_fw - dropped_rw))
         
     logger.info("Finish Reformatting and Filtering raw reads")
     

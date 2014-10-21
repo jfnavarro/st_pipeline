@@ -99,13 +99,23 @@ class Pipeline():
         #load the given path into the system PATH
         if self.path is not None and os.path.isdir(self.path): 
             os.environ["PATH"] += os.pathsep + self.path
-            
+
+        # Set output and temp folders if erroneous
+        if self.output_folder is None or not os.path.isdir(self.output_folder):
+            self.logger.info("Invalid path for output directory -- using current directory instead")
+            self.output_folder = os.path.abspath(os.getcwd())
+        if self.temp_folder is None or not os.path.isdir(self.temp_folder):
+            self.logger.info("Invalid path for temp directory -- using current directory instead")
+            self.temp_folder = os.path.abspath(os.getcwd())
+        
         #show parameters information and write them to stats
         parameters = "Parameters : m(" + str(self.allowed_missed) + ")" + \
                      "k(" + str(self.allowed_kimera) + ")" + "f(" + str(self.min_length_trimming) + ")" + \
                      "e(" + str(self.e) + ")" + "s(" + str(self.s) + ")" + "l(" + str(self.l) + ")" + \
                      "F(" + str(self.trimming_fw_bowtie) + ")" + "R(" + str(self.trimming_rw_bowtie) + ")"
-    
+        
+        self.logger.info("Output directory : " + self.output_folder)
+        self.logger.info("Temp directory : " + self.temp_folder)
         self.logger.info("Experiment : " + str(self.expName))
         self.logger.info("Forward reads file : " + str(self.Fastq_fw))
         self.logger.info("Reverse reads file : " + str(self.Fastq_rv))
@@ -230,14 +240,16 @@ class Pipeline():
         total_exe_time = finish_exe_time - start_exe_time
         self.logger.info("Total Execution Time : " + str(total_exe_time))
 
+
     def createDataset(self, mapFile, dbName):
         ''' parse annotated and mapped reads with the reads that contain barcodes to
-            create json files with the barcodes and cordinates and json file with the raw reads
+            create json files with the barcodes and coordinates and json file with the raw reads
             and some useful stats and plots
         '''
         self.logger.info("Start Creating dataset")
         args = ['createDataset.py', '--input', str(mapFile), '--name', str(dbName)]
-        if self.output_folder is not None: args += ['--output', str(self.output_folder)]
+        if self.output_folder is not None:
+            args += ['--output', str(self.output_folder)]
         proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdout, errmsg) = proc.communicate()
         ##TODO should check for errors

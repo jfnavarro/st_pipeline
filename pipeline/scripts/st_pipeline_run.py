@@ -80,7 +80,7 @@ def main(argv):
         pipeline.logfile = os.path.abspath(options.log_file)         
     pipeline.Fastq_fw = options.fastq_files[0]
     pipeline.Fastq_rv = options.fastq_files[1]
-    if options.output_folder is not None and os.path.isdir(options.output_folder): 
+    if options.output_folder is not None and os.path.isdir(options.output_folder):
         pipeline.output_folder = os.path.abspath(options.output_folder)
     if options.temp_folder is not None and os.path.isdir(options.temp_folder): 
         pipeline.temp_folder = os.path.abspath(options.temp_folder)

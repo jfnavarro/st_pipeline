@@ -143,6 +143,7 @@ def stripExtension(string):
         return f[0]
 
 def getExtension(string):
+    ''' gets the filename extension of a filename '''
     f = string.rsplit('.', 1)
     return f[1]
 
