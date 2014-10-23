@@ -1,18 +1,12 @@
 #!/usr/bin/env python
-"""
-    Copyright (C) 2012  Spatial Transcriptomics AB,
-    read LICENSE for licensing terms. 
-    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
-
-"""
 """ This is the main API for the ST pipeline, it needs a bunch of files and parameters in order
 to run the jobs, input files are fastq, output files are json. It logs status into a file.
 """
-import sys
-from main.common.utils import *
-from main.core.mapping import *
-from main.core.annotation import *
-from main.common.json_utils import *
+
+from stpipeline.common.utils import *
+from stpipeline.core.mapping import *
+from stpipeline.core.annotation import *
+from stpipeline.common.json_utils import *
 import os
 from glob import glob
 import logging
@@ -247,15 +241,20 @@ class Pipeline():
             and some useful stats and plots
         '''
         self.logger.info("Start Creating dataset")
+        
         args = ['createDataset.py', '--input', str(mapFile), '--name', str(dbName)]
         if self.output_folder is not None:
             args += ['--output', str(self.output_folder)]
+            
         proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdout, errmsg) = proc.communicate()
-        ##TODO should check for errors
+        
+        if (len(errmsg) > 0):
+            self.logger.error("Error, There was an error creating the dataset " + errmsg)
+            raise RuntimeError("Error, There was an error creating the dataset " + errmsg)    
+              
         procOut = stdout.split("\n")
-        self.logger.info('Create dataset stats :')
+        self.logger.info('Creating dataset stats :')
         for line in procOut: 
             self.logger.info(str(line))
         self.logger.info("Finish Creating dataset")
-        return   

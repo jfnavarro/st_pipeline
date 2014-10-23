@@ -25,7 +25,6 @@ def main():
             count = int(count)
         except ValueError:
             continue
-
         doc = eval(word)
         feature_gene = (doc['x'], doc['y'], doc['gene'], doc['barcode'])
         hits[feature_gene] += count

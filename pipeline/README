@@ -1,45 +1,9 @@
-ST Pipeline contains the tools and scripts needed to process the fastq formatted files
+ST Pipeline contains the tools and scripts needed to process and analyze the fastq formatted files
 generated in the Spatial Transcriptomics group. 
 
 The input are two fastq files, a genome reference, an annotation reference and the file
-containing the ids (from the array-chip-plate), plus the optional configuration parameters. 
+containing the IDs (from the array-chip-plate), plus the optional configuration parameters. 
 
-The output will be two json files, one containing
+The output will be two JSON files, one containing
 the features (id,cordinates,gene) and another one containing the raw reads and the id.
 
-To Install the ST pipeline (read INSTALL and DEPENDENCIES)
-
-
-To get help :
-
-type st_pipeline_run.py -h to see help of terminal version
-
-**************************** RUN FROM THE TERMINAL (single instance version) *************************************
-
-As simple as typing on the terminal : 
-
-st_pipeline_run.py file1.fastq file2.fastq --ids ids.txt --ref-map genome/genome
---ref-annotation annotation.gtf --expName "test" --verbose --allowed-missed 3 --allowed-kimer 7 
-
-
-NOTE : see here list of parameters
-
-usage: st_pipeline_run.py [-h] [--output-folder OUTPUT_FOLDER] [--ids IDS]
-                          [--ref-map REF_MAP]
-                          [--ref-annotation REF_ANNOTATION]
-                          [--expName EXPNAME]
-                          [--allowed-missed ALLOWED_MISSED]
-                          [--allowed-kimer ALLOWED_KIMER]
-                          [--min-length-qual-trimming MIN_LENGTH_QUAL_TRIMMING]
-                          [--mapping-fw-trimming MAPPING_FW_TRIMMING]
-                          [--mapping-rv-trimming MAPPING_RV_TRIMMING]
-                          [--length-id LENGTH_ID]
-                          [--contaminant-bowtie2-index CONTAMINANT_BOWTIE2_INDEX]
-                          [--qual-64] [--htseq-mode HTSEQ_MODE]
-                          [--htseq-no-ambiguous] [--start-id START_ID]
-                          [--error-id ERROR_ID] [--no-clean-up] [--verbose]
-                          [--bowtie-threads BOWTIE_THREADS]
-                          [--min-quality-trimming MIN_QUALITY_TRIMMING]
-                          [--discard-fw] [--discard-rv] [--bowtie2-discordant]
-                          [--bin-path BIN_PATH] [--log-file LOG_FILE]
-                          input input

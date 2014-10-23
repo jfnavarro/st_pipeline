@@ -1,11 +1,4 @@
 #!/usr/bin/env python
-"""
-    Copyright (C) 2012  Spatial Transcriptomics AB,
-    read LICENSE for licensing terms. 
-    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
-
-"""
-
 """ This class contains wrappers to make systems calls for different annotation tools
 most of the options can be passed as arguments
 """
@@ -13,10 +6,9 @@ most of the options can be passed as arguments
 import logging
 import subprocess
 import os
-import sys
 from itertools import izip
-from main.common.fastq_utils import *
-from main.common.utils import *
+from stpipeline.common.fastq_utils import *
+from stpipeline.common.utils import *
 import HTSeq
     
 def annotateReadsWithHTSeq(samFile, gtfFile, mode, outputFolder=None):
@@ -86,7 +78,7 @@ def getAllMappedReadsBed(mapWithGeneFile):
     logger.info("Created map of annotated reads, dropped : " + str(dropped) + " reads")  
     return mapped
 
-def getAllMappedReadsSam(annot_reads, htseq_no_ambiguous = False):
+def getAllMappedReadsSam(annot_reads, htseq_no_ambiguous=False):
     ''' creates a map with the read names that are annotated and mapped and 
         their mapping scores,chromosome and gene
         We assume the gtf file has its gene ids replaced by gene names
@@ -126,7 +118,7 @@ def getAllMappedReadsSam(annot_reads, htseq_no_ambiguous = False):
         elif strand == "second":
             name += "/2"
         else:
-            droppped += 1
+            dropped += 1
             continue ## not possible
         
         mapped[name] = (mapping_quality,gene_name,chromosome)  # there should not be collisions
@@ -134,7 +126,7 @@ def getAllMappedReadsSam(annot_reads, htseq_no_ambiguous = False):
     logger.info("Created map of annotated reads, dropped : " + str(dropped) + " reads")  
     return mapped
 
-def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous = False, outputFolder=None):  
+def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous=False, outputFolder=None):  
     ''' I get the forward and reverse reads,qualities and sequences that are annotated
         and mapped (present in annot_reads)
     '''
@@ -166,14 +158,13 @@ def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous = False, outp
     rv_file = safeOpenFile(rv, "rU")
     
     #from the raw fw and rv reads write the records that have been mapped and annotated 
-    for line1,line2 in izip( readfq(fw_file) , readfq(rv_file) ):
+    for line1,line2 in izip(readfq(fw_file) , readfq(rv_file)):
 
         #bowtie2 will truncate white spaces in header name according to SAM format
         raw_name1 = line1[0].split(" ")[0]
         raw_name2 = line2[0].split(" ")[0]
         
         #we add this to match the reads to the extra symbol added in the annotation
-        #TODO the find() could be removed
         name1 = (raw_name1 + "/1") if raw_name1.find("/1") == -1 else raw_name1
         name2 = (raw_name2 + "/2") if raw_name2.find("/2") == -1 else raw_name2
         mappedFW = mapped.has_key(name1)

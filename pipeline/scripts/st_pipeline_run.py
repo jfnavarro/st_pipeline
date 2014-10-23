@@ -1,17 +1,10 @@
 #! /usr/bin/env python
-"""
-    Copyright (C) 2012  Spatial Transcriptomics AB,
-    read LICENSE for licensing terms. 
-    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
-
-"""
 """ This is a terminal based API to run the ST pipeline on a single node
 """
 
-##TODO : Unify argument parsers from different runners
 import sys
 import argparse
-from main.core.pipeline import *
+from stpipeline.core.pipeline import *
 
 def main(argv):
     
@@ -85,10 +78,13 @@ def main(argv):
     if options.temp_folder is not None and os.path.isdir(options.temp_folder): 
         pipeline.temp_folder = os.path.abspath(options.temp_folder)
                
-    #should capture exceptions and deal with them here
-    pipeline.load_parameters()
-    pipeline.sanityCheck()
-    pipeline.run()
+    try:
+        pipeline.load_parameters()
+        pipeline.sanityCheck()
+        pipeline.run()
+    except (RuntimeError, TypeError, NameError):
+        sys.stderr.write("Error: Running the pipeline " + TypeError + " " + NameError)
+        sys.exit(1)
         
 if __name__ == "__main__":
     main(sys.argv[1:])

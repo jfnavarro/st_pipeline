@@ -8,53 +8,56 @@
 
 ''' This is the Amazon EMR wrapper for the mapper function to run the Map Reduce version of the ST pipeline'''
 
-##add log file as as paremeter
 import sys
 sys.path.append("./")
-from main.core.pipeline import *
-from main.common.json_utils import json_iterator
+from stpipeline.core.pipeline import *
+from stpipeline.common.json_utils import json_iterator
 import argparse
                   
 def main(argv):
     
-    #create a parser
     #TODO find a way to retrieve this from st_pipeline_run
     # code is duplicated
+ 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output-folder', help='Name of the output folder')
-    parser.add_argument('--chunks', default=10000, help='Number of reads per chunk to split')
-    parser.add_argument('--output-file', default="merged.json", help='Name of the output file')
-    parser.add_argument('--ids', default="",help='the name of the file containing the barcodes and the coordinates')
-    parser.add_argument('--ref-map', default="", help= "<path_to_bowtie2_indexes>] = reference genome name for the genome that you want to use to align the reads")
-    parser.add_argument('--ref-annotation', default="",help="select the reference(htseq requires a GTF file annotation file that you want to use to annotate")
-    parser.add_argument('--expName', default="", help="the name of the experiment (outfile name)")
-    parser.add_argument('--allowed-missed', default=6, help="number of allowed mismatches when mapping against the barcodes")
-    parser.add_argument('--allowed-kimer', default=7, help="kMer length when mapping against the barcodes")
-    parser.add_argument('--min-length-qual-trimming', default=28, help="minimum lenght of the sequence for mapping after trimming, shorter reads will be discarded")
-    parser.add_argument('--mapping-fw-trimming', default=42, help="he number of bases to trim in the forward reads for the Mapping [24 + ID_LENGTH]")
-    parser.add_argument('--mapping-rv-trimming', default=5, help="he number of bases to trim in the reverse reads for the Mapping")
-    parser.add_argument('--length-id', default=18, help="length of ID, a.k.a. the length of the barcodes")
-    parser.add_argument('--contaminant-bowtie2-index', default="", help="<path_to_bowtie2_indexes>] => When provided, reads will be filtered against the specified bowtie2 index, non-mapping reads will be saved and demultiplexed")
-    parser.add_argument('--qual-64', action="store_true", default=False, help="use phred-64 quality instead of phred-33(default)")
+    parser.add_argument('fastq_files', nargs=2)
+    parser.add_argument('--chunks', default=10000, help='Number of reads per chunk to split (Hadoop Map Reduced)')
+    parser.add_argument('--output-file', default="merged.json", help='Name of the output file (Hadoop Map Reduced)')
+    parser.add_argument('--ids', help='The name of the file containing the barcodes and the coordinates')
+    parser.add_argument('--ref-map', help= "<path_to_bowtie2_indexes> = Reference genome name for the genome that you want to use to align the reads")
+    parser.add_argument('--ref-annotation', help="Path to the reference annotation file (htseq requires a GTF file annotation file that you want to use to annotate")
+    parser.add_argument('--expName', help="Name of the experiment (output file name)")
+    parser.add_argument('--allowed-missed', default=6, help="Number of allowed mismatches when mapping against the barcodes")
+    parser.add_argument('--allowed-kimer', default=7, help="KMer length when mapping against the barcodes")
+    parser.add_argument('--min-length-qual-trimming', default=28, help="Minimum length of the sequence for mapping after trimming, shorter reads will be discarded")
+    parser.add_argument('--mapping-fw-trimming', default=42, help="Number of bases to trim in the forward reads for the Mapping [24 + ID_LENGTH]")
+    parser.add_argument('--mapping-rv-trimming', default=5, help="Number of bases to trim in the reverse reads for the Mapping")
+    parser.add_argument('--length-id', default=18, help="Length of ID, a.k.a. the length of the barcodes")
+    parser.add_argument('--contaminant-bowtie2-index', help="<path_to_bowtie2_indexes> = When provided, reads will be filtered against the specified bowtie2 index, non-mapping reads will be saved and demultiplexed")
+    parser.add_argument('--qual-64', action="store_true", default=False, help="Use phred-64 quality instead of phred-33(default)")
     parser.add_argument('--htseq-mode', default="intersection-nonempty", help="Mode of Annotation when using HTSeq. Modes = {union,intersection-nonempty(default),intersection-strict}")
     parser.add_argument('--htseq-no-ambiguous', action="store_true", help="When using htseq discard reads annotating ambiguous genes")
-    parser.add_argument('--start-id', default=0, help="start position of BARCODE ID [0]")
+    parser.add_argument('--start-id', default=0, help="Start position of BARCODE ID [0]")
     parser.add_argument('--error-id', default=0, help="Id positional error [0]")
-    parser.add_argument('--no-clean-up', action="store_false", default=True, help="do not remove temporary files at the end (useful for debugging)")
-    parser.add_argument('--verbose', action="store_true", default=False, help="show extra information on the log")
-    parser.add_argument('--bowtie-threads', default=8, help="Number of threads to run the mapper")
-    parser.add_argument('--min-quality-trimming', default=20, help="minimum quality for trimming")
-    parser.add_argument('--discard-fw', action="store_true", default=False, help="discard fw reads that maps uniquely")
-    parser.add_argument('--discard-rv', action="store_true", default=False, help="discard rw reads that maps uniquely")
-    parser.add_argument('--bowtie2-discordant', action="store_true", default=False, help="discard non-discordant alignments when mapping")
-    parser.add_argument('--bin-path', default="", help="path to folder where binary executables are present")
-    parser.add_argument('--log-file', default="", help="name of the file that we want to use to store the logs(default output to screen)")
+    parser.add_argument('--no-clean-up', action="store_false", default=True, help="Do not remove temporary files at the end (useful for debugging)")
+    parser.add_argument('--verbose', action="store_true", default=False, help="Show extra information on the log")
+    parser.add_argument('--bowtie-threads', default=8, help="Number of threads to use in the mapping step")
+    parser.add_argument('--min-quality-trimming', default=20, help="Minimum quality for trimming")
+    parser.add_argument('--discard-fw', action="store_true", default=False, help="Discard forwards reads that maps uniquely")
+    parser.add_argument('--discard-rv', action="store_true", default=False, help="Discard reverse reads that maps uniquely")
+    parser.add_argument('--bowtie2-discordant', action="store_true", default=False, help="Discard non-discordant alignments when mapping")
+    parser.add_argument('--bin-path', help="Path to folder where binary executables are present (system path by default)")
+    parser.add_argument('--log-file', help="Name of the file that we want to use to store the logs (default output to screen)")
+    parser.add_argument('--output-folder', help='Path of the output folder')
+    parser.add_argument('--temp-folder', help='Path of the location for temporary files')
     
     #parse arguments
     options = parser.parse_args()
+    
     #local variables
     batch = []
     chunks = [] 
+    
     pipeline = Pipeline()  
     #init pipeline arguments
     pipeline.allowed_missed = int(options.allowed_missed)
@@ -81,10 +84,12 @@ def main(argv):
     pipeline.discordant = options.bowtie2_discordant
     pipeline.contaminant_bt2_index = options.contaminant_bowtie2_index
     pipeline.path = options.bin_path
-    if(options.log_file != ""):
-        pipeline.logfile = os.path.abspath(options.log_file)
-    if os.path.isdir(options.output_folder): 
-        pipeline.output_folder = os.path.abspath(options.output_folder)  
+    if options.log_file is not None:
+        pipeline.logfile = os.path.abspath(options.log_file)         
+    if options.output_folder is not None and os.path.isdir(options.output_folder):
+        pipeline.output_folder = os.path.abspath(options.output_folder)
+    if options.temp_folder is not None and os.path.isdir(options.temp_folder): 
+        pipeline.temp_folder = os.path.abspath(options.temp_folder)
         
     #test and load parameters
     pipeline.load_parameters()

@@ -1,11 +1,4 @@
 #! /usr/bin/env python
-"""
-    Copyright (C) 2012  Spatial Transcriptomics AB,
-    read LICENSE for licensing terms. 
-    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
-
-"""
-
 """ 
     Scripts that parses a tab delimited file with the format (Name,chromosome,gene,barcode,x,y,Qul,Read)
     into two json files one containing the features and another one containing the reads
@@ -28,7 +21,7 @@ def getNameToIdMap(NameToIdFile):
         if(len(cols) == 8):
             gene = str(cols[2].replace("Gene:",""))
             clear_name = str(cols[0].replace("@",""))
-            chromosome = str(cols[1].replace("Chr:",""))
+            #chromosome = str(cols[1].replace("Chr:",""))
             barcode = str(cols[3])
             x = int(cols[4])
             y = int(cols[5])
@@ -37,7 +30,7 @@ def getNameToIdMap(NameToIdFile):
             nameToId[clear_name] = [barcode,x,y,qual,seq,gene]
         else:
             sys.stderr.write("Error: parse Name to Id file, wrong number of columns " + str(len(cols)) + " \n")
-            sys.exit(1)
+            sys.exit(-1)
             
     inF.close()
     return nameToId
@@ -71,7 +64,7 @@ def main(NameToIdFile, dbName, output_folder):
     
     if  NameToIdFile is None or dbName is None or not os.path.isfile(NameToIdFile):
         sys.stderr.write("Error, one of the input file/s not present\n")
-        sys.exit()
+        sys.exit(-1)
 
     if output_folder is None or not os.path.isdir(output_folder):
         output_folder = "."
@@ -103,7 +96,7 @@ def main(NameToIdFile, dbName, output_folder):
             total_record += 1
             total_barcodes += int(hits)
     
-    if(total_record == 0):
+    if (total_record == 0):
         sys.stderr.write("Error: the number of transcripts present is 0\n")
         sys.exit(1)
     

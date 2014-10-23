@@ -1,18 +1,11 @@
 #!/usr/bin/env python
-"""
-    Copyright (C) 2012  Spatial Transcriptomics AB,
-    read LICENSE for licensing terms. 
-    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
-
-"""
-
 """ This file contains general utils and some file utils
 """
+
 import resource
 import threading
 from datetime import datetime
 import os
-import sys
 from collections import namedtuple
 _ntuple_diskusage = namedtuple('usage', 'total used free')
 

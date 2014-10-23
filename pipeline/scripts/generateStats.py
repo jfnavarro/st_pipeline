@@ -1,21 +1,11 @@
 #!/usr/bin/env python
-
-"""
-    Copyright (C) 2012  Spatial Transcriptomics AB,
-    read LICENSE for licensing terms. 
-    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
-
-"""
-
 """ 
     Super-ultra-extreme simple and basic stats generator for csv output files
     for the ST pipeline in Amazon. 
     Run it like python generateStats file.csv
 """
 
-import os
 import sys
-import json
 
 if len(sys.argv) == 2:
     input = str(sys.argv[1])
@@ -27,7 +17,7 @@ if not input.endswith("csv"):
     print "You must use csv files"
     sys.exit(1)
 
-#filehandler = open(input,"r")
+filehandler = open(input,"r")
 
 unique_events = set()
 unique_barcodes = set()

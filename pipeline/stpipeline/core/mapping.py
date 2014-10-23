@@ -1,24 +1,16 @@
 #!/usr/bin/env python
-"""
-    Copyright (C) 2012  Spatial Transcriptomics AB,
-    read LICENSE for licensing terms. 
-    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
-
-"""
-
 """ This class contains wrappers to make systems calls for different aligners
 most of the options can be passed as arguments
 """
 
 import logging 
 import os
-import sys
 import subprocess
-from main.common.utils import *
-from main.common.fastq_utils import *
+from stpipeline.common.utils import *
+from stpipeline.common.fastq_utils import *
 import pysam
     
-def bowtie2Map(fw, rv, ref_map, trim = 42, cores = 8, qual64 = False, discordant = False, outputFolder=None):  
+def bowtie2Map(fw, rv, ref_map, trim=42, cores=8, qual64=False, discordant=False, outputFolder=None):  
     ''' maps pair end reads against a given genome using bowtie2 
     '''
     
@@ -135,7 +127,7 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False, outputFolder=None):
         logger.error("Error: Input format not recognized " + sam)
         raise RuntimeError("Error: Input format not recognized")
 
-    logger.info("Start converting Sam to Bam and filtering unmapped")
+    logger.info("Start converting SAM to BAM and filtering unmapped")
     
     # Remove found duplicates in the Forward Reads File
     input = pysam.Samfile(sam, "r")
@@ -175,7 +167,7 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False, outputFolder=None):
         logger.error("Error: output file is not present " + outputFileSam)
         raise RuntimeError("Error: output file is not present " + outputFileSam + "\n")
     
-    logger.info("End converting Sam to Bam and filtering unmapped, dropped reads = " + str(dropped))
+    logger.info("End converting SAM to BAM and filtering unmapped, dropped reads = " + str(dropped))
     
     return outputFileSam
 
