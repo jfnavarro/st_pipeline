@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-@author Jose Fernandez <jose.fernandez.navarro@scilifelab.se>
 """ Script for creating a quality scatter plot from a json ST-data file.
 The output will be a .png file with the same name as the json file stored in
 the current directory.
@@ -10,29 +9,21 @@ regular expressions to highlight, by adding another --highlight parameter.
 The images from these queries will be stored in files with the number
 increasing: *.0.png, *.1.png, *.2.png, etc.
 """
+
 import argparse
 import os
 import re
-import json
-
 import matplotlib
 matplotlib.use('Agg')
 from matplotlib import cm
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib import pyplot as plt
+from stpipeline.common.json_utils import json_iterator
+from stpipeline.common.json_utils import write_json
 import numpy as np
-
-
-def json_iterator(json_file):
-    """ Iterator over lines in an ST json file.
-    """
-    with open(json_file) as fh:
-        for line in json.loads(fh.readlines()[0]):
-            yield line
 
 blues = LinearSegmentedColormap.from_list('blues', [[0.02, 0.44, 0.69, 0.3],
                                                     [0.02, 0.44, 0.69, 1.0]])
-
 
 def main(json_file, highlight_regexes, image, only_highlight, cutoff):
     fig = []

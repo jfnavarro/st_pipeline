@@ -1,20 +1,14 @@
 #! /usr/bin/env python
-"""
-    Copyright (C) 2012  Spatial Transcriptomics AB,
-    read LICENSE for licensing terms. 
-    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
-
-"""
 """ Script for merging json ST-data files.
 
 The major point is to merge (feature, gene, expression) triples from several
 json files so that (f, g, e_1) + (f, g, e_2 ) = (f, g, e_1 + e_2).
 """
+
 import argparse
 from collections import defaultdict
-
-from main.common.json_utils import json_iterator
-from main.common.json_utils import write_json
+from stpipeline.common.json_utils import json_iterator
+from stpipeline.common.json_utils import write_json
 
 def main(files, out):
     

@@ -1,14 +1,8 @@
 #!/usr/bin/env python
-"""
-    Copyright (C) 2012  Spatial Transcriptomics AB,
-    read LICENSE for licensing terms. 
-    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
-
-"""
-
 """ This class contains some functions to deal with fastq files
 """
-from main.common.utils import *
+
+from stpipeline.common.utils import *
 import logging 
 from itertools import izip
 import operator
@@ -22,8 +16,8 @@ def coroutine(func):
         return cr
     return start
 
-def trim_quality(record, trim_distance, min_qual = 20, 
-                 min_length = 28,qual64=False):    
+def trim_quality(record, trim_distance, min_qual=20, 
+                 min_length=28,qual64=False):    
     ''' perfoms a bwa-like quality trimming on the sequence and 
     quality in tuple record(name,seq,qual)
     '''
@@ -121,7 +115,7 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
             out_fw = os.path.join(outputFolder, out_fw)
     else:
         logger.error("Error: Input format not recognized " + out_fw + " , " + out_rw)
-        raise Exception("Error: Input format not recognized " + out_fw + " , " + out_rw + "\n")
+        raise RuntimeError("Error: Input format not recognized " + out_fw + " , " + out_rw + "\n")
 
     logger.info("Start Reformatting and Filtering raw reads")
     

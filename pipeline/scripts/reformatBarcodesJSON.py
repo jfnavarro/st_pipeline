@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-@author Jose Fernandez <jose.fernandez.navarro@scilifelab.se>
 """ Script to simple indent a JSON file containing barcodes.
 It also has the option to add a floor value, so all the reads counts
 above that value will be floored.
@@ -7,15 +6,10 @@ above that value will be floored.
 import argparse
 import os
 import json
+from stpipeline.common.json_utils import json_iterator
+from stpipeline.common.json_utils import write_json
 
-def json_iterator(json_file):
-    """ Iterator over lines in an ST json file.
-    """
-    with open(json_file) as fh:
-        for line in json.loads(fh.readlines()[0]):
-            yield line
-
-def main(json_file, output_file = "output.json", cutoff = None, noindent = False):
+def main(json_file, output_file="output.json", cutoff=None, noindent=False):
 
     adjustedList = list()
     it = json_iterator(json_file)
@@ -24,7 +18,6 @@ def main(json_file, output_file = "output.json", cutoff = None, noindent = False
         indent = 0
         
     for doc in it:
-        readsCount = int(doc['hits'])
         if cutoff is not None and cutoff >= 1 and int(doc['hits']) >= cutoff:
             doc['hits'] = cutoff
         adjustedList.append(doc)
