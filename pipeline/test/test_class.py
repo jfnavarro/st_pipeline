@@ -80,9 +80,11 @@ class TestClass:
 		
 		# Clean up.
 		for cnt in outcnt:
+			if (cnt == "README"): continue
 			os.remove(outdir + "/" + cnt)
 		for cnt in tmpcnt:
+			if (cnt == "README"): continue
 			os.remove(tmpdir + "/" + cnt)
-		assert (os.listdir(outdir) == [])
-		assert (os.listdir(tmpdir) == [])
+		#assert (os.listdir(outdir) == [])   # README file should stay put
+		#assert (os.listdir(tmpdir) == [])   # README file should stay put
 		
