@@ -19,7 +19,8 @@ class PyTest(TestCommand):
     def finalize_options(self):
         """Set options for the command line."""
         TestCommand.finalize_options(self)
-        self.test_args = []
+        maintestfile = os.path.abspath(os.path.dirname(os.path.realpath(__file__))) + "/test/test_class.py"
+        self.test_args = [maintestfile, "-q"]
         self.test_suite = True
         
     def run_tests(self):
