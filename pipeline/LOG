@@ -20,8 +20,20 @@ Version 0.2.4
 * Some optimizations and bug fixes
 
 Version 0.2.5
-* Some refactoring
 * Improved installers
-* Added basic uni-test
-* Refactor createDatasets.py
-* Added option to remove duplicates by using molecular barcodes
+* Small bug fixes
+* Added basic uni-test to do a run of the pipeline
+
+Version 0.3.0
+* Rewrite createDatasets.py
+* Clean up repository and deprecated files
+* Change the unit-test library and structure
+* Refactor the unit-test (use pipeline API instead of command line calls)
+* Ensure unit-test remove tmp files when failing
+* Add better error handling
+* Add unit-test for Molecular Barcodes
+* Add Molecular Barcodes functionality 
+* General refactor and clean up
+* Add invoke options (clean, build, install)
+* Fix an important bug in createDatasets that caused incorrect
+  computation of reads counts

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" This class contains wrappers to make systems calls for different annotation tools
+""" This module contains wrappers to make systems calls for different annotation tools
 most of the options can be passed as arguments
 """
 
@@ -12,8 +12,9 @@ from stpipeline.common.utils import *
 import HTSeq
     
 def annotateReadsWithHTSeq(samFile, gtfFile, mode, outputFolder=None):
-    ''' Annotate the reads using htseq-count tool 
-    '''
+    """ 
+    Annotate the reads using htseq-count tool 
+    """
     logger = logging.getLogger("STPipeline")
     
     if samFile.endswith(".sam"):
@@ -49,34 +50,6 @@ def annotateReadsWithHTSeq(samFile, gtfFile, mode, outputFolder=None):
     logger.info("Finish Annotating reads with HTSeq")
     
     return outputFile
-
-def getAllMappedReadsBed(mapWithGeneFile):
-    ''' creates a map with the read names that are annotated and mapped and 
-        their mapping scores,chromosome and gene
-    '''
-    #@todo check input format and correctness, same for output
-    logger = logging.getLogger("STPipeline")
-    mapped = dict()
-    inF = getCleanFileName(safeOpenFile(mapWithGeneFile,'r'))
-    dropped = 0
-    for line in inF:
-        cols = line.rstrip().split('\t')
-        try:
-            cleanHeader = str(cols[3])
-            mapping_quality = int(cols[4])
-            gene_name = str(cols[18])
-            chromosome = str(cols[0])
-            if gene_name != '.': 
-                mapped[cleanHeader] = (mapping_quality,gene_name,chromosome)  # there should not be collisions
-            else:
-                dropped += 1
-        except ValueError:
-            dropped += 1
-            pass
-
-    inF.close()
-    logger.info("Created map of annotated reads, dropped : " + str(dropped) + " reads")  
-    return mapped
 
 def getAllMappedReadsSam(annot_reads, htseq_no_ambiguous=False):
     ''' creates a map with the read names that are annotated and mapped and 

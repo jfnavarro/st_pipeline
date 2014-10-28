@@ -1,13 +1,13 @@
 #! /usr/bin/env python
+
 """ Script to simple indent a JSON file containing barcodes.
 It also has the option to add a floor value, so all the reads counts
 above that value will be floored.
 """
+
 import argparse
-import os
 import json
 from stpipeline.common.json_utils import json_iterator
-from stpipeline.common.json_utils import write_json
 
 def main(json_file, output_file="output.json", cutoff=None, noindent=False):
 
@@ -22,10 +22,9 @@ def main(json_file, output_file="output.json", cutoff=None, noindent=False):
             doc['hits'] = cutoff
         adjustedList.append(doc)
         
-    filehandler = open(output_file, "w")
-    #write well formed json file
-    json.dump(adjustedList, filehandler, indent, separators=(',', ': '))  
-    filehandler.close()
+    with open(output_file, "w") as filehandler:
+        #write well formed json file
+        json.dump(adjustedList, filehandler, indent, separators=(',', ': '))  
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)

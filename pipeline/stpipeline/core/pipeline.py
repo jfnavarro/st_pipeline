@@ -51,6 +51,11 @@ class Pipeline():
         self.logfile = None
         self.output_folder = None
         self.temp_folder = None
+        self.molecular_barcodes = False
+        self.mc_allowed_missmatches = 2
+        self.mc_start_position = 19
+        self.mc_end_position = 30
+        self.min_cluster_size = 10
         
     def sanityCheck(self):
         
@@ -65,6 +70,10 @@ class Pipeline():
             self.logger.error("Error: required file/s and or parameters not found or incorrect parameters :" + str(conds))
             raise RuntimeError("Error: required file/s and or parameters not found or incorrect parameters :" + str(conds))
 
+        if self.molecular_barcodes and (self.mc_start_position < self.l or self.mc_end_position <= self.mc_start_position):
+            self.logger.error("Error: Molecular Barcodes option is activated but the start/end positions parameters are incorrect")
+            raise RuntimeError("Error: Molecular Barcodes option is activated but the start/end positions parameters are incorrect")
+        
         #test the presence of the scripts :
         required_scripts = set(['findIndexes','bowtie2'])
 
@@ -108,6 +117,13 @@ class Pipeline():
                      "e(" + str(self.e) + ")" + "s(" + str(self.s) + ")" + "l(" + str(self.l) + ")" + \
                      "F(" + str(self.trimming_fw_bowtie) + ")" + "R(" + str(self.trimming_rw_bowtie) + ")"
         
+        if self.molecular_barcodes:
+            self.logger.info("Using Molecular Barcodes")
+            self.logger.info("Molecular Barcode start position " + str(self.mc_start_position))
+            self.logger.info("Molecular Barcode end position " + str(self.mc_end_position))
+            self.logger.info("Molecular Barcode min cluster size " + str(self.min_cluster_size))
+            self.logger.info("Molecular Barcode allowed missmatches " + str(self.mc_allowed_missmatches))
+            
         self.logger.info("Output directory : " + self.output_folder)
         self.logger.info("Temp directory : " + self.temp_folder)
         self.logger.info("Experiment : " + str(self.expName))
@@ -227,7 +243,8 @@ class Pipeline():
         if self.clean: safeRemove(withTr)
     
         # create json files with the results
-        self.createDataset(mapFile, self.expName)
+        self.createDataset(mapFile, self.expName, self.molecular_barcodes, 
+                           self.mc_allowed_missmatches, self.mc_start_position, self.mc_end_position, self.min_cluster_size)
         if self.clean: safeRemove(mapFile)
         
         finish_exe_time = globaltime.getTimestamp()
@@ -235,23 +252,32 @@ class Pipeline():
         self.logger.info("Total Execution Time : " + str(total_exe_time))
 
 
-    def createDataset(self, mapFile, dbName):
-        ''' parse annotated and mapped reads with the reads that contain barcodes to
-            create json files with the barcodes and coordinates and json file with the raw reads
-            and some useful stats and plots
-        '''
+    def createDataset(self, input_name, output_name, molecular_barcodes = False, allowed_missmatches = 3, 
+                      start_position = 19, end_position = 30, min_cluster_size = 10):
+        """ 
+        parse annotated and mapped reads with the reads that contain barcodes to
+        create json files with the barcodes and coordinates and json file with the raw reads
+        and some useful stats and plots
+        It also allows to remove PCR Duplicates using molecular barcodes
+        """
+        
         self.logger.info("Start Creating dataset")
         
-        args = ['createDataset.py', '--input', str(mapFile), '--name', str(dbName)]
+        args = ['createDataset.py', '--input', str(input_name), '--output-name', str(output_name)]
+        
+        if molecular_barcodes:
+            args += ['--molecular-barcodes', '--mc-allowed-missmatches', str(allowed_missmatches), 
+                '--mc-start-position', str(start_position), '--mc-end-position', str(end_position), '--min-cluster-size', str(min_cluster_size)]
+            
         if self.output_folder is not None:
-            args += ['--output', str(self.output_folder)]
+            args += ['--output-folder', str(self.output_folder)]
             
         proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdout, errmsg) = proc.communicate()
         
-        if (len(errmsg) > 0):
-            self.logger.error("Error, There was an error creating the dataset " + errmsg)
-            raise RuntimeError("Error, There was an error creating the dataset " + errmsg)    
+        if len(errmsg) > 0:
+            self.logger.error("Error, There was an error creating the dataset: "  + errmsg)
+            raise RuntimeError("Error, There was an error creating the dataset: "  + errmsg)    
               
         procOut = stdout.split("\n")
         self.logger.info('Creating dataset stats :')

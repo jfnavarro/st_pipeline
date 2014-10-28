@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" This class contains some functions to deal with fastq files
+""" This module contains some functions to deal with fastq files
 """
 
 from stpipeline.common.utils import *
@@ -8,7 +8,8 @@ from itertools import izip
 import operator
 
 def coroutine(func):
-    """ Coroutine decorator, starts coroutines upon initialization.
+    """ 
+    Coroutine decorator, starts coroutines upon initialization.
     """
     def start(*args, **kwargs):
         cr = func(*args, **kwargs)
@@ -17,10 +18,11 @@ def coroutine(func):
     return start
 
 def trim_quality(record, trim_distance, min_qual=20, 
-                 min_length=28,qual64=False):    
-    ''' perfoms a bwa-like quality trimming on the sequence and 
+                 min_length=28, qual64=False):    
+    """
+    Perfoms a bwa-like quality trimming on the sequence and 
     quality in tuple record(name,seq,qual)
-    '''
+    """
     qscore = record[2]
     sequence = record[1]
     name = record[0]
@@ -34,19 +36,21 @@ def trim_quality(record, trim_distance, min_qual=20,
     if (len(sequence) - (trim_distance + nbases)) >= min_length:
         new_seq = record[1][:(len(sequence) - nbases)]
         new_qual = record[2][:(len(sequence) - nbases)]
-        return name,new_seq,new_qual
+        return name, new_seq, new_qual
     else:
         return None
     
 def getFake(record):
-    ''' generates a fake fastq record(name,seq,qual) from the record given as input
-    '''
+    """ 
+    Generates a fake fastq record(name,seq,qual) from the record given as input
+    """
     new_seq = "".join("N" for k in record[1])
     new_qual = "".join("B" for k in record[2])
     return (record[0],new_seq,new_qual)
 
 def readfq(fp): # this is a generator function
-    """ Heng Li's fasta/fastq reader function.
+    """ 
+    Heng Li's fasta/fastq reader function.
     """
     last = None # this is a buffer keeping the last unprocessed line
     while True: # mimic closure; is it a bad idea?
@@ -81,7 +85,8 @@ def readfq(fp): # this is a generator function
 
 @coroutine
 def writefq(fp):  # This is a coroutine
-    """ Fastq writing generator sink.
+    """ 
+    Fastq writing generator sink.
     Send a (header, sequence, quality) triple to the instance to write it to
     the specified file pointer.
     """
@@ -97,12 +102,12 @@ def writefq(fp):  # This is a coroutine
 
 def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
                      min_qual=20, min_length=28, qual64=False, outputFolder=None):
-    """ Converts reads in rw file appending the first (distance - trim)
+    """ 
+    Converts reads in rw file appending the first (distance - trim)
     bases of fw and also add FW or RW string to reads names
     It also performs a bwa qualitry trim of the fw and rw reads, when
     the trimmed read is below min lenght it will discarded.
     """
-    
     logger = logging.getLogger("STPipeline")
     
     if fw.endswith(".fastq") and rw.endswith(".fastq"):
@@ -181,50 +186,3 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
     logger.info("Finish Reformatting and Filtering raw reads")
     
     return out_fw, out_rw
-
-def fastq_sorter(fastq_file):
-    '''sort the fastq file given as input
-    by the header name (not good for big files)
-    '''
-
-    logger = logging.getLogger("STPipeline")
-
-    if fastq_file.endswith(".fastq"):
-        outName = getCleanFileName(replaceExtension(fastq_file,"_sorted.fastq"))
-    else:
-        logger.error("Error: Input format not recognized " + fastq_file)
-        raise Exception("Error: Input format not recognized " + fastq_file + "\n")
-
-    logger.info("Start sorting fastq file")
-    
-    inFile = safeOpenFile(fastq_file,'r')
-    outFile = safeOpenFile(outName,'w')
-    header = ''
-    data = ''
-    allData = []
-
-    for line in inFile:
-        if line[0] == "@":
-            if data != '':
-                allData.append((header,data))
-            header = line.strip()[1:]
-            data = line
-        else:
-            data += line
-
-    allData.append((header,data))
-    allData.sort(key = operator.itemgetter(0))
-    for item in allData:
-        outFile.write(item)
-    
-    if not fileOk(outFile):
-        logger.error("Error: output file is not present " + outFile)
-        raise RuntimeError("Error: output file is not present " + outFile + "\n")
-    
-    outFile.close()
-    inFile.close()
-    
-    logger.info("End sorting fastq file")
-    
-    return outName
-

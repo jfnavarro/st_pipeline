@@ -9,31 +9,11 @@ import sys
 import io
 import glob
 from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
-
-# This is a plug-in for setuptools that will invoke py.test
-# when you run python setup.py test
-class PyTest(TestCommand):
-    """Set up the py.test test runner."""
-    
-    def finalize_options(self):
-        """Set options for the command line."""
-        TestCommand.finalize_options(self)
-        maintestfile = os.path.abspath(os.path.dirname(os.path.realpath(__file__))) + "/test/test_class.py"
-        self.test_args = [maintestfile, "-q"]
-        self.test_suite = True
-        
-    def run_tests(self):
-        """Execute the test runner command."""
-        # Import here, because outside the required eggs aren't loaded yet
-        import pytest
-        sys.exit(pytest.main(self.test_args))
 
 # Get the long description from the relevant file
 here = os.path.abspath(os.path.dirname(__file__))
 with io.open(os.path.join(here, 'README'), encoding='utf-8') as f:
     long_description = f.read()
-
 
 setup(
   name = 'stpipeline',
@@ -53,14 +33,10 @@ setup(
     'HTSeq',
     'setuptools',
     'pysam>=0.7.5',
-    'numpy'
+    'numpy',
+    'invoke'
   ],
-  tests_require = [
-    'pytest',
-  ],
-  cmdclass=dict(
-    test = PyTest,
-  ),
+  test_suite = 'tests',
   scripts = glob.glob('scripts/*.py'),
   classifiers = [
     'Development Status :: 4 - Beta',

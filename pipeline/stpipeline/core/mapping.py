@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" This class contains wrappers to make systems calls for different aligners
+""" This module contains wrappers to make systems calls for different aligners
 most of the options can be passed as arguments
 """
 

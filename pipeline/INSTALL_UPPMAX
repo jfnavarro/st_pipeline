@@ -32,8 +32,7 @@ To install the st_pipeline on Uppmax follow the instructions below:
 	make
 	cp bowtie2* /path/to/binaries
 
-9) download the pipeline file on your computer from:
-    https://docs.google.com/a/scilifelab.se/file/d/0B5uSKaLRpzQZS2x6M3NBQ1NSaWM/edit?usp=sharing
+9) download the pipeline file on your computer from ST Google Docs
 
 10) copy zip-file to your uppmax home folder
 
@@ -46,27 +45,4 @@ To install the st_pipeline on Uppmax follow the instructions below:
       python setup.py install
 
 13) test by running the command:
-      st_pipeline_run.py
-
-     The output it should look like this:
-
-     usage: st_pipeline_run.py [-h] [--output-folder OUTPUT_FOLDER] [--ids IDS]
-                          [--ref-map REF_MAP]
-                          [--ref-annotation REF_ANNOTATION]
-                          [--expName EXPNAME]
-                          [--allowed-missed ALLOWED_MISSED]
-                          [--allowed-kimer ALLOWED_KIMER]
-                          [--min-length-qual-trimming MIN_LENGTH_QUAL_TRIMMING]
-                          [--mapping-fw-trimming MAPPING_FW_TRIMMING]
-                          [--mapping-rv-trimming MAPPING_RV_TRIMMING]
-                          [--length-id LENGTH_ID]
-                          [--contaminant-bowtie2-index CONTAMINANT_BOWTIE2_INDEX]
-                          [--qual-64] [--htseq-mode HTSEQ_MODE]
-                          [--htseq-no-ambiguous] [--start-id START_ID]
-                          [--error-id ERROR_ID] [--no-clean-up] [--verbose]
-                          [--bowtie-threads BOWTIE_THREADS]
-                          [--min-quality-trimming MIN_QUALITY_TRIMMING]
-                          [--discard-fw] [--discard-rv] [--bowtie2-discordant]
-                          [--bin-path BIN_PATH] [--log-file LOG_FILE]
-                          input input
-     st_pipeline_run.py: error: too few arguments
+      python setup.py test

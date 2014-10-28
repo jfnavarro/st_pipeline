@@ -50,6 +50,16 @@ def main(argv):
     parser.add_argument('--log-file', help="Name of the file that we want to use to store the logs (default output to screen)")
     parser.add_argument('--output-folder', help='Path of the output folder')
     parser.add_argument('--temp-folder', help='Path of the location for temporary files')
+    parser.add_argument('--molecular-barcodes', 
+                        action="store_true", help="Activates the molecular barcodes PCR duplicates filter")
+    parser.add_argument('--mc-allowed-missmatches', default=3,
+                        help='Number of allowed missmatches when applying the molecular barcodes PCR filter')
+    parser.add_argument('--mc-start-position', type=int, default=19,
+                        help='Position (base wise) of the first base of the molecular barcodes')
+    parser.add_argument('--mc-end-position', default=28,
+                        help='Position (base wise) of the last base of the molecular barcodes')
+    parser.add_argument('--min-cluster-size', default=10,
+                        help='Min number of equal molecular barcodes to count as a cluster')
     
     #parse arguments
     options = parser.parse_args()
@@ -90,6 +100,11 @@ def main(argv):
         pipeline.output_folder = os.path.abspath(options.output_folder)
     if options.temp_folder is not None and os.path.isdir(options.temp_folder): 
         pipeline.temp_folder = os.path.abspath(options.temp_folder)
+    pipeline.molecular_barcodes = options.molecular_barcodes
+    pipeline.mc_allowed_missmatches = int(options.mc_allowed_missmatches)
+    pipeline.mc_start_position = int(options.mc_start_position)
+    pipeline.mc_end_position = int(options.mc_end_position)
+    pipeline.min_cluster_size = int(options.min_cluster_size)
         
     #test and load parameters
     pipeline.load_parameters()

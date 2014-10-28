@@ -3,7 +3,8 @@ Complete and integrate Python version of FindIndexes
 Add more mapping and annotation tools
 Validate and optimize the quality filtering function
 Validate and benchmark all the pipeline stats
-ADD unit-test, URGENT
+Add unit-test for individual components and modules
+Fix TODOs
 Unify parameter parsing for all runners.
 For Map Reduce version make reducers merge the json file (if possible)
 For Map Reduce version, process and output reads.json as well.
