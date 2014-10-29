@@ -68,10 +68,10 @@ class TestPipeline(unittest.TestCase):
 		tmpcnt = os.listdir(self.tmpdir)
 		for cnt in outcnt:
 			if (cnt == "README"): continue
-			#os.remove(os.path.join(self.outdir, cnt))
+			os.remove(os.path.join(self.outdir, cnt))
 		for cnt in tmpcnt:
 			if (cnt == "README"): continue
-			#os.remove(os.path.join(self.tmpdir, cnt))
+			os.remove(os.path.join(self.tmpdir, cnt))
 	
 	def validateOutputData(self, expName):
 		# Verify existence of output files and temp files

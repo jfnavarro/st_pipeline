@@ -58,7 +58,9 @@ class Pipeline():
         self.min_cluster_size = 10
         
     def sanityCheck(self):
-        
+        """ 
+        Performs some basic sanity checks in the input paramters
+        """
         conds = {"FW": fileOk(self.Fastq_fw), "RV": fileOk(self.Fastq_rv), 
                  "ids": fileOk(self.ids), "ref": fileOk(self.ref_annotation), 
                  "map": self.ref_map is not None, "Exp Name":  self.expName is not None}
@@ -86,10 +88,13 @@ class Pipeline():
             self.logger.info("All tools present..starting the analysis")
         else:
             self.logger.error("Error, these programs not found:\t".join(unavailable_scripts))
-            raise RuntimeError("Error, programs not found")
+            raise RuntimeError("Error, these programs not found:\t".join(unavailable_scripts))
             
     def load_parameters(self):
-      
+        """
+        Initialize logger, load up some parameters
+        and prints out some information
+        """
         #TODO load the parameters here instead of forcing users to do so from outside
         
         # create a logger
@@ -140,7 +145,8 @@ class Pipeline():
         self.logger.info("Annotation Tool :  HTSeq")
   
     def run_pipeline(self,chunks):
-        """ this function is called for Map Reduce jobs, when we want to run the pipeline,
+        """ 
+        This function is called for Map Reduce jobs, when we want to run the pipeline,
         once all the streaming has been done
         in the input, it will iterate trough the chunks, create temp fastq files
         and call the pipeline on them, it will then parse the output and send
@@ -148,6 +154,8 @@ class Pipeline():
         """
         #TODO refactor and optimize this
         #TODO do mapping using gene as KEY
+        #TODO move to st_pipeline_emr_run
+        
         for val in chunks:
             temp_name = tempfile.mktemp(prefix='stpipeline_temp_', suffix=str(random.random()), dir='') 
             new_filename = temp_name + "_1.fastq"
@@ -230,7 +238,8 @@ class Pipeline():
             oldWithTr = withTr
             withTr, contaminated_sam = bowtie2_contamination_map(withTr, self.contaminant_bt2_index,
                                                                  trim=self.trimming_fw_bowtie,
-                                                                 cores=self.threads, qual64=self.qual64, outputFolder=self.temp_folder)
+                                                                 cores=self.threads, qual64=self.qual64, 
+                                                                 outputFolder=self.temp_folder)
             if self.clean: safeRemove(contaminated_sam)
             if self.clean: safeRemove(oldWithTr)
     
@@ -244,7 +253,8 @@ class Pipeline():
     
         # create json files with the results
         self.createDataset(mapFile, self.expName, self.molecular_barcodes, 
-                           self.mc_allowed_missmatches, self.mc_start_position, self.mc_end_position, self.min_cluster_size)
+                           self.mc_allowed_missmatches, self.mc_start_position, 
+                           self.mc_end_position, self.min_cluster_size)
         if self.clean: safeRemove(mapFile)
         
         finish_exe_time = globaltime.getTimestamp()
@@ -267,7 +277,8 @@ class Pipeline():
         
         if molecular_barcodes:
             args += ['--molecular-barcodes', '--mc-allowed-missmatches', str(allowed_missmatches), 
-                '--mc-start-position', str(start_position), '--mc-end-position', str(end_position), '--min-cluster-size', str(min_cluster_size)]
+                '--mc-start-position', str(start_position), '--mc-end-position', str(end_position), 
+                '--min-cluster-size', str(min_cluster_size)]
             
         if self.output_folder is not None:
             args += ['--output-folder', str(self.output_folder)]

@@ -205,7 +205,7 @@ def main(filename, output_name, output_folder, molecular_barcodes = False,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=str,
-                        help='Input file in CSV format [read_name | chromosome | gene | barcode | x | y | read_quality | read_sequence]')
+                        help='Input file in tab delimited format [read_name | chromosome | gene | barcode | x | y | read_quality | read_sequence]')
     parser.add_argument('--output-folder', type=str,
                         help='Path of the output folder (default is /.)')
     parser.add_argument('--output-name', type=str,
