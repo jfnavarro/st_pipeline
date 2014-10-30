@@ -4,6 +4,7 @@
 """
 import unittest
 import os
+import tempfile
 from stpipeline.core.pipeline import *
 
 class TestPipeline(unittest.TestCase):
@@ -22,9 +23,13 @@ class TestPipeline(unittest.TestCase):
 		self.chipfile = os.path.join(testdir, 'config/idfiles/130307_Design3_27mer.txt')
 		self.expnameNormal = "mouse_normal_test"
 		self.expnameMC = "mouse_mc_test"
-		self.outdir = os.path.join(testdir, 'output')
-		self.tmpdir = os.path.join(testdir, 'tmp')
+		self.tmpdir = tempfile.mkdtemp(prefix="st_pipeline_test_temp")
+		print "ST Pipeline Test Temporary directory " + self.tmpdir
+		self.outdir = tempfile.mkdtemp(prefix="st_pipeline_test_output")
+		print "ST Pipeline Test Temporary output " + self.outdir
 		self.error_file = os.path.join(self.tmpdir, 'error.log')
+		self.logFile = tempfile.mktemp(prefix="st_pipeline_test_log")
+		print "ST Pipeline Test Log file " + self.logFile
 		
 		# Verify existence of input files
 		assert (os.path.exists(self.infile_normal_fw))
@@ -61,17 +66,18 @@ class TestPipeline(unittest.TestCase):
 		self.pipeline.contaminant_bt2_index = os.path.abspath(os.path.join(self.contamdir, "rnagenome"))
 		self.pipeline.output_folder = os.path.abspath(self.outdir)
 		self.pipeline.temp_folder = os.path.abspath(self.tmpdir)
-			
+		self.pipeline.logfile = self.logFile
+		
 	@classmethod
 	def tearDownClass(self):
 		outcnt = os.listdir(self.outdir)
 		tmpcnt = os.listdir(self.tmpdir)
 		for cnt in outcnt:
-			if (cnt == "README"): continue
 			os.remove(os.path.join(self.outdir, cnt))
 		for cnt in tmpcnt:
-			if (cnt == "README"): continue
 			os.remove(os.path.join(self.tmpdir, cnt))
+		os.removedirs(self.outdir)
+		os.removedirs(self.tmpdir)
 	
 	def validateOutputData(self, expName):
 		# Verify existence of output files and temp files
