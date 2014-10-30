@@ -24,7 +24,7 @@ def clean():
     run("find . -name '*~' -delete")
     run('find . -name __pycache__ -delete')
     log.info('cleaned up')
-
+    
 @task(clean)
 def publish():
     """Publish to the cheeseshop."""
