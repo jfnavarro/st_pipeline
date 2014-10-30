@@ -164,6 +164,9 @@ def main(filename, output_name, output_folder, molecular_barcodes = False,
                 clusters = removePCRduplicates(transcript.sequences, allowed_missmatches, 
                                                mc_start_position, mc_end_position, min_cluster_size)
                 reads_covered_by_clusters = sum(clusters)
+                #adjust the transcript's reads count by the difference of 
+                #the original transcript's reads count minus the total number of reads clustered
+                #and plus the number of clusters (each cluster counts as one read)
                 adjusted_reads = len(clusters) + (transcript.reads - reads_covered_by_clusters)
                 discarded_reads += (transcript.reads - adjusted_reads)
                 transcript.reads = adjusted_reads
