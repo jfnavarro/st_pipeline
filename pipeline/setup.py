@@ -30,7 +30,7 @@ setup(
   package_data = dict(),
   zip_safe = False,
   install_requires = [
-    'HTSeq>=0.6.0',
+    'HTSeq>=0.6.1',
     'setuptools',
     'pysam>=0.7.5',
     'numpy',
