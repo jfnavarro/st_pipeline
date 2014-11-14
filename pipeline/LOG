@@ -37,3 +37,9 @@ Version 0.3.0
 * Add invoke options (clean, build, install)
 * Fix an important bug in createDatasets that caused incorrect
   computation of reads counts
+
+Version 0.3.1
+* Added small unit-test for molecular barcodes
+* Added more molecular barcodes algorithms (using a naive one for now)
+* Fixed small issues in JSON parsing libraries
+

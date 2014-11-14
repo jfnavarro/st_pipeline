@@ -7,6 +7,7 @@ import sys
 import os
 import json
 import argparse
+from stpipeline.common.fastq_utils import *
 
 class Transcript:
     """ 
@@ -82,62 +83,8 @@ def parseUniqueEvents(filename):
             
     return unique_events.values()
 
-def hamming_distance(s1, s2):
-    """
-    Returns the Hamming distance between equal-length sequences.
-    """
-    if len(s1) != len(s2):
-        raise ValueError("Undefined for sequences of unequal length")
-    return sum(ch1 != ch2 for ch1, ch2 in zip(s1, s2))
-
-def extractMolecularBarcodes(reads, mc_start_position, mc_end_position):
-    """ 
-    Extracts a list of molecular barcodes from the list of reads given their
-    start and end positions
-    """
-    molecular_barcodes = list()
-    for read in reads:
-        if mc_end_position > len(read):
-            sys.stderr.write("Error, molecular barcode could not be found in the read " + read + "\n")
-            sys.exit(-1)
-        molecular_barcodes.append(read[mc_start_position:mc_end_position])
-    return molecular_barcodes
-
-def numberOfClusters(molecular_barcodes, allowed_missmatches, min_cluster_size):
-    """
-    This functions tries to finds clusters of similar reads given a min cluster size
-    and a minimum distance (allowed_missmatches)
-    It will return a list with the all the clusters and their size
-    """
-    molecular_barcodes.sort()
-    nclusters = list()
-    local_cluster_size = 0
-    
-    for i in xrange(0, len(molecular_barcodes) - 1):
-        distance = hamming_distance(molecular_barcodes[i], molecular_barcodes[i + 1]) 
-        
-        if distance < allowed_missmatches:
-            local_cluster_size += 1
-        else:
-            if local_cluster_size >= min_cluster_size:
-                nclusters.append(local_cluster_size + 1)
-            local_cluster_size = 0
-            
-    if local_cluster_size > 0:
-        nclusters.append(local_cluster_size + 1)
-        
-    return nclusters
-
-def removePCRduplicates(reads, allowed_missmatches, mc_start_position, mc_end_position, min_cluster_size):
-    """ 
-    Returns a list wit the number of clusters and their sizes obtained from the molecular
-    barcodes present in the reads
-    """
-    molecular_barcodes = extractMolecularBarcodes(reads, mc_start_position, mc_end_position)
-    return numberOfClusters(molecular_barcodes, allowed_missmatches, min_cluster_size)
-
 def main(filename, output_name, output_folder, molecular_barcodes = False, 
-         allowed_missmatches = 3, mc_start_position = 19, mc_end_position = 27, min_cluster_size = 10):
+         allowed_missmatches = 1, mc_start_position = 19, mc_end_position = 27, min_cluster_size = 2):
     
     if  filename is None or output_name is None or not os.path.isfile(filename):
         sys.stderr.write("Error, one of the input file/s not present\n")
@@ -161,9 +108,9 @@ def main(filename, output_name, output_folder, molecular_barcodes = False,
     for transcript in parseUniqueEvents(filename):
             #re-compute the read count accounting for PCR duplicates if indicated (read sequence must contain molecular barcode)
             if molecular_barcodes:
-                clusters = removePCRduplicates(transcript.sequences, allowed_missmatches, 
+                clusters = countMolecularBarcodesClustersNaive(transcript.sequences, allowed_missmatches, 
                                                mc_start_position, mc_end_position, min_cluster_size)
-                reads_covered_by_clusters = sum(clusters)
+                reads_covered_by_clusters = sum([len(x) for x in clusters])
                 #adjust the transcript's reads count by the difference of 
                 #the original transcript's reads count minus the total number of reads clustered
                 #and plus the number of clusters (each cluster counts as one read)
@@ -201,9 +148,9 @@ def main(filename, output_name, output_folder, molecular_barcodes = False,
 
     #dump the JSON files to the output files
     with open(os.path.join(output_folder, filename), "w") as filehandler:
-        json.dump(json_barcodes,filehandler, indent=2, separators=(',', ': '))  
+        json.dump(json_barcodes, filehandler, indent=2, separators=(',', ': '))  
     with open(os.path.join(output_folder, filenameReads), "w") as filehandlerReads:
-        json.dump(json_reads,filehandlerReads, indent=2, separators=(',', ': '))    
+        json.dump(json_reads, filehandlerReads, indent=2, separators=(',', ': '))    
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
@@ -215,13 +162,13 @@ if __name__ == "__main__":
                         help='Name of the output files')
     parser.add_argument('--molecular-barcodes', 
                         action="store_true", default=False, help="Activates the molecular barcodes PCR duplicates filter")
-    parser.add_argument('--mc-allowed-missmatches', default=2,
+    parser.add_argument('--mc-allowed-missmatches', default=1,
                         help='Number of allowed missmatches when applying the molecular barcodes PCR filter')
     parser.add_argument('--mc-start-position', default=19,
                         help='Position (base wise) of the first base of the molecular barcodes')
     parser.add_argument('--mc-end-position', default=30,
                         help='Position (base wise) of the last base of the molecular barcodes')
-    parser.add_argument('--min-cluster-size', default=10,
+    parser.add_argument('--min-cluster-size', default=2,
                         help='Min number of equal molecular barcodes to count as a cluster')
 
     args = parser.parse_args()

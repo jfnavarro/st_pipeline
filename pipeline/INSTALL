@@ -23,7 +23,7 @@ cmake ../
 make
 cp findIndexes /path/to/binaries
 
-- To install bowtie2 (not needed in Uppmax) :
+- To install bowtie2 
 
 cd bowtie2-sources
 make

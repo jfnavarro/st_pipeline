@@ -15,7 +15,7 @@ To install the st_pipeline on Uppmax follow the instructions below:
 6) run the commands:
     pip install numpy
     pip install pysam
-    pip install HTSeq
+    pip install HTSeq==0.6.1p1
 
 7) Install FindIndexes if not installed already :
 

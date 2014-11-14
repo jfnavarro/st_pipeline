@@ -95,7 +95,6 @@ class TestPipeline(unittest.TestCase):
 		"""
 		Tests st_pipeline on a mouse data subset with normal fastq files
 		"""
-		
 		# Add normal parameters
 		self.pipeline.expName = self.expnameNormal
 		self.pipeline.Fastq_fw = self.infile_normal_fw
@@ -119,7 +118,6 @@ class TestPipeline(unittest.TestCase):
 		"""
 		Tests st_pipeline on a mouse data subset with molecular barcodes fastq files
 		"""
-		
 		# Add MC paramters
 		self.pipeline.molecular_barcodes = True
 		self.pipeline.mc_allowed_missmatches = 2

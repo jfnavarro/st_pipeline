@@ -52,10 +52,10 @@ class Pipeline():
         self.output_folder = None
         self.temp_folder = None
         self.molecular_barcodes = False
-        self.mc_allowed_missmatches = 2
+        self.mc_allowed_missmatches = 1
         self.mc_start_position = 19
         self.mc_end_position = 30
-        self.min_cluster_size = 10
+        self.min_cluster_size = 2
         
     def sanityCheck(self):
         """ 
@@ -262,8 +262,8 @@ class Pipeline():
         self.logger.info("Total Execution Time : " + str(total_exe_time))
 
 
-    def createDataset(self, input_name, output_name, molecular_barcodes = False, allowed_missmatches = 3, 
-                      start_position = 19, end_position = 30, min_cluster_size = 10):
+    def createDataset(self, input_name, output_name, molecular_barcodes = False, allowed_missmatches = 1, 
+                      start_position = 19, end_position = 30, min_cluster_size = 2):
         """ 
         parse annotated and mapped reads with the reads that contain barcodes to
         create json files with the barcodes and coordinates and json file with the raw reads

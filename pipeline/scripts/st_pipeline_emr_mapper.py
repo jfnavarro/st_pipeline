@@ -52,13 +52,13 @@ def main(argv):
     parser.add_argument('--temp-folder', help='Path of the location for temporary files')
     parser.add_argument('--molecular-barcodes', 
                         action="store_true", help="Activates the molecular barcodes PCR duplicates filter")
-    parser.add_argument('--mc-allowed-missmatches', default=3,
+    parser.add_argument('--mc-allowed-missmatches', default=1,
                         help='Number of allowed missmatches when applying the molecular barcodes PCR filter')
     parser.add_argument('--mc-start-position', type=int, default=19,
                         help='Position (base wise) of the first base of the molecular barcodes')
     parser.add_argument('--mc-end-position', default=28,
                         help='Position (base wise) of the last base of the molecular barcodes')
-    parser.add_argument('--min-cluster-size', default=10,
+    parser.add_argument('--min-cluster-size', default=2,
                         help='Min number of equal molecular barcodes to count as a cluster')
     
     #parse arguments
