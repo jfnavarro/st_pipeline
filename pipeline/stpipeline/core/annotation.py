@@ -103,7 +103,8 @@ def getAllMappedReadsSam(annot_reads, htseq_no_ambiguous=False):
     logger.info("Created map of annotated reads, dropped : " + str(dropped) + " reads")  
     return mapped
 
-def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous=False, outputFolder=None):  
+def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous=False, 
+                           outputFolder=None, keep_discarded_files=False):  
     """ 
     Get the forward and reverse reads,qualities and sequences that are annotated
     and mapped (present in annot_reads)
@@ -116,6 +117,11 @@ def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous=False, output
         outputFile = replaceExtension(getCleanFileName(fw),'_withTranscript.fastq')
         if outputFolder is not None and os.path.isdir(outputFolder): 
             outputFile = os.path.join(outputFolder, outputFile)
+            
+        outputFileDiscarded = replaceExtension(getCleanFileName(fw),'_withTranscript_discarded.fastq')
+        if outputFolder is not None and os.path.isdir(outputFolder): 
+            outputFileDiscarded = os.path.join(outputFolder, outputFileDiscarded)
+            
     else:
         error = "Error: Input format not recognized " + annot_reads + " , " + fw + " , " + rv
         logger.error(error)
@@ -134,6 +140,10 @@ def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous=False, output
     
     outF = safeOpenFile(outputFile,'w')
     outF_writer = writefq(outF)
+    if keep_discarded_files:
+        outFdiscarded = safeOpenFile(outputFileDiscarded,'w')
+        outF_writer_discarded = writefq(outFdiscarded)
+    
     fw_file = safeOpenFile(fw, "rU")
     rv_file = safeOpenFile(rv, "rU")
     
@@ -161,13 +171,20 @@ def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous=False, output
                 
         elif mappedFW:  # only fw mapped and annotated    
             new_line1 = ( (name1 + " Chr:" +  mapped[name1][2] + " Gene:" + mapped[name1][1]), line1[1], line1[2] )        
-            outF_writer.send(new_line1)    
+            outF_writer.send(new_line1)
+            if keep_discarded_files:
+                outF_writer_discarded.send(line2) 
             
         elif mappedRV:
             new_line2 = ( (name2 + " Chr:" +  mapped[name2][2] + " Gene:" + mapped[name2][1]), line2[1], line2[2] )
             outF_writer.send(new_line2)  # only rv mapped and annotated
+            if keep_discarded_files:
+                outF_writer_discarded.send(line1)
             
         else:
+            if keep_discarded_files:
+                outF_writer_discarded.send(line1)
+                outF_writer_discarded.send(line2)
             pass
             #neither fw or rw are annotated and mapped
 

@@ -104,7 +104,7 @@ def writefq(fp):  # This is a coroutine
         return
 
 def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
-                     min_qual=20, min_length=28, qual64=False, outputFolder=None):
+                     min_qual=20, min_length=28, qual64=False, outputFolder=None, keep_discarded_files=False):
     """ 
     Converts reads in rw file appending the first (distance - trim)
     bases of fw and also add FW or RW string to reads names
@@ -121,6 +121,15 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
         out_fw = replaceExtension(getCleanFileName(fw),'_formated.fastq')
         if outputFolder is not None and os.path.isdir(outputFolder): 
             out_fw = os.path.join(outputFolder, out_fw)
+        
+        out_fw_discarded = replaceExtension(getCleanFileName(fw),'_formated_discarded.fastq')
+        if outputFolder is not None and os.path.isdir(outputFolder): 
+            out_fw_discarded = os.path.join(outputFolder, out_fw_discarded)
+            
+        out_rw_discarded = replaceExtension(getCleanFileName(rw),'_formated_discarded.fastq')
+        if outputFolder is not None and os.path.isdir(outputFolder) : 
+            out_rw_discarded = os.path.join(outputFolder, out_rw_discarded)
+            
     else:
         error = "Error: Input format not recognized " + out_fw + " , " + out_rw
         logger.error(error)
@@ -130,9 +139,18 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
     
     out_fw_handle = safeOpenFile(out_fw, 'w')
     out_fw_writer = writefq(out_fw_handle)
+    
     out_rw_handle = safeOpenFile(out_rw, 'w')
     out_rw_writer = writefq(out_rw_handle)
 
+    if keep_discarded_files:
+        out_rw_handle_discarded = safeOpenFile(out_rw_discarded, 'w')
+        out_rw_writer_discarded = writefq(out_rw_handle_discarded)
+        
+        out_fw_handle_discarded = safeOpenFile(out_fw_discarded, 'w')
+        out_fw_writer_discarded = writefq(out_fw_handle_discarded)
+    
+        
     fw_file = safeOpenFile(fw, "rU")
     rw_file = safeOpenFile(rw, "rU")
 
@@ -154,6 +172,8 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
             # write fake sequence so bowtie wont fail for having rw and fw with different lenghts
             out_fw_writer.send(getFake(line1))
             dropped_fw += 1
+            if keep_discarded_files:
+                out_fw_writer_discarded.send(line1)
 
         if line2_trimmed is not None:
             # Add the barcode and polyTs from fw only if rw has not been completely trimmed
@@ -168,11 +188,16 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
             # write fake sequence so bowtie wont fail for having rw and fw with different lenghts
             out_rw_writer.send(getFake(line2))
             dropped_rw += 1  
+            if keep_discarded_files:
+                out_rw_writer_discarded.send(line2)
     
     out_fw_writer.close()
     out_rw_writer.close()
     out_fw_handle.close()
     out_rw_handle.close()
+    if keep_discarded_files:
+        out_fw_handle_discarded.close()
+        out_rw_handle_discarded.close()
     fw_file.close()
     rw_file.close()
     

@@ -25,6 +25,7 @@ static int print_usage()
     fprintf(stderr, "Usage:   findIndexes [options] <ids.txt> <fw_1.fastq>\n\n");
     fprintf(stderr, "Options: \n");
     fprintf(stderr, "         -o STR     output name->id hash for found reads to STR file\n");
+    fprintf(stderr, "         -d STR     output fastq records for not found reads to STR file\n");
     fprintf(stderr, "         -m INT     allowed mismatches [2]\n");
     fprintf(stderr, "         -k INT     kMer length [8]\n");
     fprintf(stderr, "         -s INT     start position of ID [0]\n");
@@ -72,6 +73,7 @@ int Nmismatch = 2;
 int kLen = 8;
 int probeStartPos = 0;
 int probeLength = 18;
+bool outputDiscarded = false;
 
 int qualMin = 1000;
 int qualMax = 0;
@@ -366,7 +368,7 @@ void uniqueJoinList(std::list<IdStruct>& mainList,const std::list<IdStruct>* lis
 }
 
 typedef struct {
-    FILE *inFile,*outFile;
+    FILE *inFile,*outFile,*outDiscarded;
 }threadArgs;
 
 /**
@@ -545,6 +547,11 @@ void* idSearch(void* arguments)
                         pthread_mutex_unlock(&writeMutex);
                     }
                 } else {
+                    //discarded
+                    if (args.outDiscarded != NULL) {
+                        fprintf(args.outDiscarded,"%s\n%s\n%s\n",e->getName().c_str(), e->getSequence().c_str(), e->getQuality().c_str());
+                    }
+                    
                     if (!goodHit) {
                         GUARDED_INC(ambiguous)
                     } else {
@@ -578,10 +585,12 @@ int main(int argc, char *argv[])
             perfectMatchMatrix[i][j]=0;
         }
         
-        FILE *out = NULL;
+    FILE *out = NULL;
+    FILE *outDiscarded = NULL;
+    
     int arg;
     //Get args
-    while ((arg = getopt(argc, argv, "o:m:k:s:l:p")) >= 0) {
+    while ((arg = getopt(argc, argv, "o:d:m:k:s:l:p")) >= 0) {
         switch (arg) {
             case 'o':
                 if ((out = fopen(optarg, "w")) == 0) {
@@ -589,6 +598,13 @@ int main(int argc, char *argv[])
                     out = NULL;
                 }
                 fprintf(stdout,"Printing map to %s\n",optarg);
+                break;
+            case 'd':
+                if ((outDiscarded = fopen(optarg, "w")) == 0) {
+                    fprintf(stderr, "Failed to open for writing: %s\n", optarg);
+                    outDiscarded = NULL;
+                }
+                fprintf(stdout,"Printing discarded reads to %s\n",optarg);
                 break;
             case 'm': Nmismatch = atoi(optarg); break;
             case 'k': kLen = atoi(optarg);
@@ -637,6 +653,7 @@ int main(int argc, char *argv[])
     threadArgs args;
     args.inFile = inF;
     args.outFile = out;
+    args.outDiscarded = outDiscarded;
     
     /*DO THREAD STUFF*/
     for (int i=0; i<8; ++i) {
@@ -677,7 +694,8 @@ int main(int argc, char *argv[])
     fclose(ids);
     fclose(inF);
     if (out != NULL) fclose(out);
-                                                             
+    if (outDiscarded != NULL) fclose(outDiscarded);
+    
     return 0;
 }
 

@@ -10,7 +10,7 @@ from stpipeline.common.fastq_utils import *
 import pysam
     
 def bowtie2Map(fw, rv, ref_map, trim=42, cores=8, 
-               qual64=False, discordant=False, outputFolder=None):  
+               qual64=False, discordant=False, outputFolder=None, keep_discarded_files=False):  
     """
     maps pair end reads against a given genome using bowtie2 
     """
@@ -18,9 +18,13 @@ def bowtie2Map(fw, rv, ref_map, trim=42, cores=8,
     logger = logging.getLogger("STPipeline")
     
     if fw.endswith(".fastq") and rv.endswith(".fastq"):
-        outputFile = replaceExtension(getCleanFileName(fw),".sam")
+        outputFile = replaceExtension(getCleanFileName(fw),"_mapped.sam")
         if outputFolder is not None and os.path.isdir(outputFolder): 
             outputFile = os.path.join(outputFolder, outputFile)
+        
+        outputFileDiscarded = replaceExtension(getCleanFileName(fw),"_mapped_discarded.fastq")
+        if outputFolder is not None and os.path.isdir(outputFolder): 
+            outputFileDiscarded = os.path.join(outputFolder, outputFileDiscarded)    
     else:
         errror = "Error: Input format not recognized " + fw + " , " + rv
         logger.error(errror)
@@ -40,7 +44,9 @@ def bowtie2Map(fw, rv, ref_map, trim=42, cores=8,
     args += core_flags
     args += io_flags
     args += ["-x", ref_map, "-1", fw, "-2", rv, "-S", outputFile] 
-    
+    if keep_discarded_files:
+        args += ["--un", outputFileDiscarded]
+  
     proc = subprocess.Popen([str(i) for i in args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout, errmsg) = proc.communicate()
 
@@ -61,7 +67,8 @@ def bowtie2Map(fw, rv, ref_map, trim=42, cores=8,
     return outputFile
 
 
-def bowtie2_contamination_map(fastq, contaminant_index, trim=42, cores=8, qual64=False, outputFolder=None):
+def bowtie2_contamination_map(fastq, contaminant_index, trim=42, cores=8, 
+                              qual64=False, outputFolder=None):
     """ 
     Maps reads against contaminant genome index with Bowtie2 and returns
     the fastq of unaligned reads.
@@ -117,7 +124,7 @@ def bowtie2_contamination_map(fastq, contaminant_index, trim=42, cores=8, qual64
 
     return clean_fastq, contaminated_file
 
-def filterUnmapped(sam, discard_fw=False, discard_rw=False, outputFolder=None):
+def filterUnmapped(sam, discard_fw=False, discard_rw=False, outputFolder=None, keep_discarded_files=False):
     """ 
     Filter unmapped and discordant reads
     """
@@ -130,6 +137,10 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False, outputFolder=None):
         outputFileSam = replaceExtension(getCleanFileName(sam),'_filtered.sam')
         if outputFolder is not None and os.path.isdir(outputFolder): 
             outputFileSam = os.path.join(outputFolder, outputFileSam)
+            
+        outputFileSamDiscarded = replaceExtension(getCleanFileName(sam),'_filtered_discarded.sam')
+        if outputFolder is not None and os.path.isdir(outputFolder): 
+            outputFileSamDiscarded = os.path.join(outputFolder, outputFileSamDiscarded)
     else:
         error = "Error: Input format not recognized " + sam
         logger.error(error)
@@ -140,7 +151,9 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False, outputFolder=None):
     # Remove found duplicates in the Forward Reads File
     input = pysam.Samfile(sam, "r")
     output = pysam.Samfile(outputFileSam, 'wh', header=input.header)
-
+    if keep_discarded_files:
+        outputDiscarded = pysam.Samfile(outputFileSamDiscarded, 'wh', header=input.header)
+        
     dropped = 0
     for read in input:
         # filtering out not pair end reads
@@ -163,10 +176,14 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False, outputFolder=None):
             else:
                 # I want to discard both forward and reverse and unmapped
                 dropped += 1
+                if keep_discarded_files:
+                    outputDiscarded.write(read)
                 pass
         else:
             # not mapped stuff discard
             dropped += 1
+            if keep_discarded_files:
+                outputDiscarded.write(read)
             pass  
             
     input.close()
@@ -181,7 +198,7 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False, outputFolder=None):
     
     return outputFileSam
 
-def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e, outputFolder=None):
+def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e, outputFolder=None, keep_discarded_files=False):
     """ 
     Barcode demultiplexing mapping with old findindexes 
     """
@@ -200,11 +217,22 @@ def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e, outputFolder=None):
     if outputFolder is not None and os.path.isdir(outputFolder): 
         outputFile = os.path.join(outputFolder, outputFile)
     
+    outputFileDiscarded = replaceExtension(getCleanFileName(readsContainingTr),'_nameMap_discarded.txt')
+    if outputFolder is not None and os.path.isdir(outputFolder): 
+        outputFileDiscarded = os.path.join(outputFolder, outputFileDiscarded)
+        
     args = ['findIndexes',
-            "-m", str(m), "-k", str(k), "-s", str(s),
-            "-l", str(l), "-o", str(outputFile), idFile,
-            readsContainingTr]
+            "-m", str(m), 
+            "-k", str(k), 
+            "-s", str(s),
+            "-l", str(l), 
+            "-o", str(outputFile)]
     
+    if keep_discarded_files:
+        args += ["-d", str(outputFileDiscarded)]
+    
+    args += [idFile, readsContainingTr]
+
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout, errmsg) = proc.communicate()
  
