@@ -57,6 +57,7 @@ class Pipeline():
         self.mc_start_position = 19
         self.mc_end_position = 30
         self.min_cluster_size = 2
+        self.keep_discarded_files = False
         
     def sanityCheck(self):
         """ 
@@ -163,7 +164,9 @@ class Pipeline():
                                 help='Position (base wise) of the last base of the molecular barcodes')
             parser.add_argument('--min-cluster-size', default=2,
                                 help='Min number of equal molecular barcodes to count as a cluster')
-            
+            parser.add_argument('--keep-discarded-files', action="store_true", default=False,
+                                help='Writes down discarded reads and barcodes into files')
+                        
             return parser
          
     def load_parameters(self, options):
@@ -210,7 +213,7 @@ class Pipeline():
         self.mc_start_position = int(options.mc_start_position)
         self.mc_end_position = int(options.mc_end_position)
         self.min_cluster_size = int(options.min_cluster_size)
-    
+        self.keep_discarded_files = options.keep_discarded_files
     
     def createLogger(self):
         """
@@ -279,43 +282,69 @@ class Pipeline():
                                                               self.trimming_rw_bowtie, 
                                                               self.min_quality_trimming,
                                                               self.min_length_trimming, 
-                                                              self.qual64, self.temp_folder)
+                                                              self.qual64, 
+                                                              self.temp_folder,
+                                                              self.keep_discarded_files)
         # First, do mapping against genome of both strands
-        sam_mapped = bowtie2Map(Fastq_fw_trimmed, Fastq_rv_trimmed, self.ref_map, 
-                                self.trimming_fw_bowtie, self.threads, self.qual64, 
-                                self.discordant, self.temp_folder)
+        sam_mapped = bowtie2Map(Fastq_fw_trimmed, 
+                                Fastq_rv_trimmed, 
+                                self.ref_map, 
+                                self.trimming_fw_bowtie, 
+                                self.threads, 
+                                self.qual64, 
+                                self.discordant, 
+                                self.temp_folder, 
+                                self.keep_discarded_files)
         
         ## filter unmapped and discordant reads
-        sam_filtered = filterUnmapped(sam_mapped, self.discard_fw, 
-                                      self.discard_rv, self.temp_folder)
+        sam_filtered = filterUnmapped(sam_mapped, 
+                                      self.discard_fw, 
+                                      self.discard_rv, 
+                                      self.temp_folder, 
+                                      self.keep_discarded_files)
         if self.clean: safeRemove(sam_mapped)  
         
         ##annotate using htseq count
-        annotatedFile = annotateReadsWithHTSeq(sam_filtered, self.ref_annotation, 
-                                               self.htseq_mode, self.temp_folder)
+        annotatedFile = annotateReadsWithHTSeq(sam_filtered, 
+                                               self.ref_annotation, 
+                                               self.htseq_mode, 
+                                               self.temp_folder)
         if self.clean: safeRemove(sam_filtered)
     
         # get raw reads and quality from the forward and reverse reads
-        withTr = getAnnotatedReadsFastq(annotatedFile, Fastq_fw_trimmed, 
-                                        Fastq_rv_trimmed, self.htseq_no_ambiguous, self.temp_folder)
+        withTr = getAnnotatedReadsFastq(annotatedFile, 
+                                        Fastq_fw_trimmed, 
+                                        Fastq_rv_trimmed, 
+                                        self.htseq_no_ambiguous, 
+                                        self.temp_folder, 
+                                        self.keep_discarded_files)
         if self.clean: safeRemove(annotatedFile)
         
         # Filter out contaminated reads with Bowtie2
         if self.contaminant_bt2_index: 
             oldWithTr = withTr
-            withTr, contaminated_sam = bowtie2_contamination_map(withTr, self.contaminant_bt2_index,
-                                                                 trim=self.trimming_fw_bowtie,
-                                                                 cores=self.threads, qual64=self.qual64, 
-                                                                 outputFolder=self.temp_folder)
-            if self.clean: safeRemove(contaminated_sam)
+            withTr, contaminated_sam = bowtie2_contamination_map(withTr, 
+                                                                 self.contaminant_bt2_index,
+                                                                 self.trimming_fw_bowtie,
+                                                                 self.threads, 
+                                                                 self.qual64, 
+                                                                 self.temp_folder)
+            if not self.keep_discarded_files: safeRemove(contaminated_sam)
             if self.clean: safeRemove(oldWithTr)
     
         if self.clean: safeRemove(Fastq_fw_trimmed)
         if self.clean: safeRemove(Fastq_rv_trimmed)
         
         # Map against the barcodes
-        mapFile = getTrToIdMap(withTr, self.ids, self.allowed_missed, self.allowed_kimera, 
-                               self.s, self.l, self.e, self.temp_folder)
+        mapFile = getTrToIdMap(withTr, 
+                               self.ids, 
+                               self.allowed_missed, 
+                               self.allowed_kimera, 
+                               self.s, 
+                               self.l, 
+                               self.e, 
+                               self.temp_folder,
+                               self.keep_discarded_files)
         if self.clean: safeRemove(withTr)
     
         # create json files with the results
