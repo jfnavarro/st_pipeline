@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-""" This file contains general utils and some file utils
+""" 
+This file contains general utils and some file utils
 """
 
 import resource
@@ -10,7 +11,9 @@ from collections import namedtuple
 _ntuple_diskusage = namedtuple('usage', 'total used free')
 
 def which(program):
-    """ check that a program exists and is executable """
+    """ 
+    check that a program exists and is executable 
+    """
     def is_exe(fpath):
         return fpath is not None and os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
@@ -33,7 +36,8 @@ def which(program):
     return None
 
 def Using(point):
-    """ returns memory usage at a certain point 
+    """ 
+    returns memory usage at a certain point 
     """
     usage = resource.getrusage(resource.RUSAGE_SELF)
     return '''%s: usertime=%s systime=%s mem=%s mb
@@ -42,8 +46,9 @@ def Using(point):
            
            
 class TimeStamper(object):
-    ''' thread safe time stamper 
-    '''
+    """
+    thread safe time stamper 
+    """
     def __init__(self):
         self.lock = threading.Lock()
         self.prev = None
@@ -59,25 +64,10 @@ class TimeStamper(object):
                 self.prev = ts
                 self.count = 1
         return ts
-
-class Stats(object):
-    ''' thread safe stats writer 
-    '''
-    def __init__(self,name):
-        self.lock = threading.Lock()
-        self.name = name
-        self.handler = open(name,"w")
-    
-    def write(self,text):
-        with self.lock:
-            self.handler.write(text)
-        
-    def close(self):
-        with self.lock:
-            self.handler.close()
             
 def disk_usage(path):
-    """Return disk usage statistics about the given path 
+    """
+    Return disk usage statistics about the given path 
     """   
     st = os.statvfs(path)
     free = st.f_bavail * st.f_frsize
@@ -86,8 +76,9 @@ def disk_usage(path):
     return _ntuple_diskusage(total, used, free)
 
 def safeRemove(filename):
-    ''' safely remove a file 
-    '''
+    """
+    safely remove a file 
+    """
     try:
         if filename is not None and os.path.isfile(filename):
             os.remove(filename)
@@ -95,8 +86,9 @@ def safeRemove(filename):
         pass
         
 def safeOpenFile(filename, atrib):
-    ''' safely opens a file 
-    '''
+    """
+    safely opens a file 
+    """
     if atrib.find("w") != -1:
         safeRemove(filename)
         usage = disk_usage('/')
@@ -113,22 +105,26 @@ def safeOpenFile(filename, atrib):
 
 
 def fileOk(_file):
-    ''' checks file exists and is not zero size
-    '''
+    """
+    checks file exists and is not zero size
+    """
     return _file is not None and os.path.isfile(_file) and not os.path.getsize(_file) == 0
     
 def replaceExtension(filename,extension):
-    ''' replace the extesion of filename 
+    """
+    replace the extesion of filename 
     for the extension given, returns the new filename
     including the path 
-    extension must be like .ext '''
+    extension must be like .ext 
+    """
     base = os.path.splitext(filename)[0]
     return base + extension
  
 def stripExtension(string):
-    '''remove the extension from string
+    """
+    remove the extension from string
     and returns it
-    '''
+    """
     f = string.rsplit('.', 1)
     if(f[0].find("/") != -1):
         return f[0].rsplit('/', 1)[1]
@@ -136,11 +132,15 @@ def stripExtension(string):
         return f[0]
 
 def getExtension(string):
-    ''' gets the filename extension of a filename '''
+    """
+    gets the filename extension of a filename
+    """
     f = string.rsplit('.', 1)
     return f[1]
 
 def getCleanFileName(path):
-    ''' extracts and returns the filename from a complete path '''
+    """
+    extracts and returns the filename from a complete path 
+    """
     head, tail = os.path.split(path)
     return tail

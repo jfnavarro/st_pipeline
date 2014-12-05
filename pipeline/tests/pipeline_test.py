@@ -2,9 +2,8 @@
 """ 
 	Unit-test for run-tests, it just tests that the pipeline runs and produces correct results
 """
+
 import unittest
-import os
-import tempfile
 from stpipeline.core.pipeline import *
 
 class TestPipeline(unittest.TestCase):
@@ -104,7 +103,7 @@ class TestPipeline(unittest.TestCase):
 		
 		# Start the pipeline
 		try:
-			self.pipeline.load_parameters()
+			self.pipeline.createLogger()
 			self.pipeline.sanityCheck()
 			self.pipeline.run()
 		except Exception as e:
@@ -131,7 +130,7 @@ class TestPipeline(unittest.TestCase):
 		
 		# Start the pipeline
 		try:
-			self.pipeline.load_parameters()
+			self.pipeline.createLogger()
 			self.pipeline.sanityCheck()
 			self.pipeline.run()
 		except Exception as e:

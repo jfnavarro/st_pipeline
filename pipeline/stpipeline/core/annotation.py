@@ -15,6 +15,7 @@ def annotateReadsWithHTSeq(samFile, gtfFile, mode, outputFolder=None):
     """ 
     Annotate the reads using htseq-count tool 
     """
+    
     logger = logging.getLogger("STPipeline")
     
     if samFile.endswith(".sam"):
@@ -22,8 +23,9 @@ def annotateReadsWithHTSeq(samFile, gtfFile, mode, outputFolder=None):
         if outputFolder is not None and os.path.isdir(outputFolder): 
             outputFile = os.path.join(outputFolder, outputFile)
     else:
-        logger.error("Error: Input format not recognized " + samFile)
-        raise RuntimeError("Error: Input format not recognized " + samFile + "\n")
+        error = "Error: Input format not recognized " + samFile
+        logger.error(error)
+        raise RuntimeError(error + "\n")
     
     logger.info("Start Annotating reads with HTSeq")
     
@@ -44,18 +46,20 @@ def annotateReadsWithHTSeq(samFile, gtfFile, mode, outputFolder=None):
     subprocess.check_call(args,stdout=discard_output, stderr=subprocess.PIPE)
     
     if not fileOk(outputFile):
-        logger.error("Error: output file is not present " + outputFile)
-        raise RuntimeError("Error: output file is not present " + outputFile + "\n")
+        error = "Error: output file is not present " + outputFile
+        logger.error(error)
+        raise RuntimeError(error + "\n")
         
     logger.info("Finish Annotating reads with HTSeq")
     
     return outputFile
 
 def getAllMappedReadsSam(annot_reads, htseq_no_ambiguous=False):
-    ''' creates a map with the read names that are annotated and mapped and 
-        their mapping scores,chromosome and gene
-        We assume the gtf file has its gene ids replaced by gene names
-    '''
+    """ 
+    Creates a map with the read names that are annotated and mapped and 
+    their mapping scores,chromosome and gene
+    We assume the gtf file has its gene ids replaced by gene names
+    """
     
     logger = logging.getLogger("STPipeline")
     
@@ -100,9 +104,10 @@ def getAllMappedReadsSam(annot_reads, htseq_no_ambiguous=False):
     return mapped
 
 def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous=False, outputFolder=None):  
-    ''' I get the forward and reverse reads,qualities and sequences that are annotated
-        and mapped (present in annot_reads)
-    '''
+    """ 
+    Get the forward and reverse reads,qualities and sequences that are annotated
+    and mapped (present in annot_reads)
+    """
     
     logger = logging.getLogger("STPipeline")
     
@@ -112,16 +117,18 @@ def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous=False, output
         if outputFolder is not None and os.path.isdir(outputFolder): 
             outputFile = os.path.join(outputFolder, outputFile)
     else:
-        logger.error("Error: Input format not recognized " + annot_reads + " , " + fw + " , " + rv)
-        raise RuntimeError("Error: Input format not recognized " + annot_reads + " , " + fw + " , " + rv + "\n")
+        error = "Error: Input format not recognized " + annot_reads + " , " + fw + " , " + rv
+        logger.error(error)
+        raise RuntimeError(error + "\n")
 
     logger.info("Start Mapping to Transcripts")
     
     mapped = getAllMappedReadsSam(annot_reads, htseq_no_ambiguous)
 
     if len(mapped) == 0:
-        logger.error("Error: Annotation file not recognized, no records present")
-        raise RuntimeError("Error: Annotation file not recognized, no records present")
+        error = "Error: Annotation file not recognized, no records present"
+        logger.error(error)
+        raise RuntimeError(error + "\n")
     else:
         readMappingToTranscript = len(mapped)
     
@@ -170,8 +177,9 @@ def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous=False, output
     rv_file.close()
     
     if not fileOk(outputFile):
-        logger.error("Error: output file is not present " + outputFile)
-        raise RuntimeError("Error: output file is not present " + outputFile + "\n")
+        error = "Error: output file is not present " + outputFile
+        logger.error(error)
+        raise RuntimeError(error + "\n")
     else:
         logger.info('Total reads mapping to a transcript : ' + str(readMappingToTranscript))
         

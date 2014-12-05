@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-""" This is the main API for the ST pipeline, it needs a bunch of files and parameters in order
+""" 
+This is the main API for the ST pipeline, it needs a bunch of files and parameters in order
 to run the jobs, input files are fastq, output files are json. It logs status into a file.
 """
 
@@ -69,12 +70,17 @@ class Pipeline():
         conds["htseq_mode"] = self.htseq_mode in ["union","intersection-nonempty","intersection-strict"]
 
         if not all(conds.values()):
-            self.logger.error("Error: required file/s and or parameters not found or incorrect parameters :" + str(conds))
-            raise RuntimeError("Error: required file/s and or parameters not found or incorrect parameters :" + str(conds))
+            error = "Error: required file/s and or parameters not " \
+            " found or incorrect parameters :" + str(conds)
+            self.logger.error(error)
+            raise RuntimeError(error)
 
-        if self.molecular_barcodes and (self.mc_start_position < self.l or self.mc_end_position <= self.mc_start_position):
-            self.logger.error("Error: Molecular Barcodes option is activated but the start/end positions parameters are incorrect")
-            raise RuntimeError("Error: Molecular Barcodes option is activated but the start/end positions parameters are incorrect")
+        if self.molecular_barcodes and (self.mc_start_position < self.l 
+                                        or self.mc_end_position <= self.mc_start_position):
+            error = "Error: Molecular Barcodes option is activated but the start/end " \
+            "positions parameters are incorrect"
+            self.logger.error(error)
+            raise RuntimeError(error)
         
         #test the presence of the scripts :
         required_scripts = set(['findIndexes','bowtie2'])
@@ -89,14 +95,127 @@ class Pipeline():
         else:
             self.logger.error("Error, these programs not found:\t".join(unavailable_scripts))
             raise RuntimeError("Error, these programs not found:\t".join(unavailable_scripts))
+       
+    def createParameters(self, parser):
+            """
+            Adds the pipeline's parameters to a given
+            Argparse object 
+            """
+            parser.add_argument('fastq_files', nargs=2)
+            parser.add_argument('--ids',
+                                help='The name of the file containing the barcodes and the coordinates')
+            parser.add_argument('--ref-map',
+                                help="<path_to_bowtie2_indexes> = Reference genome name " \
+                                "for the genome that you want to use to align the reads")
+            parser.add_argument('--ref-annotation',
+                                help="Path to the reference annotation file " \
+                                "(htseq requires a GTF file annotation file that you want to use to annotate")
+            parser.add_argument('--expName', help="Name of the experiment (output file name)")
+            parser.add_argument('--allowed-missed', default=6, 
+                                help="Number of allowed mismatches when mapping against the barcodes")
+            parser.add_argument('--allowed-kimer', default=7, 
+                                help="KMer length when mapping against the barcodes")
+            parser.add_argument('--min-length-qual-trimming', default=28,
+                                help="Minimum length of the sequence for mapping after trimming, " \
+                                "shorter reads will be discarded")
+            parser.add_argument('--mapping-fw-trimming', default=42,
+                                help="Number of bases to trim in the forward reads for the Mapping [24 + ID_LENGTH]")
+            parser.add_argument('--mapping-rv-trimming', default=5,
+                                help="Number of bases to trim in the reverse reads for the Mapping")
+            parser.add_argument('--length-id', default=18, help="Length of ID, a.k.a. the length of the barcodes")
+            parser.add_argument('--contaminant-bowtie2-index',
+                                help="<path_to_bowtie2_indexes> = When provided, reads will be filtered " 
+                                "against the specified bowtie2 index, non-mapping reads will be saved and demultiplexed")
+            parser.add_argument('--qual-64', action="store_true", default=False,
+                                help="Use phred-64 quality instead of phred-33(default)")
+            parser.add_argument('--htseq-mode', default="intersection-nonempty",
+                                help="Mode of Annotation when using HTSeq. "
+                                "Modes = {union,intersection-nonempty(default),intersection-strict}")
+            parser.add_argument('--htseq-no-ambiguous', action="store_true",
+                                help="When using htseq discard reads annotating ambiguous genes")
+            parser.add_argument('--start-id', default=0, help="Start position of BARCODE ID [0]")
+            parser.add_argument('--error-id', default=0, help="Id positional error [0]")
+            parser.add_argument('--no-clean-up', action="store_false", default=True,
+                                help="Do not remove temporary files at the end (useful for debugging)")
+            parser.add_argument('--verbose', action="store_true", default=False,
+                                help="Show extra information on the log")
+            parser.add_argument('--bowtie-threads', default=8, help="Number of threads to use in the mapping step")
+            parser.add_argument('--min-quality-trimming', default=20, help="Minimum quality for trimming")
+            parser.add_argument('--discard-fw', action="store_true", default=False, 
+                                help="Discard forwards reads that maps uniquely")
+            parser.add_argument('--discard-rv', action="store_true", default=False, 
+                                help="Discard reverse reads that maps uniquely")
+            parser.add_argument('--bowtie2-discordant', action="store_true", default=False, 
+                                help="Discard non-concordant alignments when mapping")
+            parser.add_argument('--bin-path', 
+                                help="Path to folder where binary executables are present (system path by default)")
+            parser.add_argument('--log-file', 
+                                help="Name of the file that we want to use to store the logs (default output to screen)")
+            parser.add_argument('--output-folder', help='Path of the output folder')
+            parser.add_argument('--temp-folder', help='Path of the location for temporary files')
+            parser.add_argument('--molecular-barcodes',
+                                action="store_true", help="Activates the molecular barcodes PCR duplicates filter")
+            parser.add_argument('--mc-allowed-missmatches', default=1,
+                                help='Number of allowed missmatches when applying the molecular barcodes PCR filter')
+            parser.add_argument('--mc-start-position', type=int, default=19,
+                                help='Position (base wise) of the first base of the molecular barcodes')
+            parser.add_argument('--mc-end-position', default=30,
+                                help='Position (base wise) of the last base of the molecular barcodes')
+            parser.add_argument('--min-cluster-size', default=2,
+                                help='Min number of equal molecular barcodes to count as a cluster')
             
-    def load_parameters(self):
+            return parser
+         
+    def load_parameters(self, options):
         """
         Initialize logger, load up some parameters
         and prints out some information
         """
-        #TODO load the parameters here instead of forcing users to do so from outside
-        
+    
+        #init pipeline arguments
+        self.allowed_missed = int(options.allowed_missed)
+        self.allowed_kimera = int(options.allowed_kimer)
+        self.min_length_trimming = int(options.min_length_qual_trimming)
+        self.trimming_fw_bowtie = int(options.mapping_fw_trimming)
+        self.trimming_rw_bowtie = int(options.mapping_rv_trimming)
+        self.min_quality_trimming = int(options.min_quality_trimming) 
+        self.clean = options.no_clean_up
+        self.s = int(options.start_id)
+        self.l = int(options.length_id)
+        self.e = int(options.error_id)
+        self.threads = int(options.bowtie_threads)
+        self.verbose = options.verbose
+        self.ids = os.path.abspath(options.ids)
+        self.ref_map = os.path.abspath(options.ref_map)
+        self.ref_annotation = os.path.abspath(options.ref_annotation)
+        self.expName = options.expName
+        self.htseq_mode = options.htseq_mode
+        self.htseq_no_ambiguous = options.htseq_no_ambiguous
+        self.qual64 = options.qual_64
+        self.discard_fw = options.discard_fw
+        self.discard_rv = options.discard_rv
+        self.discordant = options.bowtie2_discordant
+        self.contaminant_bt2_index = options.contaminant_bowtie2_index
+        self.path = options.bin_path
+        if options.log_file is not None:
+            self.logfile = os.path.abspath(options.log_file)         
+        self.Fastq_fw = options.fastq_files[0]
+        self.Fastq_rv = options.fastq_files[1]
+        if options.output_folder is not None and os.path.isdir(options.output_folder):
+            self.output_folder = os.path.abspath(options.output_folder)
+        if options.temp_folder is not None and os.path.isdir(options.temp_folder): 
+            self.temp_folder = os.path.abspath(options.temp_folder)
+        self.molecular_barcodes = options.molecular_barcodes
+        self.mc_allowed_missmatches = int(options.mc_allowed_missmatches)
+        self.mc_start_position = int(options.mc_start_position)
+        self.mc_end_position = int(options.mc_end_position)
+        self.min_cluster_size = int(options.min_cluster_size)
+    
+    
+    def createLogger(self):
+        """
+        Creates a logging object and logs some information about parameters
+        """    
         # create a logger
         if self.logfile is not None:
             logging.basicConfig(filename=self.logfile ,level=logging.DEBUG)
@@ -143,89 +262,37 @@ class Pipeline():
         self.logger.info(parameters)
         self.logger.info("Mapper : bowtie2")
         self.logger.info("Annotation Tool :  HTSeq")
-  
-    def run_pipeline(self,chunks):
-        """ 
-        This function is called for Map Reduce jobs, when we want to run the pipeline,
-        once all the streaming has been done
-        in the input, it will iterate trough the chunks, create temp fastq files
-        and call the pipeline on them, it will then parse the output and send
-        the json formated features to the reducer
-        """
-        #TODO refactor and optimize this
-        #TODO do mapping using gene as KEY
-        #TODO move to st_pipeline_emr_run
-        
-        for val in chunks:
-            temp_name = tempfile.mktemp(prefix='stpipeline_temp_', suffix=str(random.random()), dir='') 
-            new_filename = temp_name + "_1.fastq"
-            new_filename2 = temp_name + "_2.fastq"
-            outF = safeOpenFile(new_filename, 'w')
-            outF_writer = writefq(outF)
-            outF2 = safeOpenFile(new_filename2, 'w')
-            outF_writer2 = writefq(outF2)
-            for line in val.split("\n"):
-                cols = line.replace("\t", " ").split(" ")
-                if(len(cols) != 5):
-                    continue
-                header = cols[0]
-                seq1 = cols[1]
-                qual1 = cols[2]
-                seq2 = cols[3]
-                qual2 = cols[4]
-                outF_writer.send((header, seq1, qual1))
-                outF_writer2.send((header, seq2, qual2))
-            outF.close()
-            outF2.close()
-            outF_writer.close()
-            outF_writer2.close()
-            #run pipeline with new files and name
-            self.Fastq_fw = os.path.abspath(new_filename)
-            self.Fastq_rv = os.path.abspath(new_filename2)
-            self.expName = temp_name
-            self.sanityCheck()
-            #TODO wrap this into try catch
-            self.run()
-            # now we parse the output of pipeline (json) 
-            outputPipeline = temp_name + "_barcodes.json"  # #this is very ugly (output file should be a parameter in the pipeline)
-            outputPipelineReads = temp_name + "_reads.json"  # #this is very ugly (output file should be a parameter in the pipeline)
-            it = json_iterator(outputPipeline)
-            # send features to the reducer jobs (reads are ignored for now)
-            for doc in it:
-                feature_gene = (doc['y'], doc['x'], doc['gene'], doc['barcode'])
-                hits = doc['hits']
-                doc_json_formated = {}
-                doc_json_formated['y'], doc_json_formated['x'], doc_json_formated['gene'], doc_json_formated['barcode'] = feature_gene
-                #TODO would be nice to be able to send json objects trough
-                yield doc_json_formated,hits
                 
-            # remove temp files
-            safeRemove(new_filename)
-            safeRemove(new_filename2)
-            safeRemove(outputPipeline)
-            safeRemove(outputPipelineReads)   
-              
     def run(self):
+        """ 
+        Runs the whole pipeline given the parameters present
+        """
         globaltime = TimeStamper()
         #starting time
         start_exe_time = globaltime.getTimestamp()
         self.logger.info("Starting the pipeline : " + str(start_exe_time))
         
         # add BC and PolyT from FW reads to the RW reads and apply quality filter
-        Fastq_fw_trimmed, Fastq_rv_trimmed = reformatRawReads(self.Fastq_fw, self.Fastq_rv, 
+        Fastq_fw_trimmed, Fastq_rv_trimmed = reformatRawReads(self.Fastq_fw, 
+                                                              self.Fastq_rv, 
                                                               self.trimming_fw_bowtie,
-                                                              self.trimming_rw_bowtie, self.min_quality_trimming,
-                                                              self.min_length_trimming, self.qual64, self.temp_folder)
+                                                              self.trimming_rw_bowtie, 
+                                                              self.min_quality_trimming,
+                                                              self.min_length_trimming, 
+                                                              self.qual64, self.temp_folder)
         # First, do mapping against genome of both strands
         sam_mapped = bowtie2Map(Fastq_fw_trimmed, Fastq_rv_trimmed, self.ref_map, 
-                                self.trimming_fw_bowtie, self.threads, self.qual64, self.discordant, self.temp_folder)
+                                self.trimming_fw_bowtie, self.threads, self.qual64, 
+                                self.discordant, self.temp_folder)
         
         ## filter unmapped and discordant reads
-        sam_filtered = filterUnmapped(sam_mapped, self.discard_fw, self.discard_rv, self.temp_folder)
+        sam_filtered = filterUnmapped(sam_mapped, self.discard_fw, 
+                                      self.discard_rv, self.temp_folder)
         if self.clean: safeRemove(sam_mapped)  
         
         ##annotate using htseq count
-        annotatedFile = annotateReadsWithHTSeq(sam_filtered, self.ref_annotation, self.htseq_mode, self.temp_folder)
+        annotatedFile = annotateReadsWithHTSeq(sam_filtered, self.ref_annotation, 
+                                               self.htseq_mode, self.temp_folder)
         if self.clean: safeRemove(sam_filtered)
     
         # get raw reads and quality from the forward and reverse reads
@@ -252,7 +319,7 @@ class Pipeline():
         if self.clean: safeRemove(withTr)
     
         # create json files with the results
-        self.createDataset(mapFile, self.expName, self.molecular_barcodes, 
+        self.createDataset(mapFile, self.expName, self.trimming_fw_bowtie, self.molecular_barcodes, 
                            self.mc_allowed_missmatches, self.mc_start_position, 
                            self.mc_end_position, self.min_cluster_size)
         if self.clean: safeRemove(mapFile)
@@ -262,18 +329,22 @@ class Pipeline():
         self.logger.info("Total Execution Time : " + str(total_exe_time))
 
 
-    def createDataset(self, input_name, output_name, molecular_barcodes = False, allowed_missmatches = 1, 
+    def createDataset(self, input_name, output_name, trim_bases = 42, 
+                      molecular_barcodes = False, allowed_missmatches = 1, 
                       start_position = 19, end_position = 30, min_cluster_size = 2):
         """ 
         parse annotated and mapped reads with the reads that contain barcodes to
         create json files with the barcodes and coordinates and json file with the raw reads
         and some useful stats and plots
         It also allows to remove PCR Duplicates using molecular barcodes
+        We passes the number of forward bases trimmed for mapping to get a clean read
+        in the output
         """
         
         self.logger.info("Start Creating dataset")
         
-        args = ['createDataset.py', '--input', str(input_name), '--output-name', str(output_name)]
+        args = ['createDataset.py', '--input', str(input_name), 
+                '--output-name', str(output_name), '--trim-bases', str(trim_bases)]
         
         if molecular_barcodes:
             args += ['--molecular-barcodes', '--mc-allowed-missmatches', str(allowed_missmatches), 
@@ -287,8 +358,9 @@ class Pipeline():
         (stdout, errmsg) = proc.communicate()
         
         if len(errmsg) > 0:
-            self.logger.error("Error, There was an error creating the dataset: "  + errmsg)
-            raise RuntimeError("Error, There was an error creating the dataset: "  + errmsg)    
+            error = "Error, There was an error creating the dataset: "  + errmsg
+            self.logger.error(error)
+            raise RuntimeError(error)    
               
         procOut = stdout.split("\n")
         self.logger.info('Creating dataset stats :')
