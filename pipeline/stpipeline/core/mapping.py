@@ -4,15 +4,16 @@ most of the options can be passed as arguments
 """
 
 import logging 
-import os
 import subprocess
 from stpipeline.common.utils import *
 from stpipeline.common.fastq_utils import *
 import pysam
     
-def bowtie2Map(fw, rv, ref_map, trim=42, cores=8, qual64=False, discordant=False, outputFolder=None):  
-    ''' maps pair end reads against a given genome using bowtie2 
-    '''
+def bowtie2Map(fw, rv, ref_map, trim=42, cores=8, 
+               qual64=False, discordant=False, outputFolder=None):  
+    """
+    maps pair end reads against a given genome using bowtie2 
+    """
     
     logger = logging.getLogger("STPipeline")
     
@@ -21,8 +22,9 @@ def bowtie2Map(fw, rv, ref_map, trim=42, cores=8, qual64=False, discordant=False
         if outputFolder is not None and os.path.isdir(outputFolder): 
             outputFile = os.path.join(outputFolder, outputFile)
     else:
-        logger.error("Error: Input format not recognized " + fw + " , " + rv)
-        raise RuntimeError("Error: Input format not recognized " + fw + " , " + rv + "\n")
+        errror = "Error: Input format not recognized " + fw + " , " + rv
+        logger.error(errror)
+        raise RuntimeError(errror + "\n")
     
     logger.info("Start Bowtie2 Mapping")
     
@@ -43,10 +45,11 @@ def bowtie2Map(fw, rv, ref_map, trim=42, cores=8, qual64=False, discordant=False
     (stdout, errmsg) = proc.communicate()
 
     if not fileOk(outputFile):
-        logger.error("Error: output file is not present : " + outputFile)
+        error = "Error: output file is not present : " + outputFile
+        logger.error(error)
         logger.error(stdout)
         logger.error(errmsg)
-        raise RuntimeError("Error: output file is not present")
+        raise RuntimeError(error + "\n")
     else:
         procOut = [x for x in errmsg.split("\n") if x.find("Warning") == -1 and x.find("Error") == -1]
         logger.info('Mapping stats on paired end mode with 5-end trimming of ' + str(trim))
@@ -59,7 +62,8 @@ def bowtie2Map(fw, rv, ref_map, trim=42, cores=8, qual64=False, discordant=False
 
 
 def bowtie2_contamination_map(fastq, contaminant_index, trim=42, cores=8, qual64=False, outputFolder=None):
-    """ Maps reads against contaminant genome index with Bowtie2 and returns
+    """ 
+    Maps reads against contaminant genome index with Bowtie2 and returns
     the fastq of unaligned reads.
     """
     
@@ -74,8 +78,9 @@ def bowtie2_contamination_map(fastq, contaminant_index, trim=42, cores=8, qual64
         if outputFolder is not None and os.path.isdir(outputFolder): 
             clean_fastq = os.path.join(outputFolder, clean_fastq)
     else:
-        logger.error("Error: Input format not recognized " + fastq)
-        raise RuntimeError("Error: Input format not recognized " + fastq + "\n")
+        error = "Error: Input format not recognized " + fastq
+        logger.error(error)
+        raise RuntimeError(error + "\n")
 
     logger.info("Start Bowtie2 Mapping rRNA")
     
@@ -95,10 +100,11 @@ def bowtie2_contamination_map(fastq, contaminant_index, trim=42, cores=8, qual64
     (stdout, errmsg) = proc.communicate()
 
     if not fileOk(contaminated_file) or not fileOk(clean_fastq):
-        logger.error("Error: output file is not present " + contaminated_file + " , " + clean_fastq)
+        error = "Error: output file is not present " + contaminated_file + " , " + clean_fastq
+        logger.error(error)
         logger.error(stdout)
         logger.error(errmsg)
-        raise RuntimeError("Error: output file is not present " + contaminated_file + " , " + clean_fastq + "\n")
+        raise RuntimeError(error + "\n")
     else:
         procOut = [x for x in errmsg.split("\n") if x.find("Warning") == -1 and x.find("Error") == -1]
         logger.info('Contaminant mapping stats against ' +
@@ -112,8 +118,9 @@ def bowtie2_contamination_map(fastq, contaminant_index, trim=42, cores=8, qual64
     return clean_fastq, contaminated_file
 
 def filterUnmapped(sam, discard_fw=False, discard_rw=False, outputFolder=None):
-    ''' filter unmapped and discordant reads
-    '''
+    """ 
+    Filter unmapped and discordant reads
+    """
     
     #TODO could optimize that by telling bowtie2 to not report unmapped reads
     
@@ -124,8 +131,9 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False, outputFolder=None):
         if outputFolder is not None and os.path.isdir(outputFolder): 
             outputFileSam = os.path.join(outputFolder, outputFileSam)
     else:
-        logger.error("Error: Input format not recognized " + sam)
-        raise RuntimeError("Error: Input format not recognized")
+        error = "Error: Input format not recognized " + sam
+        logger.error(error)
+        raise RuntimeError(error + "\n")
 
     logger.info("Start converting SAM to BAM and filtering unmapped")
     
@@ -137,8 +145,9 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False, outputFolder=None):
     for read in input:
         # filtering out not pair end reads
         if not read.is_paired:
-            logger.error("Error: input Sam file contains not paired reads")
-            raise RuntimeError("Error: input Sam file contains not paired reads")
+            error = "Error: input Sam file contains not paired reads"
+            logger.error(error)
+            raise RuntimeError(error + "\n")
 
         if read.is_proper_pair and not read.mate_is_unmapped:
             # if read is a concordant pair and it is mapped,
@@ -164,24 +173,26 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False, outputFolder=None):
     output.close()
 
     if not fileOk(outputFileSam):
-        logger.error("Error: output file is not present " + outputFileSam)
-        raise RuntimeError("Error: output file is not present " + outputFileSam + "\n")
+        error = "Error: output file is not present " + outputFileSam
+        logger.error(error)
+        raise RuntimeError(error + "\n")
     
     logger.info("End converting SAM to BAM and filtering unmapped, dropped reads = " + str(dropped))
     
     return outputFileSam
 
 def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e, outputFolder=None):
-    ''' barcode demultiplexing mapping with old findindexes 
-    '''
+    """ 
+    Barcode demultiplexing mapping with old findindexes 
+    """
     
     logger = logging.getLogger("STPipeline")
     
     if not fileOk(readsContainingTr) or not fileOk(idFile):
-        logger.error("Error: Input files not present, transcript file = " 
-                     + readsContainingTr + " ids = " + idFile)
-        raise RuntimeError("Error: Input format not recognized transcript file = " 
-                           + readsContainingTr + " ids = " + idFile + "\n")
+        error = "Error: Input files not present, transcript file = " 
+        + readsContainingTr + " ids = " + idFile
+        logger.error(error)
+        raise RuntimeError(error + "\n")
     
     logger.info("Start Mapping against the barcodes")
     
@@ -198,10 +209,11 @@ def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e, outputFolder=None):
     (stdout, errmsg) = proc.communicate()
  
     if not fileOk(outputFile):
-        logger.error("Error: output file is not present " + outputFile)
+        error = "Error: output file is not present " + outputFile
+        logger.error(error)
         logger.error(stdout)
         logger.error(errmsg)
-        raise Exception("Error: output file is not present " + outputFile + "\n")
+        raise Exception(error + "\n")
     else:
         procOut = stdout.split("\n")
         logger.info('Barcode Mapping stats :')

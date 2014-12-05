@@ -22,9 +22,7 @@ with open(input,"r") as filehandler:
     for line in filehandler.readlines():
         #['4', '13', 'Mycbp2', 'CGCTACCCTGATTCGACC', '1216']
         cols = line.split()
-        if(len(cols) != 5):
-            print "There was an error parsing the file"
-            break
+        assert len(cols) == 5
         unique_events.add( (str(cols[2]), str(cols[3]) ) )
         unique_barcodes.add(str(cols[3]))
         unique_genes.add(str(cols[2]))

@@ -3,11 +3,12 @@
     Scripts that parses a tab delimited file with the format (Name,chromosome,gene,barcode,x,y,Qul,Read)
     into two json files one containing the features and another one containing the reads
 """
+
 import sys
 import os
 import json
 import argparse
-from stpipeline.common.fastq_utils import *
+from stpipeline.common.clustering import countMolecularBarcodesClustersNaive
 
 class Transcript:
     """ 
@@ -83,7 +84,7 @@ def parseUniqueEvents(filename):
             
     return unique_events.values()
 
-def main(filename, output_name, output_folder, molecular_barcodes = False, 
+def main(filename, output_name, output_folder, trim_bases = 42, molecular_barcodes = False, 
          allowed_missmatches = 1, mc_start_position = 19, mc_end_position = 27, min_cluster_size = 2):
     
     if  filename is None or output_name is None or not os.path.isfile(filename):
@@ -93,8 +94,10 @@ def main(filename, output_name, output_folder, molecular_barcodes = False,
     if output_folder is None or not os.path.isdir(output_folder):
         output_folder = "."
     
-    if molecular_barcodes and (mc_start_position < 0  or mc_end_position < 0 or mc_end_position <= mc_start_position):
-        sys.stderr.write("Error: Molecular Barcodes option is activated but the start/end positions parameters are incorrect\n")
+    if molecular_barcodes and (mc_start_position < 0  
+                               or mc_end_position < 0 or mc_end_position <= mc_start_position):
+        sys.stderr.write("Error: Molecular Barcodes option is " \
+                         "activated but the start/end positions parameters are incorrect\n")
         sys.exit(-1)
         
     total_record = 0
@@ -106,7 +109,8 @@ def main(filename, output_name, output_folder, molecular_barcodes = False,
     discarded_reads = 0
     
     for transcript in parseUniqueEvents(filename):
-            #re-compute the read count accounting for PCR duplicates if indicated (read sequence must contain molecular barcode)
+            #re-compute the read count accounting for PCR duplicates 
+            #if indicated (read sequence must contain molecular barcode)
             if molecular_barcodes:
                 clusters = countMolecularBarcodesClustersNaive(transcript.sequences, allowed_missmatches, 
                                                mc_start_position, mc_end_position, min_cluster_size)
@@ -123,8 +127,8 @@ def main(filename, output_name, output_folder, molecular_barcodes = False,
             
             #get the reads that mapped to the transcript and generate a JSON file
             for qula, read, name in zip(transcript.qualities, transcript.sequences, transcript.readNames):
-                json_reads.append({'name': str(name), 'read': str(read), 
-                                   'quality': str(qula), 'barcode': transcript.barcode, 'gene': transcript.gene})
+                json_reads.append({'name': str(name), 'read': str(read[trim_bases:]), 
+                                   'quality': str(qula[trim_bases:]), 'barcode': transcript.barcode, 'gene': transcript.gene})
                 
             #some stats    
             unique_genes.add(str(transcript.gene))
@@ -155,7 +159,8 @@ def main(filename, output_name, output_folder, molecular_barcodes = False,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=str,
-                        help='Input file in tab delimited format [read_name | chromosome | gene | barcode | x | y | read_quality | read_sequence]')
+                        help='Input file in tab delimited format ' \
+                        '[read_name | chromosome | gene | barcode | x | y | read_quality | read_sequence]')
     parser.add_argument('--output-folder', type=str,
                         help='Path of the output folder (default is /.)')
     parser.add_argument('--output-name', type=str,
@@ -170,8 +175,11 @@ if __name__ == "__main__":
                         help='Position (base wise) of the last base of the molecular barcodes')
     parser.add_argument('--min-cluster-size', default=2,
                         help='Min number of equal molecular barcodes to count as a cluster')
+    parser.add_argument('--trim-bases', default=42,
+                        help='Number of bases to trim from the output reads')
 
     args = parser.parse_args()
-    main(args.input, args.output_name, args.output_folder, args.molecular_barcodes, 
-         int(args.mc_allowed_missmatches), int(args.mc_start_position), int(args.mc_end_position), int(args.min_cluster_size))
+    main(args.input, args.output_name, args.output_folder,  int(args.trim_bases), args.molecular_barcodes, 
+         int(args.mc_allowed_missmatches), int(args.mc_start_position), 
+         int(args.mc_end_position), int(args.min_cluster_size))
                                     

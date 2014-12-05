@@ -1,13 +1,12 @@
 #!/usr/bin/env python
-""" This module contains some functions to deal with fastq files
+""" 
+This module contains some functions to deal with fastq files
 """
 
 from stpipeline.common.utils import *
 import logging 
 from itertools import izip
-import numpy as np
-import scipy.cluster.hierarchy
-import collections
+from cutadapt.qualtrim import quality_trim_index
 
 def coroutine(func):
     """ 
@@ -28,13 +27,15 @@ def trim_quality(record, trim_distance, min_qual=20,
     qscore = record[2]
     sequence = record[1]
     name = record[0]
-    nbases = 0
     phred = 64 if qual64 else 33
     
-    for qual in qscore[::-1]:
-        if (ord(qual) - phred) < min_qual:
-            nbases +=1
+    #get the position at which to trim
+    cut_index = quality_trim_index(qscore, min_qual, phred)
+    #get the number of bases suggested to trim
+    nbases = len(qscore) - cut_index
     
+    #check if the trimmed sequence would have min length accounting for trim_distance
+    #offset 
     if (len(sequence) - (trim_distance + nbases)) >= min_length:
         new_seq = record[1][:(len(sequence) - nbases)]
         new_qual = record[2][:(len(sequence) - nbases)]
@@ -107,7 +108,7 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
     """ 
     Converts reads in rw file appending the first (distance - trim)
     bases of fw and also add FW or RW string to reads names
-    It also performs a bwa qualitry trim of the fw and rw reads, when
+    It also performs a bwa quality trim of the fw and rw reads, when
     the trimmed read is below min lenght it will discarded.
     """
     logger = logging.getLogger("STPipeline")
@@ -121,8 +122,9 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
         if outputFolder is not None and os.path.isdir(outputFolder): 
             out_fw = os.path.join(outputFolder, out_fw)
     else:
-        logger.error("Error: Input format not recognized " + out_fw + " , " + out_rw)
-        raise RuntimeError("Error: Input format not recognized " + out_fw + " , " + out_rw + "\n")
+        error = "Error: Input format not recognized " + out_fw + " , " + out_rw
+        logger.error(error)
+        raise RuntimeError(error + "\n")
 
     logger.info("Start Reformatting and Filtering raw reads")
     
@@ -155,6 +157,8 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
 
         if line2_trimmed is not None:
             # Add the barcode and polyTs from fw only if rw has not been completely trimmed
+            # we do not include in the new seq/qual the number of reverse bases that we want
+            # to trim so they are not included in the mapping
             new_seq = line1[1][:trim_fw] + line2_trimmed[1][trim_rw:]
             new_qual = line1[2][:trim_fw] + line2_trimmed[2][trim_rw:]
             record = (line2_trimmed[0], new_seq, new_qual)
@@ -173,8 +177,9 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
     rw_file.close()
     
     if not fileOk(out_fw) or not fileOk(out_rw):
-        logger.error("Error: output file is not present " + out_fw + " , " + out_rw)
-        raise RuntimeError("Error: output file is not present " + out_fw + " , " + out_rw + "\n")
+        error = "Error: output file is not present " + out_fw + " , " + out_rw
+        logger.error(error)
+        raise RuntimeError(error + "\n")
     else:
         logger.info("Trimming stats total reads : " + str(total_reads))
         logger.info("Trimming stats fw 1 : " + str(dropped_fw) + " reads have been dropped on the forward reads!")
@@ -189,142 +194,4 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
     
     return out_fw, out_rw
 
-def hamming_distance(s1, s2):
-    """
-    Returns the Hamming distance between equal-length sequences.
-    """
-    if len(s1) != len(s2):
-        raise ValueError("Undefined for sequences of unequal length")
-    return sum(ch1 != ch2 for ch1, ch2 in zip(s1, s2))
 
-def extractMolecularBarcodes(reads, mc_start_position, mc_end_position):
-    """ 
-    Extracts a list of molecular barcodes from the list of reads given their
-    start and end positions
-    """
-    molecular_barcodes = list()
-    for read in reads:
-        if mc_end_position > len(read):
-            raise ValueError("Molecular barcode could not be found in the read " + read )
-        molecular_barcodes.append(read[mc_start_position:mc_end_position])
-    return molecular_barcodes
-
-def computeDistanceMatrixFromSequences(reads):
-    """
-    Computes a distance matrix from a list of reads
-    """
-    n = len(reads)
-    distance_matrix = np.zeros((n,n))
-
-    for i, ele_1 in enumerate(reads):
-        for j, ele_2 in enumerate(reads):
-            if j >= i:
-                break # Since the matrix is symmetrical we don't need to  calculate everything
-            difference = hamming_distance(ele_1, ele_2)  
-            distance_matrix[i, j] = difference
-            distance_matrix[j, i] = difference
-    return distance_matrix
-
-def countMolecularBarcodesClustersHierarchical(reads, allowed_missmatches, mc_start_position, 
-                                               mc_end_position, min_cluster_size):
-    """
-    This functions tries to finds clusters of similar reads given a min cluster size
-    and a minimum distance (allowed_missmatches)
-    It will return a list with the all the clusters and their elements
-    It uses a hirarchical clustering approach to then get the flat clusters
-    at a certain level (allowed_missmatches)
-    """
-    molecular_barcodes = extractMolecularBarcodes(reads, mc_start_position, mc_end_position)
-    distance_matrix = computeDistanceMatrixFromSequences(molecular_barcodes)
-    linkage = scipy.cluster.hierarchy.single(distance_matrix)
-    #problem is that linkage will build the tree using relative distances (need to find a way to go from allowed_
-    #missmatches to this relative values
-    flat_clusters = scipy.cluster.hierarchy.fcluster(linkage, allowed_missmatches, criterion='distance')  
-    
-    clusters = []
-    items = collections.defaultdict(list)
-    for i, item in enumerate(flat_clusters):
-        items[item].append(i)
-    for item, members in items.iteritems():
-        if len(members) >= min_cluster_size and len(members) > 1:
-            clusters.append([molecular_barcodes[i] for i in members])
-
-    return clusters
-
-def countMolecularBarcodesClustersNaive(reads, allowed_missmatches, 
-                                        mc_start_position, mc_end_position, min_cluster_size):
-    """
-    This functions tries to finds clusters of similar reads given a min cluster size
-    and a minimum distance (allowed_missmatches)
-    It will return a list with the all the clusters and their elements
-    It uses a naive approach to iterate all reads and check for clusters
-    """
-    molecular_barcodes = extractMolecularBarcodes(reads, mc_start_position, mc_end_position)
-    molecular_barcodes.sort()
-    clusters_dict = {}
-    nclusters = 0
-    for i in xrange(0, len(molecular_barcodes)):
-        if i == 0:
-            clusters_dict[nclusters] = [molecular_barcodes[i]]
-        else:
-            last = clusters_dict[nclusters][-1]
-            if hamming_distance(last, molecular_barcodes[i]) <= allowed_missmatches:
-                clusters_dict[nclusters].append(molecular_barcodes[i])
-            else:
-                nclusters += 1
-                clusters_dict[nclusters] = [molecular_barcodes[i]]
-    clusters = []
-    for item, members in clusters_dict.iteritems():
-        if len(members) >= min_cluster_size and len(members) > 1:
-            clusters.append(members)
-            
-    return clusters
-
-def countMolecularBarcodesClustersNaiveFallBack(reads, allowed_missmatches, 
-                                                mc_start_position, mc_end_position, min_cluster_size):
-    """
-    This functions tries to finds clusters of similar reads given a min cluster size
-    and a minimum distance (allowed_missmatches)
-    It will return a list with the all the clusters and their elements
-    It uses a naive approach to iterate all reads and check for clusters
-    """
-    clusters = []
-    centroids = []
-    scores = []
-    molecular_barcodes = extractMolecularBarcodes(reads, mc_start_position, mc_end_position)
-    molecular_barcodes.sort()
-    
-    for mc in molecular_barcodes:
-        matched = False
-        
-        if len(clusters) == 0:
-            clusters.append([mc])
-            centroids.append([mc])
-            scores.append([])
-            continue
-
-        for clustnum in xrange(len(clusters)):
-            dist = hamming_distance(mc, centroids[clustnum][0])
-
-            if dist <= allowed_missmatches:
-                clusters[clustnum].append(mc)
-
-                if len(scores[clustnum]) == 0:
-                    scores[clustnum].append(dist)
-                elif dist < scores[clustnum]:
-                    scores[clustnum][0] = dist
-                    centroids[clustnum][0] = mc
-
-                matched = True
-                break
-
-        if not matched:       
-            clusters.append([mc])
-            centroids.append([mc])
-            scores.append([])
-
-    scores_filtered = []
-    for cluster in clusters:
-        if len(cluster) <= min_cluster_size and len(cluster) > 1:
-            scores_filtered.append(cluster)     
-    return scores_filtered

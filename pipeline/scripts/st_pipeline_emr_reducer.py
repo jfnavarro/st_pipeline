@@ -1,12 +1,7 @@
 #!/usr/bin/env python
+""" 
+This is the Amazon EMR wrapper for the reducer function to run the Map Reduce version of the ST pipeline
 """
-    Copyright (C) 2012  Spatial Transcriptomics AB,
-    read LICENSE for licensing terms. 
-    Contact : Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
-
-"""
-
-''' This is the Amazon EMR wrapper for the reducer function to run the Map Reduce version of the ST pipeline'''
 
 import sys
 from collections import defaultdict
@@ -14,7 +9,6 @@ from collections import defaultdict
 #TODO : check the json features get merged properly
 
 def main():
-    
     hits = defaultdict(int)
     # input comes from STDIN
     for line in sys.stdin:
@@ -25,6 +19,7 @@ def main():
             count = int(count)
         except ValueError:
             continue
+        #convert to dict
         doc = eval(word)
         feature_gene = (doc['x'], doc['y'], doc['gene'], doc['barcode'])
         hits[feature_gene] += count

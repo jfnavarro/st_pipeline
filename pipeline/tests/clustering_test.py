@@ -1,13 +1,14 @@
 #! /usr/bin/env python
 """ 
-    Unit-test the package fastq_utils
+Unit-test the package clustering
 """
-import unittest
-from stpipeline.common.fastq_utils import *
 
-class TestFastqUtils(unittest.TestCase):
+import unittest
+from stpipeline.common.clustering import countMolecularBarcodesClustersNaive
+
+class TestClustering(unittest.TestCase):
          
-    def test_numberOfClusters(self):
+    def test_naive_clustering(self):
         """
         Tests the function numberOfClusters that takes
         as input a list of short reads(molecular barcodes) the minimum distance

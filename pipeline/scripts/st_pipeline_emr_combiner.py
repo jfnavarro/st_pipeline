@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-
-''' This is the Amazon EMR wrapper for the combiner function to run the Map Reduce version of the ST pipeline'''
+"""
+This is the Amazon EMR wrapper for the combiner function to run the Map Reduce version of the ST pipeline
+"""
 
 import sys
 from collections import defaultdict
@@ -8,7 +9,6 @@ from collections import defaultdict
 #TODO : check the json features get merged properly
 
 def main():
-    
     hits = defaultdict(int)
     # input comes from STDIN
     for line in sys.stdin:
@@ -19,7 +19,7 @@ def main():
             count = int(count)
         except ValueError:
             continue
-        #doc = json.loads(word)
+        #to convert to dict
         doc = eval(word)
         feature_gene = (doc['y'], doc['x'], doc['gene'], doc['barcode'])
         hits[feature_gene] += count

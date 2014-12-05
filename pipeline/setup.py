@@ -3,9 +3,7 @@
 ST Pipeline is a toolkit of RNA-Seq data analysis for the Spatial Transcriptomics data.
 """
 
-"""Based on https://github.com/pypa/sampleproject/blob/master/setup.py."""
 import os
-import sys
 import io
 import glob
 from setuptools import setup, find_packages
@@ -17,7 +15,7 @@ with io.open(os.path.join(here, 'README'), encoding='utf-8') as f:
 
 setup(
   name = 'stpipeline',
-  version = '0.2.5',
+  version = '0.3.1',
   description = __doc__.split("\n", 1)[0],
   long_description = long_description,
   keywords = 'rna-seq analysis spatial transcriptomics toolkit',
@@ -34,6 +32,7 @@ setup(
     'setuptools',
     'pysam>=0.7.5',
     'numpy',
+    'cutadapt',
     'invoke'
   ],
   test_suite = 'tests',
