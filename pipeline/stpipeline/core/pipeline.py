@@ -12,8 +12,6 @@ import os
 from glob import glob
 import logging
 import subprocess
-import random
-import tempfile
 
 class Pipeline():
     
@@ -94,8 +92,9 @@ class Pipeline():
         if len(unavailable_scripts) == 0:
             self.logger.info("All tools present..starting the analysis")
         else:
-            self.logger.error("Error, these programs not found:\t".join(unavailable_scripts))
-            raise RuntimeError("Error, these programs not found:\t".join(unavailable_scripts))
+            error = "Error, these programs not found:\t".join(unavailable_scripts)
+            self.logger.error(error)
+            raise RuntimeError(error)
        
     def createParameters(self, parser):
             """

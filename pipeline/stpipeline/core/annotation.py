@@ -19,7 +19,7 @@ def annotateReadsWithHTSeq(samFile, gtfFile, mode, outputFolder=None):
     logger = logging.getLogger("STPipeline")
     
     if samFile.endswith(".sam"):
-        outputFile = replaceExtension(getCleanFileName(samFile),'_gene.sam')
+        outputFile = replaceExtension(getCleanFileName(samFile),'_annotated.sam')
         if outputFolder is not None and os.path.isdir(outputFolder): 
             outputFile = os.path.join(outputFolder, outputFile)
     else:
@@ -114,11 +114,11 @@ def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous=False,
     
     if  annot_reads.endswith(".sam")  \
         and fw.endswith(".fastq") and rv.endswith(".fastq"):
-        outputFile = replaceExtension(getCleanFileName(fw),'_withTranscript.fastq')
+        outputFile = replaceExtension(getCleanFileName(fw),'_annotated.fastq')
         if outputFolder is not None and os.path.isdir(outputFolder): 
             outputFile = os.path.join(outputFolder, outputFile)
             
-        outputFileDiscarded = replaceExtension(getCleanFileName(fw),'_withTranscript_discarded.fastq')
+        outputFileDiscarded = replaceExtension(getCleanFileName(fw),'_annotated_discarded.fastq')
         if outputFolder is not None and os.path.isdir(outputFolder): 
             outputFileDiscarded = os.path.join(outputFolder, outputFileDiscarded)
             

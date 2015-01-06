@@ -47,3 +47,6 @@ Version 0.3.2
 * Outputted reads JSON now only has the portion of the read that was used to map
 * Cutadapt is integrated but only using the quality trimming for now 
 * Internal refactoring and optimizations
+
+Version 0.3.3
+* Added option to keep files with discarded reads/barcodes

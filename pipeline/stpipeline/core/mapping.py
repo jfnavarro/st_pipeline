@@ -213,11 +213,11 @@ def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e, outputFolder=None, ke
     
     logger.info("Start Mapping against the barcodes")
     
-    outputFile = replaceExtension(getCleanFileName(readsContainingTr),'_nameMap.txt')
+    outputFile = replaceExtension(getCleanFileName(readsContainingTr),'_demultiplexed.csv')
     if outputFolder is not None and os.path.isdir(outputFolder): 
         outputFile = os.path.join(outputFolder, outputFile)
     
-    outputFileDiscarded = replaceExtension(getCleanFileName(readsContainingTr),'_nameMap_discarded.txt')
+    outputFileDiscarded = replaceExtension(getCleanFileName(readsContainingTr),'_demultiplexed_discarded.csv')
     if outputFolder is not None and os.path.isdir(outputFolder): 
         outputFileDiscarded = os.path.join(outputFolder, outputFileDiscarded)
         
