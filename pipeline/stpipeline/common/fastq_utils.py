@@ -113,7 +113,7 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
     """
     logger = logging.getLogger("STPipeline")
     
-    if fw.endswith(".fastq") and rw.endswith(".fastq"):
+    if (fw.endswith(".fastq") or fw.endswith(".fq")) and (rw.endswith(".fastq") or rw.endswith(".fq")):
         out_rw = replaceExtension(getCleanFileName(rw),'_formated.fastq')
         if outputFolder is not None and os.path.isdir(outputFolder) : 
             out_rw = os.path.join(outputFolder, out_rw)

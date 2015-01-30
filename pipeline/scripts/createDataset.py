@@ -8,7 +8,11 @@ import sys
 import os
 import json
 import argparse
+from stpipeline.common.utils import *
 from stpipeline.common.clustering import countMolecularBarcodesClustersNaive
+from stpipeline.common.fastq_utils import *
+
+import pysam
 
 class Transcript:
     """ 
@@ -48,41 +52,82 @@ class Transcript:
             
     def toBarcodeDict(self):
         return {'barcode': self.barcode, 'gene': self.gene, 'x': self.x, 'y': self.y, 'hits': self.reads}
-   
+
+
+
 def parseUniqueEvents(filename):
     """
     Parses the transcripts present in the filename given as input.
-    Expected tab-delimited format as follows : 
-    [read_name | chromosome | gene | barcode | x | y | read_quality | read_sequence]
+    Expected fastq format as follows for the description line:
+    @<annotation> Chr:<chromosome> Gene:<gene> B0:Z:<barcode> B1:Z:<x> B2:Z:<y>
     The output will be a list containing unique transcripts (gene,barcode) whose
     reads are aggregated
-    @todo : add a proper CSV parser with column names
     """
 
     unique_events = dict()
-    
-    with open(filename, 'r') as filehandler:
-        for line in filehandler:
-            cols = line.split()
-            assert len(cols) == 8
-            gene = str(cols[2].replace("Gene:",""))
-            clear_name = str(cols[0].replace("@",""))
-            #chromosome = str(cols[1].replace("Chr:",""))
-            barcode = str(cols[3])
-            x = int(cols[4])
-            y = int(cols[5])
-            qual = str(cols[6])
-            seq = str(cols[7])
-            
-            #@todo should be a way to achieve this with defaultdict
-            transcript = Transcript(barcode=barcode, gene=gene, x=x, y=y, 
-                                    reads=1, sequence=[seq], quality=[qual], readName=[clear_name])
-            if unique_events.has_key(transcript):
-                unique_events[transcript] += transcript
-            else:
-                unique_events[transcript] = transcript
-            
+
+    suffix = getExtension(filename).lower()
+
+    if suffix == "fq" or suffix == "fastq":
+        # FASTQ
+        with open(filename, 'r') as filehandler:
+            for (descr, seq, qual) in readfq(filehandler):
+                cols = descr.split()
+                assert len(cols) == 6
+                clear_name = str(cols[0].replace("@",""))
+                chromosome = str(cols[1].replace("Chr:",""))
+                gene = str(cols[2].replace("Gene:",""))
+                barcode = str(cols[3].replace("B0:Z:", ""))
+                x = int(cols[4].replace("B1:Z:", ""))
+                y = int(cols[5].replace("B2:Z:", ""))
+                seq = str(seq)
+                qual = str(qual)
+
+                #@todo should be a way to achieve this with defaultdict
+                transcript = Transcript(barcode=barcode, gene=gene, x=x, y=y,
+                                        reads=1, sequence=[seq], quality=[qual], readName=[clear_name])
+                if unique_events.has_key(transcript):
+                    unique_events[transcript] += transcript
+                else:
+                    unique_events[transcript] = transcript
+
+    elif suffix == "sam" or suffix == "bam":
+        # SAM/BAM FILES.
+        if suffix == "sam":
+            flg = "r"
+        else:
+            flg = "rb"
+        with pysam.AlignmentFile(filename, flg) as filehandler:
+            for rec in filehandler:
+                clear_name = str(rec.query_name)
+                seq = str(rec.query_sequence)
+                qual = str(rec.query_qualities)
+                for (k, v) in rec.tags:
+                    if k == "B0":
+                        barcode = str(v)
+                    elif k == "B1":
+                        x = int(v)
+                    elif k == "B2":
+                        y = int(v)
+                    elif k == "XF":
+                        gene = str(v)
+                    else:
+                        continue
+
+                #@todo should be a way to achieve this with defaultdict
+                transcript = Transcript(barcode=barcode, gene=gene, x=x, y=y,
+                                        reads=1, sequence=[seq], quality=[qual], readName=[clear_name])
+                if unique_events.has_key(transcript):
+                    unique_events[transcript] += transcript
+                else:
+                    unique_events[transcript] = transcript
+    else:
+        raise ValueError("Invalid file format: expected FASTQ, SAM or BAM.")
+
     return unique_events.values()
+
+
+
 
 def main(filename, output_name, output_folder, trim_bases = 42, molecular_barcodes = False, 
          allowed_missmatches = 1, mc_start_position = 19, mc_end_position = 27, min_cluster_size = 2):
@@ -159,8 +204,7 @@ def main(filename, output_name, output_folder, trim_bases = 42, molecular_barcod
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=str,
-                        help='Input file in tab delimited format ' \
-                        '[read_name | chromosome | gene | barcode | x | y | read_quality | read_sequence]')
+                        help='Input file in FASTQ, SAM or BAM format, augmented with gene.')
     parser.add_argument('--output-folder', type=str,
                         help='Path of the output folder (default is /.)')
     parser.add_argument('--output-name', type=str,
@@ -168,7 +212,7 @@ if __name__ == "__main__":
     parser.add_argument('--molecular-barcodes', 
                         action="store_true", default=False, help="Activates the molecular barcodes PCR duplicates filter")
     parser.add_argument('--mc-allowed-missmatches', default=1,
-                        help='Number of allowed missmatches when applying the molecular barcodes PCR filter')
+                        help='Number of allowed mismatches when applying the molecular barcodes PCR filter')
     parser.add_argument('--mc-start-position', default=19,
                         help='Position (base wise) of the first base of the molecular barcodes')
     parser.add_argument('--mc-end-position', default=30,

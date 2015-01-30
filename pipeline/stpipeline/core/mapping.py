@@ -17,7 +17,7 @@ def bowtie2Map(fw, rv, ref_map, trim=42, cores=8,
     
     logger = logging.getLogger("STPipeline")
     
-    if fw.endswith(".fastq") and rv.endswith(".fastq"):
+    if (fw.endswith(".fastq") or fw.endswith(".fq")) and (rv.endswith(".fastq") or rv.endswith(".fq")):
         outputFile = replaceExtension(getCleanFileName(fw),"_mapped.sam")
         if outputFolder is not None and os.path.isdir(outputFolder): 
             outputFile = os.path.join(outputFolder, outputFile)
@@ -76,7 +76,7 @@ def bowtie2_contamination_map(fastq, contaminant_index, trim=42, cores=8,
     
     logger = logging.getLogger("STPipeline")
 
-    if fastq.endswith(".fastq"):
+    if fastq.endswith(".fastq") or fastq.endswith(".fq"):
         contaminated_file = replaceExtension(getCleanFileName(fastq),"_contaminated.sam")
         if outputFolder is not None and os.path.isdir(outputFolder): 
             contaminated_file = os.path.join(outputFolder, contaminated_file)
@@ -198,9 +198,10 @@ def filterUnmapped(sam, discard_fw=False, discard_rw=False, outputFolder=None, k
     
     return outputFileSam
 
-def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e, outputFolder=None, keep_discarded_files=False):
+
+def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e, oh, outputFolder=None, keep_discarded_files=False):
     """ 
-    Barcode demultiplexing mapping with old findindexes 
+    Barcode demultiplexing mapping with taggd
     """
     
     logger = logging.getLogger("STPipeline")
@@ -213,25 +214,27 @@ def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e, outputFolder=None, ke
     
     logger.info("Start Mapping against the barcodes")
     
-    outputFile = replaceExtension(getCleanFileName(readsContainingTr),'_demultiplexed.csv')
+    outputFilePrefix = replaceExtension(getCleanFileName(readsContainingTr),'_demultiplexed')
     if outputFolder is not None and os.path.isdir(outputFolder): 
-        outputFile = os.path.join(outputFolder, outputFile)
-    
-    outputFileDiscarded = replaceExtension(getCleanFileName(readsContainingTr),'_demultiplexed_discarded.csv')
-    if outputFolder is not None and os.path.isdir(outputFolder): 
-        outputFileDiscarded = os.path.join(outputFolder, outputFileDiscarded)
-        
-    args = ['findIndexes',
-            "-m", str(m), 
-            "-k", str(k), 
-            "-s", str(s),
-            "-l", str(l), 
-            "-o", str(outputFile)]
-    
-    if keep_discarded_files:
-        args += ["-d", str(outputFileDiscarded)]
-    
-    args += [idFile, readsContainingTr]
+        outputFilePrefix = os.path.join(outputFolder, outputFilePrefix)
+
+    # Check format.
+    suffix = getExtension(readsContainingTr).lower()
+    if suffix == "fastq": suffix = "fq"
+    if not (suffix == "fq" or suffix == "sam" or suffix == "bam"):
+        raise ValueError("Expected FASTQ, SAM or BAM file.")
+
+    outputFile = outputFilePrefix + ".matched." + suffix
+
+    # taggd options
+    args = ['taggd_demultiplex.py',
+            "--max_edit_distance", str(m),
+            "--k", str(k),
+            "--start_position", str(s),
+            "--overhang", str(oh)]
+    if not keep_discarded_files:
+        args.append("--only_output_matched")
+    args += [idFile, readsContainingTr, outputFilePrefix]
 
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout, errmsg) = proc.communicate()

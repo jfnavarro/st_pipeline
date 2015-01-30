@@ -1,48 +1,30 @@
-To install the st_pipeline on Uppmax follow the instructions below:
+To install the st_pipeline on UPPMAX follow the instructions below:
 
-1) log in on milou
+1) Install virtual environment in your UPPMAX following this guideline (make sure you use python version 2.7.6):
+   
+https://www.uppmax.uu.se/how-to-install-your-own-python-modules-or-specific-python-version
 
-2) run the command:
-    /home/dahlo/uppmaxScripts/pythonVirtualEnv/python-virtualenv-installer
+2) Install bowtie2 (NOT NEEDED in Uppmax since you can load bowtie with module load bowtie but this will install the newest version) :
 
-3) logout
+    cd pipeline/depedencies
+    unzip bowtie2-2.2.3-source.zip
+    cd bowtie2-2.2.3 
+    make
+    cp bowtie2* ~/bin
 
-4) log in again
+3) download the pipeline file on your computer from ST Google Docs
 
-5) run the command:
-    module unload python && mkvirtualenv --no-site-packages --python=/sw/comp/python/2.7_kalkyl/bin/python devel
+4) copy zip-file to your uppmax home folder
+
+5) unzip the file on uppmax
+	password: avgohe52 (version < 0.3.1)
+	password: avghoe52 (version 0.3.1 and onwards)
 
 6) run the commands:
-    pip install numpy
-    pip install pysam
-    pip install HTSeq==0.6.1p1
+  	cd pipeline
+  	python setup.py build
+  	python setup.py install
+  	pyeven rehash    
 
-7) Install FindIndexes if not installed already :
-
-	cd pipeline/dependencies/findIndexes
-	mkdir build
-	cd build
-	cmake ../
-	make
-	cp findIndexes /path/to/binaries (folder where you can install binaries present in your PATH)
-
-8) Install bowtie2 (not needed but this will install newer version) :
-
-	cd pipeline/dependencies/bowtie2-sources
-	make
-	cp bowtie2* /path/to/binaries
-
-9) download the pipeline file on your computer from ST Google Docs
-
-10) copy zip-file to your uppmax home folder
-
-11) unzip the file on uppmax
-    password: avgohe52 
-
-12) run the commands:
-      cd pipeline
-      python setup.py build
-      python setup.py install
-
-13) test by running the command:
-      python setup.py test
+7) test by running the command:
+  	python setup.py test

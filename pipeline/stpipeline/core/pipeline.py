@@ -22,6 +22,7 @@ class Pipeline():
         
         self.allowed_missed = 3
         self.allowed_kimera = 6
+        self.overhang = 2
         self.min_length_trimming = 28
         self.trimming_fw_bowtie = 42
         self.trimming_rw_bowtie = 5 
@@ -115,6 +116,8 @@ class Pipeline():
                                 help="Number of allowed mismatches when mapping against the barcodes")
             parser.add_argument('--allowed-kimer', default=7, 
                                 help="KMer length when mapping against the barcodes")
+            parser.add_argument('--overhang', default=2,
+                                help="Extra flanking bases added when mapping against the barcodes")
             parser.add_argument('--min-length-qual-trimming', default=28,
                                 help="Minimum length of the sequence for mapping after trimming, " \
                                 "shorter reads will be discarded")
@@ -177,6 +180,7 @@ class Pipeline():
         #init pipeline arguments
         self.allowed_missed = int(options.allowed_missed)
         self.allowed_kimera = int(options.allowed_kimer)
+        self.overhang = int(options.overhang)
         self.min_length_trimming = int(options.min_length_qual_trimming)
         self.trimming_fw_bowtie = int(options.mapping_fw_trimming)
         self.trimming_rw_bowtie = int(options.mapping_rv_trimming)
@@ -335,26 +339,34 @@ class Pipeline():
         if self.clean: safeRemove(Fastq_rv_trimmed)
         
         # Map against the barcodes
-        mapFile = getTrToIdMap(withTr, 
+        mapFile = getTrToIdMap(withTr,
                                self.ids, 
                                self.allowed_missed, 
                                self.allowed_kimera, 
                                self.s, 
                                self.l, 
-                               self.e, 
+                               self.e,
+                               self.overhang,
                                self.temp_folder,
                                self.keep_discarded_files)
         if self.clean: safeRemove(withTr)
     
         # create json files with the results
-        self.createDataset(mapFile, self.expName, self.trimming_fw_bowtie, self.molecular_barcodes, 
-                           self.mc_allowed_missmatches, self.mc_start_position, 
-                           self.mc_end_position, self.min_cluster_size)
-        if self.clean: safeRemove(mapFile)
+        self.createDataset(mapFile,
+                           self.expName,
+                           self.trimming_fw_bowtie,
+                           self.molecular_barcodes,
+                           self.mc_allowed_missmatches,
+                           self.mc_start_position,
+                           self.mc_end_position,
+                           self.min_cluster_size)
+        if self.clean:
+            safeRemove(mapFile)
         
         finish_exe_time = globaltime.getTimestamp()
         total_exe_time = finish_exe_time - start_exe_time
         self.logger.info("Total Execution Time : " + str(total_exe_time))
+
 
 
     def createDataset(self, input_name, output_name, trim_bases = 42, 

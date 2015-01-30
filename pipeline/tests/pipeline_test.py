@@ -4,6 +4,7 @@
 """
 
 import unittest
+import tempfile
 from stpipeline.core.pipeline import *
 
 class TestPipeline(unittest.TestCase):
@@ -46,7 +47,7 @@ class TestPipeline(unittest.TestCase):
 		self.pipeline = Pipeline()
 		
 		# init pipeline arguments
-		self.pipeline.allowed_missed = 5
+		self.pipeline.allowed_missed = 6
 		self.pipeline.allowed_kimera = 7
 		self.pipeline.min_length_trimming = 28
 		self.pipeline.trimming_rw_bowtie = 5
