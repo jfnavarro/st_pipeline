@@ -35,6 +35,13 @@ To install the st_pipeline on your MAC, Linux or UPPMAX follow the instructions 
     make
     cp bowtie2* ~/bin
 
+6) Install STAR:
+
+   cd pipeline/dependencies
+   unzip STAR-STAR_2.4.0j.zip
+   cd STAR-STAR_2.4.0j/bin/<my environment>
+   cp STAR ~/bin
+
 7) run the commands:
 
   	cd pipeline

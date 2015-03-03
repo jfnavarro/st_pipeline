@@ -91,7 +91,7 @@ class TestPipeline(unittest.TestCase):
 		self.assertTrue(os.path.getsize(readsfile) > 1024, "Reads JSON file is not empty")
 
 			
-	def test_normal_run(self):
+	def test_normal_bowtie2_run(self):
 		"""
 		Tests st_pipeline on a mouse data subset with normal fastq files
 		"""
@@ -110,12 +110,12 @@ class TestPipeline(unittest.TestCase):
 			self.pipeline.run()
 		except Exception as e:
 			print e
-			self.assertTrue(0, "Running Normal Test failed \n")
+			self.assertTrue(0, "Running Normal Bowtie2 Test failed \n")
 		
 		self.validateOutputData(self.expnameNormal)
 		
 		
-	def test_mc_run(self):
+	def test_mc_bowtie2_run(self):
 		"""
 		Tests st_pipeline on a mouse data subset with molecular barcodes fastq files
 		"""
@@ -137,7 +137,7 @@ class TestPipeline(unittest.TestCase):
 			self.pipeline.run()
 		except Exception as e:
 			print e
-			self.assertTrue(0, "Running Molecular Barcode Test failed \n")
+			self.assertTrue(0, "Running Molecular Barcode Bowtie2 Test failed \n")
 				
 		self.validateOutputData(self.expnameMC)	
 
