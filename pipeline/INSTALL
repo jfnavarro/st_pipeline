@@ -1,54 +1,47 @@
-- In order to be able to compile programs in Ubuntu you need to have the build-essentials :
+To install the st_pipeline on your MAC, Linux or UPPMAX follow the instructions below:
 
-sudo apt-get install build-essential
+1) install a virtual environment following these instructions :
+   
+	- git clone git://github.com/yyuu/pyenv.git ~/.pyenv
+	- echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
+	- echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
+	- echo 'eval "$(pyenv init -)"' >> ~/.bash_profile
+	- exec "$SHELL" #or log out and log in
+	- pyenv install 2.7.6
+	- pyenv rehash
+	- pyenv global 2.7.6
+	
+	NOTE (this is not valid in UPPMAX) : you can use other type of virtual environments or install
+	in everything in your system with root permissions. For that you need to install PIP,
+	SETUPTOOLS and do everything as sudo user.
+	
+2) download the pipeline file on your computer from ST Google Docs
 
-- In order to be able to compile programs in MAC you need to have xcode, xcode terminal programs
-and macports
+3) copy zip-file to your home folder or your UPPMAX home folder
 
-https://developer.apple.com/xcode/
+	For UPPMAX use:
+	- scp pipeline.zip youruser@milou.uppmax.uu.se:~/
 
-http://www.macports.org/
+4) unzip the file on uppmax
+	
+	password: avgohe52 (version < 0.3.3)
+	password: avghoe52 (version 0.3.3 and onwards)
 
-- To install cmake and boost :
+5) Install bowtie2 (NOT NEEDED in Uppmax since you can load bowtie with "module load bioinfo-tools") :
 
-sudo apt-get install libboost-dev cmake (ubuntu)
-sudo port install boost cmake (MAC)
+    cd pipeline/depedencies
+    unzip bowtie2-2.2.3-source.zip
+    cd bowtie2-2.2.3 
+    make
+    cp bowtie2* ~/bin
 
-- To install findIndexes (path to binaries must be in your PATH variable): 
+7) run the commands:
 
-cd findIndexes
-mkdir build
-cd build
-cmake ../
-make
-cp findIndexes /path/to/binaries
+  	cd pipeline
+  	python setup.py build
+  	python setup.py install
+  	pyeven rehash    
 
-- To install bowtie2 
+8) test by running the command:
 
-cd bowtie2-sources
-make
-cp bowtie2* /path/to/binaries
-
-- To install Pysam, numpy and HTSeq :
-
-sudo apt-get -y install python-dev python-numpy python-matplotlib python-setuptools (Ubuntu)
-sudo port install py-numpy py-matplotlib py-setuptools (Mac)
-sudo easy_install -U pip
-sudo easy_install -U cython
-sudo easy_install -U distribute
-sudo easy_install -U pysam
-sudo pip install HTSeq==0.6.1p1 
-
-- To install pipeline :
-
-cd pipeline
-python setup.py build
-python setup.py install
-
-Test by running the command:
-python setup.py test
-
-
-If you have problem executing :
-export PATH=$PATH:~/path/to/binaries  #where findIndexes and bowtie are installed
-export PYTHONPATH=$PATH:~/path/to/pipeline #path to the python installed python packages
+  	python setup.py test

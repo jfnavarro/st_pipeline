@@ -15,7 +15,7 @@ with io.open(os.path.join(here, 'README'), encoding='utf-8') as f:
 
 setup(
   name = 'stpipeline',
-  version = '0.3.1',
+  version = '0.3.2',
   description = __doc__.split("\n", 1)[0],
   long_description = long_description,
   keywords = 'rna-seq analysis spatial transcriptomics toolkit',
@@ -31,9 +31,11 @@ setup(
     'HTSeq>=0.6.1',
     'setuptools',
     'pysam>=0.7.5',
-    'numpy',
     'cutadapt',
-    'invoke'
+    'invoke',
+    'argparse',
+    'scipy',
+    'numpy',
   ],
   test_suite = 'tests',
   scripts = glob.glob('scripts/*.py'),
@@ -43,7 +45,6 @@ setup(
     'Topic :: Software Development',
     'Topic :: Scientific/Engineering :: Bio-Informatics',
     'License :: OSI Approved :: Copyright Spatial Transciptomics',
-    'Programming Language :: Python :: 2.6',
     'Programming Language :: Python :: 2.7',
     'Environment :: Console',
   ],
