@@ -46,11 +46,15 @@ Version 0.3.1
 Version 0.3.2
 * Outputted reads JSON now only has the portion of the read that was used to map
 * Cutadapt is integrated but only using the quality trimming for now 
-<<<<<<< HEAD
 * Internal refactoring and optimizations
 
 Version 0.3.3
 * Added option to keep files with discarded reads/barcodes
-=======
 * Internal refactoring and optimization
->>>>>>> a3fdc6c3c1ce1da6a3fcc1aaa1e9d17ac77d8c1c
+
+Version 0.3.4
+* Added test for STAR and STAR binary to dependencies
+* Added TAGGD and removed findIndexes
+* Improved install script
+* Added options to remove adaptors (PolyA, PolyT and PolyG)
+

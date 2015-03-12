@@ -53,8 +53,6 @@ class Transcript:
     def toBarcodeDict(self):
         return {'barcode': self.barcode, 'gene': self.gene, 'x': self.x, 'y': self.y, 'hits': self.reads}
 
-
-
 def parseUniqueEvents(filename):
     """
     Parses the transcripts present in the filename given as input.
@@ -125,8 +123,6 @@ def parseUniqueEvents(filename):
         raise ValueError("Invalid file format: expected FASTQ, SAM or BAM.")
 
     return unique_events.values()
-
-
 
 
 def main(filename, output_name, output_folder, trim_bases = 42, molecular_barcodes = False, 

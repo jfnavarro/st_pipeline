@@ -57,6 +57,9 @@ class Pipeline():
         self.mc_end_position = 30
         self.min_cluster_size = 2
         self.keep_discarded_files = False
+        self.remove_polyA_distance = 0
+        self.remove_polyT_distance = 0
+        self.remove_polyG_distance = 0
         
     def sanityCheck(self):
         """ 
@@ -75,6 +78,8 @@ class Pipeline():
             self.logger.error(error)
             raise RuntimeError(error)
 
+        #TODO add boundaries check for integer parameters
+        
         if self.molecular_barcodes and (self.mc_start_position < self.l 
                                         or self.mc_end_position <= self.mc_start_position):
             error = "Error: Molecular Barcodes option is activated but the start/end " \
@@ -168,7 +173,9 @@ class Pipeline():
                                 help='Min number of equal molecular barcodes to count as a cluster')
             parser.add_argument('--keep-discarded-files', action="store_true", default=False,
                                 help='Writes down discarded reads and barcodes into files')
-                        
+            parser.add_argument('--remove-polyA', default=0, help="Remove PolyAs in the reads of a length at least as given number")
+            parser.add_argument('--remove-polyT', default=0, help="Remove PolyTs in the reads of a length at least as given number")  
+            parser.add_argument('--remove-polyG', default=0, help="Discard reads containing polyGs of a length at least as given number")       
             return parser
          
     def load_parameters(self, options):
@@ -217,7 +224,10 @@ class Pipeline():
         self.mc_end_position = int(options.mc_end_position)
         self.min_cluster_size = int(options.min_cluster_size)
         self.keep_discarded_files = options.keep_discarded_files
-    
+        self.remove_polyA_distance = options.remove_polyA
+        self.remove_polyT_distance = options.remove_polyT
+        self.remove_polyG_distance = options.remove_polyG
+        
     def createLogger(self):
         """
         Creates a logging object and logs some information about parameters
@@ -268,7 +278,16 @@ class Pipeline():
         self.logger.info(parameters)
         self.logger.info("Mapper : bowtie2")
         self.logger.info("Annotation Tool :  HTSeq")
-                
+        
+        if len(self.remove_polyA_distance) > 0:
+            self.logger.info("Removing polyA adaptors of a length at least " + len(self.remove_polyA_distance))        
+              
+        if len(self.remove_polyT_distance) > 0:
+            self.logger.info("Removing polyT adaptors of a length at least " + len(self.remove_polyT_distance))     
+            
+        if len(self.remove_polyG_distance) > 0:
+            self.logger.info("Discarding reads with polyG adaptors of a length at least " + len(self.remove_polyG_distance))     
+            
     def run(self):
         """ 
         Runs the whole pipeline given the parameters present
@@ -277,14 +296,18 @@ class Pipeline():
         #starting time
         start_exe_time = globaltime.getTimestamp()
         self.logger.info("Starting the pipeline : " + str(start_exe_time))
-        
+              
         # add BC and PolyT from FW reads to the RW reads and apply quality filter
+        # also applies quality trimming and adaptor removal
         Fastq_fw_trimmed, Fastq_rv_trimmed = reformatRawReads(self.Fastq_fw, 
                                                               self.Fastq_rv, 
                                                               self.trimming_fw_bowtie,
                                                               self.trimming_rw_bowtie, 
                                                               self.min_quality_trimming,
-                                                              self.min_length_trimming, 
+                                                              self.min_length_trimming,
+                                                              self.remove_polyA_distance,
+                                                              self.remove_polyT_distance,
+                                                              self.remove_polyG_distance,
                                                               self.qual64, 
                                                               self.temp_folder,
                                                               self.keep_discarded_files)

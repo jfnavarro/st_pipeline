@@ -15,11 +15,7 @@ with io.open(os.path.join(here, 'README'), encoding='utf-8') as f:
 
 setup(
   name = 'stpipeline',
-<<<<<<< HEAD
-  version = '0.3.2',
-=======
-  version = '0.3.3',
->>>>>>> 1fd35687abc2655ab1fa77b7bb1eccc54a024603
+  version = '0.3.4',
   description = __doc__.split("\n", 1)[0],
   long_description = long_description,
   keywords = 'rna-seq analysis spatial transcriptomics toolkit',
@@ -40,10 +36,7 @@ setup(
     'argparse',
     'scipy',
     'numpy',
-<<<<<<< HEAD
-=======
     'taggd'
->>>>>>> 1fd35687abc2655ab1fa77b7bb1eccc54a024603
   ],
   test_suite = 'tests',
   scripts = glob.glob('scripts/*.py'),

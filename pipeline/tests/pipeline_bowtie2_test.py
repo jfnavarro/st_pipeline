@@ -68,16 +68,16 @@ class TestPipeline(unittest.TestCase):
 		self.pipeline.temp_folder = os.path.abspath(self.tmpdir)
 		self.pipeline.logfile = self.logFile
 		
-	#@classmethod
-	#def tearDownClass(self):
-		#outcnt = os.listdir(self.outdir)
-		#tmpcnt = os.listdir(self.tmpdir)
-		#for cnt in outcnt:
-		#	os.remove(os.path.join(self.outdir, cnt))
-		#for cnt in tmpcnt:
-		#	os.remove(os.path.join(self.tmpdir, cnt))
-		#os.removedirs(self.outdir)
-		#os.removedirs(self.tmpdir)
+	@classmethod
+	def tearDownClass(self):
+		outcnt = os.listdir(self.outdir)
+		tmpcnt = os.listdir(self.tmpdir)
+		for cnt in outcnt:
+			os.remove(os.path.join(self.outdir, cnt))
+		for cnt in tmpcnt:
+			os.remove(os.path.join(self.tmpdir, cnt))
+		os.removedirs(self.outdir)
+		os.removedirs(self.tmpdir)
 	
 	def validateOutputData(self, expName):
 		# Verify existence of output files and temp files
