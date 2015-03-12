@@ -113,7 +113,7 @@ def getAnnotatedReadsFastq(annot_reads, fw, rv, htseq_no_ambiguous=False,
     logger = logging.getLogger("STPipeline")
     
     if  annot_reads.endswith(".sam")  \
-        and fw.endswith(".fastq") and rv.endswith(".fastq"):
+        and (fw.endswith(".fastq") or fw.endswith(".fq")) and (rv.endswith(".fastq") or rv.endswith(".fq")):
         outputFile = replaceExtension(getCleanFileName(fw),'_annotated.fastq')
         if outputFolder is not None and os.path.isdir(outputFolder): 
             outputFile = os.path.join(outputFolder, outputFile)
