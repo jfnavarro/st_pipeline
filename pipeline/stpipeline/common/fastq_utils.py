@@ -4,6 +4,7 @@ This module contains some functions to deal with fastq files
 """
 
 from stpipeline.common.utils import *
+from stpipeline.common.adaptors import removeAdaptor
 import logging 
 from itertools import izip
 from cutadapt.qualtrim import quality_trim_index
@@ -104,7 +105,9 @@ def writefq(fp):  # This is a coroutine
         return
 
 def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
-                     min_qual=20, min_length=28, qual64=False, outputFolder=None, keep_discarded_files=False):
+                     min_qual=20, min_length=28,
+                     polyA_min_distance=0, polyT_min_distance=0, polyG_min_distance=0,
+                     qual64=False, outputFolder=None, keep_discarded_files=False):
     """ 
     Converts reads in rw file appending the first (distance - trim)
     bases of fw and also add FW or RW string to reads names
@@ -131,7 +134,7 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
             out_rw_discarded = os.path.join(outputFolder, out_rw_discarded)
             
     else:
-        error = "Error: Input format not recognized " + out_fw + " , " + out_rw
+        error = "Error: Input format not recognized " + fw + " , " + rw
         logger.error(error)
         raise RuntimeError(error + "\n")
 
@@ -160,7 +163,22 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
 
     for line1, line2 in izip(readfq(fw_file), readfq(rw_file)):
         total_reads += 1
-
+        
+        if polyA_min_distance > 0:
+            adaptor = "".join("A" for k in xrange(polyA_min_distance))
+            line1 = removeAdaptor(line1[trim_fw:], adaptor, "3")
+            line2 = removeAdaptor(line2[trim_rw:], adaptor, "3")
+            
+        if polyT_min_distance > 0:
+            adaptor = "".join("T" for k in xrange(polyT_min_distance))
+            line1 = removeAdaptor(line1[trim_fw:], adaptor, "5")
+            line2 = removeAdaptor(line2[trim_rw:], adaptor, "5")
+       
+        if polyG_min_distance > 0:
+            adaptor = "".join("G" for k in xrange(polyG_min_distance))
+            line1 = removeAdaptor(line1[trim_fw:], adaptor, "discard")
+            line2 = removeAdaptor(line2[trim_rw:], adaptor, "discard")
+                     
         # Trim rw
         line2_trimmed = trim_quality(line2, trim_rw, min_qual, min_length, qual64)
         # Trim fw
