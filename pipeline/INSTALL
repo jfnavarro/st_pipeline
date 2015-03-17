@@ -11,11 +11,12 @@ To install the st_pipeline on your MAC, Linux or UPPMAX follow the instructions 
 	- pyenv rehash
 	- pyenv global 2.7.6
 	
-	NOTE (not valid in UPPMAX) : you can use other type of virtual environments or install
+	NOTE (the following does not apply for UPPMAX) : 
+	you can use other type of virtual environments or install
 	in everything in your system with root permissions. For that you need to install PIP,
-	SETUPTOOLS and do everything as sudo user.
+	SETUPTOOLS and do everything as SUDO user.
 	
-2) download the pipeline file on your computer from ST Google Docs
+2) download the pipeline file on your computer from ST Google DOCS
 
 3) copy zip-file to your home folder or your UPPMAX home folder
 
@@ -27,7 +28,7 @@ To install the st_pipeline on your MAC, Linux or UPPMAX follow the instructions 
 	password: avgohe52 (version < 0.3.3)
 	password: avghoe52 (version 0.3.3 and onwards)
 
-5) Install bowtie2 (NOT NEEDED in Uppmax since you can load bowtie with "module load bioinfo-tools") :
+5) Install bowtie2 :
 
     cd pipeline/depedencies
     unzip bowtie2-2.2.3-source.zip
@@ -35,20 +36,13 @@ To install the st_pipeline on your MAC, Linux or UPPMAX follow the instructions 
     make
     cp bowtie2* ~/bin
 
-6) Install STAR:
-
-   cd pipeline/dependencies
-   unzip STAR-STAR_2.4.0j.zip
-   cd STAR-STAR_2.4.0j/bin/<my environment>
-   cp STAR ~/bin
-
-7) run the commands:
+6) run the commands:
 
   	cd pipeline
   	python setup.py build
   	python setup.py install
-  	pyeven rehash    
+  	pyenv rehash    
 
-8) test by running the command:
+7) test by running the command:
 
   	python setup.py test

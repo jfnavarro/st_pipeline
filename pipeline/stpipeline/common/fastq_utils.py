@@ -4,6 +4,7 @@ This module contains some functions to deal with fastq files
 """
 
 from stpipeline.common.utils import *
+from stpipeline.common.adaptors import removeAdaptor
 import logging 
 from itertools import izip
 from cutadapt.qualtrim import quality_trim_index
@@ -49,7 +50,7 @@ def getFake(record):
     """
     new_seq = "".join("N" for k in record[1])
     new_qual = "".join("B" for k in record[2])
-    return (record[0],new_seq,new_qual)
+    return record[0], new_seq, new_qual
 
 def readfq(fp): # this is a generator function
     """ 
@@ -99,12 +100,13 @@ def writefq(fp):  # This is a coroutine
             record = yield
             read = fq_format.format(header=record[0], sequence=record[1], quality=record[2])
             fp.write(read)
-
     except GeneratorExit:
         return
 
 def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
-                     min_qual=20, min_length=28, qual64=False, outputFolder=None, keep_discarded_files=False):
+                     min_qual=20, min_length=28,
+                     polyA_min_distance=0, polyT_min_distance=0, polyG_min_distance=0,
+                     qual64=False, outputFolder=None, keep_discarded_files=False):
     """ 
     Converts reads in rw file appending the first (distance - trim)
     bases of fw and also add FW or RW string to reads names
@@ -131,7 +133,7 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
             out_rw_discarded = os.path.join(outputFolder, out_rw_discarded)
             
     else:
-        error = "Error: Input format not recognized " + out_fw + " , " + out_rw
+        error = "Error: Input format not recognized " + fw + " , " + rw
         logger.error(error)
         raise RuntimeError(error + "\n")
 
@@ -157,39 +159,64 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
     total_reads = 0
     dropped_fw = 0
     dropped_rw = 0
-
+    
     for line1, line2 in izip(readfq(fw_file), readfq(rw_file)):
         total_reads += 1
-
+        
+        #TODO this is ugly, refactor it
+        original_line1 = line1
+        original_line2 = line2
+        
+        # if applies we remove the adaptor PolyT from both reads
+        # in different directions
+        if polyA_min_distance > 0:
+            adaptor = "".join("A" for k in xrange(polyA_min_distance))
+            line1 = removeAdaptor(line1, adaptor, trim_fw, "5")
+            line2 = removeAdaptor(line2, adaptor, trim_rw, "3")
+            
+        # if applies we remove the adaptor PolyA from both reads
+        # in different directions
+        if polyT_min_distance > 0:
+            adaptor = "".join("T" for k in xrange(polyT_min_distance))
+            line1 = removeAdaptor(line1, adaptor, trim_fw, "3")
+            line2 = removeAdaptor(line2, adaptor, trim_rw, "5")
+       
+        # if applies we discard reads with adaptor PolyG
+        if polyG_min_distance > 0:
+            adaptor = "".join("G" for k in xrange(polyG_min_distance))
+            line1 = removeAdaptor(line1, adaptor, trim_fw, "discard")
+            line2 = removeAdaptor(line2, adaptor, trim_rw, "discard")
+               
         # Trim rw
-        line2_trimmed = trim_quality(line2, trim_rw, min_qual, min_length, qual64)
+        if line2 is not None:
+            line2_trimmed = trim_quality(line2, trim_rw, min_qual, min_length, qual64)
         # Trim fw
-        line1_trimmed = trim_quality(line1, trim_fw, min_qual, min_length, qual64)
-
+        if line1 is not None:
+            line1_trimmed = trim_quality(line1, trim_fw, min_qual, min_length, qual64)
+        
         if line1_trimmed is not None:
             out_fw_writer.send(line1_trimmed)
         else:
             # write fake sequence so bowtie wont fail for having rw and fw with different lenghts
-            out_fw_writer.send(getFake(line1))
+            out_fw_writer.send(getFake(original_line1))
             dropped_fw += 1
             if keep_discarded_files:
-                out_fw_writer_discarded.send(line1)
+                out_fw_writer_discarded.send(original_line1)
 
         if line2_trimmed is not None:
             # Add the barcode and polyTs from fw only if rw has not been completely trimmed
             # we do not include in the new seq/qual the number of reverse bases that we want
             # to trim so they are not included in the mapping
-            new_seq = line1[1][:trim_fw] + line2_trimmed[1][trim_rw:]
-            new_qual = line1[2][:trim_fw] + line2_trimmed[2][trim_rw:]
+            new_seq = original_line1[1][:trim_fw] + line2_trimmed[1][trim_rw:]
+            new_qual = original_line1[2][:trim_fw] + line2_trimmed[2][trim_rw:]
             record = (line2_trimmed[0], new_seq, new_qual)
             out_rw_writer.send(record)
-
         else:
             # write fake sequence so bowtie wont fail for having rw and fw with different lenghts
-            out_rw_writer.send(getFake(line2))
+            out_rw_writer.send(getFake(original_line2))
             dropped_rw += 1  
             if keep_discarded_files:
-                out_rw_writer_discarded.send(line2)
+                out_rw_writer_discarded.send(original_line2)
     
     out_fw_writer.close()
     out_rw_writer.close()
