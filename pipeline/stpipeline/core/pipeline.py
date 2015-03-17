@@ -19,13 +19,13 @@ class Pipeline():
     DefaultLogLevel = 'DEBUG'
     
     def __init__(self):
-        
+        self.mapper = "STAR"
         self.allowed_missed = 3
         self.allowed_kimera = 6
         self.overhang = 2
         self.min_length_trimming = 28
         self.trimming_fw_bowtie = 42
-        self.trimming_rw_bowtie = 5 
+        self.trimming_rw_bowtie = 5
         self.min_quality_trimming = 20 
         self.clean = True
         self.s = 0
@@ -62,6 +62,7 @@ class Pipeline():
         """ 
         Performs some basic sanity checks in the input paramters
         """
+
         conds = {"FW": fileOk(self.Fastq_fw), "RV": fileOk(self.Fastq_rv), 
                  "ids": fileOk(self.ids), "ref": fileOk(self.ref_annotation), 
                  "map": self.ref_map is not None, "Exp Name":  self.expName is not None}
@@ -83,7 +84,7 @@ class Pipeline():
             raise RuntimeError(error)
         
         #test the presence of the scripts :
-        required_scripts = set(['findIndexes','bowtie2'])
+        required_scripts = set(['findIndexes','bowtie2', 'STAR'])
 
         unavailable_scripts = set()
         for script in required_scripts:
@@ -103,10 +104,12 @@ class Pipeline():
             Argparse object 
             """
             parser.add_argument('fastq_files', nargs=2)
+            #parser.add_argument('--mapper',
+            #                    help='The name of the mapper, Bowtie2 or STAR')
             parser.add_argument('--ids',
                                 help='The name of the file containing the barcodes and the coordinates')
             parser.add_argument('--ref-map',
-                                help="<path_to_bowtie2_indexes> = Reference genome name " \
+                                help="<path_to_genome_indexes> = Reference genome index " \
                                 "for the genome that you want to use to align the reads")
             parser.add_argument('--ref-annotation',
                                 help="Path to the reference annotation file " \
@@ -127,8 +130,8 @@ class Pipeline():
                                 help="Number of bases to trim in the reverse reads for the Mapping")
             parser.add_argument('--length-id', default=18, help="Length of ID, a.k.a. the length of the barcodes")
             parser.add_argument('--contaminant-bowtie2-index',
-                                help="<path_to_bowtie2_indexes> = When provided, reads will be filtered " 
-                                "against the specified bowtie2 index, non-mapping reads will be saved and demultiplexed")
+                                help="<path_to_genome_indexes> = When provided, reads will be filtered "
+                                "against the specified genome index, non-mapping reads will be saved and demultiplexed")
             parser.add_argument('--qual-64', action="store_true", default=False,
                                 help="Use phred-64 quality instead of phred-33(default)")
             parser.add_argument('--htseq-mode', default="intersection-nonempty",
@@ -148,7 +151,7 @@ class Pipeline():
                                 help="Discard forwards reads that maps uniquely")
             parser.add_argument('--discard-rv', action="store_true", default=False, 
                                 help="Discard reverse reads that maps uniquely")
-            parser.add_argument('--bowtie2-discordant', action="store_true", default=False, 
+            parser.add_argument('--bowtie2-discordant', action="store_true", default=False,
                                 help="Discard non-concordant alignments when mapping")
             parser.add_argument('--bin-path', 
                                 help="Path to folder where binary executables are present (system path by default)")
@@ -178,6 +181,7 @@ class Pipeline():
         """
     
         #init pipeline arguments
+        self.mapper = options.mapper
         self.allowed_missed = int(options.allowed_missed)
         self.allowed_kimera = int(options.allowed_kimer)
         self.overhang = int(options.overhang)
@@ -266,55 +270,77 @@ class Pipeline():
             self.logger.info("Using bowtie2 contamination filter with " + str(self.contaminant_bt2_index))
         self.logger.info("Nodes : " + str(self.threads))
         self.logger.info(parameters)
-        self.logger.info("Mapper : bowtie2")
+        self.logger.info("Mapper : " + self.mapper)
         self.logger.info("Annotation Tool :  HTSeq")
-                
+
+
     def run(self):
         """ 
         Runs the whole pipeline given the parameters present
         """
         globaltime = TimeStamper()
-        #starting time
+
+        #=================================================================
+        # START PIPELINE
+        #=================================================================
         start_exe_time = globaltime.getTimestamp()
         self.logger.info("Starting the pipeline : " + str(start_exe_time))
-        
-        # add BC and PolyT from FW reads to the RW reads and apply quality filter
-        Fastq_fw_trimmed, Fastq_rv_trimmed = reformatRawReads(self.Fastq_fw, 
+
+        #=================================================================
+        # STEP: add BC and PolyT from FW reads to the RW reads and apply quality filter
+        #=================================================================
+        Fastq_fw_trimmed, Fastq_rv_trimmed = reformatRawReads(self.Fastq_fw,
                                                               self.Fastq_rv, 
                                                               self.trimming_fw_bowtie,
-                                                              self.trimming_rw_bowtie, 
+                                                              self.trimming_rw_bowtie,
                                                               self.min_quality_trimming,
                                                               self.min_length_trimming, 
                                                               self.qual64, 
                                                               self.temp_folder,
                                                               self.keep_discarded_files)
-        # First, do mapping against genome of both strands
-        sam_mapped = bowtie2Map(Fastq_fw_trimmed, 
-                                Fastq_rv_trimmed, 
-                                self.ref_map, 
-                                self.trimming_fw_bowtie, 
-                                self.threads, 
-                                self.qual64, 
-                                self.discordant, 
-                                self.temp_folder, 
-                                self.keep_discarded_files)
-        
-        ## filter unmapped and discordant reads
-        sam_filtered = filterUnmapped(sam_mapped, 
+        #=================================================================
+        # STEP: do mapping against genome of both strands
+        #=================================================================
+        #sam_mapped = bowtie2Map(Fastq_fw_trimmed,
+        #                        Fastq_rv_trimmed,
+        #                        self.ref_map,
+        #                        self.trimming_fw_bowtie,
+        #                        self.threads,
+        #                        self.qual64,
+        #                        self.discordant,
+        #                        self.temp_folder,
+        #                        self.keep_discarded_files)
+
+        sam_mapped = starMap(Fastq_fw_trimmed,
+                             Fastq_rv_trimmed,
+                             self.ref_map,
+                             self.trimming_fw_bowtie,
+                             self.threads,
+                             self.temp_folder,
+                             self.keep_discarded_files)
+
+        #=================================================================
+        # STEP: filter unmapped and discordant reads
+        #=================================================================
+        sam_filtered = filterUnmapped(sam_mapped,
                                       self.discard_fw, 
                                       self.discard_rv, 
                                       self.temp_folder, 
                                       self.keep_discarded_files)
         if self.clean: safeRemove(sam_mapped)  
-        
-        ##annotate using htseq count
-        annotatedFile = annotateReadsWithHTSeq(sam_filtered, 
+
+        #=================================================================
+        # STEP: annotate using htseq count
+        #=================================================================
+        annotatedFile = annotateReadsWithHTSeq(sam_filtered,
                                                self.ref_annotation, 
                                                self.htseq_mode, 
                                                self.temp_folder)
         if self.clean: safeRemove(sam_filtered)
-    
-        # get raw reads and quality from the forward and reverse reads
+
+        #=================================================================
+        # STEP: get raw reads and quality from the forward and reverse reads
+        #=================================================================
         withTr = getAnnotatedReadsFastq(annotatedFile, 
                                         Fastq_fw_trimmed, 
                                         Fastq_rv_trimmed, 
@@ -322,23 +348,32 @@ class Pipeline():
                                         self.temp_folder, 
                                         self.keep_discarded_files)
         if self.clean: safeRemove(annotatedFile)
-        
-        # Filter out contaminated reads with Bowtie2
-        if self.contaminant_bt2_index: 
+
+        #=================================================================
+        # CONDITIONAL STEP: Filter out contaminated reads, e.g. typically bacterial rRNA
+        #=================================================================
+        if self.contaminant_bt2_index:
             oldWithTr = withTr
-            withTr, contaminated_sam = bowtie2_contamination_map(withTr, 
+            withTr, contaminated_sam = bowtie2_contamination_map(withTr,
                                                                  self.contaminant_bt2_index,
                                                                  self.trimming_fw_bowtie,
-                                                                 self.threads, 
-                                                                 self.qual64, 
+                                                                 self.threads,
+                                                                 self.qual64,
                                                                  self.temp_folder)
+            #withTr, contaminated_sam = star_contamination_map(withTr,
+            #                                                  self.contaminant_bt2_index,
+            #                                                  self.trimming_fw_bowtie,
+            #                                                  self.threads,
+            #                                                  self.temp_folder)
             if not self.keep_discarded_files: safeRemove(contaminated_sam)
             if self.clean: safeRemove(oldWithTr)
     
         if self.clean: safeRemove(Fastq_fw_trimmed)
         if self.clean: safeRemove(Fastq_rv_trimmed)
-        
-        # Map against the barcodes
+
+        #=================================================================
+        # STEP: Map against the barcodes
+        #=================================================================
         mapFile = getTrToIdMap(withTr,
                                self.ids, 
                                self.allowed_missed, 
@@ -350,8 +385,10 @@ class Pipeline():
                                self.temp_folder,
                                self.keep_discarded_files)
         if self.clean: safeRemove(withTr)
-    
-        # create json files with the results
+
+        #=================================================================
+        # STEP: create json files with the results
+        #=================================================================
         self.createDataset(mapFile,
                            self.expName,
                            self.trimming_fw_bowtie,
@@ -362,7 +399,10 @@ class Pipeline():
                            self.min_cluster_size)
         if self.clean:
             safeRemove(mapFile)
-        
+
+        #=================================================================
+        # END PIPELINE
+        #=================================================================
         finish_exe_time = globaltime.getTimestamp()
         total_exe_time = finish_exe_time - start_exe_time
         self.logger.info("Total Execution Time : " + str(total_exe_time))

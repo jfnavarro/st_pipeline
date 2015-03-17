@@ -5,10 +5,158 @@ most of the options can be passed as arguments
 
 import logging 
 import subprocess
+import os
 from stpipeline.common.utils import *
 from stpipeline.common.fastq_utils import *
 import pysam
-    
+
+
+def starMap(fw, rv, ref_map, trim=42, cores=8,
+               outputFolder=None, keep_discarded_files=False):
+    """
+    maps pair end reads against a given genome using STAR
+    """
+
+    logger = logging.getLogger("STPipeline")
+
+    if outputFolder == None:
+        outputFolder = "."
+
+    if (fw.endswith(".fastq") or fw.endswith(".fq")) and (rv.endswith(".fastq") or rv.endswith(".fq")):
+        # Note: we have to change this filename from STAR's default.
+        tmpOutputFile = os.path.join(outputFolder, "Aligned.out.sam")
+        outputFile = os.path.join(outputFolder, replaceExtension(getCleanFileName(fw),"_mapped.sam"))
+        # Note: we have to change this filename from STAR's default.
+        tmpOutputFileDiscarded1 = os.path.join(outputFolder, "Unmapped.out.mate1")
+        tmpOutputFileDiscarded2 = os.path.join(outputFolder, "Unmapped.out.mate2")
+        outputFileDiscarded1 = os.path.join(outputFolder, replaceExtension(getCleanFileName(fw),"_mapped_discarded.fw.fastq"))
+        outputFileDiscarded2 = os.path.join(outputFolder, replaceExtension(getCleanFileName(fw),"_mapped_discarded.rv.fastq"))
+    else:
+        errror = "Error: Input format not recognized " + fw + " , " + rv
+        logger.error(errror)
+        raise RuntimeError(errror + "\n")
+
+
+    # Options
+    core_flags = ["--runThreadN", str(max(cores, 1))]
+    trim_flags = ["--clip5pNbases", trim, "0"]
+    io_flags   = ["--outFilterType", "BySJout",         # Typical ENCODE settings
+                  "--outFilterMultimapNmax", 20,
+                  "--alignSJoverhangMin", 8,
+                  "--alignSJDBoverhangMin", 1,
+                  "--outFilterMismatchNmax", 999,
+                  "--outFilterMismatchNoverLmax", 0.04,
+                  "--alignIntronMin", 20,
+                  "--alignIntronMax", 1000000,
+                  "--alignMatesGapMax", 1000000]
+
+
+    # Main parameters
+    args = ['STAR']
+    args += trim_flags
+    args += core_flags
+    args += io_flags
+    args += ["--genomeDir", ref_map,
+             "--readFilesIn", fw, rv,
+             "--outFileNamePrefix", outputFolder + "/"]  # MUST ENSURE AT LEAST ONE SLASH
+    if keep_discarded_files:
+        args += ["--outReadsUnmapped", "Fastx"]
+
+    logger.info("Start STAR Mapping")
+
+    proc = subprocess.Popen([str(i) for i in args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (stdout, errmsg) = proc.communicate()
+
+    if not fileOk(tmpOutputFile):
+        error = "Error: output file is not present : " + tmpOutputFile
+        logger.error(error)
+        logger.error(stdout)
+        logger.error(errmsg)
+        raise RuntimeError(error + "\n")
+    else:
+        # Rename files.
+        os.rename(tmpOutputFile, outputFile)
+        if keep_discarded_files:
+            os.rename(tmpOutputFileDiscarded1, outputFileDiscarded1)
+            os.rename(tmpOutputFileDiscarded2, outputFileDiscarded2)
+
+        procOut = [x for x in errmsg.split("\n") if x.find("Warning") == -1 and x.find("Error") == -1]
+        logger.info('Mapping stats on paired end mode with 5-end trimming of ' + str(trim))
+        for line in procOut:
+            logger.info(str(line))
+
+    logger.info("Finish STAR Mapping")
+
+    return outputFile
+
+
+
+# BELOW REFERS TO TEMPLATE CONTAMINATION MAPPING USING STAR  -- NOT IN USE ATM
+#def star_contamination_map(fastq, contaminant_index, trim=42, cores=8, outputFolder=None):
+#    """
+#    Maps reads against contaminant genome index with STAR and returns
+#    the fastq of unaligned reads.
+#    """
+#
+#    logger = logging.getLogger("STPipeline")
+#
+#    if outputFolder is None:
+#        outputFolder = "."
+#
+#    if fastq.endswith(".fastq") or fastq.endswith(".fq"):
+#        # Note: we have to change this filename from STAR's default.
+#        tmp_contaminated_file = os.path.join(outputFolder, "Aligned.out.sam")
+#        contaminated_file = os.path.join(outputFolder, replaceExtension(getCleanFileName(fastq),"_contaminated.sam"))
+#        tmp_clean_fastq = os.path.join(outputFolder, "Unmapped.out.mate1")
+#        clean_fastq = os.path.join(outputFolder, replaceExtension(getCleanFileName(fastq),"_clean.fastq"))
+#    else:
+#        error = "Error: Input format not recognized " + fastq
+#        logger.error(error)
+#        raise RuntimeError(error + "\n")
+#
+#    logger.info("Start STAR Mapping contamination genome")
+#
+#    # Options
+#    core_flags = ["--runThreadN", str(max(cores, 1))]
+#    trim_flags = ["--clip5pNbases", trim, "0"]
+#    io_flags   = ["--alignMatesGapMax", "1000000"]
+#
+#    # Parameters
+#    args = ['STAR']
+#    args += trim_flags
+#    args += core_flags
+#    args += io_flags
+#    args += ["--genomeDir", contaminant_index,
+#             "--readFilesIn", fastq,
+#             "--outReadsUnmapped", "Fastx",
+#             "--outFileNamePrefix", outputFolder + "/" ]  # MUST ENSURE AT LEAST ONE SLASH
+#
+#    proc = subprocess.Popen([str(i) for i in args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#    (stdout, errmsg) = proc.communicate()
+#
+#    if not fileOk(tmp_contaminated_file) or not fileOk(tmp_clean_fastq):
+#        error = "Error: output file is not present " + tmp_contaminated_file + " , " + clean_fastq
+#        logger.error(error)
+#        logger.error(stdout)
+#        logger.error(errmsg)
+#        raise RuntimeError(error + "\n")
+#    else:
+#        # Rename files.
+#        os.rename(tmp_contaminated_file, contaminated_file)
+#        os.rename(tmp_clean_fastq, clean_fastq)
+#
+#        procOut = [x for x in errmsg.split("\n") if x.find("Warning") == -1 and x.find("Error") == -1]
+#        logger.info('Contaminant mapping stats against ' +
+#                       contaminant_index + ' with 5-end trimming of ' +
+#                       str(trim))
+#        for line in procOut:
+#            logger.info(str(line))
+#
+#    logger.info("Finish STAR Mapping contamination genome")
+#
+#    return clean_fastq, contaminated_file
+
+
 def bowtie2Map(fw, rv, ref_map, trim=42, cores=8, 
                qual64=False, discordant=False, outputFolder=None, keep_discarded_files=False):  
     """
@@ -19,11 +167,11 @@ def bowtie2Map(fw, rv, ref_map, trim=42, cores=8,
     
     if (fw.endswith(".fastq") or fw.endswith(".fq")) and (rv.endswith(".fastq") or rv.endswith(".fq")):
         outputFile = replaceExtension(getCleanFileName(fw),"_mapped.sam")
-        if outputFolder is not None and os.path.isdir(outputFolder): 
+        if outputFolder is not None and os.path.isdir(outputFolder):
             outputFile = os.path.join(outputFolder, outputFile)
         
         outputFileDiscarded = replaceExtension(getCleanFileName(fw),"_mapped_discarded.fastq")
-        if outputFolder is not None and os.path.isdir(outputFolder): 
+        if outputFolder is not None and os.path.isdir(outputFolder):
             outputFileDiscarded = os.path.join(outputFolder, outputFileDiscarded)    
     else:
         errror = "Error: Input format not recognized " + fw + " , " + rv
@@ -124,6 +272,7 @@ def bowtie2_contamination_map(fastq, contaminant_index, trim=42, cores=8,
 
     return clean_fastq, contaminated_file
 
+
 def filterUnmapped(sam, discard_fw=False, discard_rw=False, outputFolder=None, keep_discarded_files=False):
     """ 
     Filter unmapped and discordant reads
@@ -207,7 +356,7 @@ def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e, oh, outputFolder=None
     logger = logging.getLogger("STPipeline")
     
     if not fileOk(readsContainingTr) or not fileOk(idFile):
-        error = "Error: Input files not present, transcript file = " 
+        error = "Error: Input files not present, transcript file = "
         + readsContainingTr + " ids = " + idFile
         logger.error(error)
         raise RuntimeError(error + "\n")

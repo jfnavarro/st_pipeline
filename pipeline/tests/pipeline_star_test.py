@@ -39,43 +39,47 @@ class TestPipeline(unittest.TestCase):
         # Create genome index dirs.
         self.genomedir = os.path.join(self.tmpdir, 'config/genomes/mouse_grcm38')
         os.makedirs(self.genomedir)
-        self.contamdir = os.path.join(self.tmpdir, 'config/contaminant_genomes/R45S5_R5S1')
-        os.makedirs(self.contamdir)
+
+        # Bowtie contam dir.
+        self.contamdir = os.path.join(testdir, 'config/contaminant_genomes/R45S5_R5S1')
+
+        # STAR contam dir
+        #self.contamdir = os.path.join(self.tmpdir, 'config/contaminant_genomes/R45S5_R5S1')
+        #os.makedirs(self.contamdir)
 
         # Download and unpack fasta files
         try:
-            print "Downloading genome files..."
+            print "ST Pipeline Test Downloading genome files..."
             genomefasta = os.path.join(self.genomedir, "mouse_grcm38_chromosome19.fasta")
             genomefastagz = os.path.join(self.genomedir, "mouse_grcm38_chromosome19.fasta.gz")
             urllib.urlretrieve ("ftp://ftp.ensembl.org/pub/release-78/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna_rm.chromosome.19.fa.gz", genomefastagz)
             check_call(['gunzip', genomefastagz])
-            genomegtf = os.path.join(self.genomedir, "mouse_grcm38.gtf")
-            genomegtfgz = os.path.join(self.genomedir, "mouse_grcm38.gtf.gz")
-            urllib.urlretrieve ("http://ftp.ensembl.org/pub/current_gtf/mus_musculus/Mus_musculus.GRCm38.78.gtf.gz", genomegtfgz)
-            check_call(['gunzip', genomegtfgz])
-            contamfasta = os.path.join(testdir, "config/contaminant_genomes/R45S5_R5S1/Rn45s_Rn5s.fasta")
-            print "...finished downloading!"
+            print "ST Pipeline Test ...finished downloading!"
         except Exception as e:
-        	print e
-        	self.assertTrue(0, "Downloading genome files failed \n")
+            print e
+            self.assertTrue(0, "Downloading genome files failed \n")
 
         # Make genome indexes
         try:
-            print "Creating genome indexes..."
+            print "ST Pipeline Test Creating genome index..."
             check_call(["STAR", "--runMode", "genomeGenerate",
                     "--runThreadN", str(multiprocessing.cpu_count() - 1),
                     "--genomeDir", self.genomedir,
                     "--genomeFastaFiles", genomefasta,
-                    "--sjdbGTFfile", genomegtf,
+                    #"--sjdbGTFfile", genomegtf,
+                    "--sjdbGTFfile", self.annotfile,
                     "--sjdbOverhang", "100"])
-            check_call(["STAR", "--runMode", "genomeGenerate",
-                    "--runThreadN", str(multiprocessing.cpu_count() - 1),
-                    "--genomeDir", self.contamdir,
-                    "--genomeFastaFiles", contamfasta])
-            print "...finished creating indexes!"
+
+            # Below refers to contamination file using star
+            #contamfasta = os.path.join(testdir, "config/contaminant_genomes/R45S5_R5S1/Rn45s_Rn5s.fasta")
+            #check_call(["STAR", "--runMode", "genomeGenerate",
+            #        "--runThreadN", str(multiprocessing.cpu_count() - 1),
+            #        "--genomeDir", self.contamdir,
+            #        "--genomeFastaFiles", contamfasta])
+            print "ST Pipeline Test ...finished creating index!"
         except Exception as e:
-        	print e
-        	self.assertTrue(0, "Creating genome indexes failed \n")
+            print e
+            self.assertTrue(0, "Creating genome index failed \n")
 
 
         # Verify existence of input files
@@ -103,20 +107,46 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.s = 0
         self.pipeline.l = 27
         self.pipeline.e = 0
-        self.pipeline.threads = 2
+        self.pipeline.threads = multiprocessing.cpu_count() - 1
         self.pipeline.verbose = True
         self.pipeline.ids = os.path.abspath(self.chipfile)
-        self.pipeline.ref_map = os.path.abspath(os.path.join(self.genomedir, "chromosome19"))
+        self.pipeline.ref_map = os.path.abspath(self.genomedir)
         self.pipeline.ref_annotation = os.path.abspath(self.annotfile)
         self.pipeline.htseq_mode = "intersection-nonempty"
         self.pipeline.htseq_no_ambiguous = False
-        self.pipeline.contaminant_bt2_index = os.path.abspath(os.path.join(self.contamdir, "rnagenome"))
+        #self.pipeline.contaminant_bt2_index = os.path.abspath(self.contamdir)  # STAR contaminant index
+        self.pipeline.contaminant_bt2_index = os.path.abspath(os.path.join(self.contamdir, "rnagenome")) # Bowtie2 index
         self.pipeline.output_folder = os.path.abspath(self.outdir)
         self.pipeline.temp_folder = os.path.abspath(self.tmpdir)
         self.pipeline.logfile = self.logFile
 
 
-    def test_star_run(self):
+    @classmethod
+    def tearDownClass(self):
+        outcnt = os.listdir(self.outdir)
+        tmpcnt = os.listdir(self.tmpdir)
+        for cnt in outcnt:
+            os.remove(os.path.join(self.outdir, cnt))
+        for cnt in tmpcnt:
+            os.remove(os.path.join(self.tmpdir, cnt))
+        os.removedirs(self.outdir)
+        os.removedirs(self.tmpdir)
+
+
+    def validateOutputData(self, expName):
+        # Verify existence of output files and temp files
+        self.assertNotEqual(os.listdir(self.outdir), [], "Output folder is not empty")
+        self.assertNotEqual(os.listdir(self.tmpdir), [], "Tmp folder is not empty")
+        barcodesfile = os.path.join(self.outdir, expName + "_barcodes.json")
+        readsfile = os.path.join(self.outdir, expName + "_reads.json")
+        self.assertTrue(os.path.exists(barcodesfile), "Barcodes JSON file exists")
+        self.assertTrue(os.path.getsize(barcodesfile) > 1024, "Barcordes JSON file is not empty")
+        self.assertTrue(os.path.exists(readsfile), "Reads JSON file exists")
+        self.assertTrue(os.path.getsize(readsfile) > 1024, "Reads JSON file is not empty")
+
+
+
+    def test_normal_star_run(self):
         """
         Tests st_pipeline on a mouse data subset with normal fastq files
         """
@@ -129,25 +159,45 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.keep_discarded_files = True
 
         # Start the pipeline
-        #try:
-        #	self.pipeline.createLogger()
-        #	self.pipeline.sanityCheck()
-        #	self.pipeline.run()
-        #except Exception as e:
-        #	print e
-        #	self.assertTrue(0, "Running Normal Test failed \n")
+        try:
+            self.pipeline.createLogger()
+            self.pipeline.sanityCheck()
+            self.pipeline.run()
+        except Exception as e:
+            print e
+            self.assertTrue(0, "Running Normal STAR Test failed \n")
+
+        self.validateOutputData(self.expnameNormal)
 
 
-    #@classmethod
-        #def tearDownClass(self):
-        #outcnt = os.listdir(self.outdir)
-        #tmpcnt = os.listdir(self.tmpdir)
-        #for cnt in outcnt:
-        #	os.remove(os.path.join(self.outdir, cnt))
-        #for cnt in tmpcnt:
-        #	os.remove(os.path.join(self.tmpdir, cnt))
-        #os.removedirs(self.outdir)
-        #os.removedirs(self.tmpdir)
+
+    def test_mc_star_run(self):
+        """
+        Tests st_pipeline on a mouse data subset with molecular barcodes fastq files
+        """
+        # Add MC paramters
+        self.pipeline.molecular_barcodes = True
+        self.pipeline.mc_allowed_missmatches = 2
+        self.pipeline.mc_start_position = 28
+        self.pipeline.mc_end_position = 39
+        self.pipeline.min_cluster_size = 10
+        self.pipeline.expName = self.expnameMC
+        self.pipeline.Fastq_fw = self.infile_mc_fw
+        self.pipeline.Fastq_rv = self.infile_mc_rv
+        self.pipeline.trimming_fw_bowtie = 62
+        self.pipeline.keep_discarded_files = True
+
+        # Start the pipeline
+        try:
+            self.pipeline.createLogger()
+            self.pipeline.sanityCheck()
+            self.pipeline.run()
+        except Exception as e:
+            print e
+            self.assertTrue(0, "Running Molecular Barcode STAR Test failed \n")
+
+        self.validateOutputData(self.expnameMC)
+
 
 
 if __name__ == '__main__':
