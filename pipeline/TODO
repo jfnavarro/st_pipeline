@@ -1,11 +1,10 @@
 Add better error handling.
-Complete and integrate Python version of FindIndexes
-Add more mapping and annotation tools
-Validate and optimize the quality filtering function
+Replace bowtie2 for START remove unnecessary step after annotation to get original reads
+Perform rRNA filter before mapping
 Validate and benchmark all the pipeline stats
 Add unit-test for individual components and modules
 Fix TODOs
-Unify parameter parsing for all runners.
+Make the pipeline output stats in JSON file
 For Map Reduce version make reducers merge the json file (if possible)
 For Map Reduce version, process and output reads.json as well.
 For Map Reduce version, create custom streamers for fastq format and json format.

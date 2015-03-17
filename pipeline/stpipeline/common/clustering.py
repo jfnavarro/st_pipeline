@@ -7,7 +7,14 @@ different approaches
 import numpy as np
 import scipy.cluster.hierarchy
 import collections
-from stpipeline.common.distance import hamming_distance
+
+def hamming_distance(s1, s2):
+    """
+    Returns the Hamming distance between equal-length sequences.
+    """
+    if len(s1) != len(s2):
+        raise ValueError("Undefined for sequences of unequal length")
+    return sum(ch1 != ch2 for ch1, ch2 in zip(s1, s2))
 
 def extractMolecularBarcodes(reads, mc_start_position, mc_end_position):
     """ 
@@ -40,6 +47,11 @@ def computeDistanceMatrixFromSequences(reads):
 def countMolecularBarcodesClustersHierarchical(reads, allowed_missmatches, mc_start_position, 
                                                mc_end_position, min_cluster_size):
     """
+    :reads the list of reads to be searched for clusters
+    :allowed_missmatches how much distance we allow between clusters
+    :mc_start_position start position of the read part that we want to cluster
+    :mc_end_position end position of the read part that we want to cluster
+    :min_cluster_size min number of reads to be count as cluster
     This functions tries to finds clusters of similar reads given a min cluster size
     and a minimum distance (allowed_missmatches)
     It will return a list with the all the clusters and their elements
@@ -66,6 +78,11 @@ def countMolecularBarcodesClustersHierarchical(reads, allowed_missmatches, mc_st
 def countMolecularBarcodesClustersNaive(reads, allowed_missmatches, 
                                         mc_start_position, mc_end_position, min_cluster_size):
     """
+    :reads the list of reads to be searched for clusters
+    :allowed_missmatches how much distance we allow between clusters
+    :mc_start_position start position of the read part that we want to cluster
+    :mc_end_position end position of the read part that we want to cluster
+    :min_cluster_size min number of reads to be count as cluster
     This functions tries to finds clusters of similar reads given a min cluster size
     and a minimum distance (allowed_missmatches)
     It will return a list with the all the clusters and their elements
@@ -95,6 +112,11 @@ def countMolecularBarcodesClustersNaive(reads, allowed_missmatches,
 def countMolecularBarcodesClustersNaiveFallBack(reads, allowed_missmatches, 
                                                 mc_start_position, mc_end_position, min_cluster_size):
     """
+    :reads the list of reads to be searched for clusters
+    :allowed_missmatches how much distance we allow between clusters
+    :mc_start_position start position of the read part that we want to cluster
+    :mc_end_position end position of the read part that we want to cluster
+    :min_cluster_size min number of reads to be count as cluster
     This functions tries to finds clusters of similar reads given a min cluster size
     and a minimum distance (allowed_missmatches)
     It will return a list with the all the clusters and their elements
