@@ -377,12 +377,12 @@ def getTrToIdMap(readsContainingTr, idFile, m, k, s, l, e, oh, outputFolder=None
 
     # taggd options
     args = ['taggd_demultiplex.py',
-            "--max_edit_distance", str(m),
+            "--max-edit-distance", str(m),
             "--k", str(k),
-            "--start_position", str(s),
+            "--start-position", str(s),
             "--overhang", str(oh)]
     if not keep_discarded_files:
-        args.append("--only_output_matched")
+        args.append("--only-output-matched")
     args += [idFile, readsContainingTr, outputFilePrefix]
 
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
