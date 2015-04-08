@@ -23,18 +23,17 @@ To install the st_pipeline on your MAC, Linux or UPPMAX follow the instructions 
 	For UPPMAX use:
 	- scp pipeline.zip youruser@milou.uppmax.uu.se:~/
 
-4) unzip the file on uppmax
+4) unzip the file on uppmax (make sure you remove the old pipeline folder)
 	
 	password: avgohe52 (version < 0.3.3)
 	password: avghoe52 (version 0.3.3 and onwards)
 
-5) Install bowtie2 :
+5) Install STAR:
 
-    cd pipeline/depedencies
-    unzip bowtie2-2.2.3-source.zip
-    cd bowtie2-2.2.3 
-    make
-    cp bowtie2* ~/bin
+   cd pipeline/dependencies
+   unzip STAR-STAR_2.4.0j.zip
+   cd STAR-STAR_2.4.0j/bin/<my environment>
+   cp STAR ~/bin
 
 6) run the commands:
 

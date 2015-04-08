@@ -40,21 +40,18 @@ class TestPipeline(unittest.TestCase):
         self.genomedir = os.path.join(self.tmpdir, 'config/genomes/mouse_grcm38')
         os.makedirs(self.genomedir)
 
-        # Bowtie contam dir.
-        self.contamdir = os.path.join(testdir, 'config/contaminant_genomes/R45S5_R5S1')
-
         # STAR contam dir
-        #self.contamdir = os.path.join(self.tmpdir, 'config/contaminant_genomes/R45S5_R5S1')
-        #os.makedirs(self.contamdir)
+        self.contamdir = os.path.join(self.tmpdir, 'config/contaminant_genomes/R45S5_R5S1')
+        os.makedirs(self.contamdir)
 
         # Download and unpack fasta files
         try:
             print "ST Pipeline Test Downloading genome files..."
             genomefasta = os.path.join(self.genomedir, "mouse_grcm38_chromosome19.fasta")
             genomefastagz = os.path.join(self.genomedir, "mouse_grcm38_chromosome19.fasta.gz")
-            urllib.urlretrieve ("ftp://ftp.ensembl.org/pub/release-78/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna_rm.chromosome.19.fa.gz", genomefastagz)
+            urllib.urlretrieve ("ftp://ftp.ensembl.org/pub/release-78/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna_rm.chromosome.19.fa.gz", 
+                                genomefastagz)
             check_call(['gunzip', genomefastagz])
-            print "ST Pipeline Test ...finished downloading!"
         except Exception as e:
             print e
             self.assertTrue(0, "Downloading genome files failed \n")
@@ -70,17 +67,15 @@ class TestPipeline(unittest.TestCase):
                     "--sjdbGTFfile", self.annotfile,
                     "--sjdbOverhang", "100"])
 
-            # Below refers to contamination file using star
-            #contamfasta = os.path.join(testdir, "config/contaminant_genomes/R45S5_R5S1/Rn45s_Rn5s.fasta")
-            #check_call(["STAR", "--runMode", "genomeGenerate",
-            #        "--runThreadN", str(multiprocessing.cpu_count() - 1),
-            #        "--genomeDir", self.contamdir,
-            #        "--genomeFastaFiles", contamfasta])
-            print "ST Pipeline Test ...finished creating index!"
+            print "ST Pipeline Test Creating contaminant genome index..."
+            contamfasta = os.path.join(testdir, "config/contaminant_genomes/R45S5_R5S1/Rn45s_Rn5s.fasta")
+            check_call(["STAR", "--runMode", "genomeGenerate",
+                    "--runThreadN", str(multiprocessing.cpu_count() - 1),
+                    "--genomeDir", self.contamdir,
+                    "--genomeFastaFiles", contamfasta])
         except Exception as e:
             print e
             self.assertTrue(0, "Creating genome index failed \n")
-
 
         # Verify existence of input files
         assert (os.path.exists(self.infile_normal_fw))
@@ -101,12 +96,11 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.allowed_missed = 6
         self.pipeline.allowed_kimera = 7
         self.pipeline.min_length_trimming = 28
-        self.pipeline.trimming_rw_bowtie = 5
+        self.pipeline.trimming_rv = 5
         self.pipeline.min_quality_trimming = 20
         self.pipeline.clean = False
-        self.pipeline.s = 0
-        self.pipeline.l = 27
-        self.pipeline.e = 0
+        self.pipeline.barcode_start = 0
+        self.pipeline.barcode_length = 27
         self.pipeline.threads = multiprocessing.cpu_count() - 1
         self.pipeline.verbose = True
         self.pipeline.ids = os.path.abspath(self.chipfile)
@@ -114,15 +108,14 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.ref_annotation = os.path.abspath(self.annotfile)
         self.pipeline.htseq_mode = "intersection-nonempty"
         self.pipeline.htseq_no_ambiguous = False
-        #self.pipeline.contaminant_bt2_index = os.path.abspath(self.contamdir)  # STAR contaminant index
-        self.pipeline.contaminant_bt2_index = os.path.abspath(os.path.join(self.contamdir, "rnagenome")) # Bowtie2 index
+        self.pipeline.contaminant_index= os.path.abspath(self.contamdir)  # STAR contaminant index
         self.pipeline.output_folder = os.path.abspath(self.outdir)
         self.pipeline.temp_folder = os.path.abspath(self.tmpdir)
         self.pipeline.logfile = self.logFile
 
-
     @classmethod
     def tearDownClass(self):
+        return
         print "ST Pipeline Test Remove temporary output " + self.outdir
         for root, dirs, files in os.walk(self.outdir, topdown=False):
             for name in files:
@@ -148,20 +141,18 @@ class TestPipeline(unittest.TestCase):
         self.assertTrue(os.path.exists(readsfile), "Reads JSON file exists")
         self.assertTrue(os.path.getsize(readsfile) > 1024, "Reads JSON file is not empty")
 
-
-
     def test_normal_star_run(self):
         """
         Tests st_pipeline on a mouse data subset with normal fastq files
         """
         # Add normal parameters
         self.pipeline.expName = self.expnameNormal
-        self.pipeline.Fastq_fw = self.infile_normal_fw
-        self.pipeline.Fastq_rv = self.infile_normal_rv
+        self.pipeline.fastq_fw = self.infile_normal_fw
+        self.pipeline.fastq_rv = self.infile_normal_rv
         self.pipeline.molecular_barcodes = False
-        self.pipeline.trimming_fw_bowtie = 51
+        self.pipeline.trimming_fw = 51
         self.pipeline.keep_discarded_files = True
-
+        
         # Start the pipeline
         try:
             self.pipeline.createLogger()
@@ -172,8 +163,6 @@ class TestPipeline(unittest.TestCase):
             self.assertTrue(0, "Running Normal STAR Test failed \n")
 
         self.validateOutputData(self.expnameNormal)
-
-
 
     def test_mc_star_run(self):
         """
@@ -186,11 +175,11 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.mc_end_position = 39
         self.pipeline.min_cluster_size = 10
         self.pipeline.expName = self.expnameMC
-        self.pipeline.Fastq_fw = self.infile_mc_fw
-        self.pipeline.Fastq_rv = self.infile_mc_rv
+        self.pipeline.fastq_fw = self.infile_mc_fw
+        self.pipeline.fastq_rv = self.infile_mc_rv
         self.pipeline.trimming_fw_bowtie = 62
         self.pipeline.keep_discarded_files = True
-
+         
         # Start the pipeline
         try:
             self.pipeline.createLogger()
@@ -199,10 +188,8 @@ class TestPipeline(unittest.TestCase):
         except Exception as e:
             print e
             self.assertTrue(0, "Running Molecular Barcode STAR Test failed \n")
-
+ 
         self.validateOutputData(self.expnameMC)
-
-
 
 if __name__ == '__main__':
     unittest.main()

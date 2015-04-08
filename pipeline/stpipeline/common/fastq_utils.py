@@ -7,7 +7,6 @@ from stpipeline.common.utils import *
 from stpipeline.common.adaptors import removeAdaptor
 import logging 
 from itertools import izip
-from cutadapt.qualtrim import quality_trim_index
 
 def coroutine(func):
     """ 
@@ -19,14 +18,48 @@ def coroutine(func):
         return cr
     return start
 
+def quality_trim_index(qualities, cutoff, base=33):
+    """
+    NOTE : function snippet from CutAdapt 
+    https://code.google.com/p/cutadapt/
+    
+    Find the position at which to trim a low-quality end from a nucleotide sequence.
+
+    Qualities are assumed to be ASCII-encoded as chr(qual + base).
+
+    The algorithm is the same as the one used by BWA within the function
+    'bwa_trim_read':
+    - Subtract the cutoff value from all qualities.
+    - Compute partial sums from all indices to the end of the sequence.
+    - Trim sequence at the index at which the sum is minimal.
+    """
+    s = 0
+    max_qual = 0
+    max_i = len(qualities)
+    for i in reversed(xrange(max_i)):
+        q = ord(qualities[i]) - base
+        s += cutoff - q
+        if s < 0:
+            break
+        if s > max_qual:
+            max_qual = s
+            max_i = i
+    return max_i
+
 def trim_quality(record, trim_distance, min_qual=20, 
                  min_length=28, qual64=False):    
     """
+    :param record the fastq read (name,sequence,quality)
+    :param trim_distance the number of bases to be trimmed (not considered)
+    :param min_qual the quality threshold to trim
+    :param min_length the min length of a valid read after trimming
+    :param qual64 true of the qualities are in phred64 format
     Perfoms a bwa-like quality trimming on the sequence and 
     quality in tuple record(name,seq,qual)
+    Returns the trimmed read or None if the read has to be discarded
     """
-    qscore = record[2]
-    sequence = record[1]
+    qscore = record[2][trim_distance:]
+    sequence = record[1][trim_distance:]
     name = record[0]
     phred = 64 if qual64 else 33
     
@@ -35,9 +68,9 @@ def trim_quality(record, trim_distance, min_qual=20,
     #get the number of bases suggested to trim
     nbases = len(qscore) - cut_index
     
-    #check if the trimmed sequence would have min length accounting for trim_distance
-    #offset 
-    if (len(sequence) - (trim_distance + nbases)) >= min_length:
+    #check if the trimmed sequence would have min length (at least)
+    #if so return the trimmed read otherwise return None
+    if (len(sequence) - nbases) >= min_length:
         new_seq = record[1][:(len(sequence) - nbases)]
         new_qual = record[2][:(len(sequence) - nbases)]
         return name, new_seq, new_qual
@@ -103,56 +136,52 @@ def writefq(fp):  # This is a coroutine
     except GeneratorExit:
         return
 
-def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
+def reformatRawReads(fw, rw, barcode_length=18, trim_fw=42, trim_rw=5,
                      min_qual=20, min_length=28,
-                     polyA_min_distance=0, polyT_min_distance=0, polyG_min_distance=0,
+                     polyA_min_distance=0, polyT_min_distance=0, polyG_min_distance=0, polyC_min_distance=0,
                      qual64=False, outputFolder=None, keep_discarded_files=False):
     """ 
-    Converts reads in rw file appending the first (distance - trim)
-    bases of fw and also add FW or RW string to reads names
-    It also performs a bwa quality trim of the fw and rw reads, when
-    the trimmed read is below min lenght it will discarded.
+    :param barcode_length the number of bases of the barcodes
+    :param trim_fw how many bases we want to trim (not consider) in the forward
+    :param trim_rw how many bases we want to trim (not consider in the reverse
+    :param min_qual the min quality value to use to trim quality
+    :param min_length the min valid length for a read after trimming
+    :param polyA_min_distance if >0 we remove PolyA adaptors from the reads
+    :param polyT_min_distance if >0 we remove PolyT adaptors from the reads
+    :param polyG_min_distance if >0 we remove PolyG adaptors from the reads
+    :param qual64 true of qualities are in phred64 format
+    :param outputFolder optional folder to output files
+    :param keep_discarded_files when true files containing the discarded reads will be created
+    This function does three things (all here for speed optimization)
+      - It appends the barcode from forward reads to reverse reads
+      - It performs a BWA quality trimming discarding very short reads
+      - It removes aadaptors from the reads (optionall)
     """
     logger = logging.getLogger("STPipeline")
-    
-    if (fw.endswith(".fastq") or fw.endswith(".fq")) and (rw.endswith(".fastq") or rw.endswith(".fq")):
-        out_rw = replaceExtension(getCleanFileName(rw),'_formated.fastq')
-        if outputFolder is not None and os.path.isdir(outputFolder) : 
-            out_rw = os.path.join(outputFolder, out_rw)
-            
-        out_fw = replaceExtension(getCleanFileName(fw),'_formated.fastq')
-        if outputFolder is not None and os.path.isdir(outputFolder): 
-            out_fw = os.path.join(outputFolder, out_fw)
-        
-        out_fw_discarded = replaceExtension(getCleanFileName(fw),'_formated_discarded.fastq')
-        if outputFolder is not None and os.path.isdir(outputFolder): 
-            out_fw_discarded = os.path.join(outputFolder, out_fw_discarded)
-            
-        out_rw_discarded = replaceExtension(getCleanFileName(rw),'_formated_discarded.fastq')
-        if outputFolder is not None and os.path.isdir(outputFolder) : 
-            out_rw_discarded = os.path.join(outputFolder, out_rw_discarded)
-            
-    else:
-        error = "Error: Input format not recognized " + fw + " , " + rw
-        logger.error(error)
-        raise RuntimeError(error + "\n")
-
     logger.info("Start Reformatting and Filtering raw reads")
+    
+    out_rw = replaceExtension(getCleanFileName(rw),'_formated.fastq')
+    out_fw = replaceExtension(getCleanFileName(fw),'_formated.fastq')
+    out_fw_discarded = replaceExtension(getCleanFileName(fw),'_formated_discarded.fastq')
+    out_rw_discarded = replaceExtension(getCleanFileName(rw),'_formated_discarded.fastq')
+    
+    if outputFolder is not None and os.path.isdir(outputFolder):
+        out_rw = os.path.join(outputFolder, out_rw)
+        out_fw = os.path.join(outputFolder, out_fw)
+        out_fw_discarded = os.path.join(outputFolder, out_fw_discarded)
+        out_rw_discarded = os.path.join(outputFolder, out_rw_discarded)
     
     out_fw_handle = safeOpenFile(out_fw, 'w')
     out_fw_writer = writefq(out_fw_handle)
-    
     out_rw_handle = safeOpenFile(out_rw, 'w')
     out_rw_writer = writefq(out_rw_handle)
 
     if keep_discarded_files:
         out_rw_handle_discarded = safeOpenFile(out_rw_discarded, 'w')
         out_rw_writer_discarded = writefq(out_rw_handle_discarded)
-        
         out_fw_handle_discarded = safeOpenFile(out_fw_discarded, 'w')
         out_fw_writer_discarded = writefq(out_fw_handle_discarded)
     
-        
     fw_file = safeOpenFile(fw, "rU")
     rw_file = safeOpenFile(rw, "rU")
 
@@ -168,34 +197,46 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
         original_line2 = line2
         
         # if applies we remove the adaptor PolyT from both reads
-        # in different directions
         if polyA_min_distance > 0:
             adaptor = "".join("A" for k in xrange(polyA_min_distance))
             line1 = removeAdaptor(line1, adaptor, trim_fw, "5")
-            line2 = removeAdaptor(line2, adaptor, trim_rw, "3")
+            line2 = removeAdaptor(line2, adaptor, trim_rw, "5")
             
         # if applies we remove the adaptor PolyA from both reads
-        # in different directions
         if polyT_min_distance > 0:
             adaptor = "".join("T" for k in xrange(polyT_min_distance))
-            line1 = removeAdaptor(line1, adaptor, trim_fw, "3")
+            line1 = removeAdaptor(line1, adaptor, trim_fw, "5")
             line2 = removeAdaptor(line2, adaptor, trim_rw, "5")
        
-        # if applies we discard reads with adaptor PolyG
+        # if applies we remove the adaptor PolyG from both reads
         if polyG_min_distance > 0:
             adaptor = "".join("G" for k in xrange(polyG_min_distance))
-            line1 = removeAdaptor(line1, adaptor, trim_fw, "discard")
-            line2 = removeAdaptor(line2, adaptor, trim_rw, "discard")
-               
+            line1 = removeAdaptor(line1, adaptor, trim_fw, "5")
+            line2 = removeAdaptor(line2, adaptor, trim_rw, "5")
+        
+        # if applies we remove the adaptor PolyC from both reads
+        if polyC_min_distance > 0:
+            adaptor = "".join("C" for k in xrange(polyG_min_distance))
+            line1 = removeAdaptor(line1, adaptor, trim_fw, "5")
+            line2 = removeAdaptor(line2, adaptor, trim_rw, "5")
+          
+        line2_trimmed = None
+        line1_trimmed = None
+             
         # Trim rw
         if line2 is not None:
             line2_trimmed = trim_quality(line2, trim_rw, min_qual, min_length, qual64)
+            
         # Trim fw
         if line1 is not None:
             line1_trimmed = trim_quality(line1, trim_fw, min_qual, min_length, qual64)
         
         if line1_trimmed is not None:
-            out_fw_writer.send(line1_trimmed)
+            # Remove the user-trimmed part from the read BUT not the barcode
+            new_seq = line1_trimmed[1][:barcode_length] + line1_trimmed[1][trim_fw:]
+            new_qual =  line1_trimmed[2][:barcode_length] + line1_trimmed[2][trim_fw:]
+            record = (line1_trimmed[0], new_seq, new_qual)
+            out_fw_writer.send(record)
         else:
             # write fake sequence so bowtie wont fail for having rw and fw with different lenghts
             out_fw_writer.send(getFake(original_line1))
@@ -204,11 +245,10 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
                 out_fw_writer_discarded.send(original_line1)
 
         if line2_trimmed is not None:
-            # Add the barcode and polyTs from fw only if rw has not been completely trimmed
-            # we do not include in the new seq/qual the number of reverse bases that we want
-            # to trim so they are not included in the mapping
-            new_seq = original_line1[1][:trim_fw] + line2_trimmed[1][trim_rw:]
-            new_qual = original_line1[2][:trim_fw] + line2_trimmed[2][trim_rw:]
+            # Attach the barcode from fw only if rw has not been completely trimmed
+            # Remove the user-trimmed part from the read
+            new_seq = original_line1[1][:barcode_length] + line2_trimmed[1][trim_rw:]
+            new_qual = original_line1[2][:barcode_length] + line2_trimmed[2][trim_rw:]
             record = (line2_trimmed[0], new_seq, new_qual)
             out_rw_writer.send(record)
         else:
@@ -237,9 +277,9 @@ def reformatRawReads(fw, rw, trim_fw=42, trim_rw=5,
         logger.info("Trimming stats fw 1 : " + str(dropped_fw) + " reads have been dropped on the forward reads!")
         perc1 = '{percent:.2%}'.format(percent= float(dropped_fw) / float(total_reads) )
         logger.info("Trimming stats fw 2 : you just lost about " + perc1 + " of your data on the forward reads!")
-        logger.info("Trimming stats rw 1 : " + str(dropped_rw) + " reads have been dropped on the reverse reads!") 
+        logger.info("Trimming stats rv 1 : " + str(dropped_rw) + " reads have been dropped on the reverse reads!") 
         perc2 = '{percent:.2%}'.format(percent= float(dropped_rw) / float(total_reads) )
-        logger.info("Trimming stats rw 2 : you just lost about " + perc2 + " of your data on the reverse reads!")
+        logger.info("Trimming stats rv 2 : you just lost about " + perc2 + " of your data on the reverse reads!")
         logger.info("Trimming stats reads remaining: " + str(total_reads - dropped_fw - dropped_rw))
         
     logger.info("Finish Reformatting and Filtering raw reads")

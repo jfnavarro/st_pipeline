@@ -1,6 +1,3 @@
-Add better error handling.
-Replace bowtie2 for START remove unnecessary step after annotation to get original reads
-Perform rRNA filter before mapping
 Validate and benchmark all the pipeline stats
 Add unit-test for individual components and modules
 Fix TODOs

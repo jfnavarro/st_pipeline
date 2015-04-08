@@ -58,3 +58,25 @@ Version 0.3.4
 * Improved install script
 * Added options to remove adaptors (PolyA, PolyT and PolyG)
 * Exchanged Bowtie as primary mapper with STAR.
+
+Version 0.3.5
+* Added options to remove PolyC fix bugs in adaptors removal
+
+Version 0.3.6
+* Fixed a bug in the installation 
+
+Version 0.3.7
+* Removed cutadapt dependency
+
+Version 0.3.8
+* Added back findIndexes
+
+Version 0.4.0
+* Added back taggd
+* Added BED file to output
+* Added STAR
+* Optimized workflow
+* do rRNA filter first
+* Optimized annotation
+* Optimized trimming
+* Output reads do not contain duplicates

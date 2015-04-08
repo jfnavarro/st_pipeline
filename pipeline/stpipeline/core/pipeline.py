@@ -8,6 +8,8 @@ from stpipeline.common.utils import *
 from stpipeline.core.mapping import *
 from stpipeline.core.annotation import *
 from stpipeline.common.json_utils import *
+from stpipeline.common.fastq_utils import reformatRawReads
+from stpipeline.common.sam_utils import sortSamFile, filterAnnotatedReads
 import os
 from glob import glob
 import logging
@@ -19,18 +21,16 @@ class Pipeline():
     DefaultLogLevel = 'DEBUG'
     
     def __init__(self):
-        self.mapper = "STAR"
         self.allowed_missed = 3
         self.allowed_kimera = 6
         self.overhang = 2
         self.min_length_trimming = 28
-        self.trimming_fw_bowtie = 42
-        self.trimming_rw_bowtie = 5
+        self.trimming_fw = 42
+        self.trimming_rv = 5
         self.min_quality_trimming = 20 
         self.clean = True
-        self.s = 0
-        self.l = 18
-        self.e = 0
+        self.barcode_start = 0
+        self.barcode_length = 18
         self.threads = 8
         self.verbose = False
         self.ids = None
@@ -40,12 +40,9 @@ class Pipeline():
         self.htseq_mode = "intersection-nonempty"
         self.htseq_no_ambiguous = False
         self.qual64 = False
-        self.discard_fw = False
-        self.discard_rv = False
-        self.discordant = False
-        self.contaminant_bt2_index = None
-        self.Fastq_fw = None
-        self.Fastq_rv = None
+        self.contaminant_index = None
+        self.fastq_fw = None
+        self.fastq_rv = None
         self.path = None
         self.logger = None
         self.logfile = None
@@ -60,36 +57,39 @@ class Pipeline():
         self.remove_polyA_distance = 0
         self.remove_polyT_distance = 0
         self.remove_polyG_distance = 0
+        self.remove_polyC_distance = 0
         
     def sanityCheck(self):
         """ 
         Performs some basic sanity checks in the input paramters
         """
 
-        conds = {"FW": fileOk(self.Fastq_fw), "RV": fileOk(self.Fastq_rv), 
-                 "ids": fileOk(self.ids), "ref": fileOk(self.ref_annotation), 
-                 "map": self.ref_map is not None, "Exp Name":  self.expName is not None}
+        conds = {"forward_file": fileOk(self.fastq_fw), "revers_file": fileOk(self.fastq_rv), 
+                 "ids": fileOk(self.ids), "ref_annotation": fileOk(self.ref_annotation), 
+                 "ref_mapping": self.ref_map is not None, "Exp Name":  self.expName is not None}
         
-        conds["htseq_gtf"] = self.ref_annotation.endswith("gtf")
-        conds["htseq_mode"] = self.htseq_mode in ["union","intersection-nonempty","intersection-strict"]
-
+        conds["annotation_extension"] = self.ref_annotation.endswith("gtf")
+        conds["annotation_mode"] = self.htseq_mode in ["union","intersection-nonempty","intersection-strict"]
+        conds["forward_extension"] = self.fastq_fw.endswith("fastq") or self.fastq_fw.endswith("fq")
+        conds["forward_extension"] = self.fastq_fw.endswith("fastq") or self.fastq_fw.endswith("fq")
+        conds["polyA"] = self.remove_polyA_distance >= 0 
+        conds["polyT"] = self.remove_polyT_distance >= 0 
+        conds["polyG"] = self.remove_polyG_distance >= 0
+        conds["polyC"] = self.remove_polyC_distance >= 0
+        
+        #TODO add much more checks for input parameters, specially integers
+        
+        if self.molecular_barcodes:
+            conds["molecular_barcodes"] = self.mc_start_position > self.barcode_length \
+                                        or self.mc_end_position > self.mc_start_position
         if not all(conds.values()):
             error = "Error: required file/s and or parameters not " \
             " found or incorrect parameters :" + str(conds)
             self.logger.error(error)
             raise RuntimeError(error)
 
-        #TODO add boundaries check for integer parameters
-        
-        if self.molecular_barcodes and (self.mc_start_position < self.l 
-                                        or self.mc_end_position <= self.mc_start_position):
-            error = "Error: Molecular Barcodes option is activated but the start/end " \
-            "positions parameters are incorrect"
-            self.logger.error(error)
-            raise RuntimeError(error)
-        
-        #test the presence of the scripts :
-        required_scripts = set(['findIndexes','bowtie2', 'STAR'])
+        #test the presence of the scripts (only STAR for now)
+        required_scripts = set(['STAR'])
 
         unavailable_scripts = set()
         for script in required_scripts:
@@ -109,8 +109,6 @@ class Pipeline():
             Argparse object 
             """
             parser.add_argument('fastq_files', nargs=2)
-            #parser.add_argument('--mapper',
-            #                    help='The name of the mapper, Bowtie2 or STAR')
             parser.add_argument('--ids',
                                 help='The name of the file containing the barcodes and the coordinates')
             parser.add_argument('--ref-map',
@@ -133,8 +131,8 @@ class Pipeline():
                                 help="Number of bases to trim in the forward reads for the Mapping [24 + ID_LENGTH]")
             parser.add_argument('--mapping-rv-trimming', default=5,
                                 help="Number of bases to trim in the reverse reads for the Mapping")
-            parser.add_argument('--length-id', default=18, help="Length of ID, a.k.a. the length of the barcodes")
-            parser.add_argument('--contaminant-bowtie2-index',
+            parser.add_argument('--length-id', default=18, help="Length of IDs (the length of the barcodes)")
+            parser.add_argument('--contaminant-index',
                                 help="<path_to_genome_indexes> = When provided, reads will be filtered "
                                 "against the specified genome index, non-mapping reads will be saved and demultiplexed")
             parser.add_argument('--qual-64', action="store_true", default=False,
@@ -144,20 +142,13 @@ class Pipeline():
                                 "Modes = {union,intersection-nonempty(default),intersection-strict}")
             parser.add_argument('--htseq-no-ambiguous', action="store_true",
                                 help="When using htseq discard reads annotating ambiguous genes")
-            parser.add_argument('--start-id', default=0, help="Start position of BARCODE ID [0]")
-            parser.add_argument('--error-id', default=0, help="Id positional error [0]")
+            parser.add_argument('--start-id', default=0, help="Start position of the IDs (Barcodes) in the reads")
             parser.add_argument('--no-clean-up', action="store_false", default=True,
                                 help="Do not remove temporary files at the end (useful for debugging)")
             parser.add_argument('--verbose', action="store_true", default=False,
                                 help="Show extra information on the log")
-            parser.add_argument('--bowtie-threads', default=8, help="Number of threads to use in the mapping step")
+            parser.add_argument('--mapping-threads', default=8, help="Number of threads to use in the mapping step")
             parser.add_argument('--min-quality-trimming', default=20, help="Minimum quality for trimming")
-            parser.add_argument('--discard-fw', action="store_true", default=False, 
-                                help="Discard forwards reads that maps uniquely")
-            parser.add_argument('--discard-rv', action="store_true", default=False, 
-                                help="Discard reverse reads that maps uniquely")
-            parser.add_argument('--bowtie2-discordant', action="store_true", default=False,
-                                help="Discard non-concordant alignments when mapping")
             parser.add_argument('--bin-path', 
                                 help="Path to folder where binary executables are present (system path by default)")
             parser.add_argument('--log-file', 
@@ -177,11 +168,13 @@ class Pipeline():
             parser.add_argument('--keep-discarded-files', action="store_true", default=False,
                                 help='Writes down discarded reads and barcodes into files')
             parser.add_argument('--remove-polyA', default=0, 
-                                help="Remove PolyAs in the reads of a length at least as given number")
+                                help="Remove PolyAs and everything after it in the reads of a length at least as given number")
             parser.add_argument('--remove-polyT', default=0, 
-                                help="Remove PolyTs in the reads of a length at least as given number")  
+                                help="Remove PolyTs and everything after it in the reads of a length at least as given number")
             parser.add_argument('--remove-polyG', default=0, 
-                                help="Discard reads containing polyGs of a length at least as given number")       
+                                help="Remove PolyGs and everything after it in the reads of a length at least as given number")
+            parser.add_argument('--remove-polyC', default=0,
+                                help="Remove PolyCs and everything after it in the reads of a length at least as given number")   
             return parser
          
     def load_parameters(self, options):
@@ -196,14 +189,13 @@ class Pipeline():
         self.allowed_kimera = int(options.allowed_kimer)
         self.overhang = int(options.overhang)
         self.min_length_trimming = int(options.min_length_qual_trimming)
-        self.trimming_fw_bowtie = int(options.mapping_fw_trimming)
-        self.trimming_rw_bowtie = int(options.mapping_rv_trimming)
+        self.trimming_fw = int(options.mapping_fw_trimming)
+        self.trimming_rv = int(options.mapping_rv_trimming)
         self.min_quality_trimming = int(options.min_quality_trimming) 
         self.clean = options.no_clean_up
-        self.s = int(options.start_id)
-        self.l = int(options.length_id)
-        self.e = int(options.error_id)
-        self.threads = int(options.bowtie_threads)
+        self.barcode_start = int(options.start_id)
+        self.barcode_length = int(options.length_id)
+        self.threads = int(options.mapping_threads)
         self.verbose = options.verbose
         self.ids = os.path.abspath(options.ids)
         self.ref_map = os.path.abspath(options.ref_map)
@@ -212,15 +204,12 @@ class Pipeline():
         self.htseq_mode = options.htseq_mode
         self.htseq_no_ambiguous = options.htseq_no_ambiguous
         self.qual64 = options.qual_64
-        self.discard_fw = options.discard_fw
-        self.discard_rv = options.discard_rv
-        self.discordant = options.bowtie2_discordant
-        self.contaminant_bt2_index = options.contaminant_bowtie2_index
+        self.contaminant_index = options.contaminant_index
         self.path = options.bin_path
         if options.log_file is not None:
-            self.logfile = os.path.abspath(options.log_file)         
-        self.Fastq_fw = options.fastq_files[0]
-        self.Fastq_rv = options.fastq_files[1]
+            self.logfile = os.path.abspath(options.log_file)    
+        self.fastq_fw = options.fastq_files[0]
+        self.fastq_rv = options.fastq_files[1]
         if options.output_folder is not None and os.path.isdir(options.output_folder):
             self.output_folder = os.path.abspath(options.output_folder)
         if options.temp_folder is not None and os.path.isdir(options.temp_folder): 
@@ -234,6 +223,7 @@ class Pipeline():
         self.remove_polyA_distance = int(options.remove_polyA)
         self.remove_polyT_distance = int(options.remove_polyT)
         self.remove_polyG_distance = int(options.remove_polyG)
+        self.remove_polyC_distance = int(options.remove_polyC)
         
     def createLogger(self):
         """
@@ -257,13 +247,28 @@ class Pipeline():
         if self.temp_folder is None or not os.path.isdir(self.temp_folder):
             self.logger.info("Invalid path for temp directory -- using current directory instead")
             self.temp_folder = os.path.abspath(os.getcwd())
-        
-        #show parameters information and write them to stats
-        parameters = "Parameters : m(" + str(self.allowed_missed) + ")" + \
-                     "k(" + str(self.allowed_kimera) + ")" + "f(" + str(self.min_length_trimming) + ")" + \
-                     "e(" + str(self.e) + ")" + "s(" + str(self.s) + ")" + "l(" + str(self.l) + ")" + \
-                     "F(" + str(self.trimming_fw_bowtie) + ")" + "R(" + str(self.trimming_rw_bowtie) + ")"
-        
+            
+        self.logger.info("Output directory : " + self.output_folder)
+        self.logger.info("Temp directory : " + self.temp_folder)
+        self.logger.info("Experiment : " + str(self.expName))
+        self.logger.info("Forward reads file : " + str(self.fastq_fw))
+        self.logger.info("Reverse reads file : " + str(self.fastq_rv))
+        self.logger.info("Ids file : " + str(self.ids))
+        self.logger.info("Reference mapping file : " + str(self.ref_map))
+        self.logger.info("Reference annotation file : " + str(self.ref_annotation))
+        if(self.contaminant_index):
+            self.logger.info("Using contamination filter with " + str(self.contaminant_index))
+        self.logger.info("Nodes : " + str(self.threads))
+        self.logger.info("Main parameters: ")
+        self.logger.info("TaggD allowed missmatches " + str(self.allowed_missed))
+        self.logger.info("TaggD barcode legnth " + str(self.barcode_length))
+        self.logger.info("TaggD kmer size " + str(self.allowed_kimera))
+        self.logger.info("TaggD overhang " + str(self.overhang))
+        self.logger.info("Mapping forward trimming " + str(self.trimming_fw))
+        self.logger.info("Mapping reverse trimming " + str(self.trimming_rv))
+        self.logger.info("Mapper : STAR")
+        self.logger.info("Annotation Tool : HTSeq")
+
         if self.molecular_barcodes:
             self.logger.info("Using Molecular Barcodes")
             self.logger.info("Molecular Barcode start position " + str(self.mc_start_position))
@@ -271,30 +276,14 @@ class Pipeline():
             self.logger.info("Molecular Barcode min cluster size " + str(self.min_cluster_size))
             self.logger.info("Molecular Barcode allowed missmatches " + str(self.mc_allowed_missmatches))
             
-        self.logger.info("Output directory : " + self.output_folder)
-        self.logger.info("Temp directory : " + self.temp_folder)
-        self.logger.info("Experiment : " + str(self.expName))
-        self.logger.info("Forward reads file : " + str(self.Fastq_fw))
-        self.logger.info("Reverse reads file : " + str(self.Fastq_rv))
-        self.logger.info("Ids file : " + str(self.ids))
-        self.logger.info("Reference mapping file : " + str(self.ref_map))
-        self.logger.info("Reference annotation file : " + str(self.ref_annotation))
-        if(self.contaminant_bt2_index):
-            self.logger.info("Using bowtie2 contamination filter with " + str(self.contaminant_bt2_index))
-        self.logger.info("Nodes : " + str(self.threads))
-        self.logger.info(parameters)
-        self.logger.info("Mapper : " + self.mapper)
-        self.logger.info("Annotation Tool :  HTSeq")
-
         if self.remove_polyA_distance > 0:
-            self.logger.info("Removing polyA adaptors of a length at least " + str(self.remove_polyA_distance))
-                             
+            self.logger.info("Removing polyA adaptors of a length at least " + str(self.remove_polyA_distance))                        
         if self.remove_polyT_distance > 0:
             self.logger.info("Removing polyT adaptors of a length at least " + str(self.remove_polyT_distance))
-            
         if self.remove_polyG_distance > 0:
-            self.logger.info("Discarding reads with polyG adaptors of a length at least " + str(self.remove_polyG_distance))
-
+            self.logger.info("Removing polyG adaptors of a length at least " + str(self.remove_polyG_distance))
+        if self.remove_polyC_distance > 0:
+            self.logger.info("Removing polyC adaptors of a length at least " + str(self.remove_polyC_distance))
 
     def run(self):
         """ 
@@ -312,119 +301,110 @@ class Pipeline():
         # STEP: add BC and PolyT from FW reads to the RW reads and apply quality filter
         # also applies quality trimming and adaptor removal
         #=================================================================
-        Fastq_fw_trimmed, Fastq_rv_trimmed = reformatRawReads(self.Fastq_fw,
-                                                              self.Fastq_rv, 
-                                                              self.trimming_fw_bowtie,
-                                                              self.trimming_rw_bowtie,
+        #NOTE after trimming both forward and reverse reads will have their trimming part remove
+        #on top of the quality trimmed based removed BUT the barcode will be re-attached to both of them
+        fastq_fw_trimmed, fastq_rv_trimmed = reformatRawReads(self.fastq_fw,
+                                                              self.fastq_rv,
+                                                              self.barcode_length,
+                                                              self.trimming_fw,
+                                                              self.trimming_rv,
                                                               self.min_quality_trimming,
                                                               self.min_length_trimming,
                                                               self.remove_polyA_distance,
                                                               self.remove_polyT_distance,
                                                               self.remove_polyG_distance,
+                                                              self.remove_polyC_distance,
                                                               self.qual64, 
                                                               self.temp_folder,
                                                               self.keep_discarded_files)
-        #=================================================================
-        # STEP: do mapping against genome of both strands
-        #=================================================================
-        #sam_mapped = bowtie2Map(Fastq_fw_trimmed,
-        #                        Fastq_rv_trimmed,
-        #                        self.ref_map,
-        #                        self.trimming_fw_bowtie,
-        #                        self.threads,
-        #                        self.qual64,
-        #                        self.discordant,
-        #                        self.temp_folder,
-        #                        self.keep_discarded_files)
-
-        sam_mapped = starMap(Fastq_fw_trimmed,
-                             Fastq_rv_trimmed,
-                             self.ref_map,
-                             self.trimming_fw_bowtie,
-                             self.threads,
-                             self.temp_folder,
-                             self.keep_discarded_files)
-
-        #=================================================================
-        # STEP: filter unmapped and discordant reads
-        #=================================================================
-        sam_filtered = filterUnmapped(sam_mapped,
-                                      self.discard_fw, 
-                                      self.discard_rv, 
-                                      self.temp_folder, 
-                                      self.keep_discarded_files)
-        if self.clean: safeRemove(sam_mapped)  
-
-        #=================================================================
-        # STEP: annotate using htseq count
-        #=================================================================
-        annotatedFile = annotateReadsWithHTSeq(sam_filtered,
-                                               self.ref_annotation, 
-                                               self.htseq_mode, 
-                                               self.temp_folder)
-        if self.clean: safeRemove(sam_filtered)
-
-        #=================================================================
-        # STEP: get raw reads and quality from the forward and reverse reads
-        #=================================================================
-        withTr = getAnnotatedReadsFastq(annotatedFile, 
-                                        Fastq_fw_trimmed, 
-                                        Fastq_rv_trimmed, 
-                                        self.htseq_no_ambiguous, 
-                                        self.temp_folder, 
-                                        self.keep_discarded_files)
-        if self.clean: safeRemove(annotatedFile)
-
+        
         #=================================================================
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. typically bacterial rRNA
         #=================================================================
-        if self.contaminant_bt2_index:
-            oldWithTr = withTr
-            withTr, contaminated_sam = bowtie2_contamination_map(withTr,
-                                                                 self.contaminant_bt2_index,
-                                                                 self.trimming_fw_bowtie,
-                                                                 self.threads,
-                                                                 self.qual64,
-                                                                 self.temp_folder)
-            #withTr, contaminated_sam = star_contamination_map(withTr,
-            #                                                  self.contaminant_bt2_index,
-            #                                                  self.trimming_fw_bowtie,
-            #                                                  self.threads,
-            #                                                  self.temp_folder)
+        if self.contaminant_index:
+            # To remove contaminants sequence with align the reads to the contaminant genome
+            # and keep the un-mapped reads
+            # We do pair end alignment, trimming is the same for forward and reverse
+            # which is just the barcode length
+            contaminated_sam, fastq_fw_trimmed, fastq_rv_trimmed = alignReads(fastq_fw_trimmed,
+                                                                              fastq_rv_trimmed,
+                                                                              self.contaminant_index,
+                                                                              self.barcode_length,
+                                                                              self.barcode_length,
+                                                                              self.threads,
+                                                                              self.temp_folder)
+                        
             if not self.keep_discarded_files: safeRemove(contaminated_sam)
-            if self.clean: safeRemove(oldWithTr)
-    
-        if self.clean: safeRemove(Fastq_fw_trimmed)
-        if self.clean: safeRemove(Fastq_rv_trimmed)
+            
+        #=================================================================
+        # STEP: maps against the genome using STAR
+        #=================================================================
+        # We do pair end alignment, trimming is the same for forward and reverse
+        # which is just the barcode length
+        sam_mapped, unmapped_forward, unmapped_reverse = alignReads(fastq_fw_trimmed,
+                                                                    fastq_rv_trimmed,
+                                                                    self.ref_map,
+                                                                    self.barcode_length,
+                                                                    self.barcode_length, 
+                                                                    self.threads,
+                                                                    self.temp_folder)
+        if self.clean: 
+            safeRemove(fastq_fw_trimmed)
+            safeRemove(fastq_rv_trimmed)
+        if not self.keep_discarded_files: 
+            safeRemove(unmapped_forward)
+            safeRemove(unmapped_reverse)
+         
+        #=================================================================
+        # STEP: SORT sam file with mapped reads by coordinate position
+        #=================================================================
+        sam_sorted = sortSamFile(sam_mapped, self.temp_folder)
+        if self.clean: safeRemove(sam_mapped)
+        
+        #=================================================================
+        # STEP: annotate using htseq count
+        #=================================================================
+        annotatedFile = annotateReads(sam_sorted,
+                                      self.ref_annotation,
+                                      self.htseq_mode,
+                                      self.temp_folder)
+        if self.clean: safeRemove(sam_sorted)
 
+        #=================================================================
+        # STEP: filter out un-annotated reads
+        #=================================================================
+        annotatedFilteredFile = filterAnnotatedReads(annotatedFile, 
+                                                     self.htseq_no_ambiguous,
+                                                     self.temp_folder, 
+                                                     self.keep_discarded_files)
+
+        if self.clean: safeRemove(annotatedFilteredFile)
+        
         #=================================================================
         # STEP: Map against the barcodes
         #=================================================================
-        mapFile = getTrToIdMap(withTr,
-                               self.ids, 
-                               self.allowed_missed, 
-                               self.allowed_kimera, 
-                               self.s, 
-                               self.l, 
-                               self.e,
-                               self.overhang,
-                               self.temp_folder,
-                               self.keep_discarded_files)
-        if self.clean: safeRemove(withTr)
+        mapFile = barcodeDemultiplexing(annotatedFilteredFile,
+                                        self.ids, 
+                                        self.allowed_missed, 
+                                        self.allowed_kimera, 
+                                        self.barcode_start,  
+                                        self.overhang,
+                                        self.temp_folder,
+                                        self.keep_discarded_files)
+        if self.clean: safeRemove(annotatedFilteredFile)
 
         #=================================================================
         # STEP: create json files with the results
         #=================================================================
         self.createDataset(mapFile,
                            self.expName,
-                           self.trimming_fw_bowtie,
+                           self.barcode_length,
                            self.molecular_barcodes,
                            self.mc_allowed_missmatches,
                            self.mc_start_position,
                            self.mc_end_position,
                            self.min_cluster_size)
-        if self.clean:
-            safeRemove(mapFile)
+        if self.clean: safeRemove(mapFile)
 
         #=================================================================
         # END PIPELINE
@@ -432,8 +412,6 @@ class Pipeline():
         finish_exe_time = globaltime.getTimestamp()
         total_exe_time = finish_exe_time - start_exe_time
         self.logger.info("Total Execution Time : " + str(total_exe_time))
-
-
 
     def createDataset(self, input_name, output_name, trim_bases = 42, 
                       molecular_barcodes = False, allowed_missmatches = 1, 
@@ -450,21 +428,27 @@ class Pipeline():
         self.logger.info("Start Creating dataset")
         
         args = ['createDataset.py', '--input', str(input_name), 
-                '--output-name', str(output_name), '--trim-bases', str(trim_bases)]
+                '--output-name', output_name, '--trim-bases', trim_bases]
         
         if molecular_barcodes:
-            args += ['--molecular-barcodes', '--mc-allowed-missmatches', str(allowed_missmatches), 
-                '--mc-start-position', str(start_position), '--mc-end-position', str(end_position), 
-                '--min-cluster-size', str(min_cluster_size)]
+            args += ['--molecular-barcodes', '--mc-allowed-missmatches', allowed_missmatches, 
+                '--mc-start-position', start_position, '--mc-end-position', end_position, 
+                '--min-cluster-size', min_cluster_size]
             
         if self.output_folder is not None:
-            args += ['--output-folder', str(self.output_folder)]
-            
-        proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (stdout, errmsg) = proc.communicate()
+            args += ['--output-folder', self.output_folder]
+     
+        try:
+            proc = subprocess.Popen([str(i) for i in args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            (stdout, errmsg) = proc.communicate()
+        except Exception as e:
+            error = "Error creating dataset: createDataset execution failed"
+            self.logger.info(error)
+            self.logger.info(e)
+            raise
         
         if len(errmsg) > 0:
-            error = "Error, There was an error creating the dataset: "  + errmsg
+            error = "Error, There was an error creating the dataset: \n" + stdout + " \n" + errmsg
             self.logger.error(error)
             raise RuntimeError(error)    
               
