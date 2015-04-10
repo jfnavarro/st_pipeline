@@ -44,9 +44,6 @@ def filterAnnotatedReads(annot_reads, htseq_no_ambiguous=False,
     un-annotated reads
     """
     
-    #TODO this function should make sure that for a pair only the reverse
-    #or forward are returned
-    
     logger = logging.getLogger("STPipeline")
     logger.info("Start filtering annotated reads")
     
@@ -68,6 +65,9 @@ def filterAnnotatedReads(annot_reads, htseq_no_ambiguous=False,
        
     dropped = 0
     for sam_record in infile:
+        #if both strands are mapped we want to keep only the reverse strand
+        if sam_record.is_proper_pair and sam_record.is_read1:
+            continue
         gene_name = str(sam_record.get_tag("XF"))
         if gene_name in filter_htseq or \
             (htseq_no_ambiguous and gene_name.find("__ambiguous") != -1):

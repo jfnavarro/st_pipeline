@@ -280,7 +280,7 @@ def reformatRawReads(fw, rw, barcode_length=18, trim_fw=42, trim_rw=5,
         logger.info("Trimming stats rv 1 : " + str(dropped_rw) + " reads have been dropped on the reverse reads!") 
         perc2 = '{percent:.2%}'.format(percent= float(dropped_rw) / float(total_reads) )
         logger.info("Trimming stats rv 2 : you just lost about " + perc2 + " of your data on the reverse reads!")
-        logger.info("Trimming stats reads remaining: " + str(total_reads - dropped_fw - dropped_rw))
+        logger.info("Trimming stats reads remaining: " + str((total_reads * 2) - dropped_fw - dropped_rw))
         
     logger.info("Finish Reformatting and Filtering raw reads")
     

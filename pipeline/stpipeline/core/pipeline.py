@@ -51,7 +51,7 @@ class Pipeline():
         self.molecular_barcodes = False
         self.mc_allowed_missmatches = 1
         self.mc_start_position = 19
-        self.mc_end_position = 30
+        self.mc_end_position = 27
         self.min_cluster_size = 2
         self.keep_discarded_files = False
         self.remove_polyA_distance = 0
@@ -161,7 +161,7 @@ class Pipeline():
                                 help='Number of allowed missmatches when applying the molecular barcodes PCR filter')
             parser.add_argument('--mc-start-position', type=int, default=19,
                                 help='Position (base wise) of the first base of the molecular barcodes')
-            parser.add_argument('--mc-end-position', default=30,
+            parser.add_argument('--mc-end-position', default=27,
                                 help='Position (base wise) of the last base of the molecular barcodes')
             parser.add_argument('--min-cluster-size', default=2,
                                 help='Min number of equal molecular barcodes to count as a cluster')

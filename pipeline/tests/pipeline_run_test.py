@@ -77,17 +77,34 @@ class TestPipeline(unittest.TestCase):
             print e
             self.assertTrue(0, "Creating genome index failed \n")
 
+        # Remove STAR log files 
+        log_std = "Log.std.out"
+        log = "Log.out"
+        log_sj = "SJ.out.tab"
+        log_final = "Log.final.out"
+        log_progress = "Log.progress.out"
+        if os.path.isfile(log_std):
+            os.remove(log_std)
+        if os.path.isfile(log):
+            os.remove(log)
+        if os.path.isfile(log_sj):
+            os.remove(log_sj)
+        if os.path.isfile(log_progress):
+            os.remove(log_progress)
+        if os.path.isfile(log_final):
+            os.remove(log_final)
+               
         # Verify existence of input files
-        assert (os.path.exists(self.infile_normal_fw))
-        assert (os.path.exists(self.infile_normal_rv))
-        assert (os.path.exists(self.infile_mc_fw))
-        assert (os.path.exists(self.infile_mc_rv))
-        assert (os.path.isdir(self.genomedir))
-        assert (os.path.isdir(self.contamdir))
-        assert (os.path.exists(self.annotfile))
-        assert (os.path.exists(self.chipfile))
-        assert (os.path.isdir(self.outdir))
-        assert (os.path.isdir(self.tmpdir))
+        assert(os.path.exists(self.infile_normal_fw))
+        assert(os.path.exists(self.infile_normal_rv))
+        assert(os.path.exists(self.infile_mc_fw))
+        assert(os.path.exists(self.infile_mc_rv))
+        assert(os.path.isdir(self.genomedir))
+        assert(os.path.isdir(self.contamdir))
+        assert(os.path.exists(self.annotfile))
+        assert(os.path.exists(self.chipfile))
+        assert(os.path.isdir(self.outdir))
+        assert(os.path.isdir(self.tmpdir))
 
         # create a pipeline Instance
         self.pipeline = Pipeline()
@@ -115,7 +132,6 @@ class TestPipeline(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
-        return
         print "ST Pipeline Test Remove temporary output " + self.outdir
         for root, dirs, files in os.walk(self.outdir, topdown=False):
             for name in files:

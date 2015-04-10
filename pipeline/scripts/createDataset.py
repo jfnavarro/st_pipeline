@@ -69,7 +69,7 @@ def parseUniqueEvents(filename):
         end = int(rec.reference_end)
         chrom = str(sam_file.getrname(rec.reference_id))
         strand = "+"
-        if rec.mate_is_reverse: strand = "-"
+        if rec.is_read2: strand = "-"
         
         for (k, v) in rec.tags:
             if k == "B0":
@@ -97,7 +97,7 @@ def parseUniqueEvents(filename):
 def main(filename, output_name, output_folder, trim_bases = 42, molecular_barcodes = False, 
          allowed_missmatches = 1, mc_start_position = 19, mc_end_position = 27, min_cluster_size = 2):
     
-    if  filename is None or output_name is None or not os.path.isfile(filename):
+    if filename is None or output_name is None or not os.path.isfile(filename):
         sys.stderr.write("Error, one of the input file/s not present\n")
         sys.exit(-1)
 

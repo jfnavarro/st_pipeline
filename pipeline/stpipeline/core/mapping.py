@@ -50,7 +50,7 @@ def alignReads(forward_reads,
         tmpOutputFileDiscarded1 = os.path.join(outputFolder, tmpOutputFileDiscarded1)
         tmpOutputFileDiscarded2 = os.path.join(outputFolder, tmpOutputFileDiscarded2)
         outputFile = os.path.join(outputFolder, outputFile)
-        outputFileDiscarded1 = os.path.join( outputFileDiscarded1)
+        outputFileDiscarded1 = os.path.join(outputFolder, outputFileDiscarded1)
         outputFileDiscarded2 = os.path.join(outputFolder, outputFileDiscarded2)
         log_std = os.path.join(outputFolder, log_std)
         log = os.path.join(outputFolder, log)
@@ -110,9 +110,7 @@ def alignReads(forward_reads,
         logger.info(e)
         raise
     
-    #TODO STAR will output error message if something went wrong
-    #should check that here too
-    if not fileOk(tmpOutputFile):
+    if not fileOk(tmpOutputFile) or len(errmsg) > 0:
         error = "Error mapping: output file is not present : " + tmpOutputFile
         logger.error(error)
         logger.error(stdout)
@@ -141,8 +139,14 @@ def alignReads(forward_reads,
             with open(log_final, "r") as star_log:
                 #TODO should only print the useful stats
                 for line in star_log.readlines():
-                    if str(line) != "":
+                    if line.find("Uniquely mapped reads %") != -1 \
+                    or line.find("Uniquely mapped reads number") != -1 \
+                    or line.find("Number of reads mapped to multiple loci") != -1 \
+                    or line.find("% of reads mapped to multiple loci") != -1 \
+                    or line.find("% of reads unmapped: too short") != -1:
                         logger.info(str(line))
+
+        if os.path.isfile(log_final):
             os.remove(log_final)
             
     logger.info("Finish STAR Mapping")

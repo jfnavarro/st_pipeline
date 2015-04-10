@@ -80,3 +80,7 @@ Version 0.4.0
 * Optimized annotation
 * Optimized trimming
 * Output reads do not contain duplicates
+
+Version 0.4.1
+* Improved the logs
+* Fixed few bugs

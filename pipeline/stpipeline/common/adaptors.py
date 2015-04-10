@@ -6,10 +6,10 @@ and filters reads with adaptors
 
 def removeAdaptor(read, adaptor, trimming, action="3"):
     """
-    :read is a tuple (name,sequence,quality)
-    :adaptor is a string containing the adaptor sequence
-    :trimming is the bases to trim in the read (>=0 and <= len(sequence))
-    :action defines that to do if adaptor is found
+    :param read is a tuple (name,sequence,quality)
+    :param adaptor is a string containing the adaptor sequence
+    :param trimming is the bases to trim in the read (>=0 and <= len(sequence))
+    :param action defines that to do if adaptor is found
     Tries to find the given adaptor in the given read
     If adaptor is found three actions can be performed 
       - 3 : removes the adaptor and everything before it from the 3 prime end (default)
