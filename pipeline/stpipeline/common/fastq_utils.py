@@ -189,6 +189,11 @@ def reformatRawReads(fw, rw, barcode_length=18, trim_fw=42, trim_rw=5,
     dropped_fw = 0
     dropped_rw = 0
     
+    adaptorA = "".join("A" for k in xrange(polyA_min_distance))
+    adaptorT = "".join("T" for k in xrange(polyT_min_distance))
+    adaptorG = "".join("G" for k in xrange(polyG_min_distance))
+    adaptorC = "".join("C" for k in xrange(polyG_min_distance))
+    
     for line1, line2 in izip(readfq(fw_file), readfq(rw_file)):
         total_reads += 1
         
@@ -196,29 +201,25 @@ def reformatRawReads(fw, rw, barcode_length=18, trim_fw=42, trim_rw=5,
         original_line1 = line1
         original_line2 = line2
         
-        # if applies we remove the adaptor PolyT from both reads
-        if polyA_min_distance > 0:
-            adaptor = "".join("A" for k in xrange(polyA_min_distance))
-            line1 = removeAdaptor(line1, adaptor, trim_fw, "5")
-            line2 = removeAdaptor(line2, adaptor, trim_rw, "5")
-            
         # if applies we remove the adaptor PolyA from both reads
+        if polyA_min_distance > 0:
+            line1 = removeAdaptor(line1, adaptorA, trim_fw, "5")
+            line2 = removeAdaptor(line2, adaptorA, trim_rw, "5")
+            
+        # if applies we remove the adaptor PolyT from both reads
         if polyT_min_distance > 0:
-            adaptor = "".join("T" for k in xrange(polyT_min_distance))
-            line1 = removeAdaptor(line1, adaptor, trim_fw, "5")
-            line2 = removeAdaptor(line2, adaptor, trim_rw, "5")
+            line1 = removeAdaptor(line1, adaptorT, trim_fw, "5")
+            line2 = removeAdaptor(line2, adaptorT, trim_rw, "5")
        
         # if applies we remove the adaptor PolyG from both reads
         if polyG_min_distance > 0:
-            adaptor = "".join("G" for k in xrange(polyG_min_distance))
-            line1 = removeAdaptor(line1, adaptor, trim_fw, "5")
-            line2 = removeAdaptor(line2, adaptor, trim_rw, "5")
+            line1 = removeAdaptor(line1, adaptorG, trim_fw, "5")
+            line2 = removeAdaptor(line2, adaptorG, trim_rw, "5")
         
         # if applies we remove the adaptor PolyC from both reads
         if polyC_min_distance > 0:
-            adaptor = "".join("C" for k in xrange(polyG_min_distance))
-            line1 = removeAdaptor(line1, adaptor, trim_fw, "5")
-            line2 = removeAdaptor(line2, adaptor, trim_rw, "5")
+            line1 = removeAdaptor(line1, adaptorC, trim_fw, "5")
+            line2 = removeAdaptor(line2, adaptorC, trim_rw, "5")
           
         line2_trimmed = None
         line1_trimmed = None
@@ -235,8 +236,7 @@ def reformatRawReads(fw, rw, barcode_length=18, trim_fw=42, trim_rw=5,
             # Remove the user-trimmed part from the read BUT not the barcode
             new_seq = line1_trimmed[1][:barcode_length] + line1_trimmed[1][trim_fw:]
             new_qual =  line1_trimmed[2][:barcode_length] + line1_trimmed[2][trim_fw:]
-            record = (line1_trimmed[0], new_seq, new_qual)
-            out_fw_writer.send(record)
+            out_fw_writer.send((line1_trimmed[0], new_seq, new_qual))
         else:
             # write fake sequence so bowtie wont fail for having rw and fw with different lenghts
             out_fw_writer.send(getFake(original_line1))
@@ -249,8 +249,7 @@ def reformatRawReads(fw, rw, barcode_length=18, trim_fw=42, trim_rw=5,
             # Remove the user-trimmed part from the read
             new_seq = original_line1[1][:barcode_length] + line2_trimmed[1][trim_rw:]
             new_qual = original_line1[2][:barcode_length] + line2_trimmed[2][trim_rw:]
-            record = (line2_trimmed[0], new_seq, new_qual)
-            out_rw_writer.send(record)
+            out_rw_writer.send((line2_trimmed[0], new_seq, new_qual))
         else:
             # write fake sequence so bowtie wont fail for having rw and fw with different lenghts
             out_rw_writer.send(getFake(original_line2))

@@ -84,3 +84,11 @@ Version 0.4.0
 Version 0.4.1
 * Improved the logs
 * Fixed few bugs
+
+Version 0.4.2
+* Fixed a bug in the capture of parameters
+
+Version 0.4.3
+* Small improvements with error checking and log in the mapping 
+* Fixed a bug that would remove the file after filtering annoted reads
+* Make the sorting by name instead by position due to a bug in htseq-count

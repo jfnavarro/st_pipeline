@@ -63,7 +63,6 @@ class TestPipeline(unittest.TestCase):
                     "--runThreadN", str(multiprocessing.cpu_count() - 1),
                     "--genomeDir", self.genomedir,
                     "--genomeFastaFiles", genomefasta,
-                    #"--sjdbGTFfile", genomegtf,
                     "--sjdbGTFfile", self.annotfile,
                     "--sjdbOverhang", "100"])
 

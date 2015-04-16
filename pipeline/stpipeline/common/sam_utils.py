@@ -3,15 +3,14 @@
 This module contains some functions and utilities for SAM/BAM files
 """
 
-import pysam
 from stpipeline.common.utils import *
 import logging 
 import pysam
 
 def sortSamFile(input_sam, outputFolder=None):
     """
-    :input is a SAM/BAM file with mapped reads
-    :outputFolder the location where to place the output file
+    :param input is a SAM/BAM file with mapped reads
+    :param outputFolder the location where to place the output file
     It simply sorts a sam/bam file containing mapped reads by position
     """
     
@@ -22,10 +21,10 @@ def sortSamFile(input_sam, outputFolder=None):
     if outputFolder is not None and os.path.isdir(outputFolder):
         output_sam = os.path.join(outputFolder, output_sam)
         
-    pysam.sort("-o", output_sam, "-O", "sam", "-T", output_sam, input_sam)
+    pysam.sort("-n", "-o", output_sam, "-O", "sam", "-T", output_sam, input_sam)
     
     if not fileOk(output_sam):
-        error = "Error: output file is not present " + output_sam
+        error = "Error annotating: output file is not present " + output_sam
         logger.error(error)
         raise RuntimeError(error + "\n")
         
@@ -81,6 +80,11 @@ def filterAnnotatedReads(annot_reads, htseq_no_ambiguous=False,
     outfile.close()
     if keep_discarded_files:
         outfile_discarded.close()
-        
+
+    if not fileOk(file_output):
+        error = "Error filtering annotated reads: output file is not present " + file_output
+        logger.error(error)
+        raise RuntimeError(error + "\n")
+            
     logger.info("Finish filtering annotated reads, dropped : " + str(dropped) + " reads")  
     return file_output

@@ -42,13 +42,14 @@ def annotateReads(samFile, gtfFile, mode, outputFolder=None):
     #-i (attribute in GFF to be used as ID)
     #-t (feature type to be used in GFF)
     #-r (input sorted order : name - pos)
-    args = ['htseq-count',"-r", "pos", "-q", "-a", "0", "-f", "sam", "-m" , mode, "-s", "no", "-t", 
+    args = ['htseq-count',"-r", "name", "-q", "-a", "0", "-f", "sam", "-m" , mode, "-s", "no", "-t", 
             "exon", "-i","gene_id" , "-o", outputFile, samFile, gtfFile]
     try:
         subprocess.check_call(args, stdout=discard_output, stderr=subprocess.PIPE)
     except Exception as e:
         error = "Error annotation: HTSEQ execution failed"
         logger.error(error)
+        logger.error(e)
         raise
     
     if not fileOk(outputFile):

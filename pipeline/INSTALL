@@ -32,7 +32,7 @@ To install the st_pipeline on your MAC, Linux or UPPMAX follow the instructions 
 
    cd pipeline/dependencies
    unzip STAR-STAR_2.4.0j.zip
-   cd STAR-STAR_2.4.0j/bin/<my environment>
+   cd STAR-STAR_2.4.0j/bin/Linux_x86_64
    cp STAR ~/bin
 
 6) run the commands:

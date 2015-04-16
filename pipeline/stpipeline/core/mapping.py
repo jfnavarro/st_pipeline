@@ -102,16 +102,18 @@ def alignReads(forward_reads,
     args += ["--outReadsUnmapped", "Fastx"]
     
     try:
-        proc = subprocess.Popen([str(i) for i in args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen([str(i) for i in args], 
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdout, errmsg) = proc.communicate()
     except Exception as e:
         error = "Error mapping: STAR execution failed"
-        logger.info(error)
-        logger.info(e)
+        logger.error(error)
+        logger.error(e)
         raise
     
-    if not fileOk(tmpOutputFile) or len(errmsg) > 0:
-        error = "Error mapping: output file is not present : " + tmpOutputFile
+    if not (fileOk(tmpOutputFile) and fileOk(tmpOutputFileDiscarded1) \
+            and fileOk(tmpOutputFileDiscarded2)) or len(errmsg) > 0:
+        error = "Error mapping: output/s file/s not present : " + tmpOutputFile
         logger.error(error)
         logger.error(stdout)
         logger.error(errmsg)
@@ -134,10 +136,11 @@ def alignReads(forward_reads,
             
         if not os.path.isfile(log_final):
             logger.info("Warning, log output from STAR is not present")
+            logger.info(stdout)
+            logger.info(errmsg)
         else:
             logger.info("Mapping stats: ")
             with open(log_final, "r") as star_log:
-                #TODO should only print the useful stats
                 for line in star_log.readlines():
                     if line.find("Uniquely mapped reads %") != -1 \
                     or line.find("Uniquely mapped reads number") != -1 \
@@ -199,8 +202,8 @@ def barcodeDemultiplexing(readsContainingTr,
         (stdout, errmsg) = proc.communicate()
     except Exception as e:
         error = "Error demultiplexing: taggd execution failed"
-        logger.info(error)
-        logger.info(e)
+        logger.error(error)
+        logger.error(e)
         raise
     
     if not fileOk(outputFile):

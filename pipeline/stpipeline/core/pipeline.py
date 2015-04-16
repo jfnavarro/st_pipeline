@@ -160,9 +160,9 @@ class Pipeline():
             parser.add_argument('--mc-allowed-missmatches', default=1,
                                 help='Number of allowed missmatches when applying the molecular barcodes PCR filter')
             parser.add_argument('--mc-start-position', type=int, default=19,
-                                help='Position (base wise) of the first base of the molecular barcodes')
+                                help='Position (base wise) of the first base of the molecular barcodes (starting by 0)')
             parser.add_argument('--mc-end-position', default=27,
-                                help='Position (base wise) of the last base of the molecular barcodes')
+                                help='Position (base wise) of the last base of the molecular barcodes (staring by 1)')
             parser.add_argument('--min-cluster-size', default=2,
                                 help='Min number of equal molecular barcodes to count as a cluster')
             parser.add_argument('--keep-discarded-files', action="store_true", default=False,
@@ -184,7 +184,6 @@ class Pipeline():
         """
     
         #init pipeline arguments
-        self.mapper = options.mapper
         self.allowed_missed = int(options.allowed_missed)
         self.allowed_kimera = int(options.allowed_kimer)
         self.overhang = int(options.overhang)
@@ -378,7 +377,7 @@ class Pipeline():
                                                      self.temp_folder, 
                                                      self.keep_discarded_files)
 
-        if self.clean: safeRemove(annotatedFilteredFile)
+        if self.clean: safeRemove(annotatedFile)
         
         #=================================================================
         # STEP: Map against the barcodes
@@ -443,8 +442,8 @@ class Pipeline():
             (stdout, errmsg) = proc.communicate()
         except Exception as e:
             error = "Error creating dataset: createDataset execution failed"
-            self.logger.info(error)
-            self.logger.info(e)
+            self.logger.error(error)
+            self.logger.error(e)
             raise
         
         if len(errmsg) > 0:
