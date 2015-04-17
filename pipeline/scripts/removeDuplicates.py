@@ -13,8 +13,8 @@ from stpipeline.common.utils import *
 from stpipeline.common.clustering import countMolecularBarcodesClustersNaive
 from stpipeline.common.fastq_utils import readfq, writefq
 
-def main(filename, allowed_missmatches = 1, mc_start_position = 19, 
-         mc_end_position = 27, min_cluster_size = 2):
+def main(filename, allowed_missmatches = 1, mc_start_position = 29, 
+         mc_end_position = 37, min_cluster_size = 2):
     
     if filename is None or not os.path.isfile(filename) \
     or not filename.endswith("fastq"):
@@ -30,10 +30,8 @@ def main(filename, allowed_missmatches = 1, mc_start_position = 19,
     out_writer = writefq(out_handle)
     in_file = safeOpenFile(filename, "rU")
     
-    original_reads = 0
     reads = list()
     for line in readfq(in_file):
-        original_reads += 1
         reads.append(line)
         
     clusters = countMolecularBarcodesClustersNaive(reads, 
@@ -43,13 +41,12 @@ def main(filename, allowed_missmatches = 1, mc_start_position = 19,
                                                    min_cluster_size)
     for read in clusters:
         out_writer.send(read)
-        
-    final_reads = len(clusters)
+
     out_handle.close()
     in_file.close()
 
-    print "Number of reads present " + str(original_reads)
-    print "Number of reads present after removing duplicates " + str(final_reads)
+    print "Number of reads present " + str(len(reads))
+    print "Number of reads present after removing duplicates " + str(len(clusters))
             
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
@@ -57,9 +54,9 @@ if __name__ == "__main__":
                         help='Input file in FASTQ')
     parser.add_argument('--mc-allowed-missmatches', default=1,
                         help='Number of allowed mismatches when applying the molecular barcodes PCR filter')
-    parser.add_argument('--mc-start-position', default=19,
+    parser.add_argument('--mc-start-position', default=29,
                         help='Position (base wise) of the first base of the molecular barcodes')
-    parser.add_argument('--mc-end-position', default=30,
+    parser.add_argument('--mc-end-position', default=37,
                         help='Position (base wise) of the last base of the molecular barcodes')
     parser.add_argument('--min-cluster-size', default=2,
                         help='Min number of equal molecular barcodes to count as a cluster')

@@ -71,6 +71,9 @@ Version 0.3.7
 Version 0.3.8
 * Added back findIndexes
 
+Version 0.3.9
+* Allowing molecular barcodes to be before the barcodes
+
 Version 0.4.0
 * Added back taggd
 * Added BED file to output
@@ -92,3 +95,8 @@ Version 0.4.3
 * Small improvements with error checking and log in the mapping 
 * Fixed a bug that would remove the file after filtering annoted reads
 * Make the sorting by name instead by position due to a bug in htseq-count
+
+Version 0.4.4
+* Fixed a bug in the molecular barcodes algorithm
+* Fixed a bug that would keep the original fastq reads in the system
+* Update taggd version

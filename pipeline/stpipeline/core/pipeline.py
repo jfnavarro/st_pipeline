@@ -80,8 +80,7 @@ class Pipeline():
         #TODO add much more checks for input parameters, specially integers
         
         if self.molecular_barcodes:
-            conds["molecular_barcodes"] = self.mc_start_position > self.barcode_length \
-                                        or self.mc_end_position > self.mc_start_position
+            conds["molecular_barcodes"] = self.mc_end_position > self.mc_start_position
         if not all(conds.values()):
             error = "Error: required file/s and or parameters not " \
             " found or incorrect parameters :" + str(conds)
@@ -317,6 +316,10 @@ class Pipeline():
                                                               self.temp_folder,
                                                               self.keep_discarded_files)
         
+        if self.clean:
+            safeRemove(self.fastq_fw)
+            safeRemove(self.fastq_rv)
+            
         #=================================================================
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. typically bacterial rRNA
         #=================================================================

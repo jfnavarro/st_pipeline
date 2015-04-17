@@ -104,7 +104,7 @@ def countMolecularBarcodesClustersNaive(reads, allowed_missmatches,
     is unique and does not contain biological duplicates
     """
     molecular_barcodes = extractMolecularBarcodes(reads, mc_start_position, mc_end_position)
-    molecular_barcodes = sorted(molecular_barcodes, key=itemgetter(1))
+    molecular_barcodes = sorted(molecular_barcodes, key=itemgetter(0))
     clusters_dict = {}
     nclusters = 0
     for i, molecular_barcode in enumerate(molecular_barcodes):
