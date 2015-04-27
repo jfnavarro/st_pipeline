@@ -135,15 +135,43 @@ def writefq(fp):  # This is a coroutine
             fp.write(read)
     except GeneratorExit:
         return
-
-def reformatRawReads(fw, rw, barcode_length=18, trim_fw=42, trim_rw=5,
+  
+def reverse_complement(seq):
+    """
+    :param seq a FASTQ sequence
+    This functions returns the reverse complement
+    of the sequence given as input
+    """
+    alt_map = {'ins':'0'}
+    complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}   
+    for k,v in alt_map.iteritems():
+        seq = seq.replace(k,v)
+    bases = list(seq) 
+    bases = reversed([complement.get(base,base) for base in bases])
+    bases = ''.join(bases)
+    for k,v in alt_map.iteritems():
+        bases = bases.replace(v,k)
+    return bases
+  
+def reformatRawReads(fw, rw, 
+                     barcode_start=0, barcode_length=18,
+                     filter_AT_content=90,
+                     molecular_barcodes=False, mc_start=18, mc_end=27,
+                     trim_fw=42, trim_rw=5,
                      min_qual=20, min_length=28,
-                     polyA_min_distance=0, polyT_min_distance=0, polyG_min_distance=0, polyC_min_distance=0,
+                     polyA_min_distance=0, polyT_min_distance=0, 
+                     polyG_min_distance=0, polyC_min_distance=0,
                      qual64=False, outputFolder=None, keep_discarded_files=False):
     """ 
+    :param fw the fastq file with the forward reads
+    :param rw the fastq file with the reverse reads
+    :param barcode_start the base where the barcode sequence starts
     :param barcode_length the number of bases of the barcodes
-    :param trim_fw how many bases we want to trim (not consider) in the forward
-    :param trim_rw how many bases we want to trim (not consider in the reverse
+    :param molecular_barcodes if True the forward reads contain molecular barcodes
+    :param mc_start the start position of the molecular barcodes if any
+    :param mc_end the end position of the molecular barcodes if any
+    :param trim_fw how many bases we want to trim (not consider in the forward)
+    :param trim_rw how many bases we want to trim (not consider in the reverse)
     :param min_qual the min quality value to use to trim quality
     :param min_length the min valid length for a read after trimming
     :param polyA_min_distance if >0 we remove PolyA adaptors from the reads
@@ -153,17 +181,18 @@ def reformatRawReads(fw, rw, barcode_length=18, trim_fw=42, trim_rw=5,
     :param outputFolder optional folder to output files
     :param keep_discarded_files when true files containing the discarded reads will be created
     This function does three things (all here for speed optimization)
-      - It appends the barcode from forward reads to reverse reads
+      - It appends the barcode and the molecular barcode (if any)
+        from forward reads to reverse reads
       - It performs a BWA quality trimming discarding very short reads
-      - It removes aadaptors from the reads (optionall)
+      - It removes adaptors from the reads (optional)
     """
     logger = logging.getLogger("STPipeline")
     logger.info("Start Reformatting and Filtering raw reads")
     
-    out_rw = replaceExtension(getCleanFileName(rw),'_formated.fastq')
-    out_fw = replaceExtension(getCleanFileName(fw),'_formated.fastq')
-    out_fw_discarded = replaceExtension(getCleanFileName(fw),'_formated_discarded.fastq')
-    out_rw_discarded = replaceExtension(getCleanFileName(rw),'_formated_discarded.fastq')
+    out_rw = 'R1_trimmed_formated.fastq'
+    out_fw = 'R2_trimmed_formated.fastq'
+    out_fw_discarded = 'R1_trimmed_formated_discarded.fastq'
+    out_rw_discarded = 'R2_trimmed_formated_discarded.fastq'
     
     if outputFolder is not None and os.path.isdir(outputFolder):
         out_rw = os.path.join(outputFolder, out_rw)
@@ -195,28 +224,47 @@ def reformatRawReads(fw, rw, barcode_length=18, trim_fw=42, trim_rw=5,
     adaptorC = "".join("C" for k in xrange(polyG_min_distance))
     
     for line1, line2 in izip(readfq(fw_file), readfq(rw_file)):
+
+        if line1[0].split()[0] != line2[0].split()[0]:
+            logger.warning("Pair raids found with different names " + line1[0] + " and " + line2[0])
+        
         total_reads += 1
         
-        #TODO this is ugly, refactor it
+        #get the barcode and molecular barcode if any from the forward read
+        #to be attached to the reverse read
+        to_append_sequence = line1[1][barcode_start:barcode_length]
+        to_append_sequence_quality = line1[2][barcode_start:barcode_length]
+        if molecular_barcodes:
+            to_append_sequence += line1[1][mc_start:mc_end]
+            to_append_sequence_quality += line1[2][mc_start:mc_end]
+        
         original_line1 = line1
         original_line2 = line2
         
-        # if applies we remove the adaptor PolyA from both reads
+        # If read - trimming is not long enough or has a high AT content discard...
+        if (len(line1[1]) - trim_fw) < min_length or \
+        ((line1[1].count("A") + line1[1].count("T")) / len(line1[1])) * 100 >= filter_AT_content:
+            line1 = None
+        if (len(line2[1]) - trim_rw) < min_length or \
+        ((line2[1].count("A") + line2[1].count("T")) / len(line2[1])) * 100 >= filter_AT_content:
+            line2 = None
+              
+        # if indicated we remove the adaptor PolyA from both reads
         if polyA_min_distance > 0:
             line1 = removeAdaptor(line1, adaptorA, trim_fw, "5")
             line2 = removeAdaptor(line2, adaptorA, trim_rw, "5")
             
-        # if applies we remove the adaptor PolyT from both reads
+        # if indicated we remove the adaptor PolyT from both reads
         if polyT_min_distance > 0:
             line1 = removeAdaptor(line1, adaptorT, trim_fw, "5")
             line2 = removeAdaptor(line2, adaptorT, trim_rw, "5")
        
-        # if applies we remove the adaptor PolyG from both reads
+        # if indicated we remove the adaptor PolyG from both reads
         if polyG_min_distance > 0:
             line1 = removeAdaptor(line1, adaptorG, trim_fw, "5")
             line2 = removeAdaptor(line2, adaptorG, trim_rw, "5")
         
-        # if applies we remove the adaptor PolyC from both reads
+        # if indicated we remove the adaptor PolyC from both reads
         if polyC_min_distance > 0:
             line1 = removeAdaptor(line1, adaptorC, trim_fw, "5")
             line2 = removeAdaptor(line2, adaptorC, trim_rw, "5")
@@ -233,12 +281,9 @@ def reformatRawReads(fw, rw, barcode_length=18, trim_fw=42, trim_rw=5,
             line1_trimmed = trim_quality(line1, trim_fw, min_qual, min_length, qual64)
         
         if line1_trimmed is not None:
-            # Remove the user-trimmed part from the read BUT not the barcode
-            new_seq = line1_trimmed[1][:barcode_length] + line1_trimmed[1][trim_fw:]
-            new_qual =  line1_trimmed[2][:barcode_length] + line1_trimmed[2][trim_fw:]
-            out_fw_writer.send((line1_trimmed[0], new_seq, new_qual))
+            out_fw_writer.send(line1_trimmed)
         else:
-            # write fake sequence so bowtie wont fail for having rw and fw with different lenghts
+            # write fake sequence so mapping wont fail for having rv and fw with different lengths
             out_fw_writer.send(getFake(original_line1))
             dropped_fw += 1
             if keep_discarded_files:
@@ -246,12 +291,11 @@ def reformatRawReads(fw, rw, barcode_length=18, trim_fw=42, trim_rw=5,
 
         if line2_trimmed is not None:
             # Attach the barcode from fw only if rw has not been completely trimmed
-            # Remove the user-trimmed part from the read
-            new_seq = original_line1[1][:barcode_length] + line2_trimmed[1][trim_rw:]
-            new_qual = original_line1[2][:barcode_length] + line2_trimmed[2][trim_rw:]
+            new_seq = to_append_sequence + line2_trimmed[1]
+            new_qual = to_append_sequence_quality + line2_trimmed[2]
             out_rw_writer.send((line2_trimmed[0], new_seq, new_qual))
         else:
-            # write fake sequence so bowtie wont fail for having rw and fw with different lenghts
+            # write fake sequence so mapping wont fail for having rv and fw with different lengths
             out_rw_writer.send(getFake(original_line2))
             dropped_rw += 1  
             if keep_discarded_files:
@@ -272,7 +316,7 @@ def reformatRawReads(fw, rw, barcode_length=18, trim_fw=42, trim_rw=5,
         logger.error(error)
         raise RuntimeError(error + "\n")
     else:
-        logger.info("Trimming stats total reads : " + str(total_reads))
+        logger.info("Trimming stats total reads : " + str(total_reads * 2))
         logger.info("Trimming stats fw 1 : " + str(dropped_fw) + " reads have been dropped on the forward reads!")
         perc1 = '{percent:.2%}'.format(percent= float(dropped_fw) / float(total_reads) )
         logger.info("Trimming stats fw 2 : you just lost about " + perc1 + " of your data on the forward reads!")
@@ -282,7 +326,6 @@ def reformatRawReads(fw, rw, barcode_length=18, trim_fw=42, trim_rw=5,
         logger.info("Trimming stats reads remaining: " + str((total_reads * 2) - dropped_fw - dropped_rw))
         
     logger.info("Finish Reformatting and Filtering raw reads")
-    
     return out_fw, out_rw
 
 

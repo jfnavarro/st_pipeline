@@ -6,19 +6,10 @@ by their molecular barcodes using different approaches
 
 import numpy as np
 import scipy.cluster.hierarchy
+from stpipeline.common.distance import hamming_distance
 import collections
 import random
 from operator import itemgetter
-
-def hamming_distance(s1, s2):
-    """
-    :param s1 a string to be compared
-    :param s2 a string to be compared
-    Returns the Hamming distance between equal-length sequences.
-    """
-    if len(s1) != len(s2):
-        raise ValueError("Undefined for sequences of unequal length")
-    return sum(ch1 != ch2 for ch1, ch2 in zip(s1, s2))
 
 def extractMolecularBarcodes(reads, mc_start_position, mc_end_position):
     """ 

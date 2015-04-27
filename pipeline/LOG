@@ -100,3 +100,34 @@ Version 0.4.4
 * Fixed a bug in the molecular barcodes algorithm
 * Fixed a bug that would keep the original fastq reads in the system
 * Update taggd version
+
+Version 0.4.5
+* Fixed a bug in the barcodes JSON output
+
+Version 0.4.6
+* Fixed a bug that would not compute the number of discarded reads
+when using molecular barcodes
+
+Version 0.4.7
+* Improved stats
+* Fixed a bug that would remove original input files
+* Added a script to convert ENSEMBL ids to gene names
+
+Version 0.4.8
+* Improved STAR configuration
+* Added mapping post processing to filter out and adjust reversed reads
+* Changed to use gene_name for annotation
+* Fixed some bugs and some improvements
+* Fixed bugs in the trimming
+
+Version 0.4.9
+* Changed naming convention
+* Added support for normal RNA analysis
+
+Version 0.5.0
+* Added AT content filter in quality trimming
+* Added min mapped length filter after mapping
+* Make sure one of the multiple aligned reads is set as not multiple
+aligned so it can be annotated
+* Discard the other multiple aligned reads after mapping
+* Disable sorting

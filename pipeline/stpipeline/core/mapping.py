@@ -14,7 +14,8 @@ def alignReads(forward_reads,
                ref_map, 
                trimForward, 
                trimReverse, 
-               cores, 
+               cores,
+               file_name_pattern,
                outputFolder=None):
     """
     :param forward_reads file containing forward reads in fastq format for pair end sequences
@@ -36,9 +37,9 @@ def alignReads(forward_reads,
     tmpOutputFile = "Aligned.out.sam"
     tmpOutputFileDiscarded1 = "Unmapped.out.mate1"
     tmpOutputFileDiscarded2 = "Unmapped.out.mate2"
-    outputFile = replaceExtension(getCleanFileName(forward_reads),"_mapped.sam")
-    outputFileDiscarded1 = replaceExtension(getCleanFileName(forward_reads),"_mapped_discarded.fastq")
-    outputFileDiscarded2 = replaceExtension(getCleanFileName(reverse_reads),"_mapped_discarded.fastq")
+    outputFile = file_name_pattern + "_mapped.sam"
+    outputFileDiscarded1 = "R1_" + file_name_pattern + "_discarded.fastq"
+    outputFileDiscarded2 = "R2_" + file_name_pattern + "_discarded.fastq"
     log_std = "Log.std.out"
     log = "Log.out"
     log_sj = "SJ.out.tab"
@@ -74,17 +75,18 @@ def alignReads(forward_reads,
     trim_flags = ["--clip5pNbases", trimForward, trimReverse] 
     io_flags   = ["--outFilterType", "Normal", 
                   "--outSAMtype", "SAM",
+                  "--alignEndsType", "Local", #default Local (allows soft clipping) #EndToEnd
+                  "--outSAMunmapped", "None", #unmapped reads not included in main output
                   "--outSAMorder", "Paired",    
                   "--outSAMprimaryFlag", "OneBestScore", 
-                  "--outFilterMultimapNmax", 20, 
+                  "--outFilterMultimapNmax", 10, #put to 1 to not include multiple mappings
                   "--alignSJoverhangMin", 8,
                   "--alignSJDBoverhangMin", 1,
-                  "--outFilterMismatchNmax", 10, 
-                  "--outFilterMismatchNoverLmax", 0.3,
+                  "--outFilterMismatchNmax", 999, # large number switches it off, default it 10 
+                  "--outFilterMismatchNoverLmax", 0.04, #default is 0.3,
                   "--alignIntronMin", 20,
-                  "--alignIntronMax", 0, 
-                  "--alignMatesGapMax", 0,
-                  "--alignEndsType", "Local", 
+                  "--alignIntronMax", 1000000, 
+                  "--alignMatesGapMax", 1000000,
                   "--winBinNbits", 16,
                   "--winAnchorDistNbins", 9,
                   "--chimSegmentMin", 0]
@@ -113,11 +115,10 @@ def alignReads(forward_reads,
     
     if not (fileOk(tmpOutputFile) and fileOk(tmpOutputFileDiscarded1) \
             and fileOk(tmpOutputFileDiscarded2)) or len(errmsg) > 0:
-        error = "Error mapping: output/s file/s not present : " + tmpOutputFile
+        error = "Error: mapping: output/s file/s not present : " + tmpOutputFile
         logger.error(error)
         logger.error(stdout)
         logger.error(errmsg)
-        raise RuntimeError(error + "\n")
     else:
         # Rename files.
         os.rename(tmpOutputFile, outputFile)
@@ -179,7 +180,7 @@ def barcodeDemultiplexing(readsContainingTr,
     logger = logging.getLogger("STPipeline")
     logger.info("Start Mapping against the barcodes")
     
-    outputFilePrefix = replaceExtension(getCleanFileName(readsContainingTr),'_demultiplexed')
+    outputFilePrefix = 'demultiplexed'
     if outputFolder is not None and os.path.isdir(outputFolder): 
         outputFilePrefix = os.path.join(outputFolder, outputFilePrefix)
 
@@ -188,6 +189,15 @@ def barcodeDemultiplexing(readsContainingTr,
     outputFile = outputFilePrefix + "_matched.sam"
 
     # taggd options
+    #--chunk-size (simultaneous processed reads, default 50000)
+    #--mp-chunk-size (chunk of maximum number of processed reads, default 500)
+    #--metric (subglobal (default) , Levenshtein or Hamming)
+    #--slider-increment (space between kmer searches, 0 is default = kmer length)
+    #--seed
+    #--no-multiprocessing
+    #--estimate-min-edit-distance is set estimate the min edit distance among
+    #true barcodes
+    #--no-offset-speedup turns on speed up, it might yield more hits
     args = ['taggd_demultiplex.py',
             "--max-edit-distance", miss_matches,
             "--k", kmer,

@@ -22,7 +22,7 @@ def annotateReads(samFile, gtfFile, mode, outputFolder=None):
     logger = logging.getLogger("STPipeline")
     logger.info("Start Annotating reads with HTSeq")
     
-    outputFile = replaceExtension(getCleanFileName(samFile),'_annotated.sam')
+    outputFile = 'annotated.sam'
     if outputFolder is not None and os.path.isdir(outputFolder):
         outputFile = os.path.join(outputFolder, outputFile)
     
@@ -43,7 +43,7 @@ def annotateReads(samFile, gtfFile, mode, outputFolder=None):
     #-t (feature type to be used in GFF)
     #-r (input sorted order : name - pos)
     args = ['htseq-count',"-r", "name", "-q", "-a", "0", "-f", "sam", "-m" , mode, "-s", "no", "-t", 
-            "exon", "-i","gene_id" , "-o", outputFile, samFile, gtfFile]
+            "exon", "-i","gene_name" , "-o", outputFile, samFile, gtfFile]
     try:
         subprocess.check_call(args, stdout=discard_output, stderr=subprocess.PIPE)
     except Exception as e:

@@ -37,6 +37,7 @@ To install the st_pipeline on your MAC, Linux or UPPMAX follow the instructions 
 
 6) run the commands:
 
+	pip install numpy
   	cd pipeline
   	python setup.py build
   	python setup.py install

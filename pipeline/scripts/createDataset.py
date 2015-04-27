@@ -45,11 +45,11 @@ class Transcript:
         return self.barcode == other.barcode and self.gene == other.gene
     
     def __str__(self):
-        return "Barcode: %s Gene: %s X: %s Y: %s Hits: %s NumReads: %s" % \
-            (self.barcode, self.gene, self.x, self.y, self.count, len(self.reads))
+        return "Barcode: %s Gene: %s X: %s Y: %s Hits: %s" % \
+            (self.barcode, self.gene, self.x, self.y, self.count)
             
     def toBarcodeDict(self):
-        return {'barcode': self.barcode, 'gene': self.gene, 'x': self.x, 'y': self.y, 'hits': self.reads}
+        return {'barcode': self.barcode, 'gene': self.gene, 'x': self.x, 'y': self.y, 'hits': self.count}
 
 def parseUniqueEvents(filename):
     """
@@ -94,10 +94,10 @@ def parseUniqueEvents(filename):
     return unique_events.values()
 
 
-def main(filename, output_name, output_folder, trim_bases = 42, molecular_barcodes = False, 
+def main(filename, output_folder, molecular_barcodes = False, 
          allowed_missmatches = 1, mc_start_position = 19, mc_end_position = 27, min_cluster_size = 2):
     
-    if filename is None or output_name is None or not os.path.isfile(filename):
+    if filename is None or not os.path.isfile(filename):
         sys.stderr.write("Error, one of the input file/s not present\n")
         sys.exit(-1)
 
@@ -126,6 +126,7 @@ def main(filename, output_name, output_folder, trim_bases = 42, molecular_barcod
                 clusters = countMolecularBarcodesClustersNaive(transcript.reads, allowed_missmatches, 
                                                mc_start_position, mc_end_position, min_cluster_size)
                 transcript.reads = clusters
+                discarded_reads += (transcript.count - len(clusters))
                 transcript.count = len(clusters)
             
             # add a JSON entry for the transcript  
@@ -141,8 +142,8 @@ def main(filename, output_name, output_folder, trim_bases = 42, molecular_barcod
                 end = read[5]
                 strand = read[6]
                 json_reads.append({'name': str(name), 
-                                   'read': str(seq[trim_bases:]), 
-                                   'quality': str(qula[trim_bases:]), 
+                                   'read': str(seq), 
+                                   'quality': str(qula), 
                                    'barcode': transcript.barcode, 
                                    'gene': transcript.gene})
                 bed_records.append((chrom, start, end, strand, transcript.gene, transcript.barcode))
@@ -164,9 +165,9 @@ def main(filename, output_name, output_folder, trim_bases = 42, molecular_barcod
     if molecular_barcodes:
         print "Number of discarded reads (possible PCR duplicates) : " + str(discarded_reads)
         
-    filename = output_name + "_barcodes.json"
-    filenameReads = output_name + "_reads.json"
-    filenameReadsBED = output_name + "_reads.bed"
+    filename = "barcodes.json"
+    filenameReads = "reads.json"
+    filenameReadsBED = "reads.bed"
     
     #dump the JSON files to the output files
     with open(os.path.join(output_folder, filename), "w") as filehandler:
@@ -187,8 +188,6 @@ if __name__ == "__main__":
                         help='Input file in FASTQ, SAM or BAM format, augmented with gene.')
     parser.add_argument('--output-folder', type=str,
                         help='Path of the output folder (default is /.)')
-    parser.add_argument('--output-name', type=str,
-                        help='Name of the output files')
     parser.add_argument('--molecular-barcodes', 
                         action="store_true", default=False, help="Activates the molecular barcodes PCR duplicates filter")
     parser.add_argument('--mc-allowed-missmatches', default=1,
@@ -199,11 +198,9 @@ if __name__ == "__main__":
                         help='Position (base wise) of the last base of the molecular barcodes')
     parser.add_argument('--min-cluster-size', default=2,
                         help='Min number of equal molecular barcodes to count as a cluster')
-    parser.add_argument('--trim-bases', default=42,
-                        help='Number of bases to trim from the output reads')
 
     args = parser.parse_args()
-    main(args.input, args.output_name, args.output_folder,  int(args.trim_bases), args.molecular_barcodes, 
+    main(args.input, args.output_folder, args.molecular_barcodes, 
          int(args.mc_allowed_missmatches), int(args.mc_start_position), 
          int(args.mc_end_position), int(args.min_cluster_size))
                                     

@@ -17,11 +17,8 @@ def removeAdaptor(read, adaptor, trimming, action="3"):
       - discard both (returns empty read)
     """
     
-    if len(read) != 3:
-        raise ValueError("Read must be a tuple (name,sequence,quality)")
-    
-    if trimming < 0 or trimming > len(read[1]):
-        raise ValueError("Incorrect value for trimming")
+    if read is None or len(read[1]) < (trimming + len(adaptor)):
+        return read
         
     seq = read[1][trimming:]
     seq_trimmed = read[1][0:trimming]

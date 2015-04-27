@@ -18,14 +18,11 @@ class TestPipeline(unittest.TestCase):
     def setUpClass(self):
         # Obtain paths and files.
         testdir = str(os.path.abspath(os.path.dirname(os.path.realpath(__file__))))
-        self.infile_normal_fw = os.path.join(testdir, 'input/miseqF1/testdata_R1.fastq')
-        self.infile_normal_rv = os.path.join(testdir, 'input/miseqF1/testdata_R2.fastq')
-        self.infile_mc_fw = os.path.join(testdir, 'input/miseqF1/testdata_R1_MC.fastq')
-        self.infile_mc_rv = os.path.join(testdir, 'input/miseqF1/testdata_R2_MC.fastq')
-        self.annotfile = os.path.join(testdir, 'config/annotations/mouse_grcm38_chromosome19.gtf')
-        self.chipfile = os.path.join(testdir, 'config/idfiles/130307_Design3_27mer.txt')
-        self.expnameNormal = "mouse_normal_test"
-        self.expnameMC = "mouse_mc_test"
+        self.infile_fw = os.path.join(testdir, 'input/arrayjet_1002/testdata_R1.fastq')
+        self.infile_rv = os.path.join(testdir, 'input/arrayjet_1002/testdata_R2.fastq')
+        self.annotfile = os.path.join(testdir, 'config/annotations/Homo_sapiens.GRCh38.79_chr19.gtf')
+        self.chipfile = os.path.join(testdir, 'config/idfiles/150204_arrayjet_1000L2_probes.txt')
+        self.expname = "test"
 
         # Obtain temp dir
         self.tmpdir = tempfile.mkdtemp(prefix="st_pipeline_test_temp")
@@ -47,9 +44,9 @@ class TestPipeline(unittest.TestCase):
         # Download and unpack fasta files
         try:
             print "ST Pipeline Test Downloading genome files..."
-            genomefasta = os.path.join(self.genomedir, "mouse_grcm38_chromosome19.fasta")
-            genomefastagz = os.path.join(self.genomedir, "mouse_grcm38_chromosome19.fasta.gz")
-            urllib.urlretrieve ("ftp://ftp.ensembl.org/pub/release-78/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna_rm.chromosome.19.fa.gz", 
+            genomefasta = os.path.join(self.genomedir, "human_grcm38_chromosome19.fasta")
+            genomefastagz = os.path.join(self.genomedir, "human_grcm38_chromosome19.fasta.gz")
+            urllib.urlretrieve ("ftp://ftp.ensembl.org/pub/release-79/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.19.fa.gz", 
                                 genomefastagz)
             check_call(['gunzip', genomefastagz])
         except Exception as e:
@@ -94,10 +91,8 @@ class TestPipeline(unittest.TestCase):
             os.remove(log_final)
                
         # Verify existence of input files
-        assert(os.path.exists(self.infile_normal_fw))
-        assert(os.path.exists(self.infile_normal_rv))
-        assert(os.path.exists(self.infile_mc_fw))
-        assert(os.path.exists(self.infile_mc_rv))
+        assert(os.path.exists(self.infile_fw))
+        assert(os.path.exists(self.infile_rv))
         assert(os.path.isdir(self.genomedir))
         assert(os.path.isdir(self.contamdir))
         assert(os.path.exists(self.annotfile))
@@ -109,14 +104,24 @@ class TestPipeline(unittest.TestCase):
         self.pipeline = Pipeline()
 
         # init pipeline arguments
-        self.pipeline.allowed_missed = 6
-        self.pipeline.allowed_kimera = 7
+        self.pipeline.expName = self.expname
+        self.pipeline.fastq_fw = self.infile_fw
+        self.pipeline.fastq_rv = self.infile_rv
+        self.pipeline.molecular_barcodes = True
+        self.pipeline.mc_allowed_missmatches = 1
+        self.pipeline.mc_start_position = 18
+        self.pipeline.mc_end_position = 27
+        self.pipeline.min_cluster_size = 2
+        self.pipeline.trimming_fw = 31
+        self.pipeline.keep_discarded_files = True
+        self.pipeline.allowed_missed = 2
+        self.pipeline.allowed_kimera = 6
         self.pipeline.min_length_trimming = 28
         self.pipeline.trimming_rv = 5
         self.pipeline.min_quality_trimming = 20
         self.pipeline.clean = False
         self.pipeline.barcode_start = 0
-        self.pipeline.barcode_length = 27
+        self.pipeline.barcode_length = 18
         self.pipeline.threads = multiprocessing.cpu_count() - 1
         self.pipeline.verbose = True
         self.pipeline.ids = os.path.abspath(self.chipfile)
@@ -124,13 +129,18 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.ref_annotation = os.path.abspath(self.annotfile)
         self.pipeline.htseq_mode = "intersection-nonempty"
         self.pipeline.htseq_no_ambiguous = False
-        self.pipeline.contaminant_index= os.path.abspath(self.contamdir)  # STAR contaminant index
+        self.pipeline.contaminant_index= os.path.abspath(self.contamdir)  
         self.pipeline.output_folder = os.path.abspath(self.outdir)
         self.pipeline.temp_folder = os.path.abspath(self.tmpdir)
         self.pipeline.logfile = self.logFile
+        self.pipeline.remove_polyA_distance = 15
+        self.pipeline.remove_polyT_distance = 15
+        self.pipeline.remove_polyG_distance = 15
+        self.pipeline.remove_polyC_distance = 15
 
     @classmethod
     def tearDownClass(self):
+        return
         print "ST Pipeline Test Remove temporary output " + self.outdir
         for root, dirs, files in os.walk(self.outdir, topdown=False):
             for name in files:
@@ -149,25 +159,17 @@ class TestPipeline(unittest.TestCase):
         # Verify existence of output files and temp files
         self.assertNotEqual(os.listdir(self.outdir), [], "Output folder is not empty")
         self.assertNotEqual(os.listdir(self.tmpdir), [], "Tmp folder is not empty")
-        barcodesfile = os.path.join(self.outdir, expName + "_barcodes.json")
-        readsfile = os.path.join(self.outdir, expName + "_reads.json")
+        barcodesfile = os.path.join(self.outdir, "barcodes.json")
+        readsfile = os.path.join(self.outdir, "reads.json")
         self.assertTrue(os.path.exists(barcodesfile), "Barcodes JSON file exists")
         self.assertTrue(os.path.getsize(barcodesfile) > 1024, "Barcordes JSON file is not empty")
         self.assertTrue(os.path.exists(readsfile), "Reads JSON file exists")
         self.assertTrue(os.path.getsize(readsfile) > 1024, "Reads JSON file is not empty")
 
-    def test_normal_star_run(self):
+    def test_normal_run(self):
         """
         Tests st_pipeline on a mouse data subset with normal fastq files
         """
-        # Add normal parameters
-        self.pipeline.expName = self.expnameNormal
-        self.pipeline.fastq_fw = self.infile_normal_fw
-        self.pipeline.fastq_rv = self.infile_normal_rv
-        self.pipeline.molecular_barcodes = False
-        self.pipeline.trimming_fw = 51
-        self.pipeline.keep_discarded_files = True
-        
         # Start the pipeline
         try:
             self.pipeline.createLogger()
@@ -175,36 +177,9 @@ class TestPipeline(unittest.TestCase):
             self.pipeline.run()
         except Exception as e:
             print e
-            self.assertTrue(0, "Running Normal STAR Test failed \n")
+            self.assertTrue(0, "Running Pipeline Test failed \n")
 
-        self.validateOutputData(self.expnameNormal)
-
-    def test_mc_star_run(self):
-        """
-        Tests st_pipeline on a mouse data subset with molecular barcodes fastq files
-        """
-        # Add MC paramters
-        self.pipeline.molecular_barcodes = True
-        self.pipeline.mc_allowed_missmatches = 2
-        self.pipeline.mc_start_position = 28
-        self.pipeline.mc_end_position = 39
-        self.pipeline.min_cluster_size = 10
-        self.pipeline.expName = self.expnameMC
-        self.pipeline.fastq_fw = self.infile_mc_fw
-        self.pipeline.fastq_rv = self.infile_mc_rv
-        self.pipeline.trimming_fw_bowtie = 62
-        self.pipeline.keep_discarded_files = True
-         
-        # Start the pipeline
-        try:
-            self.pipeline.createLogger()
-            self.pipeline.sanityCheck()
-            self.pipeline.run()
-        except Exception as e:
-            print e
-            self.assertTrue(0, "Running Molecular Barcode STAR Test failed \n")
- 
-        self.validateOutputData(self.expnameMC)
+        self.validateOutputData(self.expname)
 
 if __name__ == '__main__':
     unittest.main()

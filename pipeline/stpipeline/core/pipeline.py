@@ -5,11 +5,10 @@ to run the jobs, input files are fastq, output files are json. It logs status in
 """
 
 from stpipeline.common.utils import *
-from stpipeline.core.mapping import *
-from stpipeline.core.annotation import *
-from stpipeline.common.json_utils import *
+from stpipeline.core.mapping import alignReads, barcodeDemultiplexing
+from stpipeline.core.annotation import annotateReads
 from stpipeline.common.fastq_utils import reformatRawReads
-from stpipeline.common.sam_utils import sortSamFile, filterAnnotatedReads
+from stpipeline.common.sam_utils import sortSamFile, filterAnnotatedReads, filterMappedReads
 import os
 from glob import glob
 import logging
@@ -38,6 +37,7 @@ class Pipeline():
         self.ref_annotation = None
         self.expName = None
         self.htseq_mode = "intersection-nonempty"
+        self.pair_mode_keep = "reverse"
         self.htseq_no_ambiguous = False
         self.qual64 = False
         self.contaminant_index = None
@@ -50,7 +50,7 @@ class Pipeline():
         self.temp_folder = None
         self.molecular_barcodes = False
         self.mc_allowed_missmatches = 1
-        self.mc_start_position = 19
+        self.mc_start_position = 18
         self.mc_end_position = 27
         self.min_cluster_size = 2
         self.keep_discarded_files = False
@@ -58,17 +58,22 @@ class Pipeline():
         self.remove_polyT_distance = 0
         self.remove_polyG_distance = 0
         self.remove_polyC_distance = 0
+        self.filter_AT_content = 90
         
     def sanityCheck(self):
         """ 
         Performs some basic sanity checks in the input paramters
         """
 
-        conds = {"forward_file": fileOk(self.fastq_fw), "revers_file": fileOk(self.fastq_rv), 
-                 "ids": fileOk(self.ids), "ref_annotation": fileOk(self.ref_annotation), 
-                 "ref_mapping": self.ref_map is not None, "Exp Name":  self.expName is not None}
+        conds = {"forward_file": fileOk(self.fastq_fw), 
+                 "revers_file": fileOk(self.fastq_rv), 
+                 "ref_annotation": fileOk(self.ref_annotation), 
+                 "ref_mapping": self.ref_map is not None, 
+                 "Exp Name":  self.expName is not None}
         
-        conds["annotation_extension"] = self.ref_annotation.endswith("gtf")
+        conds["annotation_extension"] = self.ref_annotation.endswith("gtf") \
+                                        or self.ref_annotation.endswith("gff3") \
+                                        or self.ref_annotation.endswith("gff")
         conds["annotation_mode"] = self.htseq_mode in ["union","intersection-nonempty","intersection-strict"]
         conds["forward_extension"] = self.fastq_fw.endswith("fastq") or self.fastq_fw.endswith("fq")
         conds["forward_extension"] = self.fastq_fw.endswith("fastq") or self.fastq_fw.endswith("fq")
@@ -76,11 +81,14 @@ class Pipeline():
         conds["polyT"] = self.remove_polyT_distance >= 0 
         conds["polyG"] = self.remove_polyG_distance >= 0
         conds["polyC"] = self.remove_polyC_distance >= 0
+        conds["pair_keep_mode"] = self.pair_mode_keep in ["forward", "reverse", "both"]
+        conds["filter_AT_content"] = self.filter_AT_content >= 0 and self.filter_AT_content <= 100
         
         #TODO add much more checks for input parameters, specially integers
         
         if self.molecular_barcodes:
             conds["molecular_barcodes"] = self.mc_end_position > self.mc_start_position
+            
         if not all(conds.values()):
             error = "Error: required file/s and or parameters not " \
             " found or incorrect parameters :" + str(conds)
@@ -158,7 +166,7 @@ class Pipeline():
                                 action="store_true", help="Activates the molecular barcodes PCR duplicates filter")
             parser.add_argument('--mc-allowed-missmatches', default=1,
                                 help='Number of allowed missmatches when applying the molecular barcodes PCR filter')
-            parser.add_argument('--mc-start-position', type=int, default=19,
+            parser.add_argument('--mc-start-position', type=int, default=18,
                                 help='Position (base wise) of the first base of the molecular barcodes (starting by 0)')
             parser.add_argument('--mc-end-position', default=27,
                                 help='Position (base wise) of the last base of the molecular barcodes (staring by 1)')
@@ -173,7 +181,11 @@ class Pipeline():
             parser.add_argument('--remove-polyG', default=0, 
                                 help="Remove PolyGs and everything after it in the reads of a length at least as given number")
             parser.add_argument('--remove-polyC', default=0,
-                                help="Remove PolyCs and everything after it in the reads of a length at least as given number")   
+                                help="Remove PolyCs and everything after it in the reads of a length at least as given number")
+            parser.add_argument('--pair-mode-keep', default="reverse", 
+                                help="When filtering out un-mapped reads if both strands what action to perform (keep forward, keep reverse or both)")
+            parser.add_argument('--filter-AT-content', default=90,
+                                help="Discards reads whose number of A and T bases in total are more or equal than the number given in %")
             return parser
          
     def load_parameters(self, options):
@@ -195,7 +207,8 @@ class Pipeline():
         self.barcode_length = int(options.length_id)
         self.threads = int(options.mapping_threads)
         self.verbose = options.verbose
-        self.ids = os.path.abspath(options.ids)
+        if options.ids is not None:
+            self.ids = os.path.abspath(options.ids)
         self.ref_map = os.path.abspath(options.ref_map)
         self.ref_annotation = os.path.abspath(options.ref_annotation)
         self.expName = options.expName
@@ -222,6 +235,8 @@ class Pipeline():
         self.remove_polyT_distance = int(options.remove_polyT)
         self.remove_polyG_distance = int(options.remove_polyG)
         self.remove_polyC_distance = int(options.remove_polyC)
+        self.pair_mode_keep = str(options.pair_mode_keep)
+        self.filter_AT_content = int(options.filter_AT_content)
         
     def createLogger(self):
         """
@@ -251,29 +266,37 @@ class Pipeline():
         self.logger.info("Experiment : " + str(self.expName))
         self.logger.info("Forward reads file : " + str(self.fastq_fw))
         self.logger.info("Reverse reads file : " + str(self.fastq_rv))
-        self.logger.info("Ids file : " + str(self.ids))
+        if self.ids is not None:
+            self.logger.info("Ids file : " + str(self.ids))
         self.logger.info("Reference mapping file : " + str(self.ref_map))
         self.logger.info("Reference annotation file : " + str(self.ref_annotation))
-        if(self.contaminant_index):
+        if self.contaminant_index is not None:
             self.logger.info("Using contamination filter with " + str(self.contaminant_index))
         self.logger.info("Nodes : " + str(self.threads))
         self.logger.info("Main parameters: ")
-        self.logger.info("TaggD allowed missmatches " + str(self.allowed_missed))
-        self.logger.info("TaggD barcode legnth " + str(self.barcode_length))
-        self.logger.info("TaggD kmer size " + str(self.allowed_kimera))
-        self.logger.info("TaggD overhang " + str(self.overhang))
+        
+        if self.ids is not None:
+            self.logger.info("TaggD allowed missmatches " + str(self.allowed_missed))
+            self.logger.info("TaggD barcode legnth " + str(self.barcode_length))
+            self.logger.info("TaggD kmer size " + str(self.allowed_kimera))
+            self.logger.info("TaggD overhang " + str(self.overhang))
+        
         self.logger.info("Mapping forward trimming " + str(self.trimming_fw))
         self.logger.info("Mapping reverse trimming " + str(self.trimming_rv))
         self.logger.info("Mapper : STAR")
         self.logger.info("Annotation Tool : HTSeq")
-
-        if self.molecular_barcodes:
+        self.logger.info("When both strands are mapped, keep = " + str(self.pair_mode_keep))
+        self.logger.info("Filter of AT content in reads : " + str(self.filter_AT_content))
+        
+        if self.molecular_barcodes and not self.ids is None:
             self.logger.info("Using Molecular Barcodes")
             self.logger.info("Molecular Barcode start position " + str(self.mc_start_position))
             self.logger.info("Molecular Barcode end position " + str(self.mc_end_position))
             self.logger.info("Molecular Barcode min cluster size " + str(self.min_cluster_size))
             self.logger.info("Molecular Barcode allowed missmatches " + str(self.mc_allowed_missmatches))
-            
+        elif self.molecular_barcodes:
+            self.logger.warning("Molecular barcodes cannot be used in normal RNA-Seq")
+              
         if self.remove_polyA_distance > 0:
             self.logger.info("Removing polyA adaptors of a length at least " + str(self.remove_polyA_distance))                        
         if self.remove_polyT_distance > 0:
@@ -299,11 +322,19 @@ class Pipeline():
         # STEP: add BC and PolyT from FW reads to the RW reads and apply quality filter
         # also applies quality trimming and adaptor removal
         #=================================================================
-        #NOTE after trimming both forward and reverse reads will have their trimming part remove
-        #on top of the quality trimmed based removed BUT the barcode will be re-attached to both of them
+        #NOTE after the trimming :
+        #    - discarded reads will be replaced by Ns
+        #    - reverse reads will contain the the 3 end the barcode and molecular barcode (if any)
+        #      from the forward reads
+        #    - if apply adaptors will be removed before the trimming
         fastq_fw_trimmed, fastq_rv_trimmed = reformatRawReads(self.fastq_fw,
                                                               self.fastq_rv,
+                                                              self.barcode_start,
                                                               self.barcode_length,
+                                                              self.filter_AT_content,
+                                                              self.molecular_barcodes,
+                                                              self.mc_start_position,
+                                                              self.mc_end_position,
                                                               self.trimming_fw,
                                                               self.trimming_rv,
                                                               self.min_quality_trimming,
@@ -315,40 +346,42 @@ class Pipeline():
                                                               self.qual64, 
                                                               self.temp_folder,
                                                               self.keep_discarded_files)
-        
-        if self.clean:
-            safeRemove(self.fastq_fw)
-            safeRemove(self.fastq_rv)
+          
+        #reverse reads contain now the barcode and molecular barcode if any so
+        #the trimming needs to be adjusted for the mapping
+        adjusted_forward_trimming = self.trimming_rv + self.barcode_length
+        if self.molecular_barcodes:
+            adjusted_forward_trimming += (self.mc_end_position - self.mc_start_position)  
             
         #=================================================================
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. typically bacterial rRNA
         #=================================================================
         if self.contaminant_index:
+            self.logger.info("rRNA filter")
             # To remove contaminants sequence with align the reads to the contaminant genome
             # and keep the un-mapped reads
-            # We do pair end alignment, trimming is the same for forward and reverse
-            # which is just the barcode length
             contaminated_sam, fastq_fw_trimmed, fastq_rv_trimmed = alignReads(fastq_fw_trimmed,
                                                                               fastq_rv_trimmed,
                                                                               self.contaminant_index,
-                                                                              self.barcode_length,
-                                                                              self.barcode_length,
+                                                                              self.trimming_fw,
+                                                                              adjusted_forward_trimming,
                                                                               self.threads,
+                                                                              "rRNA_filter",
                                                                               self.temp_folder)
                         
             if not self.keep_discarded_files: safeRemove(contaminated_sam)
-            
+         
         #=================================================================
         # STEP: maps against the genome using STAR
         #=================================================================
-        # We do pair end alignment, trimming is the same for forward and reverse
-        # which is just the barcode length
+        self.logger.info("Genome mapping")
         sam_mapped, unmapped_forward, unmapped_reverse = alignReads(fastq_fw_trimmed,
                                                                     fastq_rv_trimmed,
                                                                     self.ref_map,
-                                                                    self.barcode_length,
-                                                                    self.barcode_length, 
+                                                                    self.trimming_fw,
+                                                                    adjusted_forward_trimming,
                                                                     self.threads,
+                                                                    "alignment",
                                                                     self.temp_folder)
         if self.clean: 
             safeRemove(fastq_fw_trimmed)
@@ -357,20 +390,32 @@ class Pipeline():
             safeRemove(unmapped_forward)
             safeRemove(unmapped_reverse)
          
-        #=================================================================
-        # STEP: SORT sam file with mapped reads by coordinate position
-        #=================================================================
-        sam_sorted = sortSamFile(sam_mapped, self.temp_folder)
+        #================================================================
+        # STEP: filters mapped reads
+        #================================================================
+        sam_mapped_clean = filterMappedReads(sam_mapped,
+                                             self.min_length_trimming,
+                                             self.pair_mode_keep, 
+                                             self.temp_folder, 
+                                             self.keep_discarded_files)
+        
         if self.clean: safeRemove(sam_mapped)
+        
+        #=================================================================
+        # STEP: SORT sam file with mapped reads by read name
+        #=================================================================
+        #NO need to sort for now
+        #sam_sorted = sortSamFile(sam_mapped_clean, self.temp_folder)
+        #if self.clean: safeRemove(sam_mapped_clean)
         
         #=================================================================
         # STEP: annotate using htseq count
         #=================================================================
-        annotatedFile = annotateReads(sam_sorted,
+        annotatedFile = annotateReads(sam_mapped_clean, 
                                       self.ref_annotation,
                                       self.htseq_mode,
                                       self.temp_folder)
-        if self.clean: safeRemove(sam_sorted)
+        if self.clean: safeRemove(sam_mapped_clean) 
 
         #=================================================================
         # STEP: filter out un-annotated reads
@@ -382,31 +427,30 @@ class Pipeline():
 
         if self.clean: safeRemove(annotatedFile)
         
-        #=================================================================
-        # STEP: Map against the barcodes
-        #=================================================================
-        mapFile = barcodeDemultiplexing(annotatedFilteredFile,
-                                        self.ids, 
-                                        self.allowed_missed, 
-                                        self.allowed_kimera, 
-                                        self.barcode_start,  
-                                        self.overhang,
-                                        self.temp_folder,
-                                        self.keep_discarded_files)
-        if self.clean: safeRemove(annotatedFilteredFile)
+        if self.ids is not None:
+            #=================================================================
+            # STEP: Map against the barcodes
+            #=================================================================
+            mapFile = barcodeDemultiplexing(annotatedFilteredFile,
+                                            self.ids, 
+                                            self.allowed_missed, 
+                                            self.allowed_kimera, 
+                                            self.barcode_start,  
+                                            self.overhang,
+                                            self.temp_folder,
+                                            self.keep_discarded_files)
+            if self.clean: safeRemove(annotatedFilteredFile)
 
-        #=================================================================
-        # STEP: create json files with the results
-        #=================================================================
-        self.createDataset(mapFile,
-                           self.expName,
-                           self.barcode_length,
-                           self.molecular_barcodes,
-                           self.mc_allowed_missmatches,
-                           self.mc_start_position,
-                           self.mc_end_position,
-                           self.min_cluster_size)
-        if self.clean: safeRemove(mapFile)
+            #=================================================================
+            # STEP: create json files with the results
+            #=================================================================
+            self.createDataset(mapFile,
+                               self.molecular_barcodes,
+                               self.mc_allowed_missmatches,
+                               self.mc_start_position,
+                               self.mc_end_position,
+                               self.min_cluster_size)
+            if self.clean: safeRemove(mapFile)
 
         #=================================================================
         # END PIPELINE
@@ -415,9 +459,12 @@ class Pipeline():
         total_exe_time = finish_exe_time - start_exe_time
         self.logger.info("Total Execution Time : " + str(total_exe_time))
 
-    def createDataset(self, input_name, output_name, trim_bases = 42, 
-                      molecular_barcodes = False, allowed_missmatches = 1, 
-                      start_position = 19, end_position = 30, min_cluster_size = 2):
+    def createDataset(self,input_name, 
+                      molecular_barcodes = False, 
+                      allowed_missmatches = 1, 
+                      start_position = 18, 
+                      end_position = 27, 
+                      min_cluster_size = 2):
         """ 
         parse annotated and mapped reads with the reads that contain barcodes to
         create json files with the barcodes and coordinates and json file with the raw reads
@@ -429,13 +476,14 @@ class Pipeline():
         
         self.logger.info("Start Creating dataset")
         
-        args = ['createDataset.py', '--input', str(input_name), 
-                '--output-name', output_name, '--trim-bases', trim_bases]
+        args = ['createDataset.py', '--input', str(input_name)]
         
         if molecular_barcodes:
-            args += ['--molecular-barcodes', '--mc-allowed-missmatches', allowed_missmatches, 
-                '--mc-start-position', start_position, '--mc-end-position', end_position, 
-                '--min-cluster-size', min_cluster_size]
+            args += ['--molecular-barcodes', 
+                     '--mc-allowed-missmatches', allowed_missmatches, 
+                     '--mc-start-position', start_position, 
+                     '--mc-end-position', end_position, 
+                     '--min-cluster-size', min_cluster_size]
             
         if self.output_folder is not None:
             args += ['--output-folder', self.output_folder]
