@@ -10,6 +10,7 @@ import os
 import json
 import argparse
 import pysam
+import numpy as np
 from stpipeline.common.utils import *
 from stpipeline.common.clustering import countMolecularBarcodesClustersNaive
 from stpipeline.common.fastq_utils import *
@@ -59,7 +60,11 @@ def parseUniqueEvents(filename):
     reads are aggregated
     """
     unique_events = dict()
-    sam_file = pysam.AlignmentFile(filename, "r")
+    sam_type = getExtension(filename).lower()
+    flag = "rb"
+    if sam_type == "sam":
+        flag = "r"
+    sam_file = pysam.AlignmentFile(filename, flag)
     for rec in sam_file:
         clear_name = str(rec.query_name)
         seq = str(rec.query_sequence)
@@ -69,7 +74,7 @@ def parseUniqueEvents(filename):
         end = int(rec.reference_end)
         chrom = str(sam_file.getrname(rec.reference_id))
         strand = "+"
-        if rec.is_read2: strand = "-"
+        if rec.is_reverse: strand = "-"
         
         for (k, v) in rec.tags:
             if k == "B0":
@@ -101,6 +106,11 @@ def main(filename, output_folder, molecular_barcodes = False,
         sys.stderr.write("Error, one of the input file/s not present\n")
         sys.exit(-1)
 
+    sam_type = getExtension(filename).lower()
+    if sam_type != "sam" and sam_type != "bam":
+        sys.stderr.write("Error, invalid input format\n")
+        sys.exit(-1)
+        
     if output_folder is None or not os.path.isdir(output_folder):
         output_folder = "."
     
@@ -118,7 +128,8 @@ def main(filename, output_folder, molecular_barcodes = False,
     total_barcodes = 0
     discarded_reads = 0
     bed_records = list()
-    
+    barcode_genes = dict()
+    barcode_reads = dict()
     for transcript in parseUniqueEvents(filename):                
             #re-compute the read count accounting for PCR duplicates 
             #if indicated (read sequence must contain molecular barcode)
@@ -148,7 +159,17 @@ def main(filename, output_folder, molecular_barcodes = False,
                                    'gene': transcript.gene})
                 bed_records.append((chrom, start, end, strand, transcript.gene, transcript.barcode))
                 
-            #some stats    
+            #some stats
+            if barcode_genes.has_key(transcript.barcode):
+                barcode_genes[transcript.barcode] += 1
+            else:
+                barcode_genes[transcript.barcode] = 1
+                
+            if barcode_reads.has_key(transcript.barcode):
+                barcode_reads[transcript.barcode] += transcript.count 
+            else:
+                barcode_reads[transcript.barcode] = transcript.count
+                
             unique_genes.add(str(transcript.gene))
             unique_barcodes.add(str(transcript.barcode))
             total_record += 1
@@ -158,10 +179,18 @@ def main(filename, output_folder, molecular_barcodes = False,
         sys.stderr.write("Error: the number of transcripts present is 0\n")
         sys.exit(-1)
     
+    barcode_genes_array = np.array(barcode_genes.values())
+    barcode_reads_array = np.array(barcode_reads.values())
+    
     print "Number of Transcripts with Barcode present : " + str(total_barcodes) 
     print "Number of unique events present : " + str(total_record) 
     print "Number of unique Barcodes present : " + str(len(unique_barcodes))
     print "Number of unique Genes present : " + str(len(unique_genes))
+    print "Barcode to Genes percentiles :"
+    print np.percentile(barcode_genes_array, [0,25,50,75,100])
+    print "Barcode to Reads percentiles :"
+    print np.percentile(barcode_reads_array, [0,25,50,75,100])
+    
     if molecular_barcodes:
         print "Number of discarded reads (possible PCR duplicates) : " + str(discarded_reads)
         
@@ -185,7 +214,7 @@ def main(filename, output_folder, molecular_barcodes = False,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=str,
-                        help='Input file in FASTQ, SAM or BAM format, augmented with gene.')
+                        help='Input file in SAM or BAM format containing barcodes and genes')
     parser.add_argument('--output-folder', type=str,
                         help='Path of the output folder (default is /.)')
     parser.add_argument('--molecular-barcodes', 

@@ -36,3 +36,4 @@ def removeAdaptor(read, adaptor, trimming, action="3"):
         return None
     else: 
         return read
+

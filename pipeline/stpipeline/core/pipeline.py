@@ -7,7 +7,7 @@ to run the jobs, input files are fastq, output files are json. It logs status in
 from stpipeline.common.utils import *
 from stpipeline.core.mapping import alignReads, barcodeDemultiplexing
 from stpipeline.core.annotation import annotateReads
-from stpipeline.common.fastq_utils import reformatRawReads
+from stpipeline.common.fastq_utils import reformatRawReads, filter_rRNA_reads
 from stpipeline.common.sam_utils import sortSamFile, filterAnnotatedReads, filterMappedReads
 import os
 from glob import glob
@@ -59,6 +59,11 @@ class Pipeline():
         self.remove_polyG_distance = 0
         self.remove_polyC_distance = 0
         self.filter_AT_content = 90
+        #TODO for now htseq-count does not support BAM files
+        #http://sourceforge.net/p/htseq/bugs/12/
+        self.sam_type = "SAM"
+        self.disable_clipping = False
+        self.disable_multimap = False
         
     def sanityCheck(self):
         """ 
@@ -66,7 +71,7 @@ class Pipeline():
         """
 
         conds = {"forward_file": fileOk(self.fastq_fw), 
-                 "revers_file": fileOk(self.fastq_rv), 
+                 "reverse_file": fileOk(self.fastq_rv), 
                  "ref_annotation": fileOk(self.ref_annotation), 
                  "ref_mapping": self.ref_map is not None, 
                  "Exp Name":  self.expName is not None}
@@ -83,6 +88,7 @@ class Pipeline():
         conds["polyC"] = self.remove_polyC_distance >= 0
         conds["pair_keep_mode"] = self.pair_mode_keep in ["forward", "reverse", "both"]
         conds["filter_AT_content"] = self.filter_AT_content >= 0 and self.filter_AT_content <= 100
+        conds["sam_type"] = self.sam_type in ["BAM", "SAM"]
         
         #TODO add much more checks for input parameters, specially integers
         
@@ -117,7 +123,7 @@ class Pipeline():
             """
             parser.add_argument('fastq_files', nargs=2)
             parser.add_argument('--ids',
-                                help='The name of the file containing the barcodes and the coordinates')
+                                help='The name of the file containing the barcodes and the coordinates. Keep empty for normal RNA analysis')
             parser.add_argument('--ref-map',
                                 help="<path_to_genome_indexes> = Reference genome index " \
                                 "for the genome that you want to use to align the reads")
@@ -183,9 +189,19 @@ class Pipeline():
             parser.add_argument('--remove-polyC', default=0,
                                 help="Remove PolyCs and everything after it in the reads of a length at least as given number")
             parser.add_argument('--pair-mode-keep', default="reverse", 
-                                help="When filtering out un-mapped reads if both strands what action to perform (keep forward, keep reverse or both)")
+                                help="When filtering out un-mapped reads if both strands map, " + \
+                                "what action to perform to keep (forward, reverse or both)")
             parser.add_argument('--filter-AT-content', default=90,
                                 help="Discards reads whose number of A and T bases in total are more or equal than the number given in %")
+            #TODO for now htseq-count does not support BAM files
+            #http://sourceforge.net/p/htseq/bugs/12/
+            #parser.add_argument('--sam-type', default="BAM",
+            #                    help="Type of SAM format for intermediate files (SAM or BAM)")
+            parser.add_argument('--disable-multimap', action="store_true", default=False,
+                                help="If activated, multiple aligned reads obtained during mapping will be all discarded. " + \
+                                "Otherwise the highest scored one will be kept")
+            parser.add_argument('--disable-clipping', action="store_true", default=False,
+                                help="If activated, disable soft-clipping (local alignment) in the mapping")
             return parser
          
     def load_parameters(self, options):
@@ -237,6 +253,11 @@ class Pipeline():
         self.remove_polyC_distance = int(options.remove_polyC)
         self.pair_mode_keep = str(options.pair_mode_keep)
         self.filter_AT_content = int(options.filter_AT_content)
+        #TODO for now htseq-count does not support BAM files
+        #http://sourceforge.net/p/htseq/bugs/12/
+        #self.sam_type = str(options.sam_type)
+        self.disable_multimap = options.disable_multimap
+        self.disable_clipping = options.disable_clipping
         
     def createLogger(self):
         """
@@ -287,7 +308,15 @@ class Pipeline():
         self.logger.info("Annotation Tool : HTSeq")
         self.logger.info("When both strands are mapped, keep = " + str(self.pair_mode_keep))
         self.logger.info("Filter of AT content in reads : " + str(self.filter_AT_content))
-        
+        self.logger.info("Sam type : " + str(self.sam_type))
+        if self.disable_clipping:
+            self.logger("Not allowing soft clipping when mapping")
+        if self.disable_multimap:
+            self.logger("Not allowing multiple alignments")
+            
+        if self.disable_multimap:
+            self.logger.info("Disabling multiple aligned reads")
+            
         if self.molecular_barcodes and not self.ids is None:
             self.logger.info("Using Molecular Barcodes")
             self.logger.info("Molecular Barcode start position " + str(self.mc_start_position))
@@ -352,7 +381,7 @@ class Pipeline():
         adjusted_forward_trimming = self.trimming_rv + self.barcode_length
         if self.molecular_barcodes:
             adjusted_forward_trimming += (self.mc_end_position - self.mc_start_position)  
-            
+           
         #=================================================================
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. typically bacterial rRNA
         #=================================================================
@@ -360,6 +389,8 @@ class Pipeline():
             self.logger.info("rRNA filter")
             # To remove contaminants sequence with align the reads to the contaminant genome
             # and keep the un-mapped reads
+            old_fw_trimmed = fastq_fw_trimmed
+            old_rv_trimmed = fastq_rv_trimmed
             contaminated_sam, fastq_fw_trimmed, fastq_rv_trimmed = alignReads(fastq_fw_trimmed,
                                                                               fastq_rv_trimmed,
                                                                               self.contaminant_index,
@@ -367,10 +398,25 @@ class Pipeline():
                                                                               adjusted_forward_trimming,
                                                                               self.threads,
                                                                               "rRNA_filter",
+                                                                              self.sam_type,
+                                                                              False, #enable multimap in rRNA filter
+                                                                              True, #disable softclipping in rRNA filter
                                                                               self.temp_folder)
-                        
+            if self.clean:
+                safeRemove(old_fw_trimmed)
+                safeRemove(old_rv_trimmed)
             if not self.keep_discarded_files: safeRemove(contaminated_sam)
-         
+            
+            # Unfortunately STAR will include all the reads in the the files with un-aligned reads
+            # Therefore, we need to extract the un-aligned reads
+            old_fw_trimmed = fastq_fw_trimmed
+            old_rv_trimmed = fastq_rv_trimmed
+            fastq_fw_trimmed, fastq_rv_trimmed = filter_rRNA_reads(fastq_fw_trimmed, 
+                                                                   fastq_rv_trimmed, 
+                                                                   self.temp_folder)
+            safeRemove(old_fw_trimmed)
+            safeRemove(old_rv_trimmed)
+            
         #=================================================================
         # STEP: maps against the genome using STAR
         #=================================================================
@@ -382,6 +428,9 @@ class Pipeline():
                                                                     adjusted_forward_trimming,
                                                                     self.threads,
                                                                     "alignment",
+                                                                    self.sam_type,
+                                                                    self.disable_multimap,
+                                                                    self.disable_clipping,
                                                                     self.temp_folder)
         if self.clean: 
             safeRemove(fastq_fw_trimmed)
@@ -437,6 +486,7 @@ class Pipeline():
                                             self.allowed_kimera, 
                                             self.barcode_start,  
                                             self.overhang,
+                                            self.threads,
                                             self.temp_folder,
                                             self.keep_discarded_files)
             if self.clean: safeRemove(annotatedFilteredFile)

@@ -16,6 +16,9 @@ def alignReads(forward_reads,
                trimReverse, 
                cores,
                file_name_pattern,
+               sam_type = "BAM",
+               disable_multimap=False,
+               diable_softclipping=False,
                outputFolder=None):
     """
     :param forward_reads file containing forward reads in fastq format for pair end sequences
@@ -24,6 +27,10 @@ def alignReads(forward_reads,
     :param trimForward the number of bases to trim in the forward reads (to not map)
     :param trimReverse the number of bases to trim in the reverse reasd (to not map)
     :param cores the number of cores to use to speed up the alignment
+    :param file_name_patter indicates how the output files will be named
+    :param sam_type SAM or BAM 
+    :param disable_multimap if True no multiple alignments will be allowed
+    :param diable_softclipping it True no local alignment allowed
     :param outputFolder if set all output files will be placed there
     This function will perform a sequence alignement using STAR
     mapped and unmapped reads are returned and the set of parameters
@@ -33,11 +40,11 @@ def alignReads(forward_reads,
     logger = logging.getLogger("STPipeline")
     logger.info("Start STAR Mapping")
     
-    # STAR has predefined output names
-    tmpOutputFile = "Aligned.out.sam"
+    # STAR has predefined output name
+    tmpOutputFile = "Aligned.out." + sam_type.lower()
     tmpOutputFileDiscarded1 = "Unmapped.out.mate1"
     tmpOutputFileDiscarded2 = "Unmapped.out.mate2"
-    outputFile = file_name_pattern + "_mapped.sam"
+    outputFile = file_name_pattern + "_mapped." + sam_type.lower()
     outputFileDiscarded1 = "R1_" + file_name_pattern + "_discarded.fastq"
     outputFileDiscarded2 = "R2_" + file_name_pattern + "_discarded.fastq"
     log_std = "Log.std.out"
@@ -71,19 +78,28 @@ def alignReads(forward_reads,
     #alignMatesGapMax maximum gap between two mates, if 0, max intron gap will be determined by (2 to the power of winBinNbits)*winAnchorDistNbins
     #alignEndsType Local standard local alignment with soft-clipping allowed EndToEnd: force end-to-end read alignment, do not soft-clip
     #chimSegmentMin if >0 To switch on detection of chimeric (fusion) alignments
+    
+    multi_map_number = 10
+    if disable_multimap: 
+        multi_map_number = 1 
+    alignment_mode = "Local"
+    if diable_softclipping:
+        alignment_mode = "EndToEnd"
+        
     core_flags = ["--runThreadN", str(max(cores, 1))]
     trim_flags = ["--clip5pNbases", trimForward, trimReverse] 
     io_flags   = ["--outFilterType", "Normal", 
-                  "--outSAMtype", "SAM",
-                  "--alignEndsType", "Local", #default Local (allows soft clipping) #EndToEnd
+                  "--outSAMtype", sam_type, "Unsorted",
+                  "--alignEndsType", alignment_mode, #default Local (allows soft clipping) #EndToEnd
                   "--outSAMunmapped", "None", #unmapped reads not included in main output
                   "--outSAMorder", "Paired",    
                   "--outSAMprimaryFlag", "OneBestScore", 
-                  "--outFilterMultimapNmax", 10, #put to 1 to not include multiple mappings
-                  "--alignSJoverhangMin", 8,
-                  "--alignSJDBoverhangMin", 1,
-                  "--outFilterMismatchNmax", 999, # large number switches it off, default it 10 
-                  "--outFilterMismatchNoverLmax", 0.04, #default is 0.3,
+                  "--outFilterMultimapNmax", multi_map_number, #put to 1 to not include multiple mappings
+                  "--alignSJoverhangMin", 5,
+                  "--alignSJDBoverhangMin", 3,
+                  "--sjdbOverhang", 100, #0 to not use splice junction database
+                  "--outFilterMismatchNmax", 10, # large number switches it off
+                  "--outFilterMismatchNoverLmax", 0.3, #default is 0.3,
                   "--alignIntronMin", 20,
                   "--alignIntronMax", 1000000, 
                   "--alignMatesGapMax", 1000000,
@@ -141,6 +157,7 @@ def alignReads(forward_reads,
             logger.info(errmsg)
         else:
             logger.info("Mapping stats: ")
+            logger.info("Mapping % computed from all the pair reads present in the raw files")
             with open(log_final, "r") as star_log:
                 for line in star_log.readlines():
                     if line.find("Uniquely mapped reads %") != -1 \
@@ -162,6 +179,7 @@ def barcodeDemultiplexing(readsContainingTr,
                           kmer, 
                           start_positon,
                           over_hang,
+                          cores,
                           outputFolder=None, 
                           keep_discarded_files=False):
     """ 
@@ -185,26 +203,30 @@ def barcodeDemultiplexing(readsContainingTr,
         outputFilePrefix = os.path.join(outputFolder, outputFilePrefix)
 
     #we know the output file from the prefix and suffix
-    #we know the input is SAM so the output will be SAM as well
-    outputFile = outputFilePrefix + "_matched.sam"
+    sam_type = getExtension(readsContainingTr).lower()
+    outputFile = outputFilePrefix + "_matched." + sam_type
 
     # taggd options
-    #--chunk-size (simultaneous processed reads, default 50000)
-    #--mp-chunk-size (chunk of maximum number of processed reads, default 500)
     #--metric (subglobal (default) , Levenshtein or Hamming)
     #--slider-increment (space between kmer searches, 0 is default = kmer length)
     #--seed
     #--no-multiprocessing
-    #--estimate-min-edit-distance is set estimate the min edit distance among
-    #true barcodes
-    #--no-offset-speedup turns on speed up, it might yield more hits
+    #--overhang additional flanking bases around read barcode to allow
+    #--estimate-min-edit-distance is set estimate the min edit distance among true barcodes
+    #--no-offset-speedup turns off speed up, it might yield more hits (exactly as findIndexes)
+    #--homopolymer-filter if set excludes erads where barcode contains a homolopymer of the given length (0 no filter), default 8
     args = ['taggd_demultiplex.py',
             "--max-edit-distance", miss_matches,
             "--k", kmer,
             "--start-position", start_positon,
+            "--homopolymer-filter", 8,
+            "--subprocesses", cores,
             "--overhang", over_hang]
+    
     if not keep_discarded_files:
-        args.append("--only-output-matched")
+        args.append("--no-unmatched-output")
+        args.append("--no-ambiguous-output")
+        
     args += [idFile, readsContainingTr, outputFilePrefix]
 
     try:

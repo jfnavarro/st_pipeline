@@ -18,11 +18,13 @@ def sortSamFile(input_sam, outputFolder=None):
     logger = logging.getLogger("STPipeline")
     logger.info("Start SAM sorting")
     
-    output_sam = 'mapped_filtered_sorted.sam'
+    sam_type = getExtension(input_sam).lower()
+    output_sam = 'mapped_filtered_sorted.' + sam_type
+        
     if outputFolder is not None and os.path.isdir(outputFolder):
         output_sam = os.path.join(outputFolder, output_sam)
         
-    pysam.sort("-n", "-o", output_sam, "-O", "sam", "-T", output_sam, input_sam)
+    pysam.sort("-n", "-o", output_sam, "-O", sam_type, "-T", output_sam, input_sam)
     
     if not fileOk(output_sam):
         error = "Error annotating: output file is not present " + output_sam
@@ -48,22 +50,37 @@ def filterMappedReads(mapped_reads, min_length=28, pair_mode_keep="reverse",
 
     assert(pair_mode_keep in ["reverse", "forward", "both"])
     
-    file_output = 'mapped_filtered.sam'
-    file_output_discarded = 'mapped_discarded.sam'
+    sam_type = getExtension(mapped_reads).lower()
+    file_output = 'mapped_filtered.' + sam_type
+    file_output_discarded = 'mapped_discarded.' + sam_type
+        
     if outputFolder is not None and os.path.isdir(outputFolder):
         file_output = os.path.join(outputFolder, file_output)
         file_output_discarded = os.path.join(outputFolder, file_output_discarded)
     
-    infile = pysam.AlignmentFile(mapped_reads, "r")
-    outfile = pysam.AlignmentFile(file_output, "wh", template=infile)
+    flag_read = "rb"
+    flag_write = "wb"
+    if sam_type == "sam":
+        flag_read = "r"
+        flag_write = "wh"
+        
+    infile = pysam.AlignmentFile(mapped_reads, flag_read)
+    outfile = pysam.AlignmentFile(file_output, flag_write, template=infile)
     if keep_discarded_files:
-        outfile_discarded = pysam.AlignmentFile(file_output_discarded, "wh", template=infile)
+        outfile_discarded = pysam.AlignmentFile(file_output_discarded, flag_write, template=infile)
        
     keep_only_forward = (pair_mode_keep == "forward")
     keep_only_reverse = (pair_mode_keep == "reverse")
-    dropped = 0
+    dropped_unmapped = 0
+    dropped_secondary = 0
+    dropped_short = 0
+    dropped_both_pairs = 0
+    present = 0
     #to remove secondary alignments sam_record.is_secondary
     for sam_record in infile:
+        present += 1
+        discard_read = False
+        
         if sam_record.is_reverse:
             sam_record.query_sequence = reverse_complement(sam_record.query_sequence)
            
@@ -75,12 +92,22 @@ def filterMappedReads(mapped_reads, min_length=28, pair_mode_keep="reverse",
         if not sam_record.is_secondary:
             sam_record.set_tag("NH", None)
                  
-        if sam_record.is_unmapped or \
-        sam_record.is_secondary or \
-        mapped_bases < min_length or \
-        (sam_record.is_paired and sam_record.is_proper_pair and \
-         ((sam_record.is_read1 and keep_only_reverse) or (sam_record.is_read2 and keep_only_forward))):
-            dropped += 1
+        if sam_record.is_unmapped:
+            dropped_unmapped += 1
+            discard_read = True
+        elif sam_record.is_secondary:
+            dropped_secondary += 1
+            discard_read = True
+        elif mapped_bases < min_length:
+            dropped_short += 1
+            discard_read = True
+        elif (sam_record.is_paired and sam_record.is_proper_pair and \
+         ((sam_record.is_read1 and keep_only_reverse) or \
+          (sam_record.is_read2 and keep_only_forward))):
+            dropped_both_pairs += 1
+            discard_read = True
+            
+        if discard_read:
             if keep_discarded_files:
                 outfile_discarded.write(sam_record)
         else:
@@ -96,10 +123,14 @@ def filterMappedReads(mapped_reads, min_length=28, pair_mode_keep="reverse",
         logger.error(error)
         raise RuntimeError(error + "\n")
             
-    logger.info("Finish filtering mapped reads, dropped : " + str(dropped) + " reads")  
+    logger.info("Finish filtering mapped reads, present : " + str(present) + \
+                "\ndropped unmapped : " + str(dropped_unmapped) + \
+                "\ndropped secondary alignment : " + str(dropped_secondary) + \
+                "\ndropped too short : " + str(dropped_short) + \
+                "\ndropped two pair aligned : " + str(dropped_both_pairs))  
     return file_output
 
-def filterAnnotatedReads(annot_reads, htseq_no_ambiguous=False, 
+def filterAnnotatedReads(annot_reads, htseq_no_ambiguous=False,
                          outputFolder=None, keep_discarded_files=False):
     """ 
     :param annot_reads SAM file obtained from HTSEQ-Count
@@ -118,19 +149,29 @@ def filterAnnotatedReads(annot_reads, htseq_no_ambiguous=False,
               "__not_aligned",
               "__alignment_not_unique"]
     
-    file_output = 'annotated_filtered.sam'
-    file_output_discarded = 'annotated_discarded.sam'
+    sam_type = getExtension(annot_reads).lower()
+    file_output = 'annotated_filtered.' + sam_type
+    file_output_discarded = 'annotated_discarded.' + sam_type
+        
     if outputFolder is not None and os.path.isdir(outputFolder):
         file_output = os.path.join(outputFolder, file_output)
         file_output_discarded = os.path.join(outputFolder, file_output_discarded)
     
-    infile = pysam.AlignmentFile(annot_reads, "r")
-    outfile = pysam.AlignmentFile(file_output, "wh", template=infile)
+    flag_read = "rb"
+    flag_write = "wbh"
+    if sam_type == "sam":
+        flag_read = "r"
+        flag_write = "wh"
+        
+    infile = pysam.AlignmentFile(annot_reads, flag_read)
+    outfile = pysam.AlignmentFile(file_output, flag_write, template=infile)
     if keep_discarded_files:
-        outfile_discarded = pysam.AlignmentFile(file_output_discarded, "wh", template=infile)
+        outfile_discarded = pysam.AlignmentFile(file_output_discarded, flag_write, template=infile)
        
     dropped = 0
+    present = 0
     for sam_record in infile:
+        present += 1
         gene_name = str(sam_record.get_tag("XF"))
         if gene_name in filter_htseq or sam_record.is_unmapped or \
             (htseq_no_ambiguous and gene_name.find("__ambiguous") != -1):
@@ -150,5 +191,5 @@ def filterAnnotatedReads(annot_reads, htseq_no_ambiguous=False,
         logger.error(error)
         raise RuntimeError(error + "\n")
             
-    logger.info("Finish filtering annotated reads, dropped : " + str(dropped) + " reads")  
+    logger.info("Finish filtering annotated reads, present : " + str(present) + " dropped : " + str(dropped) + " reads")  
     return file_output

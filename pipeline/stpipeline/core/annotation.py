@@ -8,7 +8,7 @@ import logging
 import subprocess
 import os
 import pysam
-from stpipeline.common.utils import replaceExtension, getCleanFileName, Prepender, fileOk
+from stpipeline.common.utils import getExtension, Prepender, fileOk
 
 def annotateReads(samFile, gtfFile, mode, outputFolder=None):
     """ 
@@ -22,7 +22,8 @@ def annotateReads(samFile, gtfFile, mode, outputFolder=None):
     logger = logging.getLogger("STPipeline")
     logger.info("Start Annotating reads with HTSeq")
     
-    outputFile = 'annotated.sam'
+    sam_type = getExtension(samFile).lower()
+    outputFile = 'annotated.' + sam_type
     if outputFolder is not None and os.path.isdir(outputFolder):
         outputFile = os.path.join(outputFolder, outputFile)
     
@@ -42,8 +43,8 @@ def annotateReads(samFile, gtfFile, mode, outputFolder=None):
     #-i (attribute in GFF to be used as ID)
     #-t (feature type to be used in GFF)
     #-r (input sorted order : name - pos)
-    args = ['htseq-count',"-r", "name", "-q", "-a", "0", "-f", "sam", "-m" , mode, "-s", "no", "-t", 
-            "exon", "-i","gene_name" , "-o", outputFile, samFile, gtfFile]
+    args = ['htseq-count',"-r", "name", "-q", "-a", "0", "-f", sam_type, "-m" , mode, "-s", "no", "-t", 
+            "exon", "-i","gene_id" , "-o", outputFile, samFile, gtfFile]
     try:
         subprocess.check_call(args, stdout=discard_output, stderr=subprocess.PIPE)
     except Exception as e:

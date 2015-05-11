@@ -136,6 +136,61 @@ def writefq(fp):  # This is a coroutine
     except GeneratorExit:
         return
   
+def filter_rRNA_reads(forward_reads, reverse_reads, outputFolder=None):
+    """
+    :param forward_reads reads coming from un-aligned in STAR (rRNA filter)
+    :param reverse_reads reads coming from un-aligned in STAR (rRNA filter)
+    :param outputFolder optional folder to output files
+    Very annoying but STAR when outputs un-aligned reads, it outputs all the reads
+    and adds a field to the header (00 for unaligned and 01 for aligned)
+    We use STAR for the rRNA filter before mapping so this function is needed
+    to extract un-aligned reads from all the reads. This function will only
+    work when used after the rRNA filter step. It returns the sub-set of un-aligned
+    reads
+    """
+    logger = logging.getLogger("STPipeline")
+    logger.info("Start filtering rRNA un-mapped reads")
+    
+    out_rw = 'R2_rRNA_filtered_clean.fastq'
+    out_fw = 'R1_rRNA_filtered_clean.fastq'
+    
+    if outputFolder is not None and os.path.isdir(outputFolder):
+        out_rw = os.path.join(outputFolder, out_rw)
+        out_fw = os.path.join(outputFolder, out_fw)
+    
+    out_fw_handle = safeOpenFile(out_fw, 'w')
+    out_fw_writer = writefq(out_fw_handle)
+    out_rw_handle = safeOpenFile(out_rw, 'w')
+    out_rw_writer = writefq(out_rw_handle)
+    fw_file = safeOpenFile(forward_reads, "rU")
+    rw_file = safeOpenFile(reverse_reads, "rU")
+              
+    for line1, line2 in izip(readfq(fw_file), readfq(rw_file)):
+        if line1[0].split()[1] == "00":
+            out_fw_writer.send(line1)
+        else:
+            out_fw_writer.send(getFake(line1))
+            
+        if line2[0].split()[1] == "00":
+            out_rw_writer.send(line2)
+        else:
+            out_rw_writer.send(getFake(line2))
+   
+    out_fw_writer.close()
+    out_rw_writer.close()
+    out_fw_handle.close()
+    out_rw_handle.close()
+    fw_file.close()
+    rw_file.close()
+    
+    if not fileOk(out_fw) or not fileOk(out_rw):
+        error = "Error filtering rRNA un-mapped: output file is not present " + out_fw + " , " + out_rw
+        logger.error(error)
+        raise RuntimeError(error + "\n")
+        
+    logger.info("Finish filtering rRNA un-mapped reads")
+    return out_fw, out_rw
+      
 def reverse_complement(seq):
     """
     :param seq a FASTQ sequence
@@ -189,8 +244,8 @@ def reformatRawReads(fw, rw,
     logger = logging.getLogger("STPipeline")
     logger.info("Start Reformatting and Filtering raw reads")
     
-    out_rw = 'R1_trimmed_formated.fastq'
-    out_fw = 'R2_trimmed_formated.fastq'
+    out_rw = 'R2_trimmed_formated.fastq'
+    out_fw = 'R1_trimmed_formated.fastq'
     out_fw_discarded = 'R1_trimmed_formated_discarded.fastq'
     out_rw_discarded = 'R2_trimmed_formated_discarded.fastq'
     
@@ -223,6 +278,12 @@ def reformatRawReads(fw, rw,
     adaptorG = "".join("G" for k in xrange(polyG_min_distance))
     adaptorC = "".join("C" for k in xrange(polyG_min_distance))
     
+    iscorrect_mc = molecular_barcodes
+    if mc_start < (barcode_start + barcode_length) \
+    or mc_end < (barcode_start + barcode_length):
+        logger.warning("Your molecular barcode sequences overlap with the barcode sequences")
+        iscorrect_mc = False
+        
     for line1, line2 in izip(readfq(fw_file), readfq(rw_file)):
 
         if line1[0].split()[0] != line2[0].split()[0]:
@@ -234,7 +295,7 @@ def reformatRawReads(fw, rw,
         #to be attached to the reverse read
         to_append_sequence = line1[1][barcode_start:barcode_length]
         to_append_sequence_quality = line1[2][barcode_start:barcode_length]
-        if molecular_barcodes:
+        if iscorrect_mc:
             to_append_sequence += line1[1][mc_start:mc_end]
             to_append_sequence_quality += line1[2][mc_start:mc_end]
         
@@ -312,18 +373,19 @@ def reformatRawReads(fw, rw,
     rw_file.close()
     
     if not fileOk(out_fw) or not fileOk(out_rw):
-        error = "Error: output file is not present " + out_fw + " , " + out_rw
+        error = "Error reformating raw reads: output file is not present " + out_fw + " , " + out_rw
         logger.error(error)
         raise RuntimeError(error + "\n")
     else:
-        logger.info("Trimming stats total reads : " + str(total_reads * 2))
-        logger.info("Trimming stats fw 1 : " + str(dropped_fw) + " reads have been dropped on the forward reads!")
+        logger.info("Trimming stats total reads (pair): " + str(total_reads))
+        logger.info("Trimming stats forward 1 : " + str(dropped_fw) + " reads have been dropped on the forward reads!")
         perc1 = '{percent:.2%}'.format(percent= float(dropped_fw) / float(total_reads) )
-        logger.info("Trimming stats fw 2 : you just lost about " + perc1 + " of your data on the forward reads!")
-        logger.info("Trimming stats rv 1 : " + str(dropped_rw) + " reads have been dropped on the reverse reads!") 
+        logger.info("Trimming stats forward 2 : you just lost about " + perc1 + " of your data on the forward reads!")
+        logger.info("Trimming stats reverse 1 : " + str(dropped_rw) + " reads have been dropped on the reverse reads!") 
         perc2 = '{percent:.2%}'.format(percent= float(dropped_rw) / float(total_reads) )
-        logger.info("Trimming stats rv 2 : you just lost about " + perc2 + " of your data on the reverse reads!")
-        logger.info("Trimming stats reads remaining: " + str((total_reads * 2) - dropped_fw - dropped_rw))
+        logger.info("Trimming stats reverse 2 : you just lost about " + perc2 + " of your data on the reverse reads!")
+        logger.info("Trimming stats reads (forward) remaining: " + str(total_reads - dropped_fw))
+        logger.info("Trimming stats reads (reverse) remaining: " + str(total_reads - dropped_rw))
         
     logger.info("Finish Reformatting and Filtering raw reads")
     return out_fw, out_rw

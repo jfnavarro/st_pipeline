@@ -131,3 +131,25 @@ Version 0.5.0
 aligned so it can be annotated
 * Discard the other multiple aligned reads after mapping
 * Disable sorting
+* Restored back to use gene_id as column for annotation
+
+Version 0.5.1
+* Added check when UMI is the same as barcode
+* Added more stats
+* Added percentiles distributiosn stats for createDAtaset
+* Added support for BAM and SAM (not functional now)
+* Added option to disable multiple aligned reads
+* Fixed a bug in the bed file
+
+Version 0.5.2
+* Fixed a bug in the rRNA filter that would cause to not discard
+rRNA mapped reads
+
+Version 0.5.3
+* Bumped Taggd to 0.2.2
+
+Version 0.5.4
+* Added parameter to disable soft clipping in mapping
+* Disable softclipping in rRNA filter
+* Make sure that discarded reads after rRNA filter are replaced by Ns
+* Improved stats info a bit
