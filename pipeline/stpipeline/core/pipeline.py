@@ -21,7 +21,7 @@ class Pipeline():
     
     def __init__(self):
         self.allowed_missed = 3
-        self.allowed_kimera = 6
+        self.allowed_kmer = 6
         self.overhang = 2
         self.min_length_trimming = 28
         self.trimming_fw = 42
@@ -133,7 +133,7 @@ class Pipeline():
             parser.add_argument('--expName', help="Name of the experiment (output file name)")
             parser.add_argument('--allowed-missed', default=6, 
                                 help="Number of allowed mismatches when mapping against the barcodes")
-            parser.add_argument('--allowed-kimer', default=7, 
+            parser.add_argument('--allowed-kmer', default=7, 
                                 help="KMer length when mapping against the barcodes")
             parser.add_argument('--overhang', default=2,
                                 help="Extra flanking bases added when mapping against the barcodes")
@@ -212,7 +212,7 @@ class Pipeline():
     
         #init pipeline arguments
         self.allowed_missed = int(options.allowed_missed)
-        self.allowed_kimera = int(options.allowed_kimer)
+        self.allowed_kmer = int(options.allowed_kmer)
         self.overhang = int(options.overhang)
         self.min_length_trimming = int(options.min_length_qual_trimming)
         self.trimming_fw = int(options.mapping_fw_trimming)
@@ -299,7 +299,7 @@ class Pipeline():
         if self.ids is not None:
             self.logger.info("TaggD allowed missmatches " + str(self.allowed_missed))
             self.logger.info("TaggD barcode legnth " + str(self.barcode_length))
-            self.logger.info("TaggD kmer size " + str(self.allowed_kimera))
+            self.logger.info("TaggD kmer size " + str(self.allowed_kmer))
             self.logger.info("TaggD overhang " + str(self.overhang))
         
         self.logger.info("Mapping forward trimming " + str(self.trimming_fw))
@@ -483,7 +483,7 @@ class Pipeline():
             mapFile = barcodeDemultiplexing(annotatedFilteredFile,
                                             self.ids, 
                                             self.allowed_missed, 
-                                            self.allowed_kimera, 
+                                            self.allowed_kmer, 
                                             self.barcode_start,  
                                             self.overhang,
                                             self.threads,

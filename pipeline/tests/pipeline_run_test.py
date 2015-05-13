@@ -115,7 +115,7 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.trimming_fw = 31
         self.pipeline.keep_discarded_files = True
         self.pipeline.allowed_missed = 2
-        self.pipeline.allowed_kimera = 6
+        self.pipeline.allowed_kmer = 6
         self.pipeline.min_length_trimming = 28
         self.pipeline.trimming_rv = 5
         self.pipeline.min_quality_trimming = 20
