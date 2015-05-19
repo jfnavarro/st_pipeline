@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """ 
-Scripts that parses a SAM or FASTQ file coming from Taggd to generate
+Scripts that parses a SAM or BAM file generated from Taggd and creates
 JSON files containing all relevant information. It does so
 by aggregating the reads for unique gene-barcode tuples. 
 """
@@ -103,12 +103,12 @@ def main(filename, output_folder, molecular_barcodes = False,
          allowed_missmatches = 1, mc_start_position = 19, mc_end_position = 27, min_cluster_size = 2):
     
     if filename is None or not os.path.isfile(filename):
-        sys.stderr.write("Error, one of the input file/s not present\n")
+        sys.stderr.write("Error, input file not present or invalid : " + filename + "\n")
         sys.exit(-1)
 
     sam_type = getExtension(filename).lower()
     if sam_type != "sam" and sam_type != "bam":
-        sys.stderr.write("Error, invalid input format\n")
+        sys.stderr.write("Error, invalid input format : " + sam_type + "\n")
         sys.exit(-1)
         
     if output_folder is None or not os.path.isdir(output_folder):
@@ -157,7 +157,7 @@ def main(filename, output_folder, molecular_barcodes = False,
                                    'quality': str(qula), 
                                    'barcode': transcript.barcode, 
                                    'gene': transcript.gene})
-                bed_records.append((chrom, start, end, strand, transcript.gene, transcript.barcode))
+                bed_records.append((chrom, start, end, strand, transcript.gene, transcript.barcode, str(name)))
                 
             #some stats
             if barcode_genes.has_key(transcript.barcode):
@@ -176,7 +176,7 @@ def main(filename, output_folder, molecular_barcodes = False,
             total_barcodes += int(transcript.count)
     
     if total_record == 0:
-        sys.stderr.write("Error: the number of transcripts present is 0\n")
+        sys.stderr.write("Error, the number of transcripts present is 0\n")
         sys.exit(-1)
     
     barcode_genes_array = np.array(barcode_genes.values())
@@ -205,11 +205,12 @@ def main(filename, output_folder, molecular_barcodes = False,
         json.dump(json_reads, filehandlerReads, indent=2, separators=(',', ': '))    
     #dump the reads in BED format
     with open(os.path.join(output_folder, filenameReadsBED), "w") as filehandlerReadsBED:
-        filehandlerReadsBED.write("Chromosome\tStart\tEnd\tStrand\tGene\tBarcode\n")
+        filehandlerReadsBED.write("Chromosome\tStart\tEnd\tStrand\tGene\tBarcode\tRead\n")
         for bed_record in bed_records:
             filehandlerReadsBED.write(str(bed_record[0]) + "\t" \
                                       + str(bed_record[1]) + "\t" + str(bed_record[2]) + "\t" \
-                                      + str(bed_record[3]) + "\t" + str(bed_record[4]) + "\t" + str(bed_record[5]) + "\n")
+                                      + str(bed_record[3]) + "\t" + str(bed_record[4]) + "\t" \
+                                      + str(bed_record[5]) + "\t" + str(bed_record[6]) + "\n")
             
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)

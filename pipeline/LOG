@@ -153,3 +153,7 @@ Version 0.5.4
 * Disable softclipping in rRNA filter
 * Make sure that discarded reads after rRNA filter are replaced by Ns
 * Improved stats info a bit
+
+Version 0.5.5
+* Added some extra debugging info in createDatasets
+* Output the read name in the BED output file
