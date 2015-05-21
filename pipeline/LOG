@@ -157,3 +157,5 @@ Version 0.5.4
 Version 0.5.5
 * Added some extra debugging info in createDatasets
 * Output the read name in the BED output file
+* Changed --allowed-kimera for --allowed-kmer
+* Added version as parameter and log message
