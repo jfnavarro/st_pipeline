@@ -165,7 +165,7 @@ def alignReads(forward_reads,
                     or line.find("Number of reads mapped to multiple loci") != -1 \
                     or line.find("% of reads mapped to multiple loci") != -1 \
                     or line.find("% of reads unmapped: too short") != -1:
-                        logger.info(str(line))
+                        logger.info(str(line).rstrip())
 
         if os.path.isfile(log_final):
             os.remove(log_final)
