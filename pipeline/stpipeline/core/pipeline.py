@@ -9,10 +9,12 @@ from stpipeline.core.mapping import alignReads, barcodeDemultiplexing
 from stpipeline.core.annotation import annotateReads
 from stpipeline.common.fastq_utils import reformatRawReads, filter_rRNA_reads
 from stpipeline.common.sam_utils import sortSamFile, filterAnnotatedReads, filterMappedReads
+from stpipeline.version import version_number
 import os
 from glob import glob
 import logging
 import subprocess
+import sys
 
 class Pipeline():
     
@@ -202,6 +204,7 @@ class Pipeline():
                                 "Otherwise the highest scored one will be kept")
             parser.add_argument('--disable-clipping', action="store_true", default=False,
                                 help="If activated, disable soft-clipping (local alignment) in the mapping")
+            parser.add_argument('--version', action='version',  version='%(prog)s ' + str(version_number))
             return parser
          
     def load_parameters(self, options):
@@ -209,7 +212,7 @@ class Pipeline():
         Initialize logger, load up some parameters
         and prints out some information
         """
-    
+
         #init pipeline arguments
         self.allowed_missed = int(options.allowed_missed)
         self.allowed_kimera = int(options.allowed_kimer)
@@ -274,6 +277,8 @@ class Pipeline():
         if self.path is not None and os.path.isdir(self.path): 
             os.environ["PATH"] += os.pathsep + self.path
 
+        self.logger.info("ST Pipeline " + str(version_number))
+        
         # Set output and temp folders if erroneous
         if self.output_folder is None or not os.path.isdir(self.output_folder):
             self.logger.info("Invalid path for output directory -- using current directory instead")
