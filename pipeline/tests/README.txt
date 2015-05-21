@@ -14,7 +14,7 @@ Data was created from an old (MiSeq F1) original dataset for Mouse GRCM 38 as fo
 
 Example of a run (started with this folder as working directory):
 
-st_pipeline_run.py ./input/miseqF1/testdata_R1.fastq ./input/miseqF1/testdata_R2.fastq --ids ./config/idfiles/130307_Design3_27mer.txt --ref-map ./config/genomes/mouse_grcm38/chromosome19 --ref-annotation ./config/annotations/mouse_grcm38_chromosome19.gtf --allowed-missed 5 --allowed-kimer 7 --min-length-qual-trimming 28 --mapping-fw-trimming 51 --mapping-rv-trimming 5 --length-id 27 --min-quality-trimming 20 --verbose --no-clean-up --bowtie-threads 3 --error-id 0 --start-id 0 --htseq-mode intersection-nonempty --contaminant-bowtie2-index ./config/contaminant_genomes/R45S5_R5S1/rnagenome --expName testdata --output-folder ./output --temp-folder ./tmp
+st_pipeline_run.py ./input/miseqF1/testdata_R1.fastq ./input/miseqF1/testdata_R2.fastq --ids ./config/idfiles/130307_Design3_27mer.txt --ref-map ./config/genomes/mouse_grcm38/chromosome19 --ref-annotation ./config/annotations/mouse_grcm38_chromosome19.gtf --allowed-missed 5 --allowed-kmer 7 --min-length-qual-trimming 28 --mapping-fw-trimming 51 --mapping-rv-trimming 5 --length-id 27 --min-quality-trimming 20 --verbose --no-clean-up --bowtie-threads 3 --error-id 0 --start-id 0 --htseq-mode intersection-nonempty --contaminant-bowtie2-index ./config/contaminant_genomes/R45S5_R5S1/rnagenome --expName testdata --output-folder ./output --temp-folder ./tmp
 
 
 
