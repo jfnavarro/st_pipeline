@@ -108,7 +108,7 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.fastq_fw = self.infile_fw
         self.pipeline.fastq_rv = self.infile_rv
         self.pipeline.molecular_barcodes = True
-        self.pipeline.mc_allowed_missmatches = 1
+        self.pipeline.mc_allowed_mismatches = 1
         self.pipeline.mc_start_position = 18
         self.pipeline.mc_end_position = 27
         self.pipeline.min_cluster_size = 2

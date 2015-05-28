@@ -44,16 +44,16 @@ def computeDistanceMatrixFromSequences(reads):
             distance_matrix[j, i] = difference
     return distance_matrix
 
-def countMolecularBarcodesClustersHierarchical(reads, allowed_missmatches, mc_start_position, 
+def countMolecularBarcodesClustersHierarchical(reads, allowed_mismatches, mc_start_position,
                                                mc_end_position, min_cluster_size):
     """
     :param reads the list of reads to be searched for clusters in the form of tuple (read_name, sequence, quality)
-    :param allowed_missmatches how much distance we allow between clusters
+    :param allowed_mismatches how much distance we allow between clusters
     :param mc_start_position start position of the read part that we want to cluster
     :param mc_end_position end position of the read part that we want to cluster
     :param min_cluster_size min number of reads to be count as cluster
     This functions tries to finds clusters of similar reads given a min cluster size
-    and a minimum distance (allowed_missmatches). The clusters are built using the molecular
+    and a minimum distance (allowed_mismatches). The clusters are built using the molecular
     barcodes present in the reads sequences
     It will return a list with the all the reads, for clusters of reads a random
     read will be chosen. This will quarante that the list of reads returned
@@ -63,8 +63,8 @@ def countMolecularBarcodesClustersHierarchical(reads, allowed_missmatches, mc_st
     distance_matrix = computeDistanceMatrixFromSequences(molecular_barcodes)
     linkage = scipy.cluster.hierarchy.single(distance_matrix)
     #problem is that linkage will build the tree using relative distances (need to find a way to go from allowed_
-    #missmatches to this relative values
-    flat_clusters = scipy.cluster.hierarchy.fcluster(linkage, allowed_missmatches, criterion='distance')  
+    #mismatches to this relative values
+    flat_clusters = scipy.cluster.hierarchy.fcluster(linkage, allowed_mismatches, criterion='distance')
     
     clusters = []
     
@@ -79,16 +79,16 @@ def countMolecularBarcodesClustersHierarchical(reads, allowed_missmatches, mc_st
 
     return clusters
 
-def countMolecularBarcodesClustersNaive(reads, allowed_missmatches, 
+def countMolecularBarcodesClustersNaive(reads, allowed_mismatches,
                                         mc_start_position, mc_end_position, min_cluster_size):
     """
     :param reads the list of reads to be searched for clusters in the form of tuple (read_name, sequence, quality)
-    :param allowed_missmatches how much distance we allow between clusters
+    :param allowed_mismatches how much distance we allow between clusters
     :param mc_start_position start position of the read part that we want to cluster
     :param mc_end_position end position of the read part that we want to cluster
     :param min_cluster_size min number of reads to be count as cluster
     This functions tries to finds clusters of similar reads given a min cluster size
-    and a minimum distance (allowed_missmatches). The clusters are built using the molecular
+    and a minimum distance (allowed_mismatches). The clusters are built using the molecular
     barcodes present in the reads sequences
     It will return a list with the all the reads, for clusters of reads a random
     read will be chosen. This will quarante that the list of reads returned
@@ -103,7 +103,7 @@ def countMolecularBarcodesClustersNaive(reads, allowed_missmatches,
             clusters_dict[nclusters] = [molecular_barcode]
         else:
             #compare distant of previous molecular barcodes and new onec
-            if hamming_distance(clusters_dict[nclusters][-1][0], molecular_barcode[0]) <= allowed_missmatches:
+            if hamming_distance(clusters_dict[nclusters][-1][0], molecular_barcode[0]) <= allowed_mismatches:
                 clusters_dict[nclusters].append(molecular_barcode)
             else:
                 nclusters += 1
