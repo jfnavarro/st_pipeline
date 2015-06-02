@@ -13,7 +13,7 @@ from stpipeline.common.utils import *
 from stpipeline.common.clustering import countMolecularBarcodesClustersNaive
 from stpipeline.common.fastq_utils import readfq, writefq
 
-def main(filename, allowed_missmatches = 1, mc_start_position = 29, 
+def main(filename, allowed_mismatches = 1, mc_start_position = 29,
          mc_end_position = 37, min_cluster_size = 2):
     
     if filename is None or not os.path.isfile(filename) \
@@ -35,7 +35,7 @@ def main(filename, allowed_missmatches = 1, mc_start_position = 29,
         reads.append(line)
         
     clusters = countMolecularBarcodesClustersNaive(reads, 
-                                                   allowed_missmatches, 
+                                                   allowed_mismatches,
                                                    mc_start_position, 
                                                    mc_end_position, 
                                                    min_cluster_size)
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=str,
                         help='Input file in FASTQ')
-    parser.add_argument('--mc-allowed-missmatches', default=1,
+    parser.add_argument('--mc-allowed-mismatches', default=1,
                         help='Number of allowed mismatches when applying the molecular barcodes PCR filter')
     parser.add_argument('--mc-start-position', default=29,
                         help='Position (base wise) of the first base of the molecular barcodes')
@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     main(args.input,
-         int(args.mc_allowed_missmatches), 
+         int(args.mc_allowed_mismatches),
          int(args.mc_start_position), 
          int(args.mc_end_position), 
          int(args.min_cluster_size))

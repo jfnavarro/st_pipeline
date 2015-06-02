@@ -51,7 +51,7 @@ class Pipeline():
         self.output_folder = None
         self.temp_folder = None
         self.molecular_barcodes = False
-        self.mc_allowed_missmatches = 1
+        self.mc_allowed_mismatches = 1
         self.mc_start_position = 18
         self.mc_end_position = 27
         self.min_cluster_size = 2
@@ -172,8 +172,8 @@ class Pipeline():
             parser.add_argument('--temp-folder', help='Path of the location for temporary files')
             parser.add_argument('--molecular-barcodes',
                                 action="store_true", help="Activates the molecular barcodes PCR duplicates filter")
-            parser.add_argument('--mc-allowed-missmatches', default=1,
-                                help='Number of allowed missmatches when applying the molecular barcodes PCR filter')
+            parser.add_argument('--mc-allowed-mismatches', default=1,
+                                help='Number of allowed mismatches when applying the molecular barcodes PCR filter')
             parser.add_argument('--mc-start-position', type=int, default=18,
                                 help='Position (base wise) of the first base of the molecular barcodes (starting by 0)')
             parser.add_argument('--mc-end-position', default=27,
@@ -243,7 +243,7 @@ class Pipeline():
         if options.temp_folder is not None and os.path.isdir(options.temp_folder): 
             self.temp_folder = os.path.abspath(options.temp_folder)
         self.molecular_barcodes = options.molecular_barcodes
-        self.mc_allowed_missmatches = int(options.mc_allowed_missmatches)
+        self.mc_allowed_mismatches = int(options.mc_allowed_mismatches)
         self.mc_start_position = int(options.mc_start_position)
         self.mc_end_position = int(options.mc_end_position)
         self.min_cluster_size = int(options.min_cluster_size)
@@ -300,7 +300,7 @@ class Pipeline():
         self.logger.info("Main parameters: ")
         
         if self.ids is not None:
-            self.logger.info("TaggD allowed missmatches " + str(self.allowed_missed))
+            self.logger.info("TaggD allowed mismatches " + str(self.allowed_missed))
             self.logger.info("TaggD barcode legnth " + str(self.barcode_length))
             self.logger.info("TaggD kmer size " + str(self.allowed_kmer))
             self.logger.info("TaggD overhang " + str(self.overhang))
@@ -325,7 +325,7 @@ class Pipeline():
             self.logger.info("Molecular Barcode start position " + str(self.mc_start_position))
             self.logger.info("Molecular Barcode end position " + str(self.mc_end_position))
             self.logger.info("Molecular Barcode min cluster size " + str(self.min_cluster_size))
-            self.logger.info("Molecular Barcode allowed missmatches " + str(self.mc_allowed_missmatches))
+            self.logger.info("Molecular Barcode allowed mismatches " + str(self.mc_allowed_mismatches))
         elif self.molecular_barcodes:
             self.logger.warning("Molecular barcodes cannot be used in normal RNA-Seq")
               
@@ -499,7 +499,7 @@ class Pipeline():
             #=================================================================
             self.createDataset(mapFile,
                                self.molecular_barcodes,
-                               self.mc_allowed_missmatches,
+                               self.mc_allowed_mismatches,
                                self.mc_start_position,
                                self.mc_end_position,
                                self.min_cluster_size)
@@ -514,7 +514,7 @@ class Pipeline():
 
     def createDataset(self,input_name, 
                       molecular_barcodes = False, 
-                      allowed_missmatches = 1, 
+                      allowed_mismatches = 1,
                       start_position = 18, 
                       end_position = 27, 
                       min_cluster_size = 2):
@@ -533,7 +533,7 @@ class Pipeline():
         
         if molecular_barcodes:
             args += ['--molecular-barcodes', 
-                     '--mc-allowed-missmatches', allowed_missmatches, 
+                     '--mc-allowed-mismatches', allowed_mismatches,
                      '--mc-start-position', start_position, 
                      '--mc-end-position', end_position, 
                      '--min-cluster-size', min_cluster_size]

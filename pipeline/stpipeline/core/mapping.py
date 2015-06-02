@@ -175,7 +175,7 @@ def alignReads(forward_reads,
 
 def barcodeDemultiplexing(readsContainingTr, 
                           idFile, 
-                          miss_matches, 
+                          mismatches,
                           kmer, 
                           start_positon,
                           over_hang,
@@ -185,7 +185,7 @@ def barcodeDemultiplexing(readsContainingTr,
     """ 
     :param readsContainingTr a file in SAM/BAM/FASTQ format containing mapped and annotated reads
     :param idFile a tab delimited file (BARCODE - X - Y) containing all the barcodes
-    :param miss_matches the number of allowed missmatches 
+    :param mismatches the number of allowed mismatches
     :param kmer the kmer length
     :param start_positon the start position of the barcode
     :param over_hang the number of bases to allow for overhang
@@ -216,7 +216,7 @@ def barcodeDemultiplexing(readsContainingTr,
     #--no-offset-speedup turns off speed up, it might yield more hits (exactly as findIndexes)
     #--homopolymer-filter if set excludes erads where barcode contains a homolopymer of the given length (0 no filter), default 8
     args = ['taggd_demultiplex.py',
-            "--max-edit-distance", miss_matches,
+            "--max-edit-distance", mismatches,
             "--k", kmer,
             "--start-position", start_positon,
             "--homopolymer-filter", 8,
