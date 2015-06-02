@@ -157,7 +157,7 @@ class Pipeline():
                                 "Modes = {union,intersection-nonempty(default),intersection-strict}")
             parser.add_argument('--htseq-no-ambiguous', action="store_true",
                                 help="When using htseq discard reads annotating ambiguous genes")
-            parser.add_argument('--start-id', default=0, help="Start position of the IDs (Barcodes) in the reads")
+            parser.add_argument('--start-id', default=0, help="Start position of the IDs (Barcodes) in the reads from 0")
             parser.add_argument('--no-clean-up', action="store_false", default=True,
                                 help="Do not remove temporary files at the end (useful for debugging)")
             parser.add_argument('--verbose', action="store_true", default=False,
@@ -177,7 +177,7 @@ class Pipeline():
             parser.add_argument('--mc-start-position', type=int, default=18,
                                 help='Position (base wise) of the first base of the molecular barcodes (starting by 0)')
             parser.add_argument('--mc-end-position', default=27,
-                                help='Position (base wise) of the last base of the molecular barcodes (staring by 1)')
+                                help='Position (base wise) of the last base of the molecular barcodes (starting by 1)')
             parser.add_argument('--min-cluster-size', default=2,
                                 help='Min number of equal molecular barcodes to count as a cluster')
             parser.add_argument('--keep-discarded-files', action="store_true", default=False,
@@ -191,17 +191,15 @@ class Pipeline():
             parser.add_argument('--remove-polyC', default=0,
                                 help="Remove PolyCs and everything after it in the reads of a length at least as given number")
             parser.add_argument('--pair-mode-keep', default="reverse", 
-                                help="When filtering out un-mapped reads if both strands map, " + \
-                                "what action to perform to keep (forward, reverse or both)")
+                                help="When filtering out un-mapped reads if both strands map, what action to perform to keep (forward, reverse or both)")
             parser.add_argument('--filter-AT-content', default=90,
-                                help="Discards reads whose number of A and T bases in total are more or equal than the number given in %")
+                                help="Discards reads whose number of A and T bases in total are more or equal than the number given in percentage")
             #TODO for now htseq-count does not support BAM files
             #http://sourceforge.net/p/htseq/bugs/12/
             #parser.add_argument('--sam-type', default="BAM",
             #                    help="Type of SAM format for intermediate files (SAM or BAM)")
             parser.add_argument('--disable-multimap', action="store_true", default=False,
-                                help="If activated, multiple aligned reads obtained during mapping will be all discarded. " + \
-                                "Otherwise the highest scored one will be kept")
+                                help="If activated, multiple aligned reads obtained during mapping will be all discarded. Otherwise the highest scored one will be kept")
             parser.add_argument('--disable-clipping', action="store_true", default=False,
                                 help="If activated, disable soft-clipping (local alignment) in the mapping")
             parser.add_argument('--version', action='version',  version='%(prog)s ' + str(version_number))

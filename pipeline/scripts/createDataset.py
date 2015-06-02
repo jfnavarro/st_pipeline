@@ -134,7 +134,7 @@ def main(filename, output_folder, molecular_barcodes = False,
             #re-compute the read count accounting for PCR duplicates 
             #if indicated (read sequence must contain molecular barcode)
             if molecular_barcodes:
-                clusters = countMolecularBarcodesClustersNaive(transcript.reads, allowed_missmatches, 
+                clusters = countMolecularBarcodesClustersNaive(transcript.reads, allowed_missmatches,
                                                mc_start_position, mc_end_position, min_cluster_size)
                 transcript.reads = clusters
                 discarded_reads += (transcript.count - len(clusters))
