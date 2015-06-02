@@ -159,3 +159,7 @@ Version 0.5.5
 * Output the read name in the BED output file
 * Changed --allowed-kimera for --allowed-kmer
 * Added version as parameter and log message
+
+Version 0.5.6
+* Fixed a typo in a parameter
+* Fixed a bug that caused some parameters to not work
