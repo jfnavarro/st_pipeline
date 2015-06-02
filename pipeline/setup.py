@@ -8,6 +8,8 @@ import io
 import glob
 from setuptools import setup, find_packages
 
+from stpipeline import version_number
+
 # Get the long description from the relevant file
 here = os.path.abspath(os.path.dirname(__file__))
 with io.open(os.path.join(here, 'README'), encoding='utf-8') as f:
@@ -15,7 +17,7 @@ with io.open(os.path.join(here, 'README'), encoding='utf-8') as f:
 
 setup(
   name = 'stpipeline',
-  version = '0.5.6',
+  version = version_number,
   description = __doc__.split("\n", 1)[0],
   long_description = long_description,
   keywords = 'rna-seq analysis spatial transcriptomics toolkit',
