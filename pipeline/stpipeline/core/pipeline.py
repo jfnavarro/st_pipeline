@@ -104,7 +104,7 @@ class Pipeline():
             raise RuntimeError(error)
 
         #test the presence of the scripts (only STAR for now)
-        required_scripts = set(['STAR'])
+        required_scripts = set(['STAR', 'taggd_demultiplex.py'])
 
         unavailable_scripts = set()
         for script in required_scripts:
