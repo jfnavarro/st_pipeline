@@ -9,7 +9,7 @@ from stpipeline.core.mapping import alignReads, barcodeDemultiplexing
 from stpipeline.core.annotation import annotateReads
 from stpipeline.common.fastq_utils import reformatRawReads, filter_rRNA_reads
 from stpipeline.common.sam_utils import sortSamFile, filterAnnotatedReads, filterMappedReads
-from stpipeline.version import version_number
+from stpipeline import version_number
 import os
 from glob import glob
 import logging
