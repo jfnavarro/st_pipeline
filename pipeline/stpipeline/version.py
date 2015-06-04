@@ -53,7 +53,7 @@ def call_git_describe(abbrev=4):
 def read_release_version():
     try:
         directory = os.path.dirname(os.path.abspath(__file__))
-        f = open(os.path.join(directory, "..", "RELEASE-VERSION"), "r")
+        f = open(os.path.join(directory, "RELEASE-VERSION"), "r")
 
         try:
             version = f.readlines()[0]
@@ -68,7 +68,7 @@ def read_release_version():
 
 def write_release_version(version):
     directory = os.path.dirname(os.path.abspath(__file__))
-    f = open(os.path.join(directory, "..", "RELEASE-VERSION"), "w")
+    f = open(os.path.join(directory, "RELEASE-VERSION"), "w")
     f.write("%s\n" % version)
     f.close()
 

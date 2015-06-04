@@ -27,7 +27,7 @@ setup(
   url = 'http://www.spatialtranscriptomics.com',
   packages = find_packages(exclude=('tests*', 'dependencies', 'utils')),
   include_package_data = False,
-  package_data = dict(),
+  package_data = {'': ['RELEASE-VERSION']},
   zip_safe = False,
   install_requires = [
     'HTSeq>=0.6.1',
