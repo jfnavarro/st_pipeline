@@ -297,7 +297,6 @@ class Pipeline():
         if self.contaminant_index is not None:
             self.logger.info("Using contamination filter with " + str(self.contaminant_index))
         self.logger.info("Nodes : " + str(self.threads))
-        self.logger.info("Main parameters: ")
         
         if self.ids is not None:
             self.logger.info("TaggD allowed mismatches " + str(self.allowed_missed))
@@ -312,13 +311,12 @@ class Pipeline():
         self.logger.info("When both strands are mapped, keep = " + str(self.pair_mode_keep))
         self.logger.info("Filter of AT content in reads : " + str(self.filter_AT_content))
         self.logger.info("Sam type : " + str(self.sam_type))
+        
         if self.disable_clipping:
-            self.logger("Not allowing soft clipping when mapping")
+            self.logger.info("Not allowing soft clipping when mapping")
+        
         if self.disable_multimap:
-            self.logger("Not allowing multiple alignments")
-            
-        if self.disable_multimap:
-            self.logger.info("Disabling multiple aligned reads")
+            self.logger.info("Not allowing multiple alignments")
             
         if self.molecular_barcodes and not self.ids is None:
             self.logger.info("Using Molecular Barcodes")
