@@ -166,3 +166,6 @@ Version 0.5.6
 
 Version 0.5.7
 * Fixed a bug with --disable-multimap option
+
+Version 0.5.8
+* Fixed a bug in the function to retrieve the pipeline version
