@@ -54,5 +54,14 @@ class TestClustering(unittest.TestCase):
         # should make one cluster of 8 reads so the output should have 2 reads
         self.assertTrue(len(clusters) == 2)
 
+    def test_prefix_tree_clustering(self):
+        #TODO
+        self.assertTrue(True)
+        
+    def test_hierarchical_clustering(self):
+        #TODO
+        self.assertTrue(True)
+        
+        
 if __name__ == '__main__':
     unittest.main()        

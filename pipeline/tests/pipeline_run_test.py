@@ -137,6 +137,7 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.remove_polyT_distance = 15
         self.pipeline.remove_polyG_distance = 15
         self.pipeline.remove_polyC_distance = 15
+        self.pipeline.use_prefix_tree = True
 
     @classmethod
     def tearDownClass(self):
