@@ -12,7 +12,7 @@ import argparse
 import pysam
 import numpy as np
 from stpipeline.common.utils import *
-from stpipeline.common.clustering import countMolecularBarcodesClustersNaive
+from stpipeline.common.clustering import countMolecularBarcodesClustersNaive, countMolecularBarcodesPrefixtree
 from stpipeline.common.fastq_utils import *
 
 class Transcript:
@@ -99,7 +99,7 @@ def parseUniqueEvents(filename):
     return unique_events.values()
 
 
-def main(filename, output_folder, molecular_barcodes = False, 
+def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = False,
          allowed_mismatches = 1, mc_start_position = 19, mc_end_position = 27, min_cluster_size = 2):
     
     if filename is None or not os.path.isfile(filename):
@@ -134,8 +134,14 @@ def main(filename, output_folder, molecular_barcodes = False,
             #re-compute the read count accounting for PCR duplicates 
             #if indicated (read sequence must contain molecular barcode)
             if molecular_barcodes:
-                clusters = countMolecularBarcodesClustersNaive(transcript.reads, allowed_mismatches,
-                                               mc_start_position, mc_end_position, min_cluster_size)
+                if use_prefix_tree:
+                    clusters = countMolecularBarcodesPrefixtree(transcript.reads, allowed_mismatches,
+                                                                mc_start_position, mc_end_position, 
+                                                                min_cluster_size)
+                else:
+                    clusters = countMolecularBarcodesClustersNaive(transcript.reads, allowed_mismatches,
+                                                                   mc_start_position, mc_end_position,
+                                                                    min_cluster_size)
                 transcript.reads = clusters
                 discarded_reads += (transcript.count - len(clusters))
                 transcript.count = len(clusters)
@@ -219,9 +225,13 @@ if __name__ == "__main__":
     parser.add_argument('--output-folder', type=str,
                         help='Path of the output folder (default is /.)')
     parser.add_argument('--molecular-barcodes', 
-                        action="store_true", default=False, help="Activates the molecular barcodes PCR duplicates filter")
+                        action="store_true", default=False, 
+                        help="Activates the molecular barcodes duplicates filter")
+    parser.add_argument('--use-prefix-tree', 
+                        action="store_true", default=False, 
+                        help="Use a prefix tree instead of naive algorithm for molecular barcodes duplicates filter")
     parser.add_argument('--mc-allowed-mismatches', default=1,
-                        help='Number of allowed mismatches when applying the molecular barcodes PCR filter')
+                        help='Number of allowed mismatches when applying the molecular barcodes filter')
     parser.add_argument('--mc-start-position', default=19,
                         help='Position (base wise) of the first base of the molecular barcodes')
     parser.add_argument('--mc-end-position', default=30,
@@ -230,7 +240,7 @@ if __name__ == "__main__":
                         help='Min number of equal molecular barcodes to count as a cluster')
 
     args = parser.parse_args()
-    main(args.input, args.output_folder, args.molecular_barcodes, 
+    main(args.input, args.output_folder, args.molecular_barcodes, args.use_prefix_tree,
          int(args.mc_allowed_mismatches), int(args.mc_start_position),
          int(args.mc_end_position), int(args.min_cluster_size))
                                     

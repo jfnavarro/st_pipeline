@@ -169,3 +169,6 @@ Version 0.5.7
 
 Version 0.5.8
 * Fixed a bug in the function to retrieve the pipeline version
+
+Version 0.5.9
+* Added an option to find molecular barcodes clusters using a prefix tree

@@ -37,7 +37,8 @@ setup(
     'argparse',
     'scipy',
     'numpy',
-    'taggd>=0.2.2'
+    'taggd>=0.2.2',
+    'counttrie'
   ],
   test_suite = 'tests',
   scripts = glob.glob('scripts/*.py'),
