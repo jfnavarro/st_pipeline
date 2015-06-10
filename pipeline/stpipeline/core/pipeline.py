@@ -66,6 +66,7 @@ class Pipeline():
         self.sam_type = "SAM"
         self.disable_clipping = False
         self.disable_multimap = False
+        self.use_prefix_tree = False
         
     def sanityCheck(self):
         """ 
@@ -202,6 +203,9 @@ class Pipeline():
                                 help="If activated, multiple aligned reads obtained during mapping will be all discarded. Otherwise the highest scored one will be kept")
             parser.add_argument('--disable-clipping', action="store_true", default=False,
                                 help="If activated, disable soft-clipping (local alignment) in the mapping")
+            parser.add_argument('--use-prefix-tree', 
+                                action="store_true", default=False, 
+                                help="Use a prefix tree instead of naive algorithm for molecular barcodes duplicates filter")
             parser.add_argument('--version', action='version',  version='%(prog)s ' + str(version_number))
             return parser
          
@@ -259,6 +263,7 @@ class Pipeline():
         #self.sam_type = str(options.sam_type)
         self.disable_multimap = options.disable_multimap
         self.disable_clipping = options.disable_clipping
+        self.use_prefix_tree = options.use_prefix_tree
         
     def createLogger(self):
         """
@@ -324,6 +329,8 @@ class Pipeline():
             self.logger.info("Molecular Barcode end position " + str(self.mc_end_position))
             self.logger.info("Molecular Barcode min cluster size " + str(self.min_cluster_size))
             self.logger.info("Molecular Barcode allowed mismatches " + str(self.mc_allowed_mismatches))
+            if self.use_prefix_tree:
+                self.logger.info("Using prefix tree to cluster molecular barcodes")
         elif self.molecular_barcodes:
             self.logger.warning("Molecular barcodes cannot be used in normal RNA-Seq")
               
@@ -497,6 +504,7 @@ class Pipeline():
             #=================================================================
             self.createDataset(mapFile,
                                self.molecular_barcodes,
+                               self.use_prefix_tree,
                                self.mc_allowed_mismatches,
                                self.mc_start_position,
                                self.mc_end_position,
@@ -511,7 +519,8 @@ class Pipeline():
         self.logger.info("Total Execution Time : " + str(total_exe_time))
 
     def createDataset(self,input_name, 
-                      molecular_barcodes = False, 
+                      molecular_barcodes = False,
+                      use_prefix_tree = False,
                       allowed_mismatches = 1,
                       start_position = 18, 
                       end_position = 27, 
@@ -530,11 +539,13 @@ class Pipeline():
         args = ['createDataset.py', '--input', str(input_name)]
         
         if molecular_barcodes:
-            args += ['--molecular-barcodes', 
+            args += ['--molecular-barcodes',
                      '--mc-allowed-mismatches', allowed_mismatches,
                      '--mc-start-position', start_position, 
                      '--mc-end-position', end_position, 
                      '--min-cluster-size', min_cluster_size]
+            if use_prefix_tree:
+                args += ['--use-prefix-tree']
             
         if self.output_folder is not None:
             args += ['--output-folder', self.output_folder]
