@@ -67,6 +67,9 @@ class Pipeline():
         self.disable_clipping = False
         self.disable_multimap = False
         self.use_prefix_tree = False
+        self.min_intron_size = 20
+        self.max_intron_size = 1000000
+        self.max_gap_size = 1000000
         
     def sanityCheck(self):
         """ 
@@ -89,6 +92,9 @@ class Pipeline():
         conds["polyT"] = self.remove_polyT_distance >= 0 
         conds["polyG"] = self.remove_polyG_distance >= 0
         conds["polyC"] = self.remove_polyC_distance >= 0
+        conds["min_intron_size"] = self.min_intron_size >= 0 and self.min_intron_size < self.max_intron_size
+        conds["max_intron_size"] = self.max_intron_size > 0
+        conds["max_gap_size"] = self.max_gap_size > 0
         conds["pair_keep_mode"] = self.pair_mode_keep in ["forward", "reverse", "both"]
         conds["filter_AT_content"] = self.filter_AT_content >= 0 and self.filter_AT_content <= 100
         conds["sam_type"] = self.sam_type in ["BAM", "SAM"]
@@ -206,6 +212,12 @@ class Pipeline():
             parser.add_argument('--use-prefix-tree', 
                                 action="store_true", default=False, 
                                 help="Use a prefix tree instead of naive algorithm for molecular barcodes duplicates filter")
+            parser.add_argument('--min-intron-size', default=20,
+                                help="Minimum allowed intron size when searching for splice variants in the mapping step")
+            parser.add_argument('--max-intron-size', default=100000,
+                                help="Maximum allowed intron size when searching for splice variants in the mapping step")
+            parser.add_argument('--max-gap-size', default=1000000,
+                                help="Maximum allowed distance between pairs in the mapping step")
             parser.add_argument('--version', action='version',  version='%(prog)s ' + str(version_number))
             return parser
          
@@ -264,6 +276,9 @@ class Pipeline():
         self.disable_multimap = options.disable_multimap
         self.disable_clipping = options.disable_clipping
         self.use_prefix_tree = options.use_prefix_tree
+        self.min_intron_size = int(options.min_intron_size)
+        self.max_intron_size = int(options.max_intron_size)
+        self.max_gap_size = int(options.max_gap_size)
         
     def createLogger(self):
         """
@@ -323,6 +338,10 @@ class Pipeline():
         if self.disable_multimap:
             self.logger.info("Not allowing multiple alignments")
             
+        self.logger.info("Mapping minimum intron size " + str(self.min_intron_size))
+        self.logger.info("Mapping maximum intron size " + str(self.max_intron_size))
+        self.logger.info("Mapping maximum gap size " + str(self.max_gap_size))
+        
         if self.molecular_barcodes and not self.ids is None:
             self.logger.info("Using Molecular Barcodes")
             self.logger.info("Molecular Barcode start position " + str(self.mc_start_position))
@@ -406,6 +425,10 @@ class Pipeline():
                                                                               adjusted_forward_trimming,
                                                                               self.threads,
                                                                               "rRNA_filter",
+                                                                              self.min_intron_size,
+                                                                              self.max_intron_size,
+                                                                              self.max_gap_size,
+                                                                              False, #disable splice variants alignments
                                                                               self.sam_type,
                                                                               False, #enable multimap in rRNA filter
                                                                               True, #disable softclipping in rRNA filter
@@ -436,6 +459,10 @@ class Pipeline():
                                                                     adjusted_forward_trimming,
                                                                     self.threads,
                                                                     "alignment",
+                                                                    self.min_intron_size,
+                                                                    self.max_intron_size,
+                                                                    self.max_gap_size,
+                                                                    True, #enable splice variants alignments
                                                                     self.sam_type,
                                                                     self.disable_multimap,
                                                                     self.disable_clipping,

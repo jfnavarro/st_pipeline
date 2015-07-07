@@ -191,5 +191,6 @@ def filterAnnotatedReads(annot_reads, htseq_no_ambiguous=False,
         logger.error(error)
         raise RuntimeError(error + "\n")
             
-    logger.info("Finish filtering annotated reads, present : " + str(present) + " dropped : " + str(dropped) + " reads")  
+    logger.info("Finish filtering annotated reads \nPresent(mapped) : " + str(present) + \
+                "\nDropped(not annotated) : " + str(dropped) + "\nAnnotated : " + str(present - dropped))  
     return file_output

@@ -16,7 +16,11 @@ def alignReads(forward_reads,
                trimReverse, 
                cores,
                file_name_pattern,
-               sam_type = "BAM",
+               min_intron_size=20,
+               max_intron_size=1000000,
+               max_gap_size=1000000,
+               use_splice_juntions=True,
+               sam_type="BAM",
                disable_multimap=False,
                diable_softclipping=False,
                outputFolder=None):
@@ -28,6 +32,10 @@ def alignReads(forward_reads,
     :param trimReverse the number of bases to trim in the reverse reasd (to not map)
     :param cores the number of cores to use to speed up the alignment
     :param file_name_patter indicates how the output files will be named
+    :param min_intron_size min allowed intron size when spanning splice junctions
+    :param max_intron size max allowed intron size when spanning splice junctions
+    :param max_gap_size max allowed gap between pairs
+    :param use_splice_junctions whether to use splice aware alignment or not
     :param sam_type SAM or BAM 
     :param disable_multimap if True no multiple alignments will be allowed
     :param diable_softclipping it True no local alignment allowed
@@ -158,6 +166,8 @@ def alignReads(forward_reads,
         else:
             logger.info("Mapping stats: ")
             logger.info("Mapping % computed from all the pair reads present in the raw files")
+            uniquely_mapped = 0
+            multiple_mapped = 0
             with open(log_final, "r") as star_log:
                 for line in star_log.readlines():
                     if line.find("Uniquely mapped reads %") != -1 \
@@ -166,7 +176,13 @@ def alignReads(forward_reads,
                     or line.find("% of reads mapped to multiple loci") != -1 \
                     or line.find("% of reads unmapped: too short") != -1:
                         logger.info(str(line).rstrip())
-
+                    # some duplicated code here; TODO refactor
+                    if line.find("Uniquely mapped reads number") != -1:
+                        uniquely_mapped = int(str(line).rstrip().split()[-1])
+                    if line.find("Number of reads mapped to multiple loci") != -1:
+                        multiple_mapped = int(str(line).rstrip().split()[-1])
+                logger.info("Total mapped reads : " + str(uniquely_mapped + multiple_mapped))
+                        
         if os.path.isfile(log_final):
             os.remove(log_final)
             

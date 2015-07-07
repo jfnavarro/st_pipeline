@@ -171,4 +171,11 @@ Version 0.5.8
 * Fixed a bug in the function to retrieve the pipeline version
 
 Version 0.5.9
-* Added an option to find molecular barcodes clusters using a prefix tree
+* Added an option to find molecular barcodes clusters using a prefix trie
+
+Version 0.6.1
+* Fixed some bugs in the prefix trie
+
+Version 0.6.2
+* Improved the log a bit
+* Added parameters for max,min intron size and max gap size

@@ -9,7 +9,6 @@ import scipy.cluster.hierarchy
 import counttrie.counttrie as ct
 from collections import defaultdict
 from stpipeline.common.distance import hamming_distance
-import collections
 import random
 from operator import itemgetter
 
@@ -83,7 +82,7 @@ def countMolecularBarcodesClustersHierarchical(reads, allowed_mismatches, mc_sta
 
     return clusters
 
-def countMolecularBarcodesPrefixtree(reads, allowed_missmatches, mc_start_position, 
+def countMolecularBarcodesPrefixtrie(reads, allowed_mismatches, mc_start_position, 
                                      mc_end_position, min_cluster_size, allow_indels=True):
     """
     :param reads the list of reads to be searched for clusters in the form of tuple (read_name, sequence, quality)
@@ -97,36 +96,36 @@ def countMolecularBarcodesPrefixtree(reads, allowed_missmatches, mc_start_positi
     It will return a list with the all the reads, for clusters of reads a random
     read will be chosen. This will quarante that the list of reads returned
     is unique and does not contain biological duplicates
-    This approach builds clusters using a prefix tree
+    This approach builds clusters using a prefix trie
     """
     
     molecular_barcodes = extractMolecularBarcodes(reads, mc_start_position, mc_end_position)
-    tree = ct.CountTrie()
+    trie = ct.CountTrie()
     # keep a map of molecular_barcode -> reads to obtain the reads later in the clusters
     reads = defaultdict(list)
     
     # add the molecular barcodes to the prefix tree and also the reads to the map
     for molecular_barcode in molecular_barcodes:
-        tree.add(molecular_barcode[0])
+        trie.add(molecular_barcode[0])
         reads[molecular_barcode[0]].append(molecular_barcode[1])
         
     # find clusters and add them to the final list of they are bigger than the minimum size
     clusters = []
     for molecular_barcode in molecular_barcodes:
-        cluster = tree.find_equal_length_optimized(molecular_barcode[0], allowed_missmatches, allow_indels)
+        cluster = trie.find_equal_length_optimized(molecular_barcode[0], allowed_mismatches, allow_indels)
         # get the original reads
         original_reads = reads[molecular_barcode[0]]
         
         size_cluster = 0
         for clustered_mc in cluster:
-            size_cluster += tree.get_count(clustered_mc)
+            size_cluster += trie.get_count(clustered_mc)
             # remove the original reads to not add them twice
             del reads[clustered_mc]
-            tree.remove(clustered_mc)
+            trie.remove(clustered_mc)
         
         # if it is a cluster we add 1 random read otherwise we add
         # all the reads
-        if size_cluster >= min_cluster_size:
+        if size_cluster >= min_cluster_size and len(original_reads) > 0:
             clusters.append(random.choice(original_reads))
         else:
             for read in original_reads:

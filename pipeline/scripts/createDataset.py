@@ -12,7 +12,7 @@ import argparse
 import pysam
 import numpy as np
 from stpipeline.common.utils import *
-from stpipeline.common.clustering import countMolecularBarcodesClustersNaive, countMolecularBarcodesPrefixtree
+from stpipeline.common.clustering import countMolecularBarcodesClustersNaive, countMolecularBarcodesPrefixtrie
 from stpipeline.common.fastq_utils import *
 
 class Transcript:
@@ -69,7 +69,7 @@ def parseUniqueEvents(filename):
         clear_name = str(rec.query_name)
         seq = str(rec.query_sequence)
         qual = str(rec.query_qualities)
-        #mapping_quality = int(rec.mapping_quality)
+        mapping_quality = int(rec.mapping_quality)
         start = int(rec.reference_start)
         end = int(rec.reference_end)
         chrom = str(sam_file.getrname(rec.reference_id))
@@ -90,7 +90,8 @@ def parseUniqueEvents(filename):
 
         #@todo should be a way to achieve this with defaultdict
         transcript = Transcript(barcode=barcode, gene=gene, x=x, y=y,
-                                count=1, reads=[(clear_name, seq, qual, chrom, start, end, strand)])
+                                count=1, reads=[(clear_name, seq, qual, chrom, 
+                                                 start, end, strand, mapping_quality)])
         if unique_events.has_key(transcript):
             unique_events[transcript] += transcript
         else:
@@ -131,17 +132,17 @@ def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = 
     barcode_genes = dict()
     barcode_reads = dict()
     for transcript in parseUniqueEvents(filename):                
-            #re-compute the read count accounting for PCR duplicates 
-            #if indicated (read sequence must contain molecular barcode)
+            # Re-compute the read count accounting for PCR duplicates 
+            # if indicated (read sequence must contain molecular barcode)
             if molecular_barcodes:
                 if use_prefix_tree:
-                    clusters = countMolecularBarcodesPrefixtree(transcript.reads, allowed_mismatches,
+                    clusters = countMolecularBarcodesPrefixtrie(transcript.reads, allowed_mismatches,
                                                                 mc_start_position, mc_end_position, 
                                                                 min_cluster_size)
                 else:
                     clusters = countMolecularBarcodesClustersNaive(transcript.reads, allowed_mismatches,
                                                                    mc_start_position, mc_end_position,
-                                                                    min_cluster_size)
+                                                                   min_cluster_size)
                 transcript.reads = clusters
                 discarded_reads += (transcript.count - len(clusters))
                 transcript.count = len(clusters)
@@ -149,7 +150,8 @@ def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = 
             # add a JSON entry for the transcript  
             json_barcodes.append(transcript.toBarcodeDict())
             
-            #get the reads that mapped to the transcript and generate a JSON file
+            # get the reads that mapped to the transcript and generate a JSON file
+            # and generates a list of BED records
             for read in transcript.reads:
                 qula = read[2]
                 seq = read[1]
@@ -158,14 +160,16 @@ def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = 
                 start = read[4]
                 end = read[5]
                 strand = read[6]
+                quality_score = read[7]
                 json_reads.append({'name': str(name), 
                                    'read': str(seq), 
                                    'quality': str(qula), 
                                    'barcode': transcript.barcode, 
                                    'gene': transcript.gene})
-                bed_records.append((chrom, start, end, strand, transcript.gene, transcript.barcode, str(name)))
+                bed_records.append((chrom, start, end, strand, transcript.gene, 
+                                    transcript.barcode, str(name), quality_score))
                 
-            #some stats
+            # Some stats computation
             if barcode_genes.has_key(transcript.barcode):
                 barcode_genes[transcript.barcode] += 1
             else:
@@ -185,6 +189,7 @@ def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = 
         sys.stderr.write("Error, the number of transcripts present is 0\n")
         sys.exit(-1)
     
+    # To compute percentiles
     barcode_genes_array = np.array(barcode_genes.values())
     barcode_reads_array = np.array(barcode_reads.values())
     
@@ -204,19 +209,20 @@ def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = 
     filenameReads = "reads.json"
     filenameReadsBED = "reads.bed"
     
-    #dump the JSON files to the output files
+    # Dump the JSON files to the output files
     with open(os.path.join(output_folder, filename), "w") as filehandler:
         json.dump(json_barcodes, filehandler, indent=2, separators=(',', ': '))  
     with open(os.path.join(output_folder, filenameReads), "w") as filehandlerReads:
         json.dump(json_reads, filehandlerReads, indent=2, separators=(',', ': '))    
-    #dump the reads in BED format
+    # Dump the reads in BED format
     with open(os.path.join(output_folder, filenameReadsBED), "w") as filehandlerReadsBED:
-        filehandlerReadsBED.write("Chromosome\tStart\tEnd\tStrand\tGene\tBarcode\tRead\n")
+        filehandlerReadsBED.write("Chromosome\tStart\tEnd\tRead\tScore\tStrand\tGene\tBarcode\n")
         for bed_record in bed_records:
             filehandlerReadsBED.write(str(bed_record[0]) + "\t" \
                                       + str(bed_record[1]) + "\t" + str(bed_record[2]) + "\t" \
+                                      + str(bed_record[6]) + "\t" + str(bed_record[7]) + "\t" \
                                       + str(bed_record[3]) + "\t" + str(bed_record[4]) + "\t" \
-                                      + str(bed_record[5]) + "\t" + str(bed_record[6]) + "\n")
+                                      + str(bed_record[5]) + "\n")
             
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
