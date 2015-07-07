@@ -93,24 +93,27 @@ def alignReads(forward_reads,
     alignment_mode = "Local"
     if diable_softclipping:
         alignment_mode = "EndToEnd"
+    sjdb_overhang = 100
+    if not use_splice_juntions:
+        sjdb_overhang = 0
         
     core_flags = ["--runThreadN", str(max(cores, 1))]
     trim_flags = ["--clip5pNbases", trimForward, trimReverse] 
     io_flags   = ["--outFilterType", "Normal", 
                   "--outSAMtype", sam_type, "Unsorted",
-                  "--alignEndsType", alignment_mode, #default Local (allows soft clipping) #EndToEnd
-                  "--outSAMunmapped", "None", #unmapped reads not included in main output
+                  "--alignEndsType", alignment_mode, # default Local (allows soft clipping) #EndToEnd disables softclipping
+                  "--outSAMunmapped", "None", # unmapped reads not included in main output
                   "--outSAMorder", "Paired",    
                   "--outSAMprimaryFlag", "OneBestScore", 
-                  "--outFilterMultimapNmax", multi_map_number, #put to 1 to not include multiple mappings
+                  "--outFilterMultimapNmax", multi_map_number, # put to 1 to not include multiple mappings
                   "--alignSJoverhangMin", 5,
                   "--alignSJDBoverhangMin", 3,
-                  "--sjdbOverhang", 100, #0 to not use splice junction database
+                  "--sjdbOverhang", sjdb_overhang, # 0 to not use splice junction database
                   "--outFilterMismatchNmax", 10, # large number switches it off
-                  "--outFilterMismatchNoverLmax", 0.3, #default is 0.3,
-                  "--alignIntronMin", 20,
-                  "--alignIntronMax", 1000000, 
-                  "--alignMatesGapMax", 1000000,
+                  "--outFilterMismatchNoverLmax", 0.3, # default is 0.3,
+                  "--alignIntronMin", min_intron_size,
+                  "--alignIntronMax", max_intron_size, 
+                  "--alignMatesGapMax", max_gap_size,
                   "--winBinNbits", 16,
                   "--winAnchorDistNbins", 9,
                   "--chimSegmentMin", 0]
