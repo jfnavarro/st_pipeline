@@ -179,3 +179,10 @@ Version 0.6.1
 Version 0.6.2
 * Improved the log a bit
 * Added parameters for max,min intron size and max gap size
+
+Version 0.6.3
+* Removed reads.json from the output
+* Added qa_stats.json to the output
+* Restored old versioning system
+* Removed hadoop related stuff
+* Added support for gziped input files

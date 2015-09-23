@@ -7,8 +7,7 @@ import os
 import io
 import glob
 from setuptools import setup, find_packages
-
-from stpipeline import version_number
+from stpipeline.version import version_number
 
 # Get the long description from the relevant file
 here = os.path.abspath(os.path.dirname(__file__))

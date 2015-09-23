@@ -143,17 +143,17 @@ class TestPipeline(unittest.TestCase):
     def tearDownClass(self):
         return
         print "ST Pipeline Test Remove temporary output " + self.outdir
-        #for root, dirs, files in os.walk(self.outdir, topdown=False):
-        #    for name in files:
-        #        os.remove(os.path.join(root, name))
-        #    for name in dirs:
-        #        os.rmdir(os.path.join(root, name))
+        for root, dirs, files in os.walk(self.outdir, topdown=False):
+            for name in files:
+                os.remove(os.path.join(root, name))
+            for name in dirs:
+                os.rmdir(os.path.join(root, name))
         print "ST Pipeline Test Remove temporary directory " + self.tmpdir
-        #for root, dirs, files in os.walk(self.tmpdir, topdown=False):
-        #    for name in files:
-        #        os.remove(os.path.join(root, name))
-        #    for name in dirs:
-        #        os.rmdir(os.path.join(root, name))
+        for root, dirs, files in os.walk(self.tmpdir, topdown=False):
+            for name in files:
+                os.remove(os.path.join(root, name))
+            for name in dirs:
+                os.rmdir(os.path.join(root, name))
 
 
     def validateOutputData(self, expName):
@@ -161,12 +161,14 @@ class TestPipeline(unittest.TestCase):
         self.assertNotEqual(os.listdir(self.outdir), [], "Output folder is not empty")
         self.assertNotEqual(os.listdir(self.tmpdir), [], "Tmp folder is not empty")
         barcodesfile = os.path.join(self.outdir, "barcodes.json")
-        readsfile = os.path.join(self.outdir, "reads.json")
+        readsfile = os.path.join(self.outdir, "reads.bed")
+        statsfile = os.path.join(self.outdir, "qa_stats.json")
         self.assertTrue(os.path.exists(barcodesfile), "Barcodes JSON file exists")
         self.assertTrue(os.path.getsize(barcodesfile) > 1024, "Barcordes JSON file is not empty")
-        self.assertTrue(os.path.exists(readsfile), "Reads JSON file exists")
-        self.assertTrue(os.path.getsize(readsfile) > 1024, "Reads JSON file is not empty")
-
+        self.assertTrue(os.path.exists(readsfile), "Reads BED file exists")
+        self.assertTrue(os.path.getsize(readsfile) > 1024, "Reads BED file is not empty")
+        self.assertTrue(os.path.exists(statsfile), "Stats JSON file exists")
+        
     def test_normal_run(self):
         """
         Tests st_pipeline on a mouse data subset with normal fastq files

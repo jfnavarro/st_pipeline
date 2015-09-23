@@ -10,7 +10,7 @@ from stpipeline.core.annotation import annotateReads
 from stpipeline.common.fastq_utils import reformatRawReads, filter_rRNA_reads
 from stpipeline.common.sam_utils import filterAnnotatedReads, filterMappedReads
 from stpipeline.common.stats import Stats
-from stpipeline import version_number
+from stpipeline.version import version_number
 import logging
 import subprocess
 
@@ -620,39 +620,27 @@ class Pipeline():
         
             # Write QA stats 
             if line.find("Number of Transcripts with Barcode present:") != -1:
-                print int(line.split()[-1])
                 qa_stats.reads_after_duplicates_removal = int(line.split()[-1])
             if line.find("Number of unique events present:") != -1:
-                print int(line.split()[-1])
                 qa_stats.unique_events = int(line.split()[-1])
             if line.find("Number of unique Barcodes present:") != -1:
-                print int(line.split()[-1])
                 qa_stats.genes_found = int(line.split()[-1])
             if line.find("Number of unique Genes present:") != -1:
-                print int(line.split()[-1])
                 qa_stats.barcodes_found = int(line.split()[-1])
             if line.find("Number of discarded reads (possible PCR duplicates):") != -1:
-                print int(line.split()[-1])
                 qa_stats.duplicates_found = int(line.split()[-1])
             if line.find("Max number of genes over all features:") != -1:
-                print int(line.split()[-1])
                 qa_stats.max_genes_feature = int(line.split()[-1])
             if line.find("Min number of genes over all features:") != -1:
-                print int(line.split()[-1])
                 qa_stats.min_genes_feature = int(line.split()[-1])
             if line.find("Max number of reads over all features:") != -1:
-                print int(line.split()[-1])
                 qa_stats.max_reads_feature = int(line.split()[-1])
             if line.find("Min number of reads over all features:") != -1:
-                print int(line.split()[-1])
                 qa_stats.min_reads_feature = int(line.split()[-1])
             if line.find("Max number of reads over all unique events:") != -1:
-                print int(line.split()[-1])
                 qa_stats.max_reads_unique_event = int(line.split()[-1])
             if line.find("Min number of reads over all unique events:") != -1:
-                print int(line.split()[-1])
                 qa_stats.min_reads_unique_event = int(line.split()[-1])
                 
             self.logger.info(str(line))
-        print qa_stats   
         self.logger.info("Finish Creating dataset")

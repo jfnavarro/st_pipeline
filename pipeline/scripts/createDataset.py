@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 """ 
 Scripts that parses a SAM or BAM file generated from Taggd and creates
-JSON files containing all relevant information. It does so
+a JSON file with the ST data and a BED file with the reads. It does so
 by aggregating the reads for unique gene-barcode tuples. 
 """
 
@@ -123,7 +123,6 @@ def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = 
         
     total_record = 0
     json_barcodes = list()
-    json_reads = list()
     unique_genes = set()
     unique_barcodes = set()
     total_barcodes = 0
@@ -163,11 +162,6 @@ def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = 
                 end = read[5]
                 strand = read[6]
                 quality_score = read[7]
-                json_reads.append({'name': str(name), 
-                                   'read': str(seq), 
-                                   'quality': str(qula), 
-                                   'barcode': transcript.barcode, 
-                                   'gene': transcript.gene})
                 bed_records.append((chrom, start, end, strand, transcript.gene, 
                                     transcript.barcode, str(name), quality_score))
                 
@@ -216,14 +210,12 @@ def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = 
         print "Number of discarded reads (possible PCR duplicates) : " + str(discarded_reads)
         
     filename = "barcodes.json"
-    filenameReads = "reads.json"
     filenameReadsBED = "reads.bed"
     
-    # Dump the JSON files to the output files
+    # Dump the reads JSON file to the output file
     with open(os.path.join(output_folder, filename), "w") as filehandler:
         json.dump(json_barcodes, filehandler, indent=2, separators=(',', ': '))  
-    with open(os.path.join(output_folder, filenameReads), "w") as filehandlerReads:
-        json.dump(json_reads, filehandlerReads, indent=2, separators=(',', ': '))    
+         
     # Dump the reads in BED format
     with open(os.path.join(output_folder, filenameReadsBED), "w") as filehandlerReadsBED:
         filehandlerReadsBED.write("Chromosome\tStart\tEnd\tRead\tScore\tStrand\tGene\tBarcode\n")
