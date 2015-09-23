@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-
+#@Author Jose Fernandez
 """ 
 Script to simply indents a JSON file containing barcodes.
 It also has the option to add a floor value, so all the reads counts

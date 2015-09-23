@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+#@Author Jose Fernandez
 """ Script for creating a quality scatter plot from a json ST-data file.
 The output will be a .png file with the same name as the json file stored in
 the current directory.

@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+#@Author Jose Fernandez
 """ 
 Scripts that parses a fastq file as input and remove
 duplicates using UMI

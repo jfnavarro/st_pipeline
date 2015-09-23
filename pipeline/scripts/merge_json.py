@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+#@Author Jose Fernandez
 """ 
 Script for merging json ST-data files.
 The idea is to merge (feature, gene, expression) triples from several

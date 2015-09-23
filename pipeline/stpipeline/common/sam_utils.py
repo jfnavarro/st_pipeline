@@ -7,6 +7,7 @@ from stpipeline.common.utils import *
 from stpipeline.common.fastq_utils import reverse_complement
 import logging 
 import pysam
+from stpipeline.common.stats import Stats
 
 def sortSamFile(input_sam, outputFolder=None):
     """
@@ -34,7 +35,7 @@ def sortSamFile(input_sam, outputFolder=None):
     logger.info("Finish SAM sorting")
     return output_sam
 
-def filterMappedReads(mapped_reads, min_length=28, pair_mode_keep="reverse",
+def filterMappedReads(mapped_reads, qa_stats, min_length=28, pair_mode_keep="reverse",
                       outputFolder=None, keep_discarded_files=False):
     """ 
     :param annot_reads SAM file obtained from STAR
@@ -128,9 +129,13 @@ def filterMappedReads(mapped_reads, min_length=28, pair_mode_keep="reverse",
                 "\ndropped secondary alignment : " + str(dropped_secondary) + \
                 "\ndropped too short : " + str(dropped_short) + \
                 "\ndropped two pair aligned : " + str(dropped_both_pairs))  
+    
+    # Update QA object 
+    qa_stats.reads_after_mapping = present - (dropped_unmapped + dropped_secondary + 
+                                              dropped_short + dropped_both_pairs)
     return file_output
 
-def filterAnnotatedReads(annot_reads, htseq_no_ambiguous=False,
+def filterAnnotatedReads(annot_reads, qa_stats, htseq_no_ambiguous=False,
                          outputFolder=None, keep_discarded_files=False):
     """ 
     :param annot_reads SAM file obtained from HTSEQ-Count
@@ -193,4 +198,8 @@ def filterAnnotatedReads(annot_reads, htseq_no_ambiguous=False,
             
     logger.info("Finish filtering annotated reads \nPresent(mapped) : " + str(present) + \
                 "\nDropped(not annotated) : " + str(dropped) + "\nAnnotated : " + str(present - dropped))  
+    
+    # Update QA object 
+    qa_stats.reads_after_annotation = int(present - dropped)
+    
     return file_output

@@ -6,7 +6,7 @@ demultiplexing in the ST pipeline
 
 import logging 
 import subprocess
-import os
+from stpipeline.common.stats import Stats
 from stpipeline.common.utils import *
 
 def alignReads(forward_reads, 
@@ -75,17 +75,17 @@ def alignReads(forward_reads,
         log_progress = os.path.join(outputFolder, log_progress)
     
     # Options
-    #outFilterType(BySJout) this will keep only reads that contains junctions present in SJ.out.tab
-    #outSamOrder(Paired) one mate after the other 
-    #outSAMprimaryFlag(OneBestScore) only one alignment with the best score is primary
-    #outFilterMultimapNmax = read alignments will be output only if the read maps fewer than this value
-    #outFilterMismatchNmax = alignment will be output only if it has fewer mismatches than this value
-    #outFilterMismatchNoverLmax = alignment will be output only if its ratio of mismatches to *mapped* length is less than this value
-    #alignIntronMin minimum intron size: genomic gap is considered intron if its length>=alignIntronMin, otherwise it is considered Deletion
-    #alignIntronMax maximum intron size, if 0, max intron size will be determined by (2 to the power of winBinNbits)*winAnchorDistNbins
-    #alignMatesGapMax maximum gap between two mates, if 0, max intron gap will be determined by (2 to the power of winBinNbits)*winAnchorDistNbins
-    #alignEndsType Local standard local alignment with soft-clipping allowed EndToEnd: force end-to-end read alignment, do not soft-clip
-    #chimSegmentMin if >0 To switch on detection of chimeric (fusion) alignments
+    # outFilterType(BySJout) this will keep only reads that contains junctions present in SJ.out.tab
+    # outSamOrder(Paired) one mate after the other 
+    # outSAMprimaryFlag(OneBestScore) only one alignment with the best score is primary
+    # outFilterMultimapNmax = read alignments will be output only if the read maps fewer than this value
+    # outFilterMismatchNmax = alignment will be output only if it has fewer mismatches than this value
+    # outFilterMismatchNoverLmax = alignment will be output only if its ratio of mismatches to *mapped* length is less than this value
+    # alignIntronMin minimum intron size: genomic gap is considered intron if its length>=alignIntronMin, otherwise it is considered Deletion
+    # alignIntronMax maximum intron size, if 0, max intron size will be determined by (2 to the power of winBinNbits)*winAnchorDistNbins
+    # alignMatesGapMax maximum gap between two mates, if 0, max intron gap will be determined by (2 to the power of winBinNbits)*winAnchorDistNbins
+    # alignEndsType Local standard local alignment with soft-clipping allowed EndToEnd: force end-to-end read alignment, do not soft-clip
+    # chimSegmentMin if >0 To switch on detection of chimeric (fusion) alignments
     
     multi_map_number = 10
     if disable_multimap: 
@@ -152,7 +152,7 @@ def alignReads(forward_reads,
         os.rename(tmpOutputFileDiscarded1, outputFileDiscarded1)
         os.rename(tmpOutputFileDiscarded2, outputFileDiscarded2)
         
-        #remove temp files from STAR
+        # Remove temp files from STAR
         if os.path.isfile(log_std):
             os.remove(log_std)
         if os.path.isfile(log):
@@ -171,6 +171,7 @@ def alignReads(forward_reads,
             logger.info("Mapping % computed from all the pair reads present in the raw files")
             uniquely_mapped = 0
             multiple_mapped = 0
+            # Parse log file from STAR to get stats
             with open(log_final, "r") as star_log:
                 for line in star_log.readlines():
                     if line.find("Uniquely mapped reads %") != -1 \
@@ -179,13 +180,12 @@ def alignReads(forward_reads,
                     or line.find("% of reads mapped to multiple loci") != -1 \
                     or line.find("% of reads unmapped: too short") != -1:
                         logger.info(str(line).rstrip())
-                    # some duplicated code here; TODO refactor
+                    # Some duplicated code here; TODO refactor
                     if line.find("Uniquely mapped reads number") != -1:
                         uniquely_mapped = int(str(line).rstrip().split()[-1])
                     if line.find("Number of reads mapped to multiple loci") != -1:
                         multiple_mapped = int(str(line).rstrip().split()[-1])
-                logger.info("Total mapped reads : " + str(uniquely_mapped + multiple_mapped))
-                        
+                logger.info("Total mapped reads : " + str(uniquely_mapped + multiple_mapped))           
         if os.path.isfile(log_final):
             os.remove(log_final)
             
@@ -193,7 +193,8 @@ def alignReads(forward_reads,
     return outputFile, outputFileDiscarded1, outputFileDiscarded2
 
 def barcodeDemultiplexing(readsContainingTr, 
-                          idFile, 
+                          idFile,
+                          qa_stats,
                           mismatches,
                           kmer, 
                           start_positon,
@@ -267,7 +268,21 @@ def barcodeDemultiplexing(readsContainingTr,
         procOut = stdout.split("\n")
         logger.info("Barcode Mapping stats :")
         for line in procOut: 
-            logger.info(str(line))
-
+            if line.find("Total reads:") != -1:
+                logger.info(str(line))
+            if line.find("Total reads written:") != -1:
+                # Update the QA stats 
+                qa_stats.reads_after_demultiplexing = int(line.split()[-1])
+                logger.info(str(line))
+            if line.find("Perfect Matches:") != -1:
+                logger.info(str(line))
+            if line.find("Imperfect Matches") != -1:
+                logger.info(str(line))
+            if line.find("Ambiguous matches:") != -1:
+                logger.info(str(line))
+            if line.find("Non-unique ambiguous matches:") != -1:
+                logger.info(str(line))
+            if line.find("Unmatched:") != -1:
+                logger.info(str(line))
     logger.info("Finish Mapping against the barcodes")
     return outputFile

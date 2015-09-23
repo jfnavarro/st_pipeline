@@ -128,6 +128,8 @@ def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = 
     unique_barcodes = set()
     total_barcodes = 0
     discarded_reads = 0
+    max_reads_unique_events = 0
+    min_reads_unique_events = 0
     bed_records = list()
     barcode_genes = dict()
     barcode_reads = dict()
@@ -147,10 +149,10 @@ def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = 
                 discarded_reads += (transcript.count - len(clusters))
                 transcript.count = len(clusters)
             
-            # add a JSON entry for the transcript  
+            # Add a JSON entry for the transcript  
             json_barcodes.append(transcript.toBarcodeDict())
             
-            # get the reads that mapped to the transcript and generate a JSON file
+            # Get the reads that mapped to the transcript and generate a JSON file
             # and generates a list of BED records
             for read in transcript.reads:
                 qula = read[2]
@@ -184,23 +186,31 @@ def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = 
             unique_barcodes.add(str(transcript.barcode))
             total_record += 1
             total_barcodes += int(transcript.count)
-    
+            max_reads_unique_events = max(max_reads_unique_events, transcript.count)
+            min_reads_unique_events = min(min_reads_unique_events, transcript.count)
+            
     if total_record == 0:
         sys.stderr.write("Error, the number of transcripts present is 0\n")
         sys.exit(-1)
     
     # To compute percentiles
-    barcode_genes_array = np.array(barcode_genes.values())
-    barcode_reads_array = np.array(barcode_reads.values())
+    barcode_genes_array = np.sort(np.array(barcode_genes.values()))
+    barcode_reads_array = np.sort(np.array(barcode_reads.values()))
     
-    print "Number of Transcripts with Barcode present : " + str(total_barcodes) 
-    print "Number of unique events present : " + str(total_record) 
-    print "Number of unique Barcodes present : " + str(len(unique_barcodes))
-    print "Number of unique Genes present : " + str(len(unique_genes))
-    print "Barcode to Genes percentiles :"
+    print "Number of Transcripts with Barcode present: " + str(total_barcodes) 
+    print "Number of unique events present: " + str(total_record) 
+    print "Number of unique Barcodes present: " + str(len(unique_barcodes))
+    print "Number of unique Genes present: " + str(len(unique_genes))
+    print "Barcode to Genes percentiles: "
     print np.percentile(barcode_genes_array, [0,25,50,75,100])
-    print "Barcode to Reads percentiles :"
+    print "Barcode to Reads percentiles: "
     print np.percentile(barcode_reads_array, [0,25,50,75,100])
+    print "Max number of genes over all features: " + str(barcode_genes_array[-1])
+    print "Min number of genes over all features: " + str(barcode_genes_array[1])
+    print "Max number of reads over all features: " + str(barcode_reads_array[-1])
+    print "Min number of reads over all features: " + str(barcode_reads_array[1])
+    print "Max number of reads over all unique events: " + str(max_reads_unique_events)
+    print "Min number of reads over all unique events: " + str(min_reads_unique_events)
     
     if molecular_barcodes:
         print "Number of discarded reads (possible PCR duplicates) : " + str(discarded_reads)

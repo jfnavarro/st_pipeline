@@ -47,8 +47,10 @@ def main(json_file, names_map, output_file="output.json"):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("json_file", help="JSON ST-data file")
-    parser.add_argument("--output", default="output.json", help="Name of the output file, default output.json")
-    parser.add_argument("--names-map", help="File containing the map of ensembl ID to gene name as a two columns tab delimited file")
+    parser.add_argument("--output", default="output.json", 
+                        help="Name of the output file, default output.json")
+    parser.add_argument("--names-map", 
+                        help="File containing the map of ensembl ID to gene name as a two columns tab delimited file")
     args = parser.parse_args()
     main(args.json_file, args.names_map, args.output)
 

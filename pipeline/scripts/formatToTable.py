@@ -11,7 +11,8 @@ BC2
 ...
 BCN
 
-It needs the original BED file with ST data to extract the reads count 
+It needs the original BED file with ST data to extract the reads count
+If no output file is given the output will be : output_table_ + name of input file
 """
 
 import argparse
@@ -38,17 +39,17 @@ def main(input_files, use_density, outfile=None, new_paraclu=False):
     # load all the original barcode - gene - count
     map_original_clusters = defaultdict(list)
     with open(original_file, "r") as filehandler:
-        for line in filehandler.readlines():
-            if line.find("Chromosome") == -1:
-                tokens = line.split()
-                chromosome = str(tokens[0])
-                start_site = str(tokens[1])
-                end_site = str(tokens[2])
-                strand = str(tokens[5])
-                #gene = tokens[6]
-                barcode = str(tokens[7])
-                map_original_clusters[(barcode,chromosome,strand)].append((int(start_site),int(end_site)))
-            
+        for line in filehandler.readlines()[1:]:
+            tokens = line.split()
+            chromosome = str(tokens[0])
+            start_site = str(tokens[1])
+            end_site = str(tokens[2])
+            strand = str(tokens[5])
+            #gene = tokens[6]
+            barcode = str(tokens[7])
+            if not new_paraclu:
+                map_original_clusters[(chromosome,strand)].append((barcode,int(start_site),int(end_site)))
+                            
     # loads all the clusters
     map_clusters = defaultdict(int)
     clusters = set()
@@ -57,43 +58,43 @@ def main(input_files, use_density, outfile=None, new_paraclu=False):
     if use_density:
         value_index = 6
     with open(bed_file, "r") as filehandler:
-        for line in filehandler.readlines():
-            if line.find("#") == -1:
-                tokens = line.split()
+        for line in filehandler.readlines()[1:]:
+            tokens = line.split()
+            chromosome = str(tokens[0])
+            strand = str(tokens[1])
+            start = int(tokens[2])
+            end = int(tokens[3])
+            if new_paraclu:
                 barcode = str(tokens[8])
-                chromosome = str(tokens[0])
-                strand = str(tokens[1])
-                start = int(tokens[2])
-                end = int(tokens[3])
-                if new_paraclu:
-                    map_clusters[(barcode,chromosome,strand,start,end)] = int(tokens[value_index])
-                else:
-                    # doing a full search of intersections over all barcodes
-                    # If we could rely on that no barcodes were missing doing the clustering we could
-                    # a faster approach not needing to iterate all the barcodes but only one   
-                    # this intersection method is prob overcounting
-                    for key,value in map_original_clusters.iteritems():
-                        barcode_original_file = key[0]
-                        chr_original_file = key[1]
-                        strand_original_file = key[2]
-                        if chromosome == chr_original_file and strand == strand_original_file:
-                            for start_original_file,end_original_file in value:
-                                if (start_original_file >= start and start_original_file <= end) \
-                                or (end_original_file <= end and end_original_file >= start):
-                                    map_clusters[(barcode_original_file,chromosome,strand,start,end)] += 1
+                map_clusters[(barcode,chromosome,strand,start,end)] += int(tokens[value_index])
                 barcodes.add(barcode)
-                clusters.add((chromosome,strand,start,end))    
+            else:
+                # doing a full search of intersections over all barcodes
+                # If we could rely on that no barcodes were missing doing the clustering we could
+                # a faster approach not needing to iterate all the barcodes but only one   
+                # this intersection method is prob overcounting
+                for barcode_original_file, start_original_file, end_original_file \
+                in map_original_clusters[chromosome, strand]:
+                    if (start_original_file >= start and start_original_file <= end): #\
+                    #and (end_original_file <= end and end_original_file >= start):
+                        map_clusters[(barcode_original_file,chromosome,strand,start,end)] += 1
+                        barcodes.add(barcode_original_file)
+            clusters.add((chromosome,strand,start,end))    
+    
+    # Important to sort clusters and map_clusters so they are in sync
+    #clusters = sorted(clusters, key = lambda x: (x[0], x[1], x[2], [3]))
+    #map_clusters = sorted(map_clusters, key = lambda x: (x[1], x[2], x[3], [4]))
     
     # write cluster count for each barcode 
     with open(outfile, "w") as filehandler:
         filehandler.write("Cluster")
-        for chr,strand,star,end in clusters:
-            filehandler.write("\t" + chr + ":" + str(star) + "-" + str(end) + "," + str(strand))
+        for chro,strand,star,end in clusters:
+            filehandler.write("\t" + chro + ":" + str(star) + "-" + str(end) + "," + str(strand))
         filehandler.write("\n")
         for bc in barcodes:
             filehandler.write(bc)
-            for chr,strand,star,end in clusters:
-                count = map_clusters[(bc,chr,strand,star,end)]
+            for chro,strand,star,end in clusters:
+                count = map_clusters[(bc,chro,strand,star,end)]
                 filehandler.write("\t" + str(count))
             filehandler.write("\n")            
             

@@ -7,6 +7,7 @@ import resource
 import threading
 from datetime import datetime
 import os
+import subprocess
 from collections import namedtuple
 _ntuple_diskusage = namedtuple('usage', 'total used free')
 
@@ -179,3 +180,52 @@ class Prepender(object):
         if self.__write_queue:
             self.__open_file.writelines(self.__write_queue)
         self.__open_file.close()
+        
+def getSTARVersion():
+    """
+    Tries to find the STAR binary
+    and makes a system call to get its
+    version and return it
+    """
+    try:
+        proc = subprocess.Popen(["STAR", "--version"], 
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (stdout, errmsg) = proc.communicate()
+        version = stdout
+    except Exception as e:
+        version = "Not available"
+    return version.rstrip()
+
+def getTaggdCountVersion():
+    """
+    Tries to find the Taggd binary
+    and makes a system call to get its
+    version and return it
+    """
+    try:
+        proc = subprocess.Popen(["pip", "show", "taggd"], 
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (stdout, errmsg) = proc.communicate()
+        for line in stdout.split("\n"):
+            if line.find("Version:") != -1:
+                version = str(line.split()[-1])
+    except Exception as e:
+        version = "Not available"
+    return version.rstrip()
+
+def getHTSeqCountVersion():
+    """
+    Tries to find the HTSeqCount binary
+    and makes a system call to get its
+    version and return it
+    """
+    try:
+        proc = subprocess.Popen(["pip", "show", "htseq"], 
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (stdout, errmsg) = proc.communicate()
+        for line in stdout.split("\n"):
+            if line.find("Version:") != -1:
+                version = str(line.split()[-1])
+    except Exception as e:
+        version = "Not available"
+    return version.rstrip()

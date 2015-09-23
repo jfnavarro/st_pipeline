@@ -6,6 +6,7 @@ This module contains some functions to deal with fastq files
 from stpipeline.common.utils import *
 from stpipeline.common.adaptors import removeAdaptor
 import logging 
+from stpipeline.common.stats import Stats
 from itertools import izip
 
 def coroutine(func):
@@ -136,7 +137,7 @@ def writefq(fp):  # This is a coroutine
     except GeneratorExit:
         return
   
-def filter_rRNA_reads(forward_reads, reverse_reads, outputFolder=None):
+def filter_rRNA_reads(forward_reads, reverse_reads, qa_stats, outputFolder=None):
     """
     :param forward_reads reads coming from un-aligned in STAR (rRNA filter)
     :param reverse_reads reads coming from un-aligned in STAR (rRNA filter)
@@ -164,16 +165,22 @@ def filter_rRNA_reads(forward_reads, reverse_reads, outputFolder=None):
     out_rw_writer = writefq(out_rw_handle)
     fw_file = safeOpenFile(forward_reads, "rU")
     rw_file = safeOpenFile(reverse_reads, "rU")
-              
+    
+    # If the line contains a 00 according to STAR it is un-mapped
+    # We write a fake sequence for the mapped ones (the one that are contaminated)
+    contaminated_fw = 0
+    contaminated_rv = 0
     for line1, line2 in izip(readfq(fw_file), readfq(rw_file)):
         if line1[0].split()[1] == "00":
             out_fw_writer.send(line1)
         else:
+            contaminated_fw += 1
             out_fw_writer.send(getFake(line1))
             
         if line2[0].split()[1] == "00":
             out_rw_writer.send(line2)
         else:
+            contaminated_rv += 1
             out_rw_writer.send(getFake(line2))
    
     out_fw_writer.close()
@@ -187,7 +194,10 @@ def filter_rRNA_reads(forward_reads, reverse_reads, outputFolder=None):
         error = "Error filtering rRNA un-mapped: output file is not present " + out_fw + " , " + out_rw
         logger.error(error)
         raise RuntimeError(error + "\n")
-        
+    
+    # Add stats to QA Stats object
+    qa_stats.reads_after_rRNA_trimming = (qa_stats.reads_after_trimming_forward 
+                                          + qa_stats.reads_after_trimming_reverse) - (contaminated_fw + contaminated_rv)
     logger.info("Finish filtering rRNA un-mapped reads")
     return out_fw, out_rw
       
@@ -208,7 +218,7 @@ def reverse_complement(seq):
         bases = bases.replace(v,k)
     return bases
   
-def reformatRawReads(fw, rw, 
+def reformatRawReads(fw, rw, qa_stats,
                      barcode_start=0, barcode_length=18,
                      filter_AT_content=90,
                      molecular_barcodes=False, mc_start=18, mc_end=27,
@@ -285,14 +295,18 @@ def reformatRawReads(fw, rw,
         iscorrect_mc = False
         
     for line1, line2 in izip(readfq(fw_file), readfq(rw_file)):
-
+        
+        if line1 is None or line2 is None:
+            logger.error("The input files are not of the same legnth")
+            break
+        
         if line1[0].split()[0] != line2[0].split()[0]:
             logger.warning("Pair raids found with different names " + line1[0] + " and " + line2[0])
         
         total_reads += 1
         
-        #get the barcode and molecular barcode if any from the forward read
-        #to be attached to the reverse read
+        # get the barcode and molecular barcode if any from the forward read
+        # to be attached to the reverse read
         to_append_sequence = line1[1][barcode_start:barcode_length]
         to_append_sequence_quality = line1[2][barcode_start:barcode_length]
         if iscorrect_mc:
@@ -333,30 +347,30 @@ def reformatRawReads(fw, rw,
         line2_trimmed = None
         line1_trimmed = None
              
-        # Trim rw
+        # Trim reverse read
         if line2 is not None:
             line2_trimmed = trim_quality(line2, trim_rw, min_qual, min_length, qual64)
             
-        # Trim fw
+        # Trim forward
         if line1 is not None:
             line1_trimmed = trim_quality(line1, trim_fw, min_qual, min_length, qual64)
         
         if line1_trimmed is not None:
             out_fw_writer.send(line1_trimmed)
         else:
-            # write fake sequence so mapping wont fail for having rv and fw with different lengths
+            # write fake sequence so mapping wont fail for having reads with different lengths
             out_fw_writer.send(getFake(original_line1))
             dropped_fw += 1
             if keep_discarded_files:
                 out_fw_writer_discarded.send(original_line1)
 
         if line2_trimmed is not None:
-            # Attach the barcode from fw only if rw has not been completely trimmed
+            # Attach the barcode from the forward read only if the reverse read has not been completely trimmed
             new_seq = to_append_sequence + line2_trimmed[1]
             new_qual = to_append_sequence_quality + line2_trimmed[2]
             out_rw_writer.send((line2_trimmed[0], new_seq, new_qual))
         else:
-            # write fake sequence so mapping wont fail for having rv and fw with different lengths
+            # Write fake sequence so mapping wont fail for having reads with different lengths
             out_rw_writer.send(getFake(original_line2))
             dropped_rw += 1  
             if keep_discarded_files:
@@ -386,6 +400,12 @@ def reformatRawReads(fw, rw,
         logger.info("Trimming stats reverse 2 : you just lost about " + perc2 + " of your data on the reverse reads!")
         logger.info("Trimming stats reads (forward) remaining: " + str(total_reads - dropped_fw))
         logger.info("Trimming stats reads (reverse) remaining: " + str(total_reads - dropped_rw))
+        
+        # Adding stats to QA Stats object
+        qa_stats.input_reads_forward = total_reads
+        qa_stats.input_reads_reverse = total_reads
+        qa_stats.reads_after_trimming_forward = total_reads - dropped_fw
+        qa_stats.reads_after_trimming_reverse = total_reads - dropped_rw
         
     logger.info("Finish Reformatting and Filtering raw reads")
     return out_fw, out_rw

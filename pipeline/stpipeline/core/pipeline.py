@@ -8,13 +8,11 @@ from stpipeline.common.utils import *
 from stpipeline.core.mapping import alignReads, barcodeDemultiplexing
 from stpipeline.core.annotation import annotateReads
 from stpipeline.common.fastq_utils import reformatRawReads, filter_rRNA_reads
-from stpipeline.common.sam_utils import sortSamFile, filterAnnotatedReads, filterMappedReads
+from stpipeline.common.sam_utils import filterAnnotatedReads, filterMappedReads
+from stpipeline.common.stats import Stats
 from stpipeline import version_number
-import os
-from glob import glob
 import logging
 import subprocess
-import sys
 
 class Pipeline():
     
@@ -70,6 +68,8 @@ class Pipeline():
         self.min_intron_size = 20
         self.max_intron_size = 1000000
         self.max_gap_size = 1000000
+        # To store stats from different parts
+        self.qa_stats = Stats()
         
     def sanityCheck(self):
         """ 
@@ -124,6 +124,12 @@ class Pipeline():
             error = "Error, these programs not found:\t".join(unavailable_scripts)
             self.logger.error(error)
             raise RuntimeError(error)
+        
+        # Add scripts versions to QA Stats
+        self.qa_stats.pipeline_version = version_number
+        self.qa_stats.mapper_tool = getSTARVersion()
+        self.qa_stats.annotation_tool = "HTSeqCount " + getHTSeqCountVersion()
+        self.qa_stats.demultiplex_tool = "Taggd " + getTaggdCountVersion()
        
     def createParameters(self, parser):
             """
@@ -280,6 +286,12 @@ class Pipeline():
         self.max_intron_size = int(options.max_intron_size)
         self.max_gap_size = int(options.max_gap_size)
         
+        # Assign class parameters to the QA stats object
+        import inspect
+        attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
+        attributes_filtered = [a for a in attributes if not(a[0].startswith('__') and a[0].endswith('__'))]
+        self.qa_stats.input_parameters = attributes_filtered
+        
     def createLogger(self):
         """
         Creates a logging object and logs some information about parameters
@@ -385,6 +397,7 @@ class Pipeline():
         #    - if apply adaptors will be removed before the trimming
         fastq_fw_trimmed, fastq_rv_trimmed = reformatRawReads(self.fastq_fw,
                                                               self.fastq_rv,
+                                                              self.qa_stats,
                                                               self.barcode_start,
                                                               self.barcode_length,
                                                               self.filter_AT_content,
@@ -403,8 +416,8 @@ class Pipeline():
                                                               self.temp_folder,
                                                               self.keep_discarded_files)
           
-        #reverse reads contain now the barcode and molecular barcode if any so
-        #the trimming needs to be adjusted for the mapping
+        # Reverse reads contain now the barcodes and molecular barcodes (if any) so
+        # the trimming needs to be adjusted for the mapping
         adjusted_forward_trimming = self.trimming_rv + self.barcode_length
         if self.molecular_barcodes:
             adjusted_forward_trimming += (self.mc_end_position - self.mc_start_position)  
@@ -428,22 +441,23 @@ class Pipeline():
                                                                               self.min_intron_size,
                                                                               self.max_intron_size,
                                                                               self.max_gap_size,
-                                                                              False, #disable splice variants alignments
+                                                                              False, # disable splice variants alignments
                                                                               self.sam_type,
-                                                                              False, #enable multimap in rRNA filter
-                                                                              True, #disable softclipping in rRNA filter
+                                                                              False, # enable multimap in rRNA filter
+                                                                              True, # disable softclipping in rRNA filter
                                                                               self.temp_folder)
             if self.clean:
                 safeRemove(old_fw_trimmed)
                 safeRemove(old_rv_trimmed)
             if not self.keep_discarded_files: safeRemove(contaminated_sam)
             
-            # Unfortunately STAR will include all the reads in the the files with un-aligned reads
+            # Unfortunately STAR will include all the reads in the output, including un-aligned reads
             # Therefore, we need to extract the un-aligned reads
             old_fw_trimmed = fastq_fw_trimmed
             old_rv_trimmed = fastq_rv_trimmed
             fastq_fw_trimmed, fastq_rv_trimmed = filter_rRNA_reads(fastq_fw_trimmed, 
-                                                                   fastq_rv_trimmed, 
+                                                                   fastq_rv_trimmed,
+                                                                   self.qa_stats, 
                                                                    self.temp_folder)
             safeRemove(old_fw_trimmed)
             safeRemove(old_rv_trimmed)
@@ -478,6 +492,7 @@ class Pipeline():
         # STEP: filters mapped reads
         #================================================================
         sam_mapped_clean = filterMappedReads(sam_mapped,
+                                             self.qa_stats,
                                              self.min_length_trimming,
                                              self.pair_mode_keep, 
                                              self.temp_folder, 
@@ -504,7 +519,8 @@ class Pipeline():
         #=================================================================
         # STEP: filter out un-annotated reads
         #=================================================================
-        annotatedFilteredFile = filterAnnotatedReads(annotatedFile, 
+        annotatedFilteredFile = filterAnnotatedReads(annotatedFile,
+                                                     self.qa_stats, 
                                                      self.htseq_no_ambiguous,
                                                      self.temp_folder, 
                                                      self.keep_discarded_files)
@@ -516,7 +532,8 @@ class Pipeline():
             # STEP: Map against the barcodes
             #=================================================================
             mapFile = barcodeDemultiplexing(annotatedFilteredFile,
-                                            self.ids, 
+                                            self.ids,
+                                            self.qa_stats,
                                             self.allowed_missed, 
                                             self.allowed_kmer, 
                                             self.barcode_start,  
@@ -530,6 +547,7 @@ class Pipeline():
             # STEP: create json files with the results
             #=================================================================
             self.createDataset(mapFile,
+                               self.qa_stats,
                                self.molecular_barcodes,
                                self.use_prefix_tree,
                                self.mc_allowed_mismatches,
@@ -541,11 +559,16 @@ class Pipeline():
         #=================================================================
         # END PIPELINE
         #=================================================================
+        # Write stats to JSON
+        self.qa_stats.writeJSON(os.path.join(self.output_folder,"qa_stats.json"))
+        
         finish_exe_time = globaltime.getTimestamp()
         total_exe_time = finish_exe_time - start_exe_time
         self.logger.info("Total Execution Time : " + str(total_exe_time))
 
-    def createDataset(self,input_name, 
+    def createDataset(self,
+                      input_name,
+                      qa_stats,
                       molecular_barcodes = False,
                       use_prefix_tree = False,
                       allowed_mismatches = 1,
@@ -593,6 +616,43 @@ class Pipeline():
               
         procOut = stdout.split("\n")
         self.logger.info('Creating dataset stats :')
-        for line in procOut: 
+        for line in procOut:
+        
+            # Write QA stats 
+            if line.find("Number of Transcripts with Barcode present:") != -1:
+                print int(line.split()[-1])
+                qa_stats.reads_after_duplicates_removal = int(line.split()[-1])
+            if line.find("Number of unique events present:") != -1:
+                print int(line.split()[-1])
+                qa_stats.unique_events = int(line.split()[-1])
+            if line.find("Number of unique Barcodes present:") != -1:
+                print int(line.split()[-1])
+                qa_stats.genes_found = int(line.split()[-1])
+            if line.find("Number of unique Genes present:") != -1:
+                print int(line.split()[-1])
+                qa_stats.barcodes_found = int(line.split()[-1])
+            if line.find("Number of discarded reads (possible PCR duplicates):") != -1:
+                print int(line.split()[-1])
+                qa_stats.duplicates_found = int(line.split()[-1])
+            if line.find("Max number of genes over all features:") != -1:
+                print int(line.split()[-1])
+                qa_stats.max_genes_feature = int(line.split()[-1])
+            if line.find("Min number of genes over all features:") != -1:
+                print int(line.split()[-1])
+                qa_stats.min_genes_feature = int(line.split()[-1])
+            if line.find("Max number of reads over all features:") != -1:
+                print int(line.split()[-1])
+                qa_stats.max_reads_feature = int(line.split()[-1])
+            if line.find("Min number of reads over all features:") != -1:
+                print int(line.split()[-1])
+                qa_stats.min_reads_feature = int(line.split()[-1])
+            if line.find("Max number of reads over all unique events:") != -1:
+                print int(line.split()[-1])
+                qa_stats.max_reads_unique_event = int(line.split()[-1])
+            if line.find("Min number of reads over all unique events:") != -1:
+                print int(line.split()[-1])
+                qa_stats.min_reads_unique_event = int(line.split()[-1])
+                
             self.logger.info(str(line))
+        print qa_stats   
         self.logger.info("Finish Creating dataset")
