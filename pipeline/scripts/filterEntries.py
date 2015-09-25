@@ -22,7 +22,7 @@ def main(bed_file, barcodes_files, outfile=None):
         sys.exit(-1)
      
     if outfile is None:
-        outfile = "reduced_" + bed_file
+        outfile = "filtered.txt"
            
     # loads all the barcodes
     barcodes = defaultdict(int)

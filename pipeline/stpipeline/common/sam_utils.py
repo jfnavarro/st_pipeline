@@ -77,22 +77,28 @@ def filterMappedReads(mapped_reads, qa_stats, min_length=28, pair_mode_keep="rev
     dropped_short = 0
     dropped_both_pairs = 0
     present = 0
-    #to remove secondary alignments sam_record.is_secondary
+    
+    # to remove secondary alignments use sam_record.is_secondary
     for sam_record in infile:
         present += 1
         discard_read = False
         
+        # Reverse the read if It mapped to the reverse complement
         if sam_record.is_reverse:
             sam_record.query_sequence = reverse_complement(sam_record.query_sequence)
-           
+        
+        # Get how many bases were mapped
         mapped_bases = 0
         for cigar_tuple in sam_record.cigartuples:
             if cigar_tuple[0] == 0:
                 mapped_bases += cigar_tuple[1]
-           
+        
+        # We need this so we don't duplicate reads
         if not sam_record.is_secondary:
             sam_record.set_tag("NH", None)
-                 
+            
+        # Collect stats for different types of reads
+        # and discard when necessary  
         if sam_record.is_unmapped:
             dropped_unmapped += 1
             discard_read = True
@@ -124,11 +130,12 @@ def filterMappedReads(mapped_reads, qa_stats, min_length=28, pair_mode_keep="rev
         logger.error(error)
         raise RuntimeError(error + "\n")
             
-    logger.info("Finish filtering mapped reads, present : " + str(present) + \
-                "\ndropped unmapped : " + str(dropped_unmapped) + \
-                "\ndropped secondary alignment : " + str(dropped_secondary) + \
-                "\ndropped too short : " + str(dropped_short) + \
-                "\ndropped two pair aligned : " + str(dropped_both_pairs))  
+    logger.info("Finish filtering mapped reads, stats:" \
+                "\nPresent: " + str(present) + \
+                "\nDropped - unmapped : " + str(dropped_unmapped) + \
+                "\nDropped - secondary alignment : " + str(dropped_secondary) + \
+                "\nDropped - too short : " + str(dropped_short) + \
+                "\nDropped - two pair aligned : " + str(dropped_both_pairs))  
     
     # Update QA object 
     qa_stats.reads_after_mapping = present - (dropped_unmapped + dropped_secondary + 
@@ -192,12 +199,14 @@ def filterAnnotatedReads(annot_reads, qa_stats, htseq_no_ambiguous=False,
         outfile_discarded.close()
 
     if not fileOk(file_output):
-        error = "Error filtering annotated reads: output file is not present " + file_output
+        error = "Error filtering annotated reads: output file is not present %s" % (file_output)
         logger.error(error)
         raise RuntimeError(error + "\n")
             
-    logger.info("Finish filtering annotated reads \nPresent(mapped) : " + str(present) + \
-                "\nDropped(not annotated) : " + str(dropped) + "\nAnnotated : " + str(present - dropped))  
+    logger.info("Finish filtering annotated reads" + \
+                "\nPresent(mapped) : " + str(present) + \
+                "\nDropped(not annotated) : " + str(dropped) + \
+                "\nAnnotated : " + str(present - dropped))  
     
     # Update QA object 
     qa_stats.reads_after_annotation = int(present - dropped)

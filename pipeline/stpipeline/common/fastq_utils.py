@@ -61,30 +61,32 @@ def trim_quality(record, trim_distance, min_qual=20,
     """
     qscore = record[2][trim_distance:]
     sequence = record[1][trim_distance:]
+    num_bases_trimmed = len(sequence)
     name = record[0]
     phred = 64 if qual64 else 33
     
-    #get the position at which to trim
+    # Get the position at which to trim
     cut_index = quality_trim_index(qscore, min_qual, phred)
-    #get the number of bases suggested to trim
-    nbases = len(qscore) - cut_index
+    # Get the number of bases suggested to trim
+    nbases = num_bases_trimmed - cut_index
     
-    #check if the trimmed sequence would have min length (at least)
-    #if so return the trimmed read otherwise return None
-    if (len(sequence) - nbases) >= min_length:
-        new_seq = record[1][:(len(sequence) - nbases)]
-        new_qual = record[2][:(len(sequence) - nbases)]
+    # Check if the trimmed sequence would have min length (at least)
+    # if so return the trimmed read otherwise return None
+    if (num_bases_trimmed - nbases) >= min_length:
+        new_seq = record[1][:(num_bases_trimmed - nbases)]
+        new_qual = record[2][:(num_bases_trimmed - nbases)]
         return name, new_seq, new_qual
     else:
         return None
     
-def getFake(record):
+def getFake(header, num_bases):
     """ 
-    Generates a fake fastq record(name,seq,qual) from the record given as input
+    Generates a fake fastq record(name,seq,qual) from header and length
+    given as input
     """
-    new_seq = "".join("N" for k in record[1])
-    new_qual = "".join("B" for k in record[2])
-    return record[0], new_seq, new_qual
+    new_seq = "".join("N" for k in xrange(num_bases))
+    new_qual = "".join("B" for k in xrange(num_bases))
+    return header, new_seq, new_qual
 
 def readfq(fp): # this is a generator function
     """ 
@@ -171,17 +173,20 @@ def filter_rRNA_reads(forward_reads, reverse_reads, qa_stats, outputFolder=None)
     contaminated_fw = 0
     contaminated_rv = 0
     for line1, line2 in izip(readfq(fw_file), readfq(rw_file)):
-        if line1[0].split()[1] == "00":
+        header_fw = line1[0]
+        header_rv = line2[0]
+        
+        if header_fw.split()[1] == "00":
             out_fw_writer.send(line1)
         else:
             contaminated_fw += 1
-            out_fw_writer.send(getFake(line1))
+            out_fw_writer.send(getFake(header_fw, len(line1[1])))
             
-        if line2[0].split()[1] == "00":
+        if header_rv.split()[1] == "00":
             out_rw_writer.send(line2)
         else:
             contaminated_rv += 1
-            out_rw_writer.send(getFake(line2))
+            out_rw_writer.send(getFake(header_rv, len(line2[1])))
    
     out_fw_writer.close()
     out_rw_writer.close()
@@ -191,13 +196,14 @@ def filter_rRNA_reads(forward_reads, reverse_reads, qa_stats, outputFolder=None)
     rw_file.close()
     
     if not fileOk(out_fw) or not fileOk(out_rw):
-        error = "Error filtering rRNA un-mapped: output file is not present " + out_fw + " , " + out_rw
+        error = "Error filtering rRNA un-mapped, output file is not present %s,%s" % (out_fw,)
         logger.error(error)
         raise RuntimeError(error + "\n")
     
     # Add stats to QA Stats object
     qa_stats.reads_after_rRNA_trimming = (qa_stats.reads_after_trimming_forward 
-                                          + qa_stats.reads_after_trimming_reverse) - (contaminated_fw + contaminated_rv)
+                                          + qa_stats.reads_after_trimming_reverse) \
+                                          - (contaminated_fw + contaminated_rv)
     logger.info("Finish filtering rRNA un-mapped reads")
     return out_fw, out_rw
       
@@ -218,15 +224,26 @@ def reverse_complement(seq):
         bases = bases.replace(v,k)
     return bases
   
-def reformatRawReads(fw, rw, qa_stats,
-                     barcode_start=0, barcode_length=18,
+def reformatRawReads(fw, 
+                     rw, 
+                     qa_stats,
+                     barcode_start=0, 
+                     barcode_length=18,
                      filter_AT_content=90,
-                     molecular_barcodes=False, mc_start=18, mc_end=27,
-                     trim_fw=42, trim_rw=5,
-                     min_qual=20, min_length=28,
-                     polyA_min_distance=0, polyT_min_distance=0, 
-                     polyG_min_distance=0, polyC_min_distance=0,
-                     qual64=False, outputFolder=None, keep_discarded_files=False):
+                     molecular_barcodes=False, 
+                     mc_start=18, 
+                     mc_end=27,
+                     trim_fw=42, 
+                     trim_rw=5,
+                     min_qual=20, 
+                     min_length=28,
+                     polyA_min_distance=0, 
+                     polyT_min_distance=0, 
+                     polyG_min_distance=0, 
+                     polyC_min_distance=0,
+                     qual64=False, 
+                     outputFolder=None, 
+                     keep_discarded_files=False):
     """ 
     :param fw the fastq file with the forward reads
     :param rw the fastq file with the reverse reads
@@ -276,13 +293,16 @@ def reformatRawReads(fw, rw, qa_stats,
         out_fw_handle_discarded = safeOpenFile(out_fw_discarded, 'w')
         out_fw_writer_discarded = writefq(out_fw_handle_discarded)
     
+    # Open fastq files with the fastq parser
     fw_file = safeOpenFile(fw, "rU")
     rw_file = safeOpenFile(rw, "rU")
 
+    # Some counters
     total_reads = 0
     dropped_fw = 0
     dropped_rw = 0
     
+    # Build fake adpators with the parameters given
     adaptorA = "".join("A" for k in xrange(polyA_min_distance))
     adaptorT = "".join("T" for k in xrange(polyT_min_distance))
     adaptorG = "".join("G" for k in xrange(polyG_min_distance))
@@ -291,37 +311,43 @@ def reformatRawReads(fw, rw, qa_stats,
     iscorrect_mc = molecular_barcodes
     if mc_start < (barcode_start + barcode_length) \
     or mc_end < (barcode_start + barcode_length):
-        logger.warning("Your molecular barcode sequences overlap with the barcode sequences")
+        logger.warning("Your molecular barcodes sequences overlap with the barcodes sequences")
         iscorrect_mc = False
         
     for line1, line2 in izip(readfq(fw_file), readfq(rw_file)):
         
         if line1 is None or line2 is None:
-            logger.error("The input files are not of the same legnth")
+            logger.error("The input files %s,%s are not of the same length" % (fw,rw))
             break
         
-        if line1[0].split()[0] != line2[0].split()[0]:
-            logger.warning("Pair raids found with different names " + line1[0] + " and " + line2[0])
+        header_fw = line1[0]
+        header_rv = line2[0]
+        sequence_fw = line1[1]
+        num_bases_fw = len(sequence_fw)
+        sequence_rv = line2[1]
+        num_bases_rv = len(sequence_rv)
+        quality_fw = line1[2]
+        quality_rv = line2[2]
+        
+        if header_fw.split()[0] != header_rv.split()[0]:
+            logger.warning("Pair reads found with different names %s and %s" % (header_fw,header_rv))
         
         total_reads += 1
         
-        # get the barcode and molecular barcode if any from the forward read
+        # Get the barcode and molecular barcode if any from the forward read
         # to be attached to the reverse read
-        to_append_sequence = line1[1][barcode_start:barcode_length]
-        to_append_sequence_quality = line1[2][barcode_start:barcode_length]
+        to_append_sequence = sequence_fw[barcode_start:barcode_length]
+        to_append_sequence_quality = quality_fw[barcode_start:barcode_length]
         if iscorrect_mc:
-            to_append_sequence += line1[1][mc_start:mc_end]
-            to_append_sequence_quality += line1[2][mc_start:mc_end]
-        
-        original_line1 = line1
-        original_line2 = line2
+            to_append_sequence += sequence_fw[mc_start:mc_end]
+            to_append_sequence_quality += quality_fw[mc_start:mc_end]
         
         # If read - trimming is not long enough or has a high AT content discard...
-        if (len(line1[1]) - trim_fw) < min_length or \
-        ((line1[1].count("A") + line1[1].count("T")) / len(line1[1])) * 100 >= filter_AT_content:
+        if (num_bases_fw - trim_fw) < min_length or \
+        ((sequence_fw.count("A") + sequence_fw.count("T")) / num_bases_fw) * 100 >= filter_AT_content:
             line1 = None
-        if (len(line2[1]) - trim_rw) < min_length or \
-        ((line2[1].count("A") + line2[1].count("T")) / len(line2[1])) * 100 >= filter_AT_content:
+        if (num_bases_rv - trim_rw) < min_length or \
+        ((sequence_rv.count("A") + sequence_rv.count("T")) / num_bases_rv) * 100 >= filter_AT_content:
             line2 = None
               
         # if indicated we remove the adaptor PolyA from both reads
@@ -358,11 +384,12 @@ def reformatRawReads(fw, rw, qa_stats,
         if line1_trimmed is not None:
             out_fw_writer.send(line1_trimmed)
         else:
-            # write fake sequence so mapping wont fail for having reads with different lengths
-            out_fw_writer.send(getFake(original_line1))
+            # Write fake sequence so mapping wont fail for having reads with different lengths
+            out_fw_writer.send(getFake(header_fw, num_bases_fw))
             dropped_fw += 1
             if keep_discarded_files:
-                out_fw_writer_discarded.send(original_line1)
+                # Write to discarded the original record
+                out_fw_writer_discarded.send((header_fw, sequence_fw, quality_fw))
 
         if line2_trimmed is not None:
             # Attach the barcode from the forward read only if the reverse read has not been completely trimmed
@@ -371,10 +398,11 @@ def reformatRawReads(fw, rw, qa_stats,
             out_rw_writer.send((line2_trimmed[0], new_seq, new_qual))
         else:
             # Write fake sequence so mapping wont fail for having reads with different lengths
-            out_rw_writer.send(getFake(original_line2))
+            out_rw_writer.send(getFake(header_rv, num_bases_rv))
             dropped_rw += 1  
             if keep_discarded_files:
-                out_rw_writer_discarded.send(original_line2)
+                # Write to discarded the original record
+                out_rw_writer_discarded.send((header_rv, sequence_rv, quality_rv))
     
     out_fw_writer.close()
     out_rw_writer.close()
@@ -387,19 +415,19 @@ def reformatRawReads(fw, rw, qa_stats,
     rw_file.close()
     
     if not fileOk(out_fw) or not fileOk(out_rw):
-        error = "Error reformating raw reads: output file is not present " + out_fw + " , " + out_rw
+        error = "Error reformatting raw reads: output file not present/s %s , %s" % (out_fw , out_rw)
         logger.error(error)
         raise RuntimeError(error + "\n")
     else:
-        logger.info("Trimming stats total reads (pair): " + str(total_reads))
-        logger.info("Trimming stats forward 1 : " + str(dropped_fw) + " reads have been dropped on the forward reads!")
-        perc1 = '{percent:.2%}'.format(percent= float(dropped_fw) / float(total_reads) )
-        logger.info("Trimming stats forward 2 : you just lost about " + perc1 + " of your data on the forward reads!")
-        logger.info("Trimming stats reverse 1 : " + str(dropped_rw) + " reads have been dropped on the reverse reads!") 
+        logger.info("Trimming stats total reads (pair): %s" % (str(total_reads)))
+        logger.info("Trimming stats forward: %s reads have been dropped!" % (str(dropped_fw)))
+        perc1 = '{percent:.2%}'.format(percent= float(dropped_fw) / float(total_reads))
+        logger.info("Trimming stats forward: you just lost about %s of your data" % (perc1))
+        logger.info("Trimming stats reverse: %s reads have been dropped!" % (str(dropped_rw))) 
         perc2 = '{percent:.2%}'.format(percent= float(dropped_rw) / float(total_reads) )
-        logger.info("Trimming stats reverse 2 : you just lost about " + perc2 + " of your data on the reverse reads!")
-        logger.info("Trimming stats reads (forward) remaining: " + str(total_reads - dropped_fw))
-        logger.info("Trimming stats reads (reverse) remaining: " + str(total_reads - dropped_rw))
+        logger.info("Trimming stats reverse: you just lost about %s of your data" % (perc2))
+        logger.info("Trimming stats reads (forward) remaining: %s" % (str(total_reads - dropped_fw)))
+        logger.info("Trimming stats reads (reverse) remaining: %s" % (str(total_reads - dropped_rw)))
         
         # Adding stats to QA Stats object
         qa_stats.input_reads_forward = total_reads

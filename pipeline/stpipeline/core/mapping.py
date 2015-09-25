@@ -142,7 +142,7 @@ def alignReads(forward_reads,
     
     if not (fileOk(tmpOutputFile) and fileOk(tmpOutputFileDiscarded1) \
             and fileOk(tmpOutputFileDiscarded2)) or len(errmsg) > 0:
-        error = "Error: mapping: output/s file/s not present : " + tmpOutputFile
+        error = "Error mapping with STAT: output/s file/s not present: %s" % (tmpOutputFile)
         logger.error(error)
         logger.error(stdout)
         logger.error(errmsg)
@@ -168,7 +168,7 @@ def alignReads(forward_reads,
             logger.info(errmsg)
         else:
             logger.info("Mapping stats: ")
-            logger.info("Mapping % computed from all the pair reads present in the raw files")
+            logger.info("Mapping stats are computed from all the pair reads present in the raw files")
             uniquely_mapped = 0
             multiple_mapped = 0
             # Parse log file from STAR to get stats
@@ -259,14 +259,14 @@ def barcodeDemultiplexing(readsContainingTr,
         raise
     
     if not fileOk(outputFile):
-        error = "Error demultiplexing: output file is not present " + outputFile
+        error = "Error demultiplexing: output file is not present %s" % (outputFile)
         logger.error(error)
         logger.error(stdout)
         logger.error(errmsg)
         raise RuntimeError(error + "\n")
     else:
         procOut = stdout.split("\n")
-        logger.info("Barcode Mapping stats :")
+        logger.info("Barcode Mapping stats:")
         for line in procOut: 
             if line.find("Total reads:") != -1:
                 logger.info(str(line))

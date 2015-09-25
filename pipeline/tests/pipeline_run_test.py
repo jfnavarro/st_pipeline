@@ -18,8 +18,8 @@ class TestPipeline(unittest.TestCase):
     def setUpClass(self):
         # Obtain paths and files.
         testdir = str(os.path.abspath(os.path.dirname(os.path.realpath(__file__))))
-        self.infile_fw = os.path.join(testdir, 'input/arrayjet_1002/testdata_R1.fastq')
-        self.infile_rv = os.path.join(testdir, 'input/arrayjet_1002/testdata_R2.fastq')
+        self.infile_fw = os.path.join(testdir, 'input/arrayjet_1002/testdata_R1.fastq.gz')
+        self.infile_rv = os.path.join(testdir, 'input/arrayjet_1002/testdata_R2.fastq.gz')
         self.annotfile = os.path.join(testdir, 'config/annotations/Homo_sapiens.GRCh38.79_chr19.gtf')
         self.chipfile = os.path.join(testdir, 'config/idfiles/150204_arrayjet_1000L2_probes.txt')
         self.expname = "test"

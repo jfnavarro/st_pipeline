@@ -12,7 +12,7 @@ BC2
 BCN
 
 It needs the original BED file with ST data to extract the reads count
-If no output file is given the output will be : output_table_ + name of input file
+If no output file is given the output will be : output_table_ctts.txt
 """
 
 import argparse
@@ -34,7 +34,7 @@ def main(input_files, use_density, outfile=None, new_paraclu=False):
         sys.exit(-1)
      
     if outfile is None:
-        outfile = "output_table_" + bed_file
+        outfile = "output_table_ctts.txt"
            
     # load all the original barcode - gene - count
     map_original_clusters = defaultdict(list)

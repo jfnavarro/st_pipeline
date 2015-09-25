@@ -13,6 +13,8 @@ from stpipeline.common.stats import Stats
 from stpipeline.version import version_number
 import logging
 import subprocess
+import gzip
+import tempfile
 
 class Pipeline():
     
@@ -73,7 +75,7 @@ class Pipeline():
         
     def sanityCheck(self):
         """ 
-        Performs some basic sanity checks in the input paramters
+        Performs some basic sanity checks in the input parameters
         """
 
         conds = {"forward_file": fileOk(self.fastq_fw), 
@@ -86,12 +88,21 @@ class Pipeline():
                                         or self.ref_annotation.endswith("gff3") \
                                         or self.ref_annotation.endswith("gff")
         conds["annotation_mode"] = self.htseq_mode in ["union","intersection-nonempty","intersection-strict"]
-        conds["forward_extension"] = self.fastq_fw.endswith("fastq") or self.fastq_fw.endswith("fq")
-        conds["forward_extension"] = self.fastq_fw.endswith("fastq") or self.fastq_fw.endswith("fq")
+        conds["forward_extension"] = self.fastq_fw.endswith("fastq") \
+                                     or self.fastq_fw.endswith("fq") \
+                                     or self.fastq_fw.endswith("gz")
+        conds["forward_extension"] = self.fastq_rv.endswith("fastq") \
+                                     or self.fastq_rv.endswith("fq") \
+                                     or self.fastq_rv.endswith("gz")
         conds["polyA"] = self.remove_polyA_distance >= 0 
         conds["polyT"] = self.remove_polyT_distance >= 0 
         conds["polyG"] = self.remove_polyG_distance >= 0
         conds["polyC"] = self.remove_polyC_distance >= 0
+        conds["barcode_start"] = self.barcode_start >= 0
+        conds["barcode_length"] = self.barcode_length > 0
+        conds["allowed_missed"] = self.allowed_missed >= 0 and self.allowed_missed < self.barcode_length
+        conds["allowed_kmer"] = self.allowed_kmer >= 0 and self.allowed_kmer <= self.barcode_length
+        conds["overhang"] = self.overhang >= 0 and self.overhang <= self.barcode_length
         conds["min_intron_size"] = self.min_intron_size >= 0 and self.min_intron_size < self.max_intron_size
         conds["max_intron_size"] = self.max_intron_size > 0
         conds["max_gap_size"] = self.max_gap_size > 0
@@ -99,7 +110,7 @@ class Pipeline():
         conds["filter_AT_content"] = self.filter_AT_content >= 0 and self.filter_AT_content <= 100
         conds["sam_type"] = self.sam_type in ["BAM", "SAM"]
         
-        #TODO add much more checks for input parameters, specially integers
+        # TODO add checks for trimming parameters
         
         if self.molecular_barcodes:
             conds["molecular_barcodes"] = self.mc_end_position > self.mc_start_position
@@ -110,7 +121,7 @@ class Pipeline():
             self.logger.error(error)
             raise RuntimeError(error)
 
-        #test the presence of the scripts 
+        # Test the presence of the scripts 
         required_scripts = set(['STAR', 'taggd_demultiplex.py'])
 
         unavailable_scripts = set()
@@ -184,7 +195,8 @@ class Pipeline():
             parser.add_argument('--output-folder', help='Path of the output folder')
             parser.add_argument('--temp-folder', help='Path of the location for temporary files')
             parser.add_argument('--molecular-barcodes',
-                                action="store_true", help="Activates the molecular barcodes PCR duplicates filter")
+                                action="store_true", 
+                                help="Activates the molecular barcodes PCR duplicates filter")
             parser.add_argument('--mc-allowed-mismatches', default=1,
                                 help='Number of allowed mismatches when applying the molecular barcodes PCR filter')
             parser.add_argument('--mc-start-position', type=int, default=18,
@@ -229,11 +241,8 @@ class Pipeline():
          
     def load_parameters(self, options):
         """
-        Initialize logger, load up some parameters
-        and prints out some information
+        Load the input parameters from the argparse object
         """
-
-        #init pipeline arguments
         self.allowed_missed = int(options.allowed_missed)
         self.allowed_kmer = int(options.allowed_kmer)
         self.overhang = int(options.overhang)
@@ -257,7 +266,7 @@ class Pipeline():
         self.contaminant_index = options.contaminant_index
         self.path = options.bin_path
         if options.log_file is not None:
-            self.logfile = os.path.abspath(options.log_file)    
+            self.logfile = os.path.abspath(options.log_file)  
         self.fastq_fw = options.fastq_files[0]
         self.fastq_rv = options.fastq_files[1]
         if options.output_folder is not None and os.path.isdir(options.output_folder):
@@ -294,29 +303,30 @@ class Pipeline():
         
     def createLogger(self):
         """
-        Creates a logging object and logs some information about parameters
+        Creates a logging object and logs some information from the input parameters
         """    
-        # create a logger
+        # Create a logger
         if self.logfile is not None:
             logging.basicConfig(filename=self.logfile ,level=logging.DEBUG)
         else:
             logging.basicConfig(level=logging.DEBUG)
         self.logger = logging.getLogger(self.__class__.LogName)
         
-        #load the given path into the system PATH
+        # Load the given path into the system PATH
         if self.path is not None and os.path.isdir(self.path): 
             os.environ["PATH"] += os.pathsep + self.path
 
         self.logger.info("ST Pipeline " + str(version_number))
         
-        # Set output and temp folders if erroneous
+        # Set default output and temp folders if erroneous given
         if self.output_folder is None or not os.path.isdir(self.output_folder):
             self.logger.info("Invalid path for output directory -- using current directory instead")
             self.output_folder = os.path.abspath(os.getcwd())
         if self.temp_folder is None or not os.path.isdir(self.temp_folder):
             self.logger.info("Invalid path for temp directory -- using current directory instead")
             self.temp_folder = os.path.abspath(os.getcwd())
-            
+        
+        # Some info
         self.logger.info("Output directory : " + self.output_folder)
         self.logger.info("Temp directory : " + self.temp_folder)
         self.logger.info("Experiment : " + str(self.expName))
@@ -386,6 +396,20 @@ class Pipeline():
         start_exe_time = globaltime.getTimestamp()
         self.logger.info("Starting the pipeline : " + str(start_exe_time))
 
+        # Check if input fastq files are gzipped 
+        if self.fastq_fw.endswith("gz"):
+            temp_fastq_fw = tempfile.mktemp(prefix="st_pipeline_fastq_fw")
+            with gzip.open(self.fastq_fw, "rb") as filehandler_read:
+                with open(temp_fastq_fw, "w") as filehandler_write:
+                    filehandler_write.write(filehandler_read.read())
+            self.fastq_fw = temp_fastq_fw
+        if self.fastq_rv.endswith("gz"):
+            temp_fastq_rv = tempfile.mktemp(prefix="st_pipeline_fastq_fv")
+            with gzip.open(self.fastq_rv, "rb") as filehandler_read:
+                with open(temp_fastq_rv, "w") as filehandler_write:
+                    filehandler_write.write(filehandler_read.read())
+            self.fastq_rv = temp_fastq_rv
+               
         #=================================================================
         # STEP: add BC and PolyT from FW reads to the RW reads and apply quality filter
         # also applies quality trimming and adaptor removal
@@ -618,7 +642,8 @@ class Pipeline():
         self.logger.info('Creating dataset stats :')
         for line in procOut:
         
-            # Write QA stats 
+            # Write QA stats
+            # TODO a more efficient way perhaps to use the line numbers 
             if line.find("Number of Transcripts with Barcode present:") != -1:
                 qa_stats.reads_after_duplicates_removal = int(line.split()[-1])
             if line.find("Number of unique events present:") != -1:
