@@ -141,7 +141,6 @@ class TestPipeline(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
-        return
         print "ST Pipeline Test Remove temporary output " + self.outdir
         for root, dirs, files in os.walk(self.outdir, topdown=False):
             for name in files:
@@ -160,7 +159,7 @@ class TestPipeline(unittest.TestCase):
         # Verify existence of output files and temp files
         self.assertNotEqual(os.listdir(self.outdir), [], "Output folder is not empty")
         self.assertNotEqual(os.listdir(self.tmpdir), [], "Tmp folder is not empty")
-        barcodesfile = os.path.join(self.outdir, "barcodes.json")
+        barcodesfile = os.path.join(self.outdir, "stdata.json")
         readsfile = os.path.join(self.outdir, "reads.bed")
         statsfile = os.path.join(self.outdir, "qa_stats.json")
         self.assertTrue(os.path.exists(barcodesfile), "Barcodes JSON file exists")

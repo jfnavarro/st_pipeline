@@ -96,7 +96,7 @@ def alignReads(forward_reads,
     sjdb_overhang = 100
     if not use_splice_juntions:
         sjdb_overhang = 0
-        
+    
     core_flags = ["--runThreadN", str(max(cores, 1))]
     trim_flags = ["--clip5pNbases", trimForward, trimReverse] 
     io_flags   = ["--outFilterType", "Normal", 
@@ -106,11 +106,11 @@ def alignReads(forward_reads,
                   "--outSAMorder", "Paired",    
                   "--outSAMprimaryFlag", "OneBestScore", 
                   "--outFilterMultimapNmax", multi_map_number, # put to 1 to not include multiple mappings
-                  "--alignSJoverhangMin", 5,
-                  "--alignSJDBoverhangMin", 3,
+                  "--alignSJoverhangMin", 5, # default is 5
+                  "--alignSJDBoverhangMin", 3, # default is 3
                   "--sjdbOverhang", sjdb_overhang, # 0 to not use splice junction database
-                  "--outFilterMismatchNmax", 10, # large number switches it off
-                  "--outFilterMismatchNoverLmax", 0.3, # default is 0.3,
+                  "--outFilterMismatchNmax", 10, # large number switches it off (default 10)
+                  "--outFilterMismatchNoverLmax", 0.3, # default is 0.3
                   "--alignIntronMin", min_intron_size,
                   "--alignIntronMax", max_intron_size, 
                   "--alignMatesGapMax", max_gap_size,

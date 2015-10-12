@@ -87,9 +87,8 @@ def main(input_files, use_density, outfile=None, new_paraclu=False):
     
     # write cluster count for each barcode 
     with open(outfile, "w") as filehandler:
-        filehandler.write("Cluster")
         for chro,strand,star,end in clusters:
-            filehandler.write("\t" + chro + ":" + str(star) + "-" + str(end) + "," + str(strand))
+            filehandler.write(chro + ":" + str(star) + "-" + str(end) + "," + str(strand))
         filehandler.write("\n")
         for bc in barcodes:
             filehandler.write(bc)

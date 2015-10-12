@@ -133,7 +133,7 @@ def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = 
     bed_records = list()
     barcode_genes = defaultdict(int)
     barcode_reads = defaultdict(int)
-    
+
     for transcript in parseUniqueEvents(filename):                
             # Re-compute the read count accounting for PCR duplicates 
             # if indicated (read sequence must contain molecular barcode)
@@ -207,10 +207,10 @@ def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = 
     
     if molecular_barcodes:
         print "Number of discarded reads (possible PCR duplicates): " + str(discarded_reads)
-        
-    filename = "barcodes.json"
+       
+    filename = "stdata.json"
     filenameReadsBED = "reads.bed"
-    
+
     # Dump the reads JSON file to the output file
     with open(os.path.join(output_folder, filename), "w") as filehandler:
         json.dump(json_barcodes, filehandler, indent=2, separators=(',', ': '))  
