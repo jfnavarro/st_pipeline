@@ -186,3 +186,8 @@ Version 0.6.3
 * Restored old versioning system
 * Removed hadoop related stuff
 * Added support for gziped input files
+
+Version 0.6.4
+* Fixed a bug in counttrie clustering method
+* Improved sorting of molecular barcodes prior clustering
+* Added hiearachical clustering option

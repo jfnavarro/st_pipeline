@@ -18,42 +18,40 @@ def extractMolecularBarcodes(reads, mc_start_position, mc_end_position):
     :param mc_start_position the start position of the molecular barcodes in the reads
     :param mc_end_position the end position of the molecular barcodes in the reads
     Extracts a list of molecular barcodes from the list of reads given their
-    start and end positions and returns a list of (molecular_barcode, (read_name, sequence, quality))
+    start and end positions and returns a list of 
+    (molecular_barcode, (read_name, sequence, quality), ocurrences, number Ns)
+    sorted by molecular_barcode, ocurrences(reverse) and number of Ns
     """
+    assert(mc_end_position > mc_start_position and mc_start_position >= 0)
+    # Create a list with the molecular barcodes and a hash with the occurrences
     molecular_barcodes = list()
+    molecular_barcodes_counts = defaultdict(int)
     for read in reads:
-        if mc_end_position > len(read[1]) or mc_end_position <= mc_start_position or mc_start_position < 0:
-            raise ValueError("Molecular barcode could not be found in the read " + read)
+        if mc_end_position > len(read[1]):
+            raise ValueError("UMI could not be found in the read " + read + "\n")
         mc = read[1][mc_start_position:mc_end_position]
         molecular_barcodes.append((mc, read))
-    return molecular_barcodes
-
-def computeDistanceMatrixFromSequences(reads):
-    """
-    :param reads is a list of tuples (molecular_barcode (read_name, sequence, quality))
-    Computes a distance matrix from a list of reads
-    """
-    n = len(reads)
-    distance_matrix = np.zeros((n,n))
-
-    for i, ele_1 in enumerate(reads):
-        for j, ele_2 in enumerate(reads):
-            if j >= i:
-                break # Since the matrix is symmetrical we don't need to  calculate everything
-            difference = hamming_distance(ele_1[0], ele_2[0])  
-            distance_matrix[i, j] = difference
-            distance_matrix[j, i] = difference
-            
-    return distance_matrix
+        molecular_barcodes_counts[mc] += 1
+        
+    # Creates a new list with the molecular barcodes, occurences and N content
+    molecular_barcodes_count_list = list()
+    for mc in molecular_barcodes:
+        count = molecular_barcodes_counts[mc[0]]
+        count_n = mc[0].count("N")
+        molecular_barcodes_count_list.append((mc[0],mc[1],count,count_n))
+    
+    # Return the list sorted by molecular barcode, occurrence(reverse) and number of Ns
+    return sorted(molecular_barcodes_count_list, key=lambda x: (x[0], -x[2], x[3]))
 
 def countMolecularBarcodesClustersHierarchical(reads, allowed_mismatches, mc_start_position,
-                                               mc_end_position, min_cluster_size):
+                                               mc_end_position, min_cluster_size, method = "single"):
     """
     :param reads the list of reads to be searched for clusters in the form of tuple (read_name, sequence, quality)
     :param allowed_mismatches how much distance we allow between clusters
     :param mc_start_position start position of the read part that we want to cluster
     :param mc_end_position end position of the read part that we want to cluster
     :param min_cluster_size min number of reads to be count as cluster
+    :param method the type of distance algorithm when clustering (single more restrictive or complete less restrictive)
     This functions tries to finds clusters of similar reads given a min cluster size
     and a minimum distance (allowed_mismatches). The clusters are built using the molecular
     barcodes present in the reads sequences
@@ -63,22 +61,27 @@ def countMolecularBarcodesClustersHierarchical(reads, allowed_mismatches, mc_sta
     This approach finds clusters using hierarchical clustering
     """
     molecular_barcodes = extractMolecularBarcodes(reads, mc_start_position, mc_end_position)
-    distance_matrix = computeDistanceMatrixFromSequences(molecular_barcodes)
-    linkage = scipy.cluster.hierarchy.single(distance_matrix)
-    # problem is that linkage will build the tree using relative distances 
-    # (need to find a way to go from allowed mismatches to this relative values)
+    def d(coord):
+        i,j = coord
+        return hamming_distance(molecular_barcodes[i][0], molecular_barcodes[j][0])
+    indices = np.triu_indices(len(molecular_barcodes), 1)
+    distance_matrix = np.apply_along_axis(d, 0, indices)
+    linkage = scipy.cluster.hierarchy.linkage(distance_matrix, method=method)
     flat_clusters = scipy.cluster.hierarchy.fcluster(linkage, allowed_mismatches, criterion='distance')
-    
+
+    # Retrieve the original reads from the clusters found
     clusters = []
-    
-    #TODO finish this (read above)
-    
-    #items = collections.defaultdict(list)
-    #for i, item in enumerate(flat_clusters):
-    #    items[item].append(i)
-    #for item, members in items.iteritems():
-    #    if len(members) >= min_cluster_size and len(members) > 1:
-    #        clusters.append([molecular_barcodes[i] for i in members])
+    items = defaultdict(list)
+    for i, item in enumerate(flat_clusters):
+        items[item].append(i)
+    for item, members in items.iteritems():
+        if len(members) >= min_cluster_size:
+            # Cluster so we get a random read
+            random_read = molecular_barcodes[random.choice(members)][1]
+            clusters.append(random_read)
+        else:
+            # Single cluster so we add all the reads
+            clusters += [molecular_barcodes[i][1] for i in members]
 
     return clusters
 
@@ -98,7 +101,6 @@ def countMolecularBarcodesPrefixtrie(reads, allowed_mismatches, mc_start_positio
     is unique and does not contain biological duplicates
     This approach builds clusters using a prefix trie
     """
-    
     molecular_barcodes = extractMolecularBarcodes(reads, mc_start_position, mc_end_position)
     trie = ct.CountTrie()
     # keep a map of molecular_barcode -> reads to obtain the reads later in the clusters
@@ -113,12 +115,12 @@ def countMolecularBarcodesPrefixtrie(reads, allowed_mismatches, mc_start_positio
     clusters = []
     for molecular_barcode in molecular_barcodes:
         cluster = trie.find_equal_length_optimized(molecular_barcode[0], allowed_mismatches, allow_indels)
-        # get the original reads
-        original_reads = reads[molecular_barcode[0]]
-        
         size_cluster = 0
+        original_reads = []
         for clustered_mc in cluster:
             size_cluster += trie.get_count(clustered_mc)
+            # get the original reads
+            original_reads += reads[clustered_mc]
             # remove the original reads to not add them twice
             del reads[clustered_mc]
             trie.remove(clustered_mc)
@@ -145,13 +147,12 @@ def countMolecularBarcodesClustersNaive(reads, allowed_mismatches,
     and a minimum distance (allowed_mismatches). The clusters are built using the molecular
     barcodes present in the reads sequences
     It will return a list with the all the reads, for clusters of reads a random
-    read will be chosen. This will quarante that the list of reads returned
+    read will be chosen. This will quarantee that the list of reads returned
     is unique and does not contain biological duplicates
     This approach is a quick naive approach where the molecular barcodes are sorted
     and then added to clusters until the min distance is above the threshold
     """
     molecular_barcodes = extractMolecularBarcodes(reads, mc_start_position, mc_end_position)
-    molecular_barcodes = sorted(molecular_barcodes, key=itemgetter(0))
     clusters_dict = {}
     nclusters = 0
     for i, molecular_barcode in enumerate(molecular_barcodes):

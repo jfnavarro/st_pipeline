@@ -13,7 +13,7 @@ import pysam
 import numpy as np
 from collections import defaultdict
 from stpipeline.common.utils import *
-from stpipeline.common.clustering import countMolecularBarcodesClustersNaive, countMolecularBarcodesPrefixtrie
+from stpipeline.common.clustering import countMolecularBarcodesClustersNaive, countMolecularBarcodesPrefixtrie, countMolecularBarcodesClustersHierarchical
 from stpipeline.common.fastq_utils import *
 
 class Transcript:
@@ -101,8 +101,9 @@ def parseUniqueEvents(filename):
     return unique_events.values()
 
 
-def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = False,
-         allowed_mismatches = 1, mc_start_position = 19, mc_end_position = 27, min_cluster_size = 2):
+def main(filename, output_folder, molecular_barcodes = False, mc_cluster = "naive",
+         allowed_mismatches = 1, mc_start_position = 19, 
+         mc_end_position = 27, min_cluster_size = 2):
     
     if filename is None or not os.path.isfile(filename):
         sys.stderr.write("Error, input file not present or invalid: %s\n" % (filename))
@@ -134,22 +135,25 @@ def main(filename, output_folder, molecular_barcodes = False, use_prefix_tree = 
     barcode_genes = defaultdict(int)
     barcode_reads = defaultdict(int)
 
+    if mc_cluster == "counttrie":
+        clustering_func = countMolecularBarcodesPrefixtrie
+    elif mc_cluster == "naive":
+        clustering_func = countMolecularBarcodesClustersNaive
+    elif mc_cluster == "hierarchical":
+        clustering_func = countMolecularBarcodesClustersHierarchical
+    else:
+        sys.stderr.write("Error, invalid input clustering algorithm: %s\n" % (mc_cluster))
+        sys.exit(-1)
+           
     for transcript in parseUniqueEvents(filename):                
             # Re-compute the read count accounting for PCR duplicates 
             # if indicated (read sequence must contain molecular barcode)
             if molecular_barcodes:
-                if use_prefix_tree:
-                    clusters = countMolecularBarcodesPrefixtrie(transcript.reads, 
-                                                                allowed_mismatches,
-                                                                mc_start_position, 
-                                                                mc_end_position, 
-                                                                min_cluster_size)
-                else:
-                    clusters = countMolecularBarcodesClustersNaive(transcript.reads, 
-                                                                   allowed_mismatches,
-                                                                   mc_start_position, 
-                                                                   mc_end_position,
-                                                                   min_cluster_size)
+                clusters = clustering_func(transcript.reads,
+                                           allowed_mismatches,
+                                           mc_start_position,
+                                           mc_end_position,
+                                           min_cluster_size)
                 num_clusters = len(clusters)
                 transcript.reads = clusters
                 discarded_reads += (transcript.count - num_clusters)
@@ -239,9 +243,9 @@ if __name__ == "__main__":
     parser.add_argument('--molecular-barcodes', 
                         action="store_true", default=False, 
                         help="Activates the molecular barcodes duplicates filter")
-    parser.add_argument('--use-prefix-tree', 
-                        action="store_true", default=False, 
-                        help="Use a prefix tree instead of naive algorithm for molecular barcodes duplicates filter")
+    parser.add_argument('--mc-cluster', default="naive",
+                        help="Type of clustering algorithm to use when performing UMIs duplicates removel.\n" \
+                        "Modes = {naive(deault), counttrie, hierarchical}")
     parser.add_argument('--mc-allowed-mismatches', default=1,
                         help='Number of allowed mismatches when applying the molecular barcodes filter')
     parser.add_argument('--mc-start-position', default=19,
@@ -252,7 +256,7 @@ if __name__ == "__main__":
                         help='Min number of equal molecular barcodes to count as a cluster')
 
     args = parser.parse_args()
-    main(args.input, args.output_folder, args.molecular_barcodes, args.use_prefix_tree,
+    main(args.input, args.output_folder, args.molecular_barcodes, args.mc_cluster,
          int(args.mc_allowed_mismatches), int(args.mc_start_position),
          int(args.mc_end_position), int(args.min_cluster_size))
                                     

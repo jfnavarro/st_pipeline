@@ -66,7 +66,7 @@ class Pipeline():
         self.sam_type = "SAM"
         self.disable_clipping = False
         self.disable_multimap = False
-        self.use_prefix_tree = False
+        self.mc_cluster = "naive"
         self.min_intron_size = 20
         self.max_intron_size = 1000000
         self.max_gap_size = 1000000
@@ -88,6 +88,7 @@ class Pipeline():
                                         or self.ref_annotation.endswith("gff3") \
                                         or self.ref_annotation.endswith("gff")
         conds["annotation_mode"] = self.htseq_mode in ["union","intersection-nonempty","intersection-strict"]
+        conds["mc_cluster"] = self.mc_cluster in ["naive", "counttrie", "hierarchical"]
         conds["forward_extension"] = self.fastq_fw.endswith("fastq") \
                                      or self.fastq_fw.endswith("fq") \
                                      or self.fastq_fw.endswith("gz")
@@ -227,9 +228,9 @@ class Pipeline():
                                 help="If activated, multiple aligned reads obtained during mapping will be all discarded. Otherwise the highest scored one will be kept")
             parser.add_argument('--disable-clipping', action="store_true", default=False,
                                 help="If activated, disable soft-clipping (local alignment) in the mapping")
-            parser.add_argument('--use-prefix-tree', 
-                                action="store_true", default=False, 
-                                help="Use a prefix tree instead of naive algorithm for molecular barcodes duplicates filter")
+            parser.add_argument('--mc-cluster', default="naive",
+                                help="Type of clustering algorithm to use when performing UMIs duplicates removel.\n" \
+                                "Modes = {naive(deault), counttrie, hierarchical}")
             parser.add_argument('--min-intron-size', default=20,
                                 help="Minimum allowed intron size when searching for splice variants in the mapping step")
             parser.add_argument('--max-intron-size', default=100000,
@@ -290,7 +291,7 @@ class Pipeline():
         #self.sam_type = str(options.sam_type)
         self.disable_multimap = options.disable_multimap
         self.disable_clipping = options.disable_clipping
-        self.use_prefix_tree = options.use_prefix_tree
+        self.mc_cluster = str(options.mc_cluster)
         self.min_intron_size = int(options.min_intron_size)
         self.max_intron_size = int(options.max_intron_size)
         self.max_gap_size = int(options.max_gap_size)
@@ -370,8 +371,8 @@ class Pipeline():
             self.logger.info("Molecular Barcode end position " + str(self.mc_end_position))
             self.logger.info("Molecular Barcode min cluster size " + str(self.min_cluster_size))
             self.logger.info("Molecular Barcode allowed mismatches " + str(self.mc_allowed_mismatches))
-            if self.use_prefix_tree:
-                self.logger.info("Using prefix tree to cluster molecular barcodes")
+            self.logger.info("Molecular Barcode clustering algorithm " + str(self.mc_cluster))
+            
         elif self.molecular_barcodes:
             self.logger.warning("Molecular barcodes cannot be used in normal RNA-Seq")
               
@@ -573,7 +574,7 @@ class Pipeline():
             self.createDataset(mapFile,
                                self.qa_stats,
                                self.molecular_barcodes,
-                               self.use_prefix_tree,
+                               self.mc_cluster,
                                self.mc_allowed_mismatches,
                                self.mc_start_position,
                                self.mc_end_position,
@@ -594,7 +595,7 @@ class Pipeline():
                       input_name,
                       qa_stats,
                       molecular_barcodes = False,
-                      use_prefix_tree = False,
+                      mc_cluster = "naive",
                       allowed_mismatches = 1,
                       start_position = 18, 
                       end_position = 27, 
@@ -617,9 +618,8 @@ class Pipeline():
                      '--mc-allowed-mismatches', allowed_mismatches,
                      '--mc-start-position', start_position, 
                      '--mc-end-position', end_position, 
-                     '--min-cluster-size', min_cluster_size]
-            if use_prefix_tree:
-                args += ['--use-prefix-tree']
+                     '--min-cluster-size', min_cluster_size,
+                     '--mc-cluster', mc_cluster]
             
         if self.output_folder is not None:
             args += ['--output-folder', self.output_folder]
