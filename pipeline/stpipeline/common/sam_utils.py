@@ -47,7 +47,6 @@ def filterMappedReads(mapped_reads, qa_stats, min_length=28, pair_mode_keep="rev
     """
     
     logger = logging.getLogger("STPipeline")
-    logger.info("Start filtering mapped reads")
 
     assert(pair_mode_keep in ["reverse", "forward", "both"])
     
@@ -154,7 +153,6 @@ def filterAnnotatedReads(annot_reads, qa_stats, htseq_no_ambiguous=False,
     """
     
     logger = logging.getLogger("STPipeline")
-    logger.info("Start filtering annotated reads")
     
     filter_htseq = ["__no_feature",
               "__too_low_aQual",

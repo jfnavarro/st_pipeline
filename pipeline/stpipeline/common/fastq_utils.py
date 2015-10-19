@@ -152,7 +152,6 @@ def filter_rRNA_reads(forward_reads, reverse_reads, qa_stats, outputFolder=None)
     reads
     """
     logger = logging.getLogger("STPipeline")
-    logger.info("Start filtering rRNA un-mapped reads")
     
     out_rw = 'R2_rRNA_filtered_clean.fastq'
     out_fw = 'R1_rRNA_filtered_clean.fastq'
@@ -204,7 +203,6 @@ def filter_rRNA_reads(forward_reads, reverse_reads, qa_stats, outputFolder=None)
     qa_stats.reads_after_rRNA_trimming = (qa_stats.reads_after_trimming_forward 
                                           + qa_stats.reads_after_trimming_reverse) \
                                           - (contaminated_fw + contaminated_rv)
-    logger.info("Finish filtering rRNA un-mapped reads")
     return out_fw, out_rw
       
 def reverse_complement(seq):
@@ -224,6 +222,73 @@ def reverse_complement(seq):
         bases = bases.replace(v,k)
     return bases
   
+def check_umi_template(umi, template):
+    """
+    Checks that the UMI given as input complies
+    with the pattern given in template
+    @param umi a UMI from a read
+    @param template a reg-based template with the same
+    distance of the UMI that should tell how the UMI should
+    look.
+    The functions returns true if the UMI complies
+    """
+    assert(len(umi) == len(template))
+
+    for i,ele in enumerate(template):
+        umi_base = umi[i]
+        if ele == "W":
+            if umi_base != "A" and umi_base != "T":
+                return False
+        elif ele == "S":
+            if umi_base != "C" and umi_base != "G":
+                return False
+        elif ele == "N":
+            if umi_base != "A" and umi_base != "T" and umi_base != "C" and umi_base != "G":
+                return False
+        elif ele == "V":
+            if umi_base == "T":
+                return False
+        elif ele == "A":
+            if umi_base != "A":
+                return False
+        elif ele == "C":
+            if umi_base != "C":
+                return False
+        elif ele == "G":
+            if umi_base != "G":
+                return False
+        elif ele == "T":
+            if umi_base != "T":
+                return False
+        elif ele == "U":
+            if umi_base != "U":
+                return False
+        elif ele == "R":
+            if umi_base != "A" and umi_base != "G":
+                return False
+        elif ele == "Y":
+            if umi_base != "C" and umi_base != "T":
+                return False
+        elif ele == "K":
+            if umi_base != "G" and umi_base != "T":
+                return False
+        elif ele == "M":
+            if umi_base != "A" and umi_base != "C":
+                return False
+        elif ele == "B":
+            if umi_base == "A":
+                return False
+        elif ele == "D":
+            if umi_base == "C":
+                return False
+        elif ele == "H":
+            if umi_base == "G":
+                return False
+        else:
+            False
+            
+    return True
+
 def reformatRawReads(fw, 
                      rw, 
                      qa_stats,
@@ -243,7 +308,9 @@ def reformatRawReads(fw,
                      polyC_min_distance=0,
                      qual64=False, 
                      outputFolder=None, 
-                     keep_discarded_files=False):
+                     keep_discarded_files=False,
+                     umi_filter=False,
+                     umi_filter_template="WSNNWSNNV"):
     """ 
     :param fw the fastq file with the forward reads
     :param rw the fastq file with the reverse reads
@@ -262,6 +329,8 @@ def reformatRawReads(fw,
     :param qual64 true of qualities are in phred64 format
     :param outputFolder optional folder to output files
     :param keep_discarded_files when true files containing the discarded reads will be created
+    :param umi_filter performs a UMI quality filter when True
+    :param umi_filter_template the template to use for the UMI filter
     This function does three things (all here for speed optimization)
       - It appends the barcode and the molecular barcode (if any)
         from forward reads to reverse reads
@@ -269,7 +338,6 @@ def reformatRawReads(fw,
       - It removes adaptors from the reads (optional)
     """
     logger = logging.getLogger("STPipeline")
-    logger.info("Start Reformatting and Filtering raw reads")
     
     out_rw = 'R2_trimmed_formated.fastq'
     out_fw = 'R1_trimmed_formated.fastq'
@@ -301,6 +369,7 @@ def reformatRawReads(fw,
     total_reads = 0
     dropped_fw = 0
     dropped_rw = 0
+    dropped_umi = 0
     
     # Build fake adpators with the parameters given
     adaptorA = "".join("A" for k in xrange(polyA_min_distance))
@@ -341,6 +410,14 @@ def reformatRawReads(fw,
         if iscorrect_mc:
             to_append_sequence += sequence_fw[mc_start:mc_end]
             to_append_sequence_quality += quality_fw[mc_start:mc_end]
+            # If we want to check for UMI quality and the UMI is incorrect
+            # we discard the reads
+            if umi_filter:
+                if not check_umi_template(sequence_fw[mc_start:mc_end], umi_filter_template):
+                    dropped_umi += 1
+                    line1 = None
+                    line2 = None
+                                                      
         
         # If read - trimming is not long enough or has a high AT content discard...
         if (num_bases_fw - trim_fw) < min_length or \
@@ -428,14 +505,15 @@ def reformatRawReads(fw,
         logger.info("Trimming stats reverse: you just lost about %s of your data" % (perc2))
         logger.info("Trimming stats reads (forward) remaining: %s" % (str(total_reads - dropped_fw)))
         logger.info("Trimming stats reads (reverse) remaining: %s" % (str(total_reads - dropped_rw)))
-        
+        if umi_filter:
+            logger.info("Trimming stats dropped pairs due to incorrect UMI: %s" % (str(dropped_umi)))
+            
         # Adding stats to QA Stats object
         qa_stats.input_reads_forward = total_reads
         qa_stats.input_reads_reverse = total_reads
         qa_stats.reads_after_trimming_forward = total_reads - dropped_fw
         qa_stats.reads_after_trimming_reverse = total_reads - dropped_rw
         
-    logger.info("Finish Reformatting and Filtering raw reads")
     return out_fw, out_rw
 
 
