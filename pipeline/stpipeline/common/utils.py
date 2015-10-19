@@ -187,6 +187,7 @@ def getSTARVersion():
     and makes a system call to get its
     version and return it
     """
+    version = ""
     try:
         proc = subprocess.Popen(["STAR", "--version"], 
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -202,6 +203,7 @@ def getTaggdCountVersion():
     and makes a system call to get its
     version and return it
     """
+    version = ""
     try:
         proc = subprocess.Popen(["pip", "show", "taggd"], 
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -219,6 +221,7 @@ def getHTSeqCountVersion():
     and makes a system call to get its
     version and return it
     """
+    version = ""
     try:
         proc = subprocess.Popen(["pip", "show", "htseq"], 
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)

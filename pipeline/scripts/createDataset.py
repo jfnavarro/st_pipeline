@@ -244,13 +244,13 @@ if __name__ == "__main__":
                         action="store_true", default=False, 
                         help="Activates the molecular barcodes duplicates filter")
     parser.add_argument('--mc-cluster', default="naive",
-                        help="Type of clustering algorithm to use when performing UMIs duplicates removel.\n" \
-                        "Modes = {naive(deault), counttrie, hierarchical}")
+                        help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n" \
+                        "Modes = {naive(default), counttrie, hierarchical}")
     parser.add_argument('--mc-allowed-mismatches', default=1,
                         help='Number of allowed mismatches when applying the molecular barcodes filter')
-    parser.add_argument('--mc-start-position', default=19,
+    parser.add_argument('--mc-start-position', default=18,
                         help='Position (base wise) of the first base of the molecular barcodes')
-    parser.add_argument('--mc-end-position', default=30,
+    parser.add_argument('--mc-end-position', default=27,
                         help='Position (base wise) of the last base of the molecular barcodes')
     parser.add_argument('--min-cluster-size', default=2,
                         help='Min number of equal molecular barcodes to count as a cluster')

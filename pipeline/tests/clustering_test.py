@@ -114,7 +114,6 @@ class TestClustering(unittest.TestCase):
         clusters = countMolecularBarcodesClustersHierarchical(self.molecular_barcodes3, 1, 0, 4, 2)
         # should make four clusters in complete mode or 2 in single mode
         self.assertTrue(len(clusters) == 2)
-        
-        
+          
 if __name__ == '__main__':
     unittest.main()        

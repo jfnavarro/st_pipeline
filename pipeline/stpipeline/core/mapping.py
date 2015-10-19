@@ -46,7 +46,6 @@ def alignReads(forward_reads,
     """
 
     logger = logging.getLogger("STPipeline")
-    logger.info("Start STAR Mapping")
     
     # STAR has predefined output name
     tmpOutputFile = "Aligned.out." + sam_type.lower()
@@ -188,8 +187,7 @@ def alignReads(forward_reads,
                 logger.info("Total mapped reads : " + str(uniquely_mapped + multiple_mapped))           
         if os.path.isfile(log_final):
             os.remove(log_final)
-            
-    logger.info("Finish STAR Mapping")
+        
     return outputFile, outputFileDiscarded1, outputFileDiscarded2
 
 def barcodeDemultiplexing(readsContainingTr, 
@@ -216,7 +214,6 @@ def barcodeDemultiplexing(readsContainingTr,
     """
     
     logger = logging.getLogger("STPipeline")
-    logger.info("Start Mapping against the barcodes")
     
     outputFilePrefix = 'demultiplexed'
     if outputFolder is not None and os.path.isdir(outputFolder): 
@@ -284,5 +281,5 @@ def barcodeDemultiplexing(readsContainingTr,
                 logger.info(str(line))
             if line.find("Unmatched:") != -1:
                 logger.info(str(line))
-    logger.info("Finish Mapping against the barcodes")
+
     return outputFile

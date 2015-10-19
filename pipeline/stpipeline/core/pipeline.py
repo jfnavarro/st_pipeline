@@ -72,6 +72,8 @@ class Pipeline():
         self.max_gap_size = 1000000
         # To store stats from different parts
         self.qa_stats = Stats()
+        self.umi_filter = False
+        self.umi_filter_template = "WSNNWSNNV"
         
     def sanityCheck(self):
         """ 
@@ -115,6 +117,12 @@ class Pipeline():
         
         if self.molecular_barcodes:
             conds["molecular_barcodes"] = self.mc_end_position > self.mc_start_position
+           
+        if self.umi_filter:
+            #Check template validity
+            import re
+            regex = "[^ACGTURYSWKMBDHVN]"
+            conds["umi_filter"] = re.search(regex, self.umi_filter_template) is None
             
         if not all(conds.values()):
             error = "Error: required file/s and or parameters not " \
@@ -229,14 +237,18 @@ class Pipeline():
             parser.add_argument('--disable-clipping', action="store_true", default=False,
                                 help="If activated, disable soft-clipping (local alignment) in the mapping")
             parser.add_argument('--mc-cluster', default="naive",
-                                help="Type of clustering algorithm to use when performing UMIs duplicates removel.\n" \
-                                "Modes = {naive(deault), counttrie, hierarchical}")
+                                help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n" \
+                                "Modes = {naive(default), counttrie, hierarchical}")
             parser.add_argument('--min-intron-size', default=20,
                                 help="Minimum allowed intron size when searching for splice variants in the mapping step")
             parser.add_argument('--max-intron-size', default=100000,
                                 help="Maximum allowed intron size when searching for splice variants in the mapping step")
             parser.add_argument('--max-gap-size', default=1000000,
                                 help="Maximum allowed distance between pairs in the mapping step")
+            parser.add_argument('--umi-filter', action="store_true", default=False,
+                                help="Enables the UMI quality filter based on the template given in --umi-filter-template")
+            parser.add_argument('--umi-filter-template', default="WSNNWSNNV",
+                                help="UMI template for the UMI filter, default = WSNNWSNNV")
             parser.add_argument('--version', action='version',  version='%(prog)s ' + str(version_number))
             return parser
          
@@ -295,6 +307,8 @@ class Pipeline():
         self.min_intron_size = int(options.min_intron_size)
         self.max_intron_size = int(options.max_intron_size)
         self.max_gap_size = int(options.max_gap_size)
+        self.umi_filter = options.umi_filter
+        self.umi_filter_template = str(options.umi_filter_template).upper()
         
         # Assign class parameters to the QA stats object
         import inspect
@@ -372,7 +386,9 @@ class Pipeline():
             self.logger.info("Molecular Barcode min cluster size " + str(self.min_cluster_size))
             self.logger.info("Molecular Barcode allowed mismatches " + str(self.mc_allowed_mismatches))
             self.logger.info("Molecular Barcode clustering algorithm " + str(self.mc_cluster))
-            
+            if self.umi_filter:
+                self.logger.info("Molecular Barcodes using filter " + str(self.umi_filter_template))
+                
         elif self.molecular_barcodes:
             self.logger.warning("Molecular barcodes cannot be used in normal RNA-Seq")
               
@@ -399,13 +415,13 @@ class Pipeline():
 
         # Check if input fastq files are gzipped 
         if self.fastq_fw.endswith("gz"):
-            temp_fastq_fw = tempfile.mktemp(prefix="st_pipeline_fastq_fw")
+            temp_fastq_fw = os.path.join(self.temp_folder, "unzipped_fastq_fw.fastq")
             with gzip.open(self.fastq_fw, "rb") as filehandler_read:
                 with open(temp_fastq_fw, "w") as filehandler_write:
                     filehandler_write.write(filehandler_read.read())
             self.fastq_fw = temp_fastq_fw
         if self.fastq_rv.endswith("gz"):
-            temp_fastq_rv = tempfile.mktemp(prefix="st_pipeline_fastq_fv")
+            temp_fastq_rv = os.path.join(self.temp_folder, "unzipped_fastq_rv.fastq")
             with gzip.open(self.fastq_rv, "rb") as filehandler_read:
                 with open(temp_fastq_rv, "w") as filehandler_write:
                     filehandler_write.write(filehandler_read.read())
@@ -420,6 +436,7 @@ class Pipeline():
         #    - reverse reads will contain the the 3 end the barcode and molecular barcode (if any)
         #      from the forward reads
         #    - if apply adaptors will be removed before the trimming
+        self.logger.info("Start Reformatting and Filtering raw reads " + str(globaltime.getTimestamp()))
         fastq_fw_trimmed, fastq_rv_trimmed = reformatRawReads(self.fastq_fw,
                                                               self.fastq_rv,
                                                               self.qa_stats,
@@ -439,7 +456,9 @@ class Pipeline():
                                                               self.remove_polyC_distance,
                                                               self.qual64, 
                                                               self.temp_folder,
-                                                              self.keep_discarded_files)
+                                                              self.keep_discarded_files,
+                                                              self.umi_filter,
+                                                              self.umi_filter_template)
           
         # Reverse reads contain now the barcodes and molecular barcodes (if any) so
         # the trimming needs to be adjusted for the mapping
@@ -456,6 +475,7 @@ class Pipeline():
             # and keep the un-mapped reads
             old_fw_trimmed = fastq_fw_trimmed
             old_rv_trimmed = fastq_rv_trimmed
+            self.logger.info("Starting rRNA filter alignment " + str(globaltime.getTimestamp()))
             contaminated_sam, fastq_fw_trimmed, fastq_rv_trimmed = alignReads(fastq_fw_trimmed,
                                                                               fastq_rv_trimmed,
                                                                               self.contaminant_index,
@@ -480,6 +500,7 @@ class Pipeline():
             # Therefore, we need to extract the un-aligned reads
             old_fw_trimmed = fastq_fw_trimmed
             old_rv_trimmed = fastq_rv_trimmed
+            self.logger.info("Starting rRNA filter discarding unmapped reads " + str(globaltime.getTimestamp()))
             fastq_fw_trimmed, fastq_rv_trimmed = filter_rRNA_reads(fastq_fw_trimmed, 
                                                                    fastq_rv_trimmed,
                                                                    self.qa_stats, 
@@ -491,6 +512,7 @@ class Pipeline():
         # STEP: maps against the genome using STAR
         #=================================================================
         self.logger.info("Genome mapping")
+        self.logger.info("Starting genome alignment " + str(globaltime.getTimestamp()))
         sam_mapped, unmapped_forward, unmapped_reverse = alignReads(fastq_fw_trimmed,
                                                                     fastq_rv_trimmed,
                                                                     self.ref_map,
@@ -516,6 +538,7 @@ class Pipeline():
         #================================================================
         # STEP: filters mapped reads
         #================================================================
+        self.logger.info("Starting genome alignment processing unmapped reads " + str(globaltime.getTimestamp()))
         sam_mapped_clean = filterMappedReads(sam_mapped,
                                              self.qa_stats,
                                              self.min_length_trimming,
@@ -535,6 +558,7 @@ class Pipeline():
         #=================================================================
         # STEP: annotate using htseq count
         #=================================================================
+        self.logger.info("Starting annotation " + str(globaltime.getTimestamp()))
         annotatedFile = annotateReads(sam_mapped_clean, 
                                       self.ref_annotation,
                                       self.htseq_mode,
@@ -544,6 +568,7 @@ class Pipeline():
         #=================================================================
         # STEP: filter out un-annotated reads
         #=================================================================
+        self.logger.info("Starting filtering annotated reads " + str(globaltime.getTimestamp()))
         annotatedFilteredFile = filterAnnotatedReads(annotatedFile,
                                                      self.qa_stats, 
                                                      self.htseq_no_ambiguous,
@@ -556,6 +581,7 @@ class Pipeline():
             #=================================================================
             # STEP: Map against the barcodes
             #=================================================================
+            self.logger.info("Starting barcode demultiplexing " + str(globaltime.getTimestamp()))
             mapFile = barcodeDemultiplexing(annotatedFilteredFile,
                                             self.ids,
                                             self.qa_stats,
@@ -571,6 +597,7 @@ class Pipeline():
             #=================================================================
             # STEP: create json files with the results
             #=================================================================
+            self.logger.info("Starting creating dataset " + str(globaltime.getTimestamp()))
             self.createDataset(mapFile,
                                self.qa_stats,
                                self.molecular_barcodes,

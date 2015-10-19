@@ -20,7 +20,6 @@ def annotateReads(samFile, gtfFile, mode, outputFolder=None):
     """
     
     logger = logging.getLogger("STPipeline")
-    logger.info("Start Annotating reads with HTSeq")
     
     sam_type = getExtension(samFile).lower()
     outputFile = 'annotated.' + sam_type
@@ -66,6 +65,5 @@ def annotateReads(samFile, gtfFile, mode, outputFolder=None):
     # output from htseq-count.
     with Prepender(outputFile) as f:
         f.write_lines(samfile_header.split("\n"))
-                
-    logger.info("Finish Annotating reads with HTSeq")
+
     return outputFile
