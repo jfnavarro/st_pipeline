@@ -208,5 +208,4 @@ def filterAnnotatedReads(annot_reads, qa_stats, htseq_no_ambiguous=False,
     
     # Update QA object 
     qa_stats.reads_after_annotation = int(present - dropped)
-    
     return file_output

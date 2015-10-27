@@ -143,19 +143,18 @@ class TestPipeline(unittest.TestCase):
      
     @classmethod
     def tearDownClass(self):
-        return
-        #print "ST Pipeline Test Remove temporary output " + self.outdir
-        #for root, dirs, files in os.walk(self.outdir, topdown=False):
-        #    for name in files:
-        #        os.remove(os.path.join(root, name))
-        #    for name in dirs:
-        #        os.rmdir(os.path.join(root, name))
-        #print "ST Pipeline Test Remove temporary directory " + self.tmpdir
-        #for root, dirs, files in os.walk(self.tmpdir, topdown=False):
-        #    for name in files:
-        #        os.remove(os.path.join(root, name))
-        #    for name in dirs:
-        #        os.rmdir(os.path.join(root, name))
+        print "ST Pipeline Test Remove temporary output " + self.outdir
+        for root, dirs, files in os.walk(self.outdir, topdown=False):
+            for name in files:
+                os.remove(os.path.join(root, name))
+            for name in dirs:
+                os.rmdir(os.path.join(root, name))
+        print "ST Pipeline Test Remove temporary directory " + self.tmpdir
+        for root, dirs, files in os.walk(self.tmpdir, topdown=False):
+            for name in files:
+                os.remove(os.path.join(root, name))
+            for name in dirs:
+                os.rmdir(os.path.join(root, name))
  
  
     def validateOutputData(self, expName):
