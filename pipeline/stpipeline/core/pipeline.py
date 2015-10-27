@@ -677,6 +677,11 @@ class Pipeline():
                     saturation_points_values_unique_events.append(stats.unique_events)
                     saturation_points_values_reads.append(stats.reads_after_duplicates_removal)
                 
+                if self.clean:
+                    # Remove the files
+                    for file_sam in file_names.itervalues():
+                        safeRemove(file_sam)
+                        
                 # Generate plot
                 self.logger.info("Saturation points:")
                 self.logger.info(', '.join(str(a) for a in saturation_points))

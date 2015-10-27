@@ -1,8 +1,15 @@
 #! /usr/bin/env python
 #@Author Jose Fernandez
 """ Script for creating a quality scatter plot from a json ST-data file.
-The output will be a .png file with the same name as the json file stored in
-the current directory.
+The output will be a .png file with the same name as the input file.
+
+It allows to plot clusters generated in stclust of the following form
+
+CLUSTER_NUMBER BARCODE X Y
+
+It allows to choose transparency for the data points
+
+It allows to give the high-res image 
 
 If a regular expression for a gene symbol to highlight is provided, the output
 image will be stored in a file called *.0.png. It is possible to give several
@@ -44,7 +51,7 @@ def parseJSON(input_data, cutoff, highlight_regexes, highlights, expression):
             if re.search(regex, doc["gene"]):
                 highlights[i].add((doc['x'], doc['y']))
                 
-    return highlights, expression, colors
+    return highlights, expression
     
 def parseCSV(input_data, cutoff, highlight_regexes, highlights, expression):
     
@@ -73,7 +80,8 @@ def parseCSV(input_data, cutoff, highlight_regexes, highlights, expression):
                     
     return highlights, expression
 
-def main(input_data, highlight_regexes, image, only_highlight, cutoff, highlight_barcodes, alignment):
+def main(input_data, highlight_regexes, image, only_highlight, cutoff, 
+         highlight_barcodes, alignment, data_alpha, dot_size):
     fig = []
     ax = []
     highlights = []
@@ -125,24 +133,22 @@ def main(input_data, highlight_regexes, image, only_highlight, cutoff, highlight
     for a in ax:
         if not only_highlight:
             base_trans = a.transData 
-            tr = transforms.Affine2D(matrix = alignment_matrix) + base_trans 
-
-            #a.scatter(x, y, c=expression[x, y],
-            #          edgecolor="none",
-            #          s=30,
-            #          label="Expression",
-            #          transform = tr
-            #          )
+            tr = transforms.Affine2D(matrix = alignment_matrix) + base_trans
             
+            a.scatter(x, y, c=expression[x, y],
+                      edgecolor="none",
+                      s=dot_size,
+                      label="Expression",
+                      transform = tr,
+                      alpha=data_alpha) 
+                                     
             if highlight_barcodes is not None:
                 x2, y2 = colors.nonzero()
-                a.scatter(x2, y2, c=colors[x2, y2],
-                          edgecolor="none",
-                          s=30,
-                          label="Cluster",
-                          transform = tr
-                          )
-                #a.colorbar()
+                sc = a.scatter(x2, y2, c=colors[x2, y2],
+                               edgecolor="none",
+                               s=dot_size,
+                               transform = tr
+                               )
         if image:
             a.imshow(img)
 
@@ -154,7 +160,7 @@ def main(input_data, highlight_regexes, image, only_highlight, cutoff, highlight
         x, y = zip(*highlights[i])
         ax[i].scatter(x, y, c="#CA0020",
                       edgecolor="#CA0020",
-                      s=40,
+                      s=dot_size + 10,
                       label=highlight_regexes[i])
 
     for i, a in enumerate(ax):
@@ -195,8 +201,12 @@ if __name__ == '__main__':
     parser.add_argument("--highlight-barcodes", default=None,
                         help="File with a list of barcodes in a column and a list of clusters in the other column")
     parser.add_argument("--alignment", help="Aligment matrix needed when using the image", nargs="+", type=float, default=None)
+    parser.add_argument("--data-alpha", type=float, default=1.0, 
+                        help="The brightness level for the data points, 0 min and 1 max")
+    parser.add_argument("--dot-size", type=int, default=30,
+                        help="The size of the dots")
     args = parser.parse_args()
 
     main(args.input_data, args.highlight, args.image, 
          args.only_highlight, args.cutoff, 
-         args.highlight_barcodes, args.alignment)
+         args.highlight_barcodes, args.alignment, float(args.data_alpha), int(args.dot_size))
