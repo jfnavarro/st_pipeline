@@ -138,31 +138,33 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.remove_polyG_distance = 15
         self.pipeline.remove_polyC_distance = 15
         self.pipeline.mc_cluster = "hierarchical"
-        self.umi_filter = True
+        self.pipeline.umi_filter = True
+        self.pipeline.compute_saturation = True
      
     @classmethod
     def tearDownClass(self):
-        print "ST Pipeline Test Remove temporary output " + self.outdir
-        for root, dirs, files in os.walk(self.outdir, topdown=False):
-            for name in files:
-                os.remove(os.path.join(root, name))
-            for name in dirs:
-                os.rmdir(os.path.join(root, name))
-        print "ST Pipeline Test Remove temporary directory " + self.tmpdir
-        for root, dirs, files in os.walk(self.tmpdir, topdown=False):
-            for name in files:
-                os.remove(os.path.join(root, name))
-            for name in dirs:
-                os.rmdir(os.path.join(root, name))
+        return
+        #print "ST Pipeline Test Remove temporary output " + self.outdir
+        #for root, dirs, files in os.walk(self.outdir, topdown=False):
+        #    for name in files:
+        #        os.remove(os.path.join(root, name))
+        #    for name in dirs:
+        #        os.rmdir(os.path.join(root, name))
+        #print "ST Pipeline Test Remove temporary directory " + self.tmpdir
+        #for root, dirs, files in os.walk(self.tmpdir, topdown=False):
+        #    for name in files:
+        #        os.remove(os.path.join(root, name))
+        #    for name in dirs:
+        #        os.rmdir(os.path.join(root, name))
  
  
     def validateOutputData(self, expName):
         # Verify existence of output files and temp files
         self.assertNotEqual(os.listdir(self.outdir), [], "Output folder is not empty")
         self.assertNotEqual(os.listdir(self.tmpdir), [], "Tmp folder is not empty")
-        barcodesfile = os.path.join(self.outdir, "stdata.json")
-        readsfile = os.path.join(self.outdir, "reads.bed")
-        statsfile = os.path.join(self.outdir, "qa_stats.json")
+        barcodesfile = os.path.join(self.outdir, str(self.pipeline.expName) + "_stdata.json")
+        readsfile = os.path.join(self.outdir, str(self.pipeline.expName) + "_reads.bed")
+        statsfile = os.path.join(self.outdir, str(self.pipeline.expName) + "_qa_stats.json")
         self.assertTrue(os.path.exists(barcodesfile), "Barcodes JSON file exists")
         self.assertTrue(os.path.getsize(barcodesfile) > 1024, "Barcordes JSON file is not empty")
         self.assertTrue(os.path.exists(readsfile), "Reads BED file exists")
@@ -173,8 +175,6 @@ class TestPipeline(unittest.TestCase):
         """
         Tests st_pipeline on a mouse data subset with normal fastq files
         """
-        self.assertTrue(True)
-        return
         # Start the pipeline
         try:
             self.pipeline.createLogger()

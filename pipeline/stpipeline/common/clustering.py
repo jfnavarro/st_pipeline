@@ -5,7 +5,7 @@ by their molecular barcodes using different approaches
 """
 
 import numpy as np
-import scipy.cluster.hierarchy
+from scipy.cluster.hierarchy import linkage,fcluster
 import counttrie.counttrie as ct
 from collections import defaultdict
 from stpipeline.common.distance import hamming_distance
@@ -44,7 +44,7 @@ def extractMolecularBarcodes(reads, mc_start_position, mc_end_position):
     return sorted(molecular_barcodes_count_list, key=lambda x: (x[0], -x[2], x[3]))
 
 def countMolecularBarcodesClustersHierarchical(reads, allowed_mismatches, mc_start_position,
-                                               mc_end_position, min_cluster_size, method = "single"):
+                                               mc_end_position, min_cluster_size, method_ = "single"):
     """
     :param reads the list of reads to be searched for clusters in the form of tuple (read_name, sequence, quality)
     :param allowed_mismatches how much distance we allow between clusters
@@ -61,13 +61,19 @@ def countMolecularBarcodesClustersHierarchical(reads, allowed_mismatches, mc_sta
     This approach finds clusters using hierarchical clustering
     """
     molecular_barcodes = extractMolecularBarcodes(reads, mc_start_position, mc_end_position)
+    # linkage will not work for distance matrices of 1x1 or 2x2 so for these rare cases
+    # we use the naive clustering
+    if len(molecular_barcodes) <= 2:
+        return countMolecularBarcodesClustersNaive(reads,allowed_mismatches, mc_start_position,
+                                                    mc_end_position, min_cluster_size)
     def d(coord):
         i,j = coord
         return hamming_distance(molecular_barcodes[i][0], molecular_barcodes[j][0])
+    
     indices = np.triu_indices(len(molecular_barcodes), 1)
     distance_matrix = np.apply_along_axis(d, 0, indices)
-    linkage = scipy.cluster.hierarchy.linkage(distance_matrix, method=method)
-    flat_clusters = scipy.cluster.hierarchy.fcluster(linkage, allowed_mismatches, criterion='distance')
+    linkage_cluster = linkage(distance_matrix, method=method_)
+    flat_clusters = fcluster(linkage_cluster, allowed_mismatches, criterion='distance')
 
     # Retrieve the original reads from the clusters found
     clusters = []

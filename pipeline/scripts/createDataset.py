@@ -6,15 +6,14 @@ by aggregating the reads for unique gene-barcode tuples.
 """
 
 import sys
-import os
 import json
 import argparse
 import pysam
 import numpy as np
+import os
+from stpipeline.common.utils import getExtension
 from collections import defaultdict
-from stpipeline.common.utils import *
-from stpipeline.common.clustering import countMolecularBarcodesClustersNaive, countMolecularBarcodesPrefixtrie, countMolecularBarcodesClustersHierarchical
-from stpipeline.common.fastq_utils import *
+from stpipeline.common.clustering import countMolecularBarcodesClustersHierarchical,countMolecularBarcodesClustersNaive, countMolecularBarcodesPrefixtrie
 
 class Transcript:
     """ 
@@ -101,7 +100,10 @@ def parseUniqueEvents(filename):
     return unique_events.values()
 
 
-def main(filename, output_folder, molecular_barcodes = False, mc_cluster = "naive",
+def main(filename, output_folder,
+         output_file_template = None,
+         molecular_barcodes = False,
+         mc_cluster = "naive",
          allowed_mismatches = 1, mc_start_position = 19, 
          mc_end_position = 27, min_cluster_size = 2):
     
@@ -134,26 +136,30 @@ def main(filename, output_folder, molecular_barcodes = False, mc_cluster = "naiv
     bed_records = list()
     barcode_genes = defaultdict(int)
     barcode_reads = defaultdict(int)
-
-    if mc_cluster == "counttrie":
-        clustering_func = countMolecularBarcodesPrefixtrie
-    elif mc_cluster == "naive":
-        clustering_func = countMolecularBarcodesClustersNaive
-    elif mc_cluster == "hierarchical":
-        clustering_func = countMolecularBarcodesClustersHierarchical
-    else:
-        sys.stderr.write("Error, invalid input clustering algorithm: %s\n" % (mc_cluster))
-        sys.exit(-1)
            
     for transcript in parseUniqueEvents(filename):                
             # Re-compute the read count accounting for PCR duplicates 
             # if indicated (read sequence must contain molecular barcode)
             if molecular_barcodes:
-                clusters = clustering_func(transcript.reads,
-                                           allowed_mismatches,
-                                           mc_start_position,
-                                           mc_end_position,
-                                           min_cluster_size)
+                ##TODO pass the type to the function so we avoid duplicated code
+                if mc_cluster == "counttrie":
+                    clusters = countMolecularBarcodesPrefixtrie(transcript.reads,
+                                                                allowed_mismatches,
+                                                                mc_start_position,
+                                                                mc_end_position,
+                                                                min_cluster_size)
+                elif mc_cluster == "naive":
+                    clusters = countMolecularBarcodesClustersNaive(transcript.reads,
+                                                                   allowed_mismatches,
+                                                                   mc_start_position,
+                                                                   mc_end_position,
+                                                                   min_cluster_size)
+                else:
+                    clusters = countMolecularBarcodesClustersHierarchical(transcript.reads,
+                                                                          allowed_mismatches,
+                                                                          mc_start_position,
+                                                                          mc_end_position,
+                                                                          min_cluster_size)
                 num_clusters = len(clusters)
                 transcript.reads = clusters
                 discarded_reads += (transcript.count - num_clusters)
@@ -212,8 +218,12 @@ def main(filename, output_folder, molecular_barcodes = False, mc_cluster = "naiv
     if molecular_barcodes:
         print "Number of discarded reads (possible PCR duplicates): " + str(discarded_reads)
        
-    filename = "stdata.json"
-    filenameReadsBED = "reads.bed"
+    if output_file_template is not None:
+        filename = str(output_file_template) + "_stdata.json"
+        filenameReadsBED = str(output_file_template) + "_reads.bed"
+    else:
+        filename = "stdata.json"
+        filenameReadsBED = "reads.bed"
 
     # Dump the reads JSON file to the output file
     with open(os.path.join(output_folder, filename), "w") as filehandler:
@@ -240,6 +250,8 @@ if __name__ == "__main__":
                         help='Input file in SAM or BAM format containing barcodes and genes')
     parser.add_argument('--output-folder', type=str,
                         help='Path of the output folder (default is /.)')
+    parser.add_argument('--output-file-template', type=str, default=None,
+                        help="Describes how the output files will be called.")
     parser.add_argument('--molecular-barcodes', 
                         action="store_true", default=False, 
                         help="Activates the molecular barcodes duplicates filter")
@@ -256,7 +268,8 @@ if __name__ == "__main__":
                         help='Min number of equal molecular barcodes to count as a cluster')
 
     args = parser.parse_args()
-    main(args.input, args.output_folder, args.molecular_barcodes, args.mc_cluster,
+    main(args.input, args.output_folder, args.output_file_template, 
+         args.molecular_barcodes, args.mc_cluster,
          int(args.mc_allowed_mismatches), int(args.mc_start_position),
          int(args.mc_end_position), int(args.min_cluster_size))
                                     

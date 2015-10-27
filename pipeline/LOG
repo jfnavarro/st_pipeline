@@ -196,3 +196,13 @@ Version 0.6.5
 * Fixed a bug in retrieving the version of the software
 * Added time stamps in different steps
 * Added a UMI template quality filter
+
+Version 0.6.6
+* Fixed a bug in the hierarchical clustering
+* Fixed a bug in the printed stats
+
+Version 0.6.7
+* Fixed a bug in the hierarchical clustering
+* Added the input parameter to qa_stats
+* Append experiment name to output files
+* Added option to compute saturation points

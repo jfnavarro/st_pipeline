@@ -74,6 +74,7 @@ class Pipeline():
         self.qa_stats = Stats()
         self.umi_filter = False
         self.umi_filter_template = "WSNNWSNNV"
+        self.compute_saturation = False
         
     def sanityCheck(self):
         """ 
@@ -249,6 +250,9 @@ class Pipeline():
                                 help="Enables the UMI quality filter based on the template given in --umi-filter-template")
             parser.add_argument('--umi-filter-template', default="WSNNWSNNV",
                                 help="UMI template for the UMI filter, default = WSNNWSNNV")
+            parser.add_argument('--compute-saturation', action="store_true", default=False,
+                                help="Performs a saturation curve computation by sub-sampling the annotated reads, computing" \
+                                "unique molecules and then a saturation curve")
             parser.add_argument('--version', action='version',  version='%(prog)s ' + str(version_number))
             return parser
          
@@ -309,6 +313,7 @@ class Pipeline():
         self.max_gap_size = int(options.max_gap_size)
         self.umi_filter = options.umi_filter
         self.umi_filter_template = str(options.umi_filter_template).upper()
+        self.compute_saturation = options.compute_saturation
         
         # Assign class parameters to the QA stats object
         import inspect
@@ -379,6 +384,9 @@ class Pipeline():
         self.logger.info("Mapping maximum intron size " + str(self.max_intron_size))
         self.logger.info("Mapping maximum gap size " + str(self.max_gap_size))
         
+        if self.compute_saturation:
+            self.logger.info("Computing saturation curve")
+            
         if self.molecular_barcodes and not self.ids is None:
             self.logger.info("Using Molecular Barcodes")
             self.logger.info("Molecular Barcode start position " + str(self.mc_start_position))
@@ -577,6 +585,7 @@ class Pipeline():
 
         if self.clean: safeRemove(annotatedFile)
         
+            
         if self.ids is not None:
             #=================================================================
             # STEP: Map against the barcodes
@@ -593,7 +602,89 @@ class Pipeline():
                                             self.temp_folder,
                                             self.keep_discarded_files)
             if self.clean: safeRemove(annotatedFilteredFile)
-
+        
+            if self.compute_saturation:
+                self.logger.info("Starting computing saturation points " + str(globaltime.getTimestamp()))
+                # #TODO move this to external functions
+            
+                import pysam
+                import random
+                #=================================================================
+                # STEP: compute saturation curve
+                #=================================================================
+                saturation_points = [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+                files = dict()
+                file_names = dict()
+                subsampling = dict()
+                file_ext = getExtension(mapFile).lower()
+                flag_read = "rb"
+                flag_write = "wbh"
+                if file_ext == "sam":
+                    flag_read = "r"
+                    flag_write = "wh"
+                
+                annotated_sam = pysam.AlignmentFile(mapFile, flag_read)
+                # If we use count() to get number of reads from the PySAM object
+                # it will require a seek() operation afterwards
+                nreads = self.qa_stats.reads_after_annotation
+            
+                # Generate subsamples and files
+                for spoint in saturation_points:
+                    file_name = "subsample_" + str(spoint) + "." + file_ext
+                    if self.temp_folder is not None and os.path.isdir(self.temp_folder):
+                        file_name = os.path.join(self.temp_folder, file_name)
+                    output_sam = pysam.AlignmentFile(file_name, flag_write, template=annotated_sam)
+                    file_names[spoint] = file_name
+                    files[spoint] = output_sam
+                
+                    indices = list(xrange(nreads))
+                    random.shuffle(indices)
+                    amount = int(nreads * spoint)
+                    subbed = indices[0:amount]
+                    subbed.sort()
+                    subsampling[spoint] = subbed
+            
+                # Write subsamples
+                index = 0
+                
+                # TODO keep a dict of sub_indexes would be much faster
+                for read in annotated_sam:
+                    for spoint in saturation_points:
+                        if index in subsampling[spoint]:
+                            files[spoint].write(read)
+                    index += 1  
+            
+                # Close the files
+                for file_sam in files.itervalues():
+                    file_sam.close()
+                
+                # Compute saturation points
+                saturation_points_values_unique_events = list()
+                saturation_points_values_reads = list()
+                for spoint in saturation_points:
+                    stats = Stats()
+                    input_file = file_names[spoint]
+                    self.createDataset(input_file,
+                                       stats,
+                                       self.molecular_barcodes,
+                                       self.mc_cluster,
+                                       self.mc_allowed_mismatches,
+                                       self.mc_start_position,
+                                       self.mc_end_position,
+                                       self.min_cluster_size,
+                                       self.expName,
+                                       False)
+                    saturation_points_values_unique_events.append(stats.unique_events)
+                    saturation_points_values_reads.append(stats.reads_after_duplicates_removal)
+                
+                # Generate plot
+                self.logger.info("Saturation points:")
+                self.logger.info(', '.join(str(a) for a in saturation_points))
+                self.logger.info("Unique events per saturation point")
+                self.logger.info(', '.join(str(a) for a in saturation_points_values_unique_events))
+                self.logger.info("Reads per saturation point")
+                self.logger.info(', '.join(str(a) for a in saturation_points_values_reads))
+            
             #=================================================================
             # STEP: create json files with the results
             #=================================================================
@@ -605,14 +696,15 @@ class Pipeline():
                                self.mc_allowed_mismatches,
                                self.mc_start_position,
                                self.mc_end_position,
-                               self.min_cluster_size)
+                               self.min_cluster_size,
+                               self.expName)
             if self.clean: safeRemove(mapFile)
 
         #=================================================================
         # END PIPELINE
         #=================================================================
         # Write stats to JSON
-        self.qa_stats.writeJSON(os.path.join(self.output_folder,"qa_stats.json"))
+        self.qa_stats.writeJSON(os.path.join(self.output_folder, self.expName + "_qa_stats.json"))
         
         finish_exe_time = globaltime.getTimestamp()
         total_exe_time = finish_exe_time - start_exe_time
@@ -626,7 +718,9 @@ class Pipeline():
                       allowed_mismatches = 1,
                       start_position = 18, 
                       end_position = 27, 
-                      min_cluster_size = 2):
+                      min_cluster_size = 2,
+                      output_template = None,
+                      verbose = True):
         """ 
         parse annotated and mapped reads with the reads that contain barcodes to
         create json files with the barcodes and coordinates and json file with the raw reads
@@ -635,9 +729,6 @@ class Pipeline():
         We passes the number of forward bases trimmed for mapping to get a clean read
         in the output
         """
-        
-        self.logger.info("Start Creating dataset")
-        
         args = ['createDataset.py', '--input', str(input_name)]
         
         if molecular_barcodes:
@@ -651,6 +742,9 @@ class Pipeline():
         if self.output_folder is not None:
             args += ['--output-folder', self.output_folder]
      
+        if output_template is not None:
+            args += ['--output-file-template', output_template]
+            
         try:
             proc = subprocess.Popen([str(i) for i in args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             (stdout, errmsg) = proc.communicate()
@@ -666,9 +760,7 @@ class Pipeline():
             raise RuntimeError(error)    
               
         procOut = stdout.split("\n")
-        self.logger.info('Creating dataset stats :')
         for line in procOut:
-        
             # Write QA stats
             # TODO a more efficient way perhaps to use the line numbers 
             if line.find("Number of Transcripts with Barcode present:") != -1:
@@ -693,6 +785,5 @@ class Pipeline():
                 qa_stats.max_reads_unique_event = int(line.split()[-1])
             if line.find("Min number of reads over all unique events:") != -1:
                 qa_stats.min_reads_unique_event = int(line.split()[-1])
-                
-            self.logger.info(str(line))
-        self.logger.info("Finish Creating dataset")
+            if verbose:   
+                self.logger.info(str(line))

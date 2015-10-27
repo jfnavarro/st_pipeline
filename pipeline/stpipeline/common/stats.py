@@ -78,7 +78,7 @@ class Stats():
                          "mapper_tool" : str(self.mapper_tool),
                          "annotation_tool" : str(self.annotation_tool),
                          "demultiplex_tool" : str(self.demultiplex_tool),
-                         "input_parameters" : self.input_parameters,
+                         "input_parameters" : ''.join([str(x) for x in self.input_parameters]),
                          "max_genes_feature" : str(self.max_genes_feature),
                          "min_genes_feature" : str(self.min_genes_feature),
                          "max_reads_feature" : str(self.max_reads_feature),
