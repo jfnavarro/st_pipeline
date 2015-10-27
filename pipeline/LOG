@@ -206,3 +206,4 @@ Version 0.6.7
 * Added the input parameter to qa_stats
 * Append experiment name to output files
 * Added option to compute saturation points
+* Added tool to plot stdata and clusters with aligned image
