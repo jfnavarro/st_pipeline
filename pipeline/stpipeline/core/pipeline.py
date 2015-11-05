@@ -620,10 +620,10 @@ class Pipeline():
                 #saturation_points = [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
                 saturation_points = list()
                 for x in xrange(0,15):
-                    spoint = int(math.floor(10e6 + (math.exp(x) * 10e6)))
+                    spoint = int(math.floor(1e6 + (math.exp(x) * 1e6)))
                     if spoint >= nreads:
                         break
-                    saturation_points.append(10e6 + (math.exp(x) * 10e6))
+                    saturation_points.append(spoint)
 
                 files = dict()
                 file_names = dict()

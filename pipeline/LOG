@@ -215,3 +215,6 @@ Version 0.6.8
 * Small bug fixes
 * Upgraded json2Scatter with many improvements
 * Rename json2scatter to stDataPlotter
+
+Version 0.6.9
+* Fixed a bug in the saturation points
