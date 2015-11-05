@@ -27,9 +27,7 @@ def extractMolecularBarcodes(reads, mc_start_position, mc_end_position):
     molecular_barcodes = list()
     molecular_barcodes_counts = defaultdict(int)
     for read in reads:
-        if mc_end_position > len(read[1]):
-            raise ValueError("UMI could not be found in the read " + read + "\n")
-        mc = read[1][mc_start_position:mc_end_position]
+        mc = read[0][mc_start_position:mc_end_position]
         molecular_barcodes.append((mc, read))
         molecular_barcodes_counts[mc] += 1
         

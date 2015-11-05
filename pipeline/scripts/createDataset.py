@@ -13,7 +13,7 @@ import numpy as np
 import os
 from stpipeline.common.utils import getExtension
 from collections import defaultdict
-from stpipeline.common.clustering import countMolecularBarcodesClustersHierarchical,countMolecularBarcodesClustersNaive, countMolecularBarcodesPrefixtrie
+from stpipeline.common.clustering import countMolecularBarcodesClustersHierarchical, countMolecularBarcodesClustersNaive, countMolecularBarcodesPrefixtrie
 
 class Transcript:
     """ 
@@ -88,17 +88,17 @@ def parseUniqueEvents(filename):
             else:
                 continue
 
-        #@todo should be a way to achieve this with defaultdict
+        ##TODO should be a way to achieve this with defaultdict
         transcript = Transcript(barcode=barcode, gene=gene, x=x, y=y,
-                                count=1, reads=[(clear_name, seq, qual, chrom, 
-                                                 start, end, strand, mapping_quality)])
-        if unique_events.has_key(transcript):
+                                count=1, reads=[(seq, chrom, start, end, clear_name, 
+                                                 mapping_quality, strand, gene, barcode)])
+        try:
             unique_events[transcript] += transcript
-        else:
+        except KeyError:
             unique_events[transcript] = transcript
-
+    
+    sam_file.close()
     return unique_events.values()
-
 
 def main(filename, output_folder,
          output_file_template = None,
@@ -119,25 +119,39 @@ def main(filename, output_folder,
     if output_folder is None or not os.path.isdir(output_folder):
         output_folder = "."
     
+    if mc_cluster not in ["naive","hierarchical","counttrie"]:
+        sys.stderr.write("Error: type of clutering algorithm is incorrect\n")
+        sys.exit(-1)
+         
     if molecular_barcodes and (mc_start_position < 0  
                                or mc_end_position < 0 or mc_end_position <= mc_start_position):
         sys.stderr.write("Error: Molecular Barcodes option is " \
                          "activated but the start/end positions parameters are incorrect\n")
         sys.exit(-1)
-        
+    
+    if output_file_template is not None:
+        filenameJSON = str(output_file_template) + "_stdata.json"
+        filenameReadsBED = str(output_file_template) + "_reads.bed"
+    else:
+        filenameJSON = "stdata.json"
+        filenameReadsBED = "reads.bed"
+    
     total_record = 0
-    json_barcodes = list()
     unique_genes = set()
     unique_barcodes = set()
     total_barcodes = 0
     discarded_reads = 0
     max_reads_unique_events = 0
     min_reads_unique_events = 10e6
-    bed_records = list()
     barcode_genes = defaultdict(int)
     barcode_reads = defaultdict(int)
-           
-    for transcript in parseUniqueEvents(filename):                
+    json_transcripts = list()
+    
+    reads_handler = open(os.path.join(output_folder, filenameReadsBED), "w")
+    reads_handler.write("Chromosome\tStart\tEnd\tRead\tScore\tStrand\tGene\tBarcode\n")
+    
+    unique_events = parseUniqueEvents(filename)
+    for transcript in unique_events:                
             # Re-compute the read count accounting for PCR duplicates 
             # if indicated (read sequence must contain molecular barcode)
             if molecular_barcodes:
@@ -165,22 +179,19 @@ def main(filename, output_folder,
                 discarded_reads += (transcript.count - num_clusters)
                 transcript.count = num_clusters
             
-            # Add a JSON entry for the transcript  
-            json_barcodes.append(transcript.toBarcodeDict())
+            # Add a JSON entry for the transcript
+            json_transcripts.append(transcript.toBarcodeDict())
             
-            # Get the reads that mapped to the transcript and generate a JSON file
-            # and generates a list of BED records
+            # Add a READS object to a list 
             for read in transcript.reads:
-                qula = read[2]
-                seq = read[1]
-                name = read[0]
-                chrom = read[3]
-                start = read[4]
-                end = read[5]
-                strand = read[6]
-                quality_score = read[7]
-                bed_records.append((chrom, start, end, strand, transcript.gene, 
-                                    transcript.barcode, name, quality_score, seq, qula))
+                reads_handler.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (str(read[1]),
+                                                                          str(read[2]),
+                                                                          str(read[3]),
+                                                                          str(read[4]),
+                                                                          str(read[5]),
+                                                                          str(read[6]),
+                                                                          str(read[7]),
+                                                                          str(read[8])))
                 
             # Some stats computation
             barcode_genes[transcript.barcode] += 1
@@ -191,10 +202,14 @@ def main(filename, output_folder,
             total_barcodes += transcript.count
             max_reads_unique_events = max(max_reads_unique_events, transcript.count)
             min_reads_unique_events = min(min_reads_unique_events, transcript.count)
+    
+    reads_handler.close()
             
     if total_record == 0:
         sys.stderr.write("Error, the number of transcripts present is 0\n")
         sys.exit(-1)
+    
+    del unique_events
     
     # To compute percentiles
     barcode_genes_array = np.sort(np.array(barcode_genes.values()))
@@ -214,44 +229,27 @@ def main(filename, output_folder,
     print "Min number of reads over all features: " + str(barcode_reads_array[1])
     print "Max number of reads over all unique events: " + str(max_reads_unique_events)
     print "Min number of reads over all unique events: " + str(min_reads_unique_events)
-    
     if molecular_barcodes:
         print "Number of discarded reads (possible PCR duplicates): " + str(discarded_reads)
        
-    if output_file_template is not None:
-        filename = str(output_file_template) + "_stdata.json"
-        filenameReadsBED = str(output_file_template) + "_reads.bed"
-    else:
-        filename = "stdata.json"
-        filenameReadsBED = "reads.bed"
-
-    # Dump the reads JSON file to the output file
-    with open(os.path.join(output_folder, filename), "w") as filehandler:
-        json.dump(json_barcodes, filehandler, indent=2, separators=(',', ': '))  
-         
-    # Dump the reads in BED format
-    with open(os.path.join(output_folder, filenameReadsBED), "w") as filehandlerReadsBED:
-        filehandlerReadsBED.write("Chromosome\tStart\tEnd\tRead\tScore\tStrand\tGene\tBarcode\n")
-        for bed_record in bed_records:
-            filehandlerReadsBED.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (str(bed_record[0]), 
-                                                                                  str(bed_record[1]), 
-                                                                                  str(bed_record[2]), 
-                                                                                  str(bed_record[6]),
-                                                                                  str(bed_record[7]),
-                                                                                  str(bed_record[3]),
-                                                                                  str(bed_record[4]),
-                                                                                  str(bed_record[5]),
-                                                                                  str(bed_record[8]), 
-                                                                                  str(bed_record[9])))
+    del barcode_genes
+    del barcode_reads
+    del unique_genes
+    del unique_barcodes
+    
+    # Write JSON transcripts to file
+    with open(os.path.join(output_folder, filenameJSON), "w") as json_handler:
+        json.dump(json_transcripts, json_handler, indent=2, separators=(",",": "))
+    del json_transcripts    
             
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=str,
-                        help='Input file in SAM or BAM format containing barcodes and genes')
+                        help='Input file in SAM or BAM format containing barcodes and genes from taggd')
     parser.add_argument('--output-folder', type=str,
                         help='Path of the output folder (default is /.)')
     parser.add_argument('--output-file-template', type=str, default=None,
-                        help="Describes how the output files will be called.")
+                        help="Describes how the output files will be called")
     parser.add_argument('--molecular-barcodes', 
                         action="store_true", default=False, 
                         help="Activates the molecular barcodes duplicates filter")

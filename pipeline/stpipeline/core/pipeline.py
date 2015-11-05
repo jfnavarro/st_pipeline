@@ -14,7 +14,7 @@ from stpipeline.version import version_number
 import logging
 import subprocess
 import gzip
-import tempfile
+from collections import defaultdict
 
 class Pipeline():
     
@@ -609,10 +609,22 @@ class Pipeline():
             
                 import pysam
                 import random
+                import math
                 #=================================================================
                 # STEP: compute saturation curve
                 #=================================================================
-                saturation_points = [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+                
+                # If we use count() to get number of reads from the PySAM object
+                # it will require a seek() operation afterwards
+                nreads = self.qa_stats.reads_after_annotation
+                #saturation_points = [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+                saturation_points = list()
+                for x in xrange(0,15):
+                    spoint = int(math.floor(10e6 + (math.exp(x) * 10e6)))
+                    if spoint >= nreads:
+                        break
+                    saturation_points.append(10e6 + (math.exp(x) * 10e6))
+
                 files = dict()
                 file_names = dict()
                 subsampling = dict()
@@ -624,9 +636,6 @@ class Pipeline():
                     flag_write = "wh"
                 
                 annotated_sam = pysam.AlignmentFile(mapFile, flag_read)
-                # If we use count() to get number of reads from the PySAM object
-                # it will require a seek() operation afterwards
-                nreads = self.qa_stats.reads_after_annotation
             
                 # Generate subsamples and files
                 for spoint in saturation_points:
@@ -639,22 +648,24 @@ class Pipeline():
                 
                     indices = list(xrange(nreads))
                     random.shuffle(indices)
-                    amount = int(nreads * spoint)
+                    #amount = int(nreads * spoint)
+                    amount = spoint
                     subbed = indices[0:amount]
                     subbed.sort()
                     subsampling[spoint] = subbed
             
                 # Write subsamples
                 index = 0
-                
-                # TODO keep a dict of sub_indexes would be much faster
+                sub_indexes = defaultdict(int)
                 for read in annotated_sam:
                     for spoint in saturation_points:
-                        if index in subsampling[spoint]:
+                        if sub_indexes[spoint] == subsampling[spoint]:
                             files[spoint].write(read)
+                            sub_indexes[spoint] += 1
                     index += 1  
             
                 # Close the files
+                annotated_sam.close()
                 for file_sam in files.itervalues():
                     file_sam.close()
                 

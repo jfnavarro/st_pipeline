@@ -10,34 +10,34 @@ class TestClustering(unittest.TestCase):
          
     @classmethod
     def setUpClass(self):
-        self.molecular_barcodes1 = [('name1','AAAAAAAAAA','QQQQQQQQQQ'),
-                                    ('name2','AAAAAAAAAA','QQQQQQQQQQ'),
-                                    ('name3','AAAAAAAAAA','QQQQQQQQQQ'),
-                                    ('name4','AAAAAAAAAA','QQQQQQQQQQ'),
-                                    ('name5','AAAAAAAAAA','QQQQQQQQQQ'),
-                                    ('name6','AAAAAAAAAA','QQQQQQQQQQ'),
-                                    ('name7','AAAAAAAABB','QQQQQQQQQQ'),
-                                    ('name8','AAAAAAAABB','QQQQQQQQQQ'),
-                                    ('name9','AAAAAAAABB','QQQQQQQQQQ')]
+        self.molecular_barcodes1 = [('AAAAAAAAAA', []),
+                                    ('AAAAAAAAAA', []),
+                                    ('AAAAAAAAAA', []),
+                                    ('AAAAAAAAAA', []),
+                                    ('AAAAAAAAAA', []),
+                                    ('AAAAAAAAAA', []),
+                                    ('AAAAAAAABB', []),
+                                    ('AAAAAAAABB', []),
+                                    ('AAAAAAAABB', [])]
         
-        self.molecular_barcodes2 = [('name1','AAAAAAAAAA','QQQQQQQQQQ'),
-                                    ('name2','AAAAAAAABB','QQQQQQQQQQ'),
-                                    ('name3','AAAAAAAACC','QQQQQQQQQQ'),
-                                    ('name4','AAAAAADDDD','QQQQQQQQQQ'),
-                                    ('name5','AAAAAAAAAA','QQQQQQQQQQ'),
-                                    ('name6','AAAAAAAAAA','QQQQQQQQQQ'),
-                                    ('name7','ZZZZAABBBB','QQQQQQQQQQ'),
-                                    ('name8','AAAAAABBBB','QQQQQQQQQQ'),
-                                    ('name9','AAAAAABBBB','QQQQQQQQQQ')]
+        self.molecular_barcodes2 = [('AAAAAAAAAA', []),
+                                    ('AAAAAAAABB', []),
+                                    ('AAAAAAAACC', []),
+                                    ('AAAAAADDDD', []),
+                                    ('AAAAAAAAAA', []),
+                                    ('AAAAAAAAAA', []),
+                                    ('ZZZZAABBBB', []),
+                                    ('AAAAAABBBB', []),
+                                    ('AAAAAABBBB', [])]
         
-        self.molecular_barcodes3 = [('name1','AAAA','QQQQ'),
-                                    ('name2','DAAA','QQQQ'),
-                                    ('name3','ABAA','QQQQ'),
-                                    ('name4','ABBA','QQQQ'),
-                                    ('name5','ABBB','QQQQ'),
-                                    ('name6','BBBB','QQQQ'),
-                                    ('name7','CCCC','QQQQ'),
-                                    ('name8','ACCC','QQQQ')]
+        self.molecular_barcodes3 = [('AAAA', []),
+                                    ('DAAA', []),
+                                    ('ABAA', []),
+                                    ('ABBA', []),
+                                    ('ABBB', []),
+                                    ('BBBB', []),
+                                    ('CCCC', []),
+                                    ('ACCC', [])]
         
     def test_naive_clustering(self):
         clusters = countMolecularBarcodesClustersNaive(self.molecular_barcodes1, 3, 0, 10, 2)
@@ -72,7 +72,7 @@ class TestClustering(unittest.TestCase):
         clusters = countMolecularBarcodesPrefixtrie(self.molecular_barcodes1, 3, 0, 10, 10)
         # should not return any cluster so it will return the 9 reads
         self.assertTrue(len(clusters) == 9)
-  
+     
         clusters = countMolecularBarcodesPrefixtrie(self.molecular_barcodes2, 3, 0, 10, 2)
         # should make two cluster, one of 5 reads and one of 2 so the output should have 4 reads
         self.assertTrue(len(clusters) == 4)
@@ -88,7 +88,6 @@ class TestClustering(unittest.TestCase):
         clusters = countMolecularBarcodesPrefixtrie(self.molecular_barcodes3, 1, 0, 4, 2)
         # should make one cluster of 4 reads so the output should have 2 reads
         self.assertTrue(len(clusters) == 5)
-
         
     def test_hierarchical_clustering(self):
         clusters = countMolecularBarcodesClustersHierarchical(self.molecular_barcodes1, 3, 0, 10, 2)

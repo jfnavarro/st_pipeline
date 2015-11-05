@@ -37,7 +37,8 @@ setup(
     'scipy',
     'numpy',
     'taggd>=0.2.2',
-    'counttrie'
+    'counttrie',
+    'pandas'
   ],
   test_suite = 'tests',
   scripts = glob.glob('scripts/*.py'),

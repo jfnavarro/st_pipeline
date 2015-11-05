@@ -207,3 +207,11 @@ Version 0.6.7
 * Append experiment name to output files
 * Added option to compute saturation points
 * Added tool to plot stdata and clusters with aligned image
+
+Version 0.6.8
+* Improved speed and memory in createDatasets
+* Changed saturation points to fixed values that grow exp
+* Improved speed in computation of saturation points
+* Small bug fixes
+* Upgraded json2Scatter with many improvements
+* Rename json2scatter to stDataPlotter

@@ -156,7 +156,6 @@ class TestPipeline(unittest.TestCase):
             for name in dirs:
                 os.rmdir(os.path.join(root, name))
  
- 
     def validateOutputData(self, expName):
         # Verify existence of output files and temp files
         self.assertNotEqual(os.listdir(self.outdir), [], "Output folder is not empty")

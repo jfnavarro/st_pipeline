@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+#@author Jose Fernandez
 """ 
 Scripts that takes as input a file generated
 in the demultiplexing step (taggd) of the ST pipeline
