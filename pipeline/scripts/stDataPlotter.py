@@ -34,7 +34,9 @@ import pandas as pd
 import math
 
 ## This must be the same as R colors from numbers
-color_map = ["white", "black", "red", "green", "blue", "cyan", "pink", "yellow", "grey"]
+#color_map = ["white", "black", "red", "green", "blue", "cyan", "pink", "yellow", "grey"]
+## This is the same as the stclust v 0.1.0
+color_map = ["red", "green", "blue", "orange", "cyan", "yellow", "darkorchid", "saddlebrown", "darkcyan", "gray"]
 
 def parseJSON(input_data, cutoff, highlight_regexes, highlights, 
               expression, filter_genes, norm_counts_table, use_norm=False):

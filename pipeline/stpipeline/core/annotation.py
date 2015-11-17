@@ -3,15 +3,13 @@
 This module contains wrappers to make systems calls for different annotation tools
 most of the options can be passed as arguments
 """
-
 import logging
 import subprocess
 import os
 import pysam
 from stpipeline.common.utils import getExtension, Prepender, fileOk
 
-
-def annotateReadsFeatureCounts(samFile, gtfFile, mode, outputFolder=None):
+#def annotateReadsFeatureCounts(samFile, gtfFile, mode, outputFolder=None):
     #TODO
     # FeatureCounts options
     # -a (annotation file)
@@ -32,10 +30,10 @@ def annotateReadsFeatureCounts(samFile, gtfFile, mode, outputFolder=None):
     # -B (match only read pairs that have both successfully aligned)
     # --donotsort (useful when using pairs)
     # OUTPUT
-    # (‘Geneid’, ‘Chr’, ‘Start’, ‘End’, ‘Strand’ and ‘Length’)
-    return
+    # Geneid Chr Start End Strand Length
+#    return
      
-def annotateReadsHTSeq(samFile, gtfFile, mode, outputFolder=None):
+def annotateReads(samFile, gtfFile, mode, outputFolder=None):
     """ 
     :param samFile sam file contained mapped reads
     :param gtfFile an annotation file in GTF format

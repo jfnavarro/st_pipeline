@@ -223,3 +223,7 @@ Version 0.7.0
 * Fixed a bug in the saturation points
 * Removed counttrie as option for clustering
 * Updated and improved CTTS scripts
+* Updated data plotter color list
+
+Version 0.7.1
+* Fixed some small bugs

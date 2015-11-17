@@ -4,7 +4,7 @@ Unit-test the package clustering
 """
 from operator import itemgetter
 import unittest
-from stpipeline.common.clustering import countMolecularBarcodesClustersNaive, countMolecularBarcodesClustersHierarchical, countMolecularBarcodesPrefixtrie
+from stpipeline.common.clustering import countMolecularBarcodesClustersNaive, countMolecularBarcodesClustersHierarchical
 
 class TestClustering(unittest.TestCase):
          

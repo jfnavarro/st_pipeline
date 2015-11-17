@@ -5,9 +5,7 @@ Unit-test for run-tests, it just tests that the pipeline runs and produces corre
  
 import unittest
 import urllib
-import os
 import tempfile
-import time
 import multiprocessing
 from subprocess import check_call
 from stpipeline.core.pipeline import *
