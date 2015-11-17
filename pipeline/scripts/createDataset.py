@@ -13,7 +13,7 @@ import numpy as np
 import os
 from stpipeline.common.utils import getExtension
 from collections import defaultdict
-from stpipeline.common.clustering import countMolecularBarcodesClustersHierarchical, countMolecularBarcodesClustersNaive, countMolecularBarcodesPrefixtrie
+from stpipeline.common.clustering import countMolecularBarcodesClustersHierarchical, countMolecularBarcodesClustersNaive
 
 class Transcript:
     """ 
@@ -119,7 +119,7 @@ def main(filename, output_folder,
     if output_folder is None or not os.path.isdir(output_folder):
         output_folder = "."
     
-    if mc_cluster not in ["naive","hierarchical","counttrie"]:
+    if mc_cluster not in ["naive","hierarchical"]:
         sys.stderr.write("Error: type of clutering algorithm is incorrect\n")
         sys.exit(-1)
          
@@ -156,13 +156,7 @@ def main(filename, output_folder,
             # if indicated (read sequence must contain molecular barcode)
             if molecular_barcodes:
                 ##TODO pass the type to the function so we avoid duplicated code
-                if mc_cluster == "counttrie":
-                    clusters = countMolecularBarcodesPrefixtrie(transcript.reads,
-                                                                allowed_mismatches,
-                                                                mc_start_position,
-                                                                mc_end_position,
-                                                                min_cluster_size)
-                elif mc_cluster == "naive":
+                if mc_cluster == "naive":
                     clusters = countMolecularBarcodesClustersNaive(transcript.reads,
                                                                    allowed_mismatches,
                                                                    mc_start_position,
@@ -255,7 +249,7 @@ if __name__ == "__main__":
                         help="Activates the molecular barcodes duplicates filter")
     parser.add_argument('--mc-cluster', default="naive",
                         help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n" \
-                        "Modes = {naive(default), counttrie, hierarchical}")
+                        "Modes = {naive(default), hierarchical}")
     parser.add_argument('--mc-allowed-mismatches', default=1,
                         help='Number of allowed mismatches when applying the molecular barcodes filter')
     parser.add_argument('--mc-start-position', default=18,

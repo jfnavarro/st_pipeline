@@ -195,7 +195,7 @@ def filter_rRNA_reads(forward_reads, reverse_reads, qa_stats, outputFolder=None)
     rw_file.close()
     
     if not fileOk(out_fw) or not fileOk(out_rw):
-        error = "Error filtering rRNA un-mapped, output file is not present %s,%s" % (out_fw,)
+        error = "Error filtering rRNA un-mapped, output file is not present %s,%s" % (out_fw,out_rw)
         logger.error(error)
         raise RuntimeError(error + "\n")
     

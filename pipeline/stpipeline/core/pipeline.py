@@ -91,7 +91,7 @@ class Pipeline():
                                         or self.ref_annotation.endswith("gff3") \
                                         or self.ref_annotation.endswith("gff")
         conds["annotation_mode"] = self.htseq_mode in ["union","intersection-nonempty","intersection-strict"]
-        conds["mc_cluster"] = self.mc_cluster in ["naive", "counttrie", "hierarchical"]
+        conds["mc_cluster"] = self.mc_cluster in ["naive", "hierarchical"]
         conds["forward_extension"] = self.fastq_fw.endswith("fastq") \
                                      or self.fastq_fw.endswith("fq") \
                                      or self.fastq_fw.endswith("gz")
@@ -239,7 +239,7 @@ class Pipeline():
                                 help="If activated, disable soft-clipping (local alignment) in the mapping")
             parser.add_argument('--mc-cluster', default="naive",
                                 help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n" \
-                                "Modes = {naive(default), counttrie, hierarchical}")
+                                "Modes = {naive(default), hierarchical}")
             parser.add_argument('--min-intron-size', default=20,
                                 help="Minimum allowed intron size when searching for splice variants in the mapping step")
             parser.add_argument('--max-intron-size', default=100000,
@@ -617,14 +617,14 @@ class Pipeline():
                 # If we use count() to get number of reads from the PySAM object
                 # it will require a seek() operation afterwards
                 nreads = self.qa_stats.reads_after_annotation
-                #saturation_points = [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
                 saturation_points = list()
                 for x in xrange(0,15):
-                    spoint = int(math.floor(1e6 + (math.exp(x) * 1e6)))
+                    spoint = int(math.floor(1e5 + (math.exp(x) * 1e5)))
                     if spoint >= nreads:
                         break
                     saturation_points.append(spoint)
-
+                
                 files = dict()
                 file_names = dict()
                 subsampling = dict()
@@ -648,22 +648,22 @@ class Pipeline():
                 
                     indices = list(xrange(nreads))
                     random.shuffle(indices)
-                    #amount = int(nreads * spoint)
                     amount = spoint
                     subbed = indices[0:amount]
                     subbed.sort()
                     subsampling[spoint] = subbed
-            
+                
                 # Write subsamples
                 index = 0
                 sub_indexes = defaultdict(int)
                 for read in annotated_sam:
                     for spoint in saturation_points:
-                        if sub_indexes[spoint] == subsampling[spoint]:
+                        sub_index = sub_indexes[spoint]
+                        if sub_index < len(subsampling[spoint]) and subsampling[spoint][sub_index] == index:
                             files[spoint].write(read)
                             sub_indexes[spoint] += 1
                     index += 1  
-            
+                
                 # Close the files
                 annotated_sam.close()
                 for file_sam in files.itervalues():

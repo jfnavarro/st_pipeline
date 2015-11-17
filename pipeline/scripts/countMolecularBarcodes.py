@@ -14,7 +14,7 @@ import pysam
 from collections import defaultdict
 from stpipeline.common.utils import fileOk
  
-def main(sam_filename, outfile=None, mc_start_position=18, mc_end_position=27):
+def main(sam_filename, outfile, mc_start_position, mc_end_position):
 
     start_pos = int(mc_start_position)
     end_pos = int(mc_end_position)
@@ -24,7 +24,7 @@ def main(sam_filename, outfile=None, mc_start_position=18, mc_end_position=27):
         sys.stderr.write("Error, input file not present or invalid format for the parameters\n")
         sys.exit(-1)
     
-    if outfile is None:
+    if not outfile:
         outfile = "output_counts.txt"
      
     # Count UMIs   
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("sam_file", 
                         help="SAM file generated from Taggd in the ST Pipeline")
-    parser.add_argument("--outfile", help="Name of the output file")
+    parser.add_argument("--outfile", default=None, help="Name of the output file")
     parser.add_argument('--mc-start-position', default=18,
                         help='Position (base wise) of the first base of the molecular barcodes')
     parser.add_argument('--mc-end-position', default=27,

@@ -10,7 +10,32 @@ import os
 import pysam
 from stpipeline.common.utils import getExtension, Prepender, fileOk
 
-def annotateReads(samFile, gtfFile, mode, outputFolder=None):
+
+def annotateReadsFeatureCounts(samFile, gtfFile, mode, outputFolder=None):
+    #TODO
+    # FeatureCounts options
+    # -a (annotation file)
+    # -o (output file)
+    # -F GTF
+    # -t exon
+    # -g gene_id
+    # -f (perform counting at exon level) NO
+    # -O (align reads to all their overlapping features)
+    # -s 0 (unstranded) 1 (stranded) 2 (reversely stranded) 
+    # -M (multimapped reads are counted) NO
+    # --largestOverlap (assign reasd to a meta-feature/feature that has the largest number of overlapping genes)
+    # --minOverlap 1 (min number of overlapping bases required)
+    # --primary (count primary alignments only)
+    # --ignoreDup (ignore duplicated reads)
+    # -p (count reads pairs instead of individual reads)
+    # -P (check validity of paired-end distance)
+    # -B (match only read pairs that have both successfully aligned)
+    # --donotsort (useful when using pairs)
+    # OUTPUT
+    # (‘Geneid’, ‘Chr’, ‘Start’, ‘End’, ‘Strand’ and ‘Length’)
+    return
+     
+def annotateReadsHTSeq(samFile, gtfFile, mode, outputFolder=None):
     """ 
     :param samFile sam file contained mapped reads
     :param gtfFile an annotation file in GTF format
