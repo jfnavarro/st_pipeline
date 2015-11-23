@@ -141,11 +141,13 @@ def filterMappedReads(mapped_reads, qa_stats, min_length=28, pair_mode_keep="rev
                                               dropped_short + dropped_both_pairs)
     return file_output
 
-def filterAnnotatedReads(annot_reads, qa_stats, htseq_no_ambiguous=False,
+def filterAnnotatedReads(annot_reads, qa_stats, htseq_no_ambiguous=False, include_non_annotated=False,
                          outputFolder=None, keep_discarded_files=False):
     """ 
     :param annot_reads SAM file obtained from HTSEQ-Count
+    :param qa_stats statistics object for the log
     :param htseq_no_ambiguous true if we want to discard ambiguous annotations
+    :param include_non_annotated true if we want to include non annotated reads as Na in the output
     :param outputFolder if we want to specify where to put the output file
     :param keep_discarded_files true if we want to write the un-annotated reads to a file
     This function will iterate a SAM file coming from HTSEQ-Count to discard
@@ -154,10 +156,9 @@ def filterAnnotatedReads(annot_reads, qa_stats, htseq_no_ambiguous=False,
     
     logger = logging.getLogger("STPipeline")
     
-    filter_htseq = ["__no_feature",
-              "__too_low_aQual",
-              "__not_aligned",
-              "__alignment_not_unique"]
+    filter_htseq = ["__too_low_aQual", "__not_aligned", "__alignment_not_unique"]
+    if not include_non_annotated:
+        filter_htseq.append("__no_feature")
     
     sam_type = getExtension(annot_reads).lower()
     file_output = 'annotated_filtered.' + sam_type

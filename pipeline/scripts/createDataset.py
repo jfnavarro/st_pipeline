@@ -209,13 +209,13 @@ def main(filename, output_folder,
     barcode_genes_array = np.sort(np.array(barcode_genes.values()))
     barcode_reads_array = np.sort(np.array(barcode_reads.values()))
     
-    print "Number of Transcripts with Barcode present: " + str(total_barcodes) 
-    print "Number of unique events present: " + str(total_record) 
-    print "Number of unique Barcodes present: " + str(len(unique_barcodes))
-    print "Number of unique Genes present: " + str(len(unique_genes))
-    print "Barcode to Genes percentiles: "
+    print "Number of unique transcripts present: " + str(total_barcodes) 
+    print "Number of unique events (gene-barcode) present: " + str(total_record) 
+    print "Number of unique barcodes present: " + str(len(unique_barcodes))
+    print "Number of unique genes present: " + str(len(unique_genes))
+    print "Barcode to genes percentiles: "
     print np.percentile(barcode_genes_array, [0,25,50,75,100])
-    print "Barcode to Reads percentiles: "
+    print "Barcode to reads percentiles: "
     print np.percentile(barcode_reads_array, [0,25,50,75,100])
     print "Max number of genes over all features: " + str(barcode_genes_array[-1])
     print "Min number of genes over all features: " + str(barcode_genes_array[1])

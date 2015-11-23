@@ -138,6 +138,7 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.mc_cluster = "hierarchical"
         self.pipeline.umi_filter = True
         self.pipeline.compute_saturation = True
+        self.pipeline.include_non_annotated = True
      
     @classmethod
     def tearDownClass(self):

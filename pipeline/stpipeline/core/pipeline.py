@@ -75,6 +75,7 @@ class Pipeline():
         self.umi_filter = False
         self.umi_filter_template = "WSNNWSNNV"
         self.compute_saturation = False
+        self.include_non_annotated = False
         
     def sanityCheck(self):
         """ 
@@ -253,6 +254,8 @@ class Pipeline():
             parser.add_argument('--compute-saturation', action="store_true", default=False,
                                 help="Performs a saturation curve computation by sub-sampling the annotated reads, computing" \
                                 "unique molecules and then a saturation curve")
+            parser.add_argument('--include-non-annotated', action="store_true", default=False,
+                                help="Do not discard un-annotated reads (they will be labeled no_feature)")
             parser.add_argument('--version', action='version',  version='%(prog)s ' + str(version_number))
             return parser
          
@@ -314,6 +317,7 @@ class Pipeline():
         self.umi_filter = options.umi_filter
         self.umi_filter_template = str(options.umi_filter_template).upper()
         self.compute_saturation = options.compute_saturation
+        self.include_non_annotated = options.include_non_annotated
         
         # Assign class parameters to the QA stats object
         import inspect
@@ -386,6 +390,9 @@ class Pipeline():
         
         if self.compute_saturation:
             self.logger.info("Computing saturation curve")
+        
+        if self.include_non_annotated:
+            self.logger.info("Including non annotated reads")
             
         if self.molecular_barcodes and not self.ids is None:
             self.logger.info("Using Molecular Barcodes")
@@ -580,6 +587,7 @@ class Pipeline():
         annotatedFilteredFile = filterAnnotatedReads(annotatedFile,
                                                      self.qa_stats, 
                                                      self.htseq_no_ambiguous,
+                                                     self.include_non_annotated,
                                                      self.temp_folder, 
                                                      self.keep_discarded_files)
 
@@ -672,6 +680,7 @@ class Pipeline():
                 # Compute saturation points
                 saturation_points_values_unique_events = list()
                 saturation_points_values_reads = list()
+                saturation_points_values_genes = list()
                 for spoint in saturation_points:
                     stats = Stats()
                     input_file = file_names[spoint]
@@ -687,7 +696,8 @@ class Pipeline():
                                        False)
                     saturation_points_values_unique_events.append(stats.unique_events)
                     saturation_points_values_reads.append(stats.reads_after_duplicates_removal)
-                
+                    saturation_points_values_genes.append(stats.genes_found)
+                    
                 if self.clean:
                     # Remove the files
                     for file_sam in file_names.itervalues():
@@ -698,9 +708,11 @@ class Pipeline():
                 self.logger.info(', '.join(str(a) for a in saturation_points))
                 self.logger.info("Unique events per saturation point")
                 self.logger.info(', '.join(str(a) for a in saturation_points_values_unique_events))
-                self.logger.info("Reads per saturation point")
+                self.logger.info("Unique transcripts per saturation point")
                 self.logger.info(', '.join(str(a) for a in saturation_points_values_reads))
-            
+                self.logger.info("Unique genes per saturation point")
+                self.logger.info(', '.join(str(a) for a in saturation_points_values_genes))
+                
             #=================================================================
             # STEP: create json files with the results
             #=================================================================
@@ -779,14 +791,14 @@ class Pipeline():
         for line in procOut:
             # Write QA stats
             # TODO a more efficient way perhaps to use the line numbers 
-            if line.find("Number of Transcripts with Barcode present:") != -1:
+            if line.find("Number of unique transcripts present:") != -1:
                 qa_stats.reads_after_duplicates_removal = int(line.split()[-1])
-            if line.find("Number of unique events present:") != -1:
+            if line.find("Number of unique events (gene-barcode) present:") != -1:
                 qa_stats.unique_events = int(line.split()[-1])
-            if line.find("Number of unique Barcodes present:") != -1:
-                qa_stats.genes_found = int(line.split()[-1])
-            if line.find("Number of unique Genes present:") != -1:
+            if line.find("Number of unique barcodes present:") != -1:
                 qa_stats.barcodes_found = int(line.split()[-1])
+            if line.find("Number of unique genes present:") != -1:
+                qa_stats.genes_found = int(line.split()[-1])
             if line.find("Number of discarded reads (possible PCR duplicates):") != -1:
                 qa_stats.duplicates_found = int(line.split()[-1])
             if line.find("Max number of genes over all features:") != -1:

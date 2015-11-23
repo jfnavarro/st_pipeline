@@ -227,3 +227,7 @@ Version 0.7.0
 
 Version 0.7.1
 * Fixed some small bugs
+
+Version 0.7.2
+* Added unique genes to saturation points
+* Added option to keep non-annotated reads
