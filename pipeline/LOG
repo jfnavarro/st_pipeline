@@ -223,7 +223,7 @@ Version 0.7.0
 * Fixed a bug in the saturation points
 * Removed counttrie as option for clustering
 * Updated and improved CTTS scripts
-* Updated data plotter color list
+* Updated datfa plotter color list
 
 Version 0.7.1
 * Fixed some small bugs
@@ -231,3 +231,8 @@ Version 0.7.1
 Version 0.7.2
 * Added unique genes to saturation points
 * Added option to keep non-annotated reads
+
+Version 0.7.3
+* Added parameters for inverse trimming
+* Memory and speed optimizations in createDatasets
+* Added option for low_memory use

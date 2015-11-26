@@ -138,7 +138,8 @@ def writefq(fp):  # This is a coroutine
             fp.write(read)
     except GeneratorExit:
         return
-  
+
+#TODO Cythonize this 
 def filter_rRNA_reads(forward_reads, reverse_reads, qa_stats, outputFolder=None):
     """
     :param forward_reads reads coming from un-aligned in STAR (rRNA filter)
@@ -174,13 +175,13 @@ def filter_rRNA_reads(forward_reads, reverse_reads, qa_stats, outputFolder=None)
     for line1, line2 in izip(readfq(fw_file), readfq(rw_file)):
         header_fw = line1[0]
         header_rv = line2[0]
-        
+        # Check if forward read is mapped or not
         if header_fw.split()[1] == "00":
             out_fw_writer.send(line1)
         else:
             contaminated_fw += 1
             out_fw_writer.send(getFake(header_fw, len(line1[1])))
-            
+        # Check if reverse read is mapped or not    
         if header_rv.split()[1] == "00":
             out_rw_writer.send(line2)
         else:
@@ -222,12 +223,13 @@ def reverse_complement(seq):
         bases = bases.replace(v,k)
     return bases
   
+#TODO optimize an refactor this
 def check_umi_template(umi, template):
     """
     Checks that the UMI given as input complies
     with the pattern given in template
-    @param umi a UMI from a read
-    @param template a reg-based template with the same
+    :param umi a UMI from a read
+    :param template a reg-based template with the same
     distance of the UMI that should tell how the UMI should
     look.
     The functions returns true if the UMI complies
@@ -289,6 +291,7 @@ def check_umi_template(umi, template):
             
     return True
 
+#TODO Cythonize this 
 def reformatRawReads(fw, 
                      rw, 
                      qa_stats,
@@ -344,7 +347,7 @@ def reformatRawReads(fw,
     out_fw_discarded = 'R1_trimmed_formated_discarded.fastq'
     out_rw_discarded = 'R2_trimmed_formated_discarded.fastq'
     
-    if outputFolder is not None and os.path.isdir(outputFolder):
+    if outputFolder and os.path.isdir(outputFolder):
         out_rw = os.path.join(outputFolder, out_rw)
         out_fw = os.path.join(outputFolder, out_fw)
         out_fw_discarded = os.path.join(outputFolder, out_fw_discarded)
@@ -412,13 +415,11 @@ def reformatRawReads(fw,
             to_append_sequence_quality += quality_fw[mc_start:mc_end]
             # If we want to check for UMI quality and the UMI is incorrect
             # we discard the reads
-            if umi_filter:
-                if not check_umi_template(sequence_fw[mc_start:mc_end], umi_filter_template):
-                    dropped_umi += 1
-                    line1 = None
-                    line2 = None
+            if umi_filter and not check_umi_template(sequence_fw[mc_start:mc_end], umi_filter_template):
+                dropped_umi += 1
+                line1 = None
+                line2 = None
                                                       
-        
         # If read - trimming is not long enough or has a high AT content discard...
         if (num_bases_fw - trim_fw) < min_length or \
         ((sequence_fw.count("A") + sequence_fw.count("T")) / num_bases_fw) * 100 >= filter_AT_content:

@@ -23,6 +23,8 @@ def alignReads(forward_reads,
                sam_type="BAM",
                disable_multimap=False,
                diable_softclipping=False,
+               invTrimForward=0,
+               invTrimReverse=0,
                outputFolder=None):
     """
     :param forward_reads file containing forward reads in fastq format for pair end sequences
@@ -39,6 +41,8 @@ def alignReads(forward_reads,
     :param sam_type SAM or BAM 
     :param disable_multimap if True no multiple alignments will be allowed
     :param diable_softclipping it True no local alignment allowed
+    :param invTrimForward number of bases to trim in the 3' of the read1
+    :param invTrimReverse number of bases to trim in the 5' of the read2
     :param outputFolder if set all output files will be placed there
     This function will perform a sequence alignement using STAR
     mapped and unmapped reads are returned and the set of parameters
@@ -74,30 +78,32 @@ def alignReads(forward_reads,
         log_progress = os.path.join(outputFolder, log_progress)
     
     # Options
-    # outFilterType(BySJout) this will keep only reads that contains junctions present in SJ.out.tab
+    # outFilterType(BySJout) this will keep only reads 
+    # that contains junctions present in SJ.out.tab
     # outSamOrder(Paired) one mate after the other 
     # outSAMprimaryFlag(OneBestScore) only one alignment with the best score is primary
     # outFilterMultimapNmax = read alignments will be output only if the read maps fewer than this value
-    # outFilterMismatchNmax = alignment will be output only if it has fewer mismatches than this value
-    # outFilterMismatchNoverLmax = alignment will be output only if its ratio of mismatches to *mapped* length is less than this value
-    # alignIntronMin minimum intron size: genomic gap is considered intron if its length>=alignIntronMin, otherwise it is considered Deletion
-    # alignIntronMax maximum intron size, if 0, max intron size will be determined by (2 to the power of winBinNbits)*winAnchorDistNbins
-    # alignMatesGapMax maximum gap between two mates, if 0, max intron gap will be determined by (2 to the power of winBinNbits)*winAnchorDistNbins
-    # alignEndsType Local standard local alignment with soft-clipping allowed EndToEnd: force end-to-end read alignment, do not soft-clip
+    # outFilterMismatchNmax = alignment will be output only if 
+    # it has fewer mismatches than this value
+    # outFilterMismatchNoverLmax = alignment will be output only if 
+    # its ratio of mismatches to *mapped* length is less than this value
+    # alignIntronMin minimum intron size: genomic gap is considered intron 
+    # if its length>=alignIntronMin, otherwise it is considered Deletion
+    # alignIntronMax maximum intron size, if 0, max intron size will be 
+    # determined by (2 to the power of winBinNbits)*winAnchorDistNbins
+    # alignMatesGapMax maximum gap between two mates, if 0, max intron gap will 
+    # be determined by (2 to the power of winBinNbits)*winAnchorDistNbins
+    # alignEndsType Local standard local alignment with soft-clipping allowed EndToEnd: 
+    # force end-to-end read alignment, do not soft-clip
     # chimSegmentMin if >0 To switch on detection of chimeric (fusion) alignments
     
-    multi_map_number = 10
-    if disable_multimap: 
-        multi_map_number = 1 
-    alignment_mode = "Local"
-    if diable_softclipping:
-        alignment_mode = "EndToEnd"
-    sjdb_overhang = 100
-    if not use_splice_juntions:
-        sjdb_overhang = 0
+    multi_map_number = 1 if disable_multimap else 10
+    alignment_mode = "EndToEnd" if diable_softclipping else "Local"
+    sjdb_overhang = 100 if use_splice_juntions else 0
     
     core_flags = ["--runThreadN", str(max(cores, 1))]
-    trim_flags = ["--clip5pNbases", trimForward, trimReverse] 
+    trim_flags = ["--clip5pNbases", trimForward, trimReverse, 
+                  "--clip3pNbases", invTrimForward, invTrimReverse]
     io_flags   = ["--outFilterType", "Normal", 
                   "--outSAMtype", sam_type, "Unsorted",
                   "--alignEndsType", alignment_mode, # default Local (allows soft clipping) #EndToEnd disables softclipping
@@ -230,8 +236,10 @@ def barcodeDemultiplexing(readsContainingTr,
     #--no-multiprocessing
     #--overhang additional flanking bases around read barcode to allow
     #--estimate-min-edit-distance is set estimate the min edit distance among true barcodes
-    #--no-offset-speedup turns off speed up, it might yield more hits (exactly as findIndexes)
-    #--homopolymer-filter if set excludes erads where barcode contains a homolopymer of the given length (0 no filter), default 8
+    #--no-offset-speedup turns off speed up, 
+    # it might yield more hits (exactly as findIndexes)
+    #--homopolymer-filter if set excludes erads where barcode 
+    # contains a homolopymer of the given length (0 no filter), default 8
     args = ['taggd_demultiplex.py',
             "--max-edit-distance", mismatches,
             "--k", kmer,

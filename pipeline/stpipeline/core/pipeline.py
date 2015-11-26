@@ -76,6 +76,9 @@ class Pipeline():
         self.umi_filter_template = "WSNNWSNNV"
         self.compute_saturation = False
         self.include_non_annotated = False
+        self.inverse_trimming_fw = 0
+        self.inverse_trimming_rv = 0
+        self.low_memory = False
         
     def sanityCheck(self):
         """ 
@@ -87,7 +90,6 @@ class Pipeline():
                  "ref_annotation": fileOk(self.ref_annotation), 
                  "ref_mapping": self.ref_map is not None, 
                  "Exp Name":  self.expName is not None}
-        
         conds["annotation_extension"] = self.ref_annotation.endswith("gtf") \
                                         or self.ref_annotation.endswith("gff3") \
                                         or self.ref_annotation.endswith("gff")
@@ -121,7 +123,7 @@ class Pipeline():
             conds["molecular_barcodes"] = self.mc_end_position > self.mc_start_position
            
         if self.umi_filter:
-            #Check template validity
+            # TODO Check template validity
             import re
             regex = "[^ACGTURYSWKMBDHVN]"
             conds["umi_filter"] = re.search(regex, self.umi_filter_template) is None
@@ -227,15 +229,18 @@ class Pipeline():
             parser.add_argument('--remove-polyC', default=0,
                                 help="Remove PolyCs and everything after it in the reads of a length at least as given number")
             parser.add_argument('--pair-mode-keep', default="reverse", 
-                                help="When filtering out un-mapped reads if both strands map, what action to perform to keep (forward, reverse or both)")
+                                help="When filtering out un-mapped reads if both strands map, " \
+                                "what action to perform to keep (forward, reverse or both)")
             parser.add_argument('--filter-AT-content', default=90,
-                                help="Discards reads whose number of A and T bases in total are more or equal than the number given in percentage")
+                                help="Discards reads whose number of A and T bases in total are more " \
+                                "or equal than the number given in percentage")
             #TODO for now htseq-count does not support BAM files
             #http://sourceforge.net/p/htseq/bugs/12/
             #parser.add_argument('--sam-type', default="BAM",
             #                    help="Type of SAM format for intermediate files (SAM or BAM)")
             parser.add_argument('--disable-multimap', action="store_true", default=False,
-                                help="If activated, multiple aligned reads obtained during mapping will be all discarded. Otherwise the highest scored one will be kept")
+                                help="If activated, multiple aligned reads obtained during mapping will be all discarded. " \
+                                "Otherwise the highest scored one will be kept")
             parser.add_argument('--disable-clipping', action="store_true", default=False,
                                 help="If activated, disable soft-clipping (local alignment) in the mapping")
             parser.add_argument('--mc-cluster', default="naive",
@@ -256,6 +261,12 @@ class Pipeline():
                                 "unique molecules and then a saturation curve")
             parser.add_argument('--include-non-annotated', action="store_true", default=False,
                                 help="Do not discard un-annotated reads (they will be labeled no_feature)")
+            parser.add_argument('--inverse-mapping-fw-trimming', default=0,
+                                help="Number of bases to trim in the forward reads for the Mapping on the 5' end")
+            parser.add_argument('--inverse-mapping-rv-trimming', default=0,
+                                help="Number of bases to trim in the reverse reads for the Mapping on the 3' end")
+            parser.add_argument('--low-memory', default=False, action="store_true",
+                                help="Writes temporary records into disk in order to save memory but gaining a speed penalty")
             parser.add_argument('--version', action='version',  version='%(prog)s ' + str(version_number))
             return parser
          
@@ -318,7 +329,9 @@ class Pipeline():
         self.umi_filter_template = str(options.umi_filter_template).upper()
         self.compute_saturation = options.compute_saturation
         self.include_non_annotated = options.include_non_annotated
-        
+        self.inverse_trimming_fw = int(options.inverse_mapping_fw_trimming)
+        self.inverse_trimming_rv = int(options.inverse_mapping_rv_trimming)
+        self.low_memory = options.low_memory
         # Assign class parameters to the QA stats object
         import inspect
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
@@ -356,44 +369,39 @@ class Pipeline():
         self.logger.info("Experiment : " + str(self.expName))
         self.logger.info("Forward reads file : " + str(self.fastq_fw))
         self.logger.info("Reverse reads file : " + str(self.fastq_rv))
-        if self.ids is not None:
-            self.logger.info("Ids file : " + str(self.ids))
         self.logger.info("Reference mapping file : " + str(self.ref_map))
         self.logger.info("Reference annotation file : " + str(self.ref_annotation))
         if self.contaminant_index is not None:
             self.logger.info("Using contamination filter with " + str(self.contaminant_index))
         self.logger.info("Nodes : " + str(self.threads))
-        
         if self.ids is not None:
+            self.logger.info("Ids file : " + str(self.ids))
             self.logger.info("TaggD allowed mismatches " + str(self.allowed_missed))
-            self.logger.info("TaggD barcode legnth " + str(self.barcode_length))
+            self.logger.info("TaggD barcode length " + str(self.barcode_length))
             self.logger.info("TaggD kmer size " + str(self.allowed_kmer))
             self.logger.info("TaggD overhang " + str(self.overhang))
-        
         self.logger.info("Mapping forward trimming " + str(self.trimming_fw))
         self.logger.info("Mapping reverse trimming " + str(self.trimming_rv))
+        if self.inverse_trimming_fw > 0:
+            self.logger.info("Mapping inverse forward trimming " + str(self.inverse_trimming_fw))
+        if self.inverse_trimming_rv > 0:
+            self.logger.info("Mapping inverse reverse trimming " + str(self.inverse_trimming_rv))
         self.logger.info("Mapper : STAR")
         self.logger.info("Annotation Tool : HTSeq")
         self.logger.info("When both strands are mapped, keep = " + str(self.pair_mode_keep))
         self.logger.info("Filter of AT content in reads : " + str(self.filter_AT_content))
         self.logger.info("Sam type : " + str(self.sam_type))
-        
         if self.disable_clipping:
             self.logger.info("Not allowing soft clipping when mapping")
-        
         if self.disable_multimap:
             self.logger.info("Not allowing multiple alignments")
-            
         self.logger.info("Mapping minimum intron size " + str(self.min_intron_size))
         self.logger.info("Mapping maximum intron size " + str(self.max_intron_size))
         self.logger.info("Mapping maximum gap size " + str(self.max_gap_size))
-        
         if self.compute_saturation:
             self.logger.info("Computing saturation curve")
-        
         if self.include_non_annotated:
             self.logger.info("Including non annotated reads")
-            
         if self.molecular_barcodes and not self.ids is None:
             self.logger.info("Using Molecular Barcodes")
             self.logger.info("Molecular Barcode start position " + str(self.mc_start_position))
@@ -402,11 +410,9 @@ class Pipeline():
             self.logger.info("Molecular Barcode allowed mismatches " + str(self.mc_allowed_mismatches))
             self.logger.info("Molecular Barcode clustering algorithm " + str(self.mc_cluster))
             if self.umi_filter:
-                self.logger.info("Molecular Barcodes using filter " + str(self.umi_filter_template))
-                
+                self.logger.info("Molecular Barcodes using filter " + str(self.umi_filter_template))    
         elif self.molecular_barcodes:
             self.logger.warning("Molecular barcodes cannot be used in normal RNA-Seq")
-              
         if self.remove_polyA_distance > 0:
             self.logger.info("Removing polyA adaptors of a length at least " + str(self.remove_polyA_distance))                        
         if self.remove_polyT_distance > 0:
@@ -415,7 +421,9 @@ class Pipeline():
             self.logger.info("Removing polyG adaptors of a length at least " + str(self.remove_polyG_distance))
         if self.remove_polyC_distance > 0:
             self.logger.info("Removing polyC adaptors of a length at least " + str(self.remove_polyC_distance))
-
+        if self.low_memory:
+            self.logger.info("Using the low memory option")
+            
     def run(self):
         """ 
         Runs the whole pipeline given the parameters present
@@ -505,6 +513,8 @@ class Pipeline():
                                                                               self.sam_type,
                                                                               False, # enable multimap in rRNA filter
                                                                               True, # disable softclipping in rRNA filter
+                                                                              0, # do not use the inverse filter for now
+                                                                              0, # do not use the inverse filter for now
                                                                               self.temp_folder)
             if self.clean:
                 safeRemove(old_fw_trimmed)
@@ -542,6 +552,8 @@ class Pipeline():
                                                                     self.sam_type,
                                                                     self.disable_multimap,
                                                                     self.disable_clipping,
+                                                                    self.inverse_trimming_fw,
+                                                                    self.inverse_trimming_rv,
                                                                     self.temp_folder)
         if self.clean: 
             safeRemove(fastq_fw_trimmed)
@@ -594,7 +606,7 @@ class Pipeline():
         if self.clean: safeRemove(annotatedFile)
         
             
-        if self.ids is not None:
+        if self.ids:
             #=================================================================
             # STEP: Map against the barcodes
             #=================================================================
@@ -693,7 +705,8 @@ class Pipeline():
                                        self.mc_end_position,
                                        self.min_cluster_size,
                                        self.expName,
-                                       False)
+                                       False, # vervose
+                                       self.low_memory)
                     saturation_points_values_unique_events.append(stats.unique_events)
                     saturation_points_values_reads.append(stats.reads_after_duplicates_removal)
                     saturation_points_values_genes.append(stats.genes_found)
@@ -725,7 +738,9 @@ class Pipeline():
                                self.mc_start_position,
                                self.mc_end_position,
                                self.min_cluster_size,
-                               self.expName)
+                               self.expName,
+                               True, # Verbose
+                               self.low_memory)
             if self.clean: safeRemove(mapFile)
 
         #=================================================================
@@ -748,7 +763,8 @@ class Pipeline():
                       end_position = 27, 
                       min_cluster_size = 2,
                       output_template = None,
-                      verbose = True):
+                      verbose = True,
+                      low_memory = False):
         """ 
         parse annotated and mapped reads with the reads that contain barcodes to
         create json files with the barcodes and coordinates and json file with the raw reads
@@ -767,12 +783,15 @@ class Pipeline():
                      '--min-cluster-size', min_cluster_size,
                      '--mc-cluster', mc_cluster]
             
-        if self.output_folder is not None:
+        if self.output_folder:
             args += ['--output-folder', self.output_folder]
      
-        if output_template is not None:
+        if output_template:
             args += ['--output-file-template', output_template]
-            
+        
+        if low_memory:
+            args += ['--low-memory']
+                
         try:
             proc = subprocess.Popen([str(i) for i in args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             (stdout, errmsg) = proc.communicate()

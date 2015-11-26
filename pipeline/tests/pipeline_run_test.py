@@ -139,9 +139,13 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.umi_filter = True
         self.pipeline.compute_saturation = True
         self.pipeline.include_non_annotated = True
-     
+        self.pipeline.inverse_trimming_fw = 1
+        self.pipeline.inverse_trimming_rv = 1
+        self.pipeline.low_memory = True
+        
     @classmethod
     def tearDownClass(self):
+        return
         print "ST Pipeline Test Remove temporary output " + self.outdir
         for root, dirs, files in os.walk(self.outdir, topdown=False):
             for name in files:
