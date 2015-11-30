@@ -8,6 +8,7 @@ import threading
 from datetime import datetime
 import os
 import subprocess
+import gc
 from collections import namedtuple
 _ntuple_diskusage = namedtuple('usage', 'total used free')
 
@@ -148,24 +149,25 @@ def getCleanFileName(path):
 
 class Prepender(object):
     """
-    Allows to create a file hanlder from
+    Allows to create a file handler from
     a file where lines will be prepended
     """
-    def __init__(self,
-                 file_path,
-                ):
+    def __init__(self, file_path):
         # Read in the existing file, so we can write it back later
         with open(file_path, mode='r') as f:
             self.__write_queue = f.readlines()
-
-        self.__open_file = open(file_path, mode='w')
+        self.__open_file = file_path
 
     def write_line(self, line):
-        self.__write_queue.insert(0,
-                                  "%s\n" % line,
-                                 )
+        """ 
+        Prepend just one line
+        """
+        self.__write_queue.insert(0,"%s\n" % line)
 
     def write_lines(self, lines):
+        """ 
+        Prepend a bunch of lines
+        """
         lines.reverse()
         for line in lines:
             self.write_line(line)
@@ -178,8 +180,8 @@ class Prepender(object):
 
     def __exit__(self, type, value, traceback):
         if self.__write_queue:
-            self.__open_file.writelines(self.__write_queue)
-        self.__open_file.close()
+            with open(self.__open_file, "w") as filehandler:
+                filehandler.writelines(self.__write_queue)
         
 def getSTARVersion():
     """
@@ -188,9 +190,12 @@ def getSTARVersion():
     version and return it
     """
     version = ""
+    gc.collect()
     try:
         proc = subprocess.Popen(["STAR", "--version"], 
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                stdout=subprocess.PIPE, 
+                                stderr=subprocess.PIPE,
+                                shell=False, close_fds=True)
         (stdout, errmsg) = proc.communicate()
         version = stdout
     except Exception as e:
@@ -204,9 +209,12 @@ def getTaggdCountVersion():
     version and return it
     """
     version = ""
+    gc.collect()
     try:
         proc = subprocess.Popen(["pip", "show", "taggd"], 
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                stdout=subprocess.PIPE, 
+                                stderr=subprocess.PIPE,
+                                shell=False, close_fds=True)
         (stdout, errmsg) = proc.communicate()
         for line in stdout.split("\n"):
             if line.find("Version:") != -1:
@@ -222,9 +230,12 @@ def getHTSeqCountVersion():
     version and return it
     """
     version = ""
+    gc.collect()
     try:
         proc = subprocess.Popen(["pip", "show", "htseq"], 
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                stdout=subprocess.PIPE, 
+                                stderr=subprocess.PIPE,
+                                shell=False, close_fds=True)
         (stdout, errmsg) = proc.communicate()
         for line in stdout.split("\n"):
             if line.find("Version:") != -1:

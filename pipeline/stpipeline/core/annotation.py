@@ -8,6 +8,8 @@ import subprocess
 import os
 import pysam
 from stpipeline.common.utils import getExtension, Prepender, fileOk
+from errand_boy.transports.unixsocket import UNIXSocketTransport
+import gc
 
 #def annotateReadsFeatureCounts(samFile, gtfFile, mode, outputFolder=None):
     #TODO
@@ -32,7 +34,7 @@ from stpipeline.common.utils import getExtension, Prepender, fileOk
     # OUTPUT
     # Geneid Chr Start End Strand Length
 #    return
-     
+
 def annotateReads(samFile, gtfFile, mode, outputFolder=None):
     """ 
     :param samFile sam file contained mapped reads
@@ -53,10 +55,7 @@ def annotateReads(samFile, gtfFile, mode, outputFolder=None):
     samfile = pysam.AlignmentFile(samFile, "r")
     samfile_header = samfile.text
     samfile.close()
-    
-    #do not want to show the debug messages
-    discard_output = open(os.devnull,"w")
-    
+
     #-q (suppress warning reports)
     #-a (min quality)
     #-f (format)
@@ -65,19 +64,24 @@ def annotateReads(samFile, gtfFile, mode, outputFolder=None):
     #-i (attribute in GFF to be used as ID)
     #-t (feature type to be used in GFF)
     #-r (input sorted order : name - pos)
-    args = ['htseq-count',"-r", "name", "-q", "-a", "0", "-f", sam_type, "-m" , mode, "-s", "no", "-t", 
+    args = ['htseq-count',"-r", "name", "-q", "-a", "0", 
+            "-f", sam_type, "-m" , mode, "-s", "no", "-t", 
             "exon", "-i","gene_id" , "-o", outputFile, samFile, gtfFile]
-    try:
-        subprocess.check_call(args, stdout=discard_output, stderr=subprocess.PIPE)
+    gc.collect()
+    try: 
+        process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
+                                   shell=False, close_fds=True)
+        (stdout, stderr) = process.communicate()
     except Exception as e:
-        error = "Error annotation: HTSEQ execution failed"
+        error = "Error annotation: HTSEQ execution failed\n" + e
+        print error
         logger.error(error)
-        logger.error(e)
         raise
     
     if not fileOk(outputFile):
-        error = "Error: output file is not present " + outputFile
+        error = "Error annotation: HTSEQ execution failed\n" + stderr
         logger.error(error)
+        print error
         raise RuntimeError(error + "\n")
       
     # Attach back the header to the SAM file

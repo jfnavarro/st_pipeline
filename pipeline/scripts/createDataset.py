@@ -12,9 +12,8 @@ import pysam
 import numpy as np
 import os
 import shelve
-import imp
 try:
-    imp.find_module('gdbm')
+    import gdbm
     found_gdbm = True
 except ImportError:
     found_gdbm = False
@@ -120,7 +119,10 @@ def parseUniqueEvents(filename, low_memory=False,
     
     sam_file.close()
     unique_transcripts = unique_events.values()
-    if low_memory: unique_events.close()
+    if low_memory: 
+        unique_events.close()
+        if os.path.isfile("st_temp_hash"):
+            os.remove("st_temp_hash")
     return unique_transcripts
 
 def main(filename, 

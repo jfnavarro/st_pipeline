@@ -15,6 +15,7 @@ import logging
 import subprocess
 import gzip
 from collections import defaultdict
+import gc
 
 class Pipeline():
     
@@ -521,8 +522,8 @@ class Pipeline():
                 safeRemove(old_rv_trimmed)
             if not self.keep_discarded_files: safeRemove(contaminated_sam)
             
-            # Unfortunately STAR will include all the reads in the output, including un-aligned reads
-            # Therefore, we need to extract the un-aligned reads
+            # Unfortunately STAR will include all the reads in the discarded reads output, including aligned reads
+            # Therefore, we need to extract the un-aligned reads which qre the one matched to rRNA
             old_fw_trimmed = fastq_fw_trimmed
             old_rv_trimmed = fastq_rv_trimmed
             self.logger.info("Starting rRNA filter discarding unmapped reads " + str(globaltime.getTimestamp()))
@@ -783,17 +784,15 @@ class Pipeline():
                      '--min-cluster-size', min_cluster_size,
                      '--mc-cluster', mc_cluster]
             
-        if self.output_folder:
-            args += ['--output-folder', self.output_folder]
-     
-        if output_template:
-            args += ['--output-file-template', output_template]
+        if self.output_folder: args += ['--output-folder', self.output_folder]
+        if output_template: args += ['--output-file-template', output_template]
+        if low_memory: args += ['--low-memory']
         
-        if low_memory:
-            args += ['--low-memory']
-                
+        gc.collect()      
         try:
-            proc = subprocess.Popen([str(i) for i in args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            proc = subprocess.Popen([str(i) for i in args], 
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                    shell=False, close_fds=True)
             (stdout, errmsg) = proc.communicate()
         except Exception as e:
             error = "Error creating dataset: createDataset execution failed"

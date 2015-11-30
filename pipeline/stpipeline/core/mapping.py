@@ -8,6 +8,7 @@ import logging
 import subprocess
 from stpipeline.common.stats import Stats
 from stpipeline.common.utils import *
+import gc
 
 def alignReads(forward_reads, 
                reverse_reads, 
@@ -136,8 +137,10 @@ def alignReads(forward_reads,
     args += ["--outReadsUnmapped", "Fastx"]
     
     try:
+        gc.collect()
         proc = subprocess.Popen([str(i) for i in args], 
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                close_fds=True, shell=False)
         (stdout, errmsg) = proc.communicate()
     except Exception as e:
         error = "Error mapping: STAR execution failed"
@@ -251,11 +254,14 @@ def barcodeDemultiplexing(readsContainingTr,
     if not keep_discarded_files:
         args.append("--no-unmatched-output")
         args.append("--no-ambiguous-output")
+        args.append("--no-results-output")
         
     args += [idFile, readsContainingTr, outputFilePrefix]
-
+    gc.collect()
     try:
-        proc = subprocess.Popen([str(i) for i in args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen([str(i) for i in args], 
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
+                                close_fds=True, shell=False)
         (stdout, errmsg) = proc.communicate()
     except Exception as e:
         error = "Error demultiplexing: taggd execution failed"
