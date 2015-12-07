@@ -8,7 +8,6 @@ import subprocess
 import os
 import pysam
 from stpipeline.common.utils import getExtension, Prepender, fileOk
-from errand_boy.transports.unixsocket import UNIXSocketTransport
 import gc
 
 #def annotateReadsFeatureCounts(samFile, gtfFile, mode, outputFolder=None):

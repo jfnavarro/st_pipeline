@@ -1,9 +1,0 @@
-stpipeline.egg-info
-build
-dist
-tests/*.pyc
-stpipeline/core/*.pyc
-stpipeline/common/*.pyc
-stpipeline/*.pyc
-dependencies/STAR-STAR_2.4.0j/
-RELEASE-VERSION
