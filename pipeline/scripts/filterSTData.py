@@ -4,7 +4,7 @@
 Script that takes the reads.bed file generated
 from the ST pipeline and a bunch of selections
 made in the ST Viewer and filters the reads.bed
-with the the barcodes that are contain in the selections.
+with the the barcodes that are present in the selections.
 """
 
 import argparse

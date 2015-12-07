@@ -28,6 +28,7 @@ class Transcript:
     x, count and y are int
     reads is a list of tuples (read_name, sequence, quality, chromosome, start, end)
     """
+    __slots__ = ('barcode','gene','x','y','count','reads')
     def __init__(self, barcode = None, gene = None, x = -1, y = -1, count = 0, reads = []):
         self.barcode = barcode
         self.gene = gene
@@ -116,7 +117,6 @@ def parseUniqueEvents(filename, low_memory=False,
             unique_events[key] += transcript
         except KeyError:
             unique_events[key] = transcript
-    
     sam_file.close()
     unique_transcripts = unique_events.values()
     if low_memory: 

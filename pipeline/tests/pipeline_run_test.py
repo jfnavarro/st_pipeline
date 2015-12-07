@@ -145,7 +145,6 @@ class TestPipeline(unittest.TestCase):
         
     @classmethod
     def tearDownClass(self):
-        return
         print "ST Pipeline Test Remove temporary output " + self.outdir
         for root, dirs, files in os.walk(self.outdir, topdown=False):
             for name in files:
