@@ -97,7 +97,8 @@ def alignReads(forward_reads,
     # alignEndsType Local standard local alignment with soft-clipping allowed EndToEnd: 
     # force end-to-end read alignment, do not soft-clip
     # chimSegmentMin if >0 To switch on detection of chimeric (fusion) alignments
-    
+    # --outMultimapperOrder Random multimap are written in Random order
+    # --outSAMmultNmax Number of multimap that we want to output 
     multi_map_number = 1 if disable_multimap else 10
     alignment_mode = "EndToEnd" if diable_softclipping else "Local"
     sjdb_overhang = 100 if use_splice_juntions else 0
@@ -107,11 +108,11 @@ def alignReads(forward_reads,
                   "--clip3pNbases", invTrimForward, invTrimReverse]
     io_flags   = ["--outFilterType", "Normal", 
                   "--outSAMtype", sam_type, "Unsorted",
-                  "--alignEndsType", alignment_mode, # default Local (allows soft clipping) #EndToEnd disables softclipping
+                  "--alignEndsType", alignment_mode, # default Local (allows soft clipping) #EndToEnd disables soft clipping
                   "--outSAMunmapped", "None", # unmapped reads not included in main output
                   "--outSAMorder", "Paired",    
                   "--outSAMprimaryFlag", "OneBestScore", 
-                  "--outFilterMultimapNmax", multi_map_number, # put to 1 to not include multiple mappings
+                  "--outFilterMultimapNmax", multi_map_number, # put to 1 to not include multiple mappings (default 10)
                   "--alignSJoverhangMin", 5, # default is 5
                   "--alignSJDBoverhangMin", 3, # default is 3
                   "--sjdbOverhang", sjdb_overhang, # 0 to not use splice junction database
@@ -122,7 +123,9 @@ def alignReads(forward_reads,
                   "--alignMatesGapMax", max_gap_size,
                   "--winBinNbits", 16,
                   "--winAnchorDistNbins", 9,
-                  "--chimSegmentMin", 0]
+                  "--chimSegmentMin", 0,
+                  "--readMatesLengthsIn", "NotEqual",
+                  "--genomeLoad", "NoSharedMemory"] # Options to use share remove can be given here 
 
     # Main parameters
     #--outSAMtype SAM SortedByCoordinate will output a SAM file sorted by coordinate

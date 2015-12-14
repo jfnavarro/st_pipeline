@@ -242,3 +242,7 @@ Version 0.7.4
 
 Version 0.7.5
 * Fixed a small bug
+
+Version 0.7.6
+* End coordinates now contain the whole read length
+* Make annotation strand aware (reverse)

@@ -73,9 +73,8 @@ def main(bed_file, min_data_value, disable_filter, max_cluster_size, min_density
             strand = str(tokens[5])
             gene = str(tokens[6])
             #barcode = str(tokens[7])
-            if gene != "ENSMUSG00000092341" and gene.upper() != "MALAT1":
-                if strand == "-":
-                    star_site = end_site
+            if gene.upper() != "ENSMUSG00000092341" and gene.upper() != "MALAT1":
+                if strand == "-": star_site = end_site
                 map_reads[(chromosome,strand,star_site)] += 1
      
     print "Printing grouped entries to a temp file..."   

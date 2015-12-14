@@ -79,17 +79,16 @@ def parseUniqueEvents(filename, low_memory=False,
     else:
         unique_events = dict()
     sam_type = getExtension(filename).lower()
-    flag =  "r" if sam_type == "sam" else "rb"
+    flag = "r" if sam_type == "sam" else "rb"
     sam_file = pysam.AlignmentFile(filename, flag)
     for rec in sam_file.fetch():
         clear_name = str(rec.query_name)
-        seq = ""
-        if molecular_barcodes:
-            seq = str(rec.query_sequence)[mc_start_position:mc_end_position]
-        #qual = str(rec.query_qualities)
+        seq = str(rec.query_sequence)[mc_start_position:mc_end_position] if molecular_barcodes else ""
         mapping_quality = int(rec.mapping_quality)
         start = int(rec.reference_start)
-        end = int(rec.reference_end)
+        # rec.reference_end will only count mapped reads 
+        # so we define as end the start position plus the read length
+        end = start + int(rec.query_length)
         chrom = str(sam_file.getrname(rec.reference_id))
         strand = "-" if rec.is_reverse else "+"
         # Get taggd tags

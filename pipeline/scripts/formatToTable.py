@@ -42,34 +42,33 @@ def main(input_files, outfile):
         for line in filehandler.readlines()[1:]:
             tokens = line.split()
             chromosome = str(tokens[0])
-            start_site = str(tokens[1])
-            end_site = str(tokens[2])
+            start_site = int(tokens[1])
+            end_site = int(tokens[2])
             strand = str(tokens[5])
             #gene = tokens[6]
             barcode = str(tokens[7])
-            map_original_clusters[(chromosome,strand)].append((barcode,int(start_site),int(end_site)))
+            map_original_clusters[(chromosome,strand)].append((barcode,start_site,end_site))
                             
     # loads all the clusters
     map_clusters = defaultdict(int)
     clusters = set()
     barcodes = set()
     with open(bed_file, "r") as filehandler:
-        for line in filehandler.readlines()[1:]:
+        for line in filehandler.readlines():
             tokens = line.split()
             chromosome = str(tokens[0])
-            strand = str(tokens[1])
             start = int(tokens[2])
+            strand = str(tokens[1])
             end = int(tokens[3])
             # doing a full search of intersections over all barcodes
             # If we could rely on that no barcodes were missing doing the clustering we could
             # a faster approach not needing to iterate all the barcodes but only one   
             # this intersection method is prob overcounting
             for barcode_orig, start_orig, end_orig in map_original_clusters[chromosome, strand]:
-                if strand == "-":
-                    start_orig = end_orig
-                if start_orig >= start and start_orig <= end:
+                if strand == "-": start_orig = end_orig
+                if (start_orig >= start and start_orig <= end):
                     map_clusters[(barcode_orig,chromosome,strand,start,end)] += 1
-                    barcodes.add(barcode_orig) 
+                barcodes.add(barcode_orig) 
             clusters.add((chromosome,strand,start,end))    
     
     # write cluster count for each barcode 

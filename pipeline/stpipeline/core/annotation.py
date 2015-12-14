@@ -64,7 +64,7 @@ def annotateReads(samFile, gtfFile, mode, outputFolder=None):
     #-t (feature type to be used in GFF)
     #-r (input sorted order : name - pos)
     args = ['htseq-count',"-r", "name", "-q", "-a", "0", 
-            "-f", sam_type, "-m" , mode, "-s", "no", "-t", 
+            "-f", sam_type, "-m" , mode, "-s", "reverse", "-t", 
             "exon", "-i","gene_id" , "-o", outputFile, samFile, gtfFile]
     gc.collect()
     try: 

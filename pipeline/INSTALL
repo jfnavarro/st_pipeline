@@ -6,15 +6,15 @@ To install the st_pipeline on your MAC, Linux or UPPMAX follow the instructions 
 	- echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
 	- echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
 	- echo 'eval "$(pyenv init -)"' >> ~/.bash_profile
-	- exec "$SHELL" #or log out and log in
+	- exec "$SHELL" # or log out and log in if the pythong environment gives problems
 	- pyenv install 2.7.6
 	- pyenv rehash
 	- pyenv global 2.7.6
 	
 	NOTE (the following does not apply for UPPMAX) : 
 	you can use other type of virtual environments or install
-	in everything in your system with root permissions. For that you need to install PIP,
-	SETUPTOOLS and do everything as SUDO user.
+	in everything in your system with root permissions. 
+	For that you need to install PIP, SETUPTOOLS and do everything as SUDO user.
 	
 2) download the pipeline file on your computer from ST Google DOCS
 
@@ -31,8 +31,8 @@ To install the st_pipeline on your MAC, Linux or UPPMAX follow the instructions 
 5) Install STAR:
 
    cd pipeline/dependencies
-   unzip STAR-STAR_2.4.0j.zip
-   cd STAR-STAR_2.4.0j/bin/Linux_x86_64
+   unzip STAR-2.5.0b.zip
+   cd STAR-2.5.0b/bin/Linux_x86_64  #or MAC if you install it in MAC
    cp STAR ~/bin
 
 6) run the commands:
