@@ -37,7 +37,6 @@ setup(
     'scipy',
     'numpy',
     'taggd>=0.2.9',
-    'counttrie',
     'pandas'
   ],
   test_suite = 'tests',

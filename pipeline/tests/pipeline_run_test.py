@@ -142,6 +142,9 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.inverse_trimming_fw = 1
         self.pipeline.inverse_trimming_rv = 1
         self.pipeline.low_memory = True
+        self.pipeline.two_pass_mode = True
+        self.pipeline.two_pass_mode_genome = genomefasta
+        self.pipeline.sam_type = "BAM"
         
     @classmethod
     def tearDownClass(self):

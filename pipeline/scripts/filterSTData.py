@@ -35,7 +35,7 @@ def main(bed_file, barcodes_files, outfile):
         with open(outfile, "w") as filehandler_write:
             lines = filehandler_read.readlines()
             first_line = lines.pop(0).strip()
-            filehandler_write.write(first_line)
+            filehandler_write.write(first_line + "\n")
             for line in lines:
                 tokens = line.split()
                 bc = tokens[7]
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     parser.add_argument("bed_file", 
                         help="Tab delimited file containing the clusters and the barcodes")
     parser.add_argument("--outfile", help="Name of the output file")
-    parser.add_argument( "--barcodes-files", nargs='+', type=str,
+    parser.add_argument("--barcodes-files", nargs='+', type=str,
                         help="Tab delimited file containing barcodes from the viewer")
     args = parser.parse_args()
     main(args.bed_file, args.barcodes_files, args.outfile)

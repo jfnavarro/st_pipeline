@@ -9,7 +9,7 @@ def removeAdaptor(read, adaptor, trimming, action="3"):
     :param read is a tuple (name,sequence,quality)
     :param adaptor is a string containing the adaptor sequence
     :param trimming is the bases to trim in the read (>=0 and <= len(sequence))
-    :param action defines that to do if adaptor is found
+    :param action defines what to do if adaptor is present in the read
     Tries to find the given adaptor in the given read
     If adaptor is found three actions can be performed 
       - 3 : removes the adaptor and everything before it from the 3 prime end (default)
@@ -17,7 +17,7 @@ def removeAdaptor(read, adaptor, trimming, action="3"):
       - discard both (returns empty read)
     """
     
-    if read is None or len(read[1]) < (trimming + len(adaptor)):
+    if len(read[1]) < (trimming + len(adaptor)):
         return read
         
     seq = read[1][trimming:]

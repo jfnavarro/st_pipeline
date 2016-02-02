@@ -65,8 +65,8 @@ def main(input_files, outfile):
             # a faster approach not needing to iterate all the barcodes but only one   
             # this intersection method is prob overcounting
             for barcode_orig, start_orig, end_orig in map_original_clusters[chromosome, strand]:
-                if strand == "-": start_orig = end_orig
-                if (start_orig >= start and start_orig <= end):
+                if strand == "-": start_orig = (end_orig - 1)
+                if (start_orig >= start and start_orig < end):
                     map_clusters[(barcode_orig,chromosome,strand,start,end)] += 1
                 barcodes.add(barcode_orig) 
             clusters.add((chromosome,strand,start,end))    

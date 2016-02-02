@@ -1,9 +1,11 @@
 #! /usr/bin/env python
 #@author Jose Fernandez
 """ 
-Scripts that parses a SAM or BAM file generated from Taggd and creates
-a JSON file with the ST data and a BED file with the reads. It does so
-by aggregating the reads for unique gene-barcode tuples. 
+Scripts that parses a SAM or BAM file containing
+the aligned reads and the BARCODE,X,Y,UMI as Tags (BZ)
+It generates JSON file with the ST data and a BED file with the reads. It does so
+by aggregating the reads for unique gene-barcode tuples and removing
+duplicates using the UMIs. 
 """
 import sys
 import json
@@ -59,10 +61,7 @@ class Transcript:
     def toBarcodeDict(self):
         return {'barcode': self.barcode, 'gene': self.gene, 'x': self.x, 'y': self.y, 'hits': self.count}
 
-def parseUniqueEvents(filename, low_memory=False, 
-                      molecular_barcodes=False, 
-                      mc_start_position=18, 
-                      mc_end_position=27):
+def parseUniqueEvents(filename, low_memory=False, molecular_barcodes=False):
     """
     Parses the transcripts present in the filename given as input.
     It expects a SAM file where the barcode and coordinates are present in the tags
@@ -81,31 +80,30 @@ def parseUniqueEvents(filename, low_memory=False,
     sam_type = getExtension(filename).lower()
     flag = "r" if sam_type == "sam" else "rb"
     sam_file = pysam.AlignmentFile(filename, flag)
-    for rec in sam_file.fetch():
+    for rec in sam_file.fetch(until_eof=True):
         clear_name = str(rec.query_name)
-        seq = str(rec.query_sequence)[mc_start_position:mc_end_position] if molecular_barcodes else ""
         mapping_quality = int(rec.mapping_quality)
         start = int(rec.reference_start)
-        # rec.reference_end will only count mapped reads 
-        # so we define as end the start position plus the read length
-        end = start + int(rec.query_length)
+        end = int(rec.reference_end)
         chrom = str(sam_file.getrname(rec.reference_id))
         strand = "-" if rec.is_reverse else "+"
         # Get taggd tags
-        barcode,x,y,gene = (None,None,None,None)
+        barcode,x,y,gene,seq = (None,None,None,None,None)
         for (k, v) in rec.tags:
             if k == "B0":
                 barcode = str(v)
             elif k == "B1":
-                x = int(v)
+                x = int(v) ## The X coordinate
             elif k == "B2":
-                y = int(v)
+                y = int(v) ## The Y coordinate
             elif k == "XF":
                 gene = str(v)
+            elif molecular_barcodes and k == "B3":
+                seq = str(v) ## The umi
             else:
                 continue
         # Check that all tags are present
-        if any(tag is None for tag in [barcode,x,y,gene]):
+        if any(tag is None for tag in [barcode,x,y,gene]) or (molecular_barcodes and not seq):
             sys.stdout.write("Warning: Missing attributes for record %s\n" % clear_name)
             continue
         # Create a new transcript and assign it to dictionary
@@ -116,6 +114,7 @@ def parseUniqueEvents(filename, low_memory=False,
             unique_events[key] += transcript
         except KeyError:
             unique_events[key] = transcript
+            
     sam_file.close()
     unique_transcripts = unique_events.values()
     if low_memory: 
@@ -129,9 +128,7 @@ def main(filename,
          output_file_template,
          molecular_barcodes,
          mc_cluster,
-         allowed_mismatches, 
-         mc_start_position, 
-         mc_end_position, 
+         allowed_mismatches,
          min_cluster_size,
          low_memory):
     
@@ -149,12 +146,6 @@ def main(filename,
     
     if mc_cluster not in ["naive","hierarchical"]:
         sys.stderr.write("Error: type of clustering algorithm is incorrect\n")
-        sys.exit(-1)
-         
-    if molecular_barcodes and (mc_start_position < 0  
-                               or mc_end_position < 0 or mc_end_position <= mc_start_position):
-        sys.stderr.write("Error: Molecular Barcodes option is " \
-                         "activated but the start/end positions parameters are incorrect\n")
         sys.exit(-1)
     
     if low_memory and not found_gdbm:
@@ -184,8 +175,8 @@ def main(filename,
     else:
         clusters_func = countMolecularBarcodesClustersHierarchical
     # Parse unique events to generate JSON and BED files        
-    unique_events = parseUniqueEvents(filename, low_memory, 
-                                      molecular_barcodes, mc_start_position, mc_end_position)
+    unique_events = parseUniqueEvents(filename, low_memory,molecular_barcodes)
+    
     with open(os.path.join(output_folder, filenameReadsBED), "w") as reads_handler:
         reads_handler.write("Chromosome\tStart\tEnd\tRead\tScore\tStrand\tGene\tBarcode\n")
         for transcript in unique_events:
@@ -278,10 +269,6 @@ if __name__ == "__main__":
                         "Modes = {naive(default), hierarchical}")
     parser.add_argument('--mc-allowed-mismatches', default=1,
                         help='Number of allowed mismatches when applying the molecular barcodes filter')
-    parser.add_argument('--mc-start-position', default=18,
-                        help='Position (base wise) of the first base of the molecular barcodes')
-    parser.add_argument('--mc-end-position', default=27,
-                        help='Position (base wise) of the last base of the molecular barcodes')
     parser.add_argument('--min-cluster-size', default=2,
                         help='Min number of equal molecular barcodes to count as a cluster')
     parser.add_argument('--low-memory', default=False, action="store_true",
@@ -294,8 +281,6 @@ if __name__ == "__main__":
          args.molecular_barcodes, 
          args.mc_cluster,
          int(args.mc_allowed_mismatches), 
-         int(args.mc_start_position),
-         int(args.mc_end_position), 
          int(args.min_cluster_size),
          args.low_memory)
                                     

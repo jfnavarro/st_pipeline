@@ -125,7 +125,7 @@ def main(bed_file, min_data_value, disable_filter, max_cluster_size, min_density
         tempfile.mktemp(prefix="st_countClusters_clusters_filtered")
         paracluFilter(clusters_file, temp_filtered_clusters, 
                       max_cluster_size, min_density_increase, False)
-        os.rename(temp_filtered_clusters, clusters_file)
+        os.rename(temp_filtered_clusters, "filtered_" + clusters_file)
         
     print "DONE!"
             

@@ -1,7 +1,7 @@
 ST Pipeline contains the tools and scripts needed to process and analyze the sequenced
 reads files generated in the Spatial Transcriptomics group in FASTQ format. 
 
-The required input files are two fastq files, a genome reference, an annotation reference and optionally the file
+The required input files are two fastq files, a genome reference, an annotation reference and the file
 containing the IDs (from the array-chip-plate) in case the reads need
 to be spatially demultiplexed, plus the optional configuration parameters. 
 

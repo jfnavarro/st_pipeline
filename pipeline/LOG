@@ -246,3 +246,20 @@ Version 0.7.5
 Version 0.7.6
 * End coordinates now contain the whole read length
 * Make annotation strand aware (reverse)
+* Updated to STAR 2.5
+
+Version 0.7.7
+* Small memory improvements
+* Updates in plotting script
+
+Version 0.8.0
+* Added option to do the STAR 2 pass mode
+* Removed option to run pipeline without IDs
+* Speed improvements
+* Perform demultiplex after mapping
+* No attaching the barcode to reverse reads
+* Removing some parameters
+* Some improvements in stDataPlotter
+* Option to use BAM format
+* Removed annotation filtering step
+* Removed forward trimming parameters

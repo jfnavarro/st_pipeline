@@ -34,9 +34,11 @@ import pandas as pd
 import math
 
 ## This must be the same as R colors from numbers
-#color_map = ["white", "black", "red", "green", "blue", "cyan", "pink", "yellow", "grey"]
 ## This is the same as the stclust v 0.1.0
-color_map = ["red", "green", "blue", "orange", "cyan", "yellow", "darkorchid", "saddlebrown", "darkcyan", "gray"]
+#colors = c("red", "green", "blue", "orange", "cyan", "yellow", "darkorchid", "saddle brown", 
+#"dark cyan", "gray", "dark red", "dark green", "dark blue", "dark orange", "gold", "black")
+color_map = ["red", "green", "blue", "orange", "cyan", "yellow", "orchid", 
+             "saddlebrown", "darkcyan", "gray", "darkred", "darkgreen", "darkblue", "antiquewhite", "bisque", "black"]
 
 def parseJSON(input_data, cutoff, highlight_regexes, highlights, 
               expression, filter_genes, norm_counts_table, use_norm=False):
@@ -139,7 +141,8 @@ def main(input_data,
          highlight_alpha,
          dot_size,
          normalized_counts,
-         filter_genes):
+         filter_genes,
+         highlight_color):
     
     #TODO add checks for parameters
     
@@ -198,15 +201,21 @@ def main(input_data,
 
     # Parse input data
     if input_data.endswith(".json"):
-        highlights,expression = parseJSON(input_data, cutoff,
+        highlights,expression = parseJSON(input_data, 
+                                          cutoff,
                                           highlight_regexes, 
-                                          highlights, expression, 
-                                          filter_genes, norm_counts_table, use_norm)
+                                          highlights, 
+                                          expression, 
+                                          filter_genes, 
+                                          norm_counts_table, use_norm)
     else:
-        highlights,expression = parseCSV(input_data, cutoff, 
+        highlights,expression = parseCSV(input_data, 
+                                         cutoff, 
                                          highlight_regexes, 
-                                         highlights, expression, 
-                                         filter_genes, norm_counts_table, use_norm)
+                                         highlights, 
+                                         expression, 
+                                         filter_genes, 
+                                         norm_counts_table, use_norm)
      
     x, y = expression.nonzero()
 
@@ -228,7 +237,7 @@ def main(input_data,
         if highlight_barcodes:
             x2, y2 = colors.nonzero()
             color_list = set(colors[x2,y2].tolist())
-            cmap = color_map[min(color_list):max(color_list)+1]
+            cmap = color_map[min(color_list)-1:max(color_list)]
             sc = a.scatter(x2, y2,
                            c=colors[x2, y2],
                            cmap=matplotlib.colors.ListedColormap(cmap),
@@ -245,11 +254,16 @@ def main(input_data,
         
         if len(highlights[i]) == 0:
             continue
-
+        
+        base_trans = ax[i].transData
+        tr = transforms.Affine2D(matrix = alignment_matrix) + base_trans
+        
         x, y = zip(*highlights[i])
-        ax[i].scatter(x, y, c="#CA0020",
-                      edgecolor="#CA0020",
+        ax[i].scatter(x, y, 
+                      c=highlight_color,
+                      edgecolor=highlight_color,
                       s=dot_size + 10,
+                      transform=tr,
                       label=highlight_regexes[i])
 
     for i, a in enumerate(ax):
@@ -286,7 +300,7 @@ if __name__ == '__main__':
                         help="When given the data will plotted on top of the image, \
                         if the alignment matrix is given the data will be aligned")
     parser.add_argument("--cutoff", help="Do not include genes below this reads cut off",
-                        type=int, default=None)
+                        type=float, default=None)
     parser.add_argument("--highlight-barcodes", default=None,
                         help="File with a list of barcodes in a column and a list of clusters in the other column")
     parser.add_argument("--alignment", 
@@ -307,6 +321,7 @@ if __name__ == '__main__':
                         default=None,
                         type=str,
                         action='append')
+    parser.add_argument("--highlight-color", default="blue", type=str, help="Color for the highlighted genes")
     args = parser.parse_args()
 
     main(args.input_data, 
@@ -319,4 +334,5 @@ if __name__ == '__main__':
          float(args.highlight_alpha),
          int(args.dot_size),
          args.normalized_counts,
-         args.filter_genes)
+         args.filter_genes,
+         args.highlight_color)

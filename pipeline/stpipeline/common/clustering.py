@@ -6,7 +6,6 @@ by their molecular barcodes using different approaches
 
 import numpy as np
 from scipy.cluster.hierarchy import linkage,fcluster
-import counttrie.counttrie as ct
 from collections import defaultdict
 from stpipeline.common.distance import hamming_distance
 import random
@@ -66,7 +65,7 @@ def countMolecularBarcodesClustersHierarchical(molecular_barcodes,
     def d(coord):
         i,j = coord
         return hamming_distance(molecular_barcodes[i][0], molecular_barcodes[j][0])
-    # Create hierarhical clustering and obtain flat clusters at the distance given
+    # Create hierarchical clustering and obtain flat clusters at the distance given
     indices = np.triu_indices(len(molecular_barcodes), 1)
     distance_matrix = np.apply_along_axis(d, 0, indices)
     linkage_cluster = linkage(distance_matrix, method=method)
@@ -84,51 +83,6 @@ def countMolecularBarcodesClustersHierarchical(molecular_barcodes,
         else:
             # Single cluster so we add all the reads
             clusters += [molecular_barcodes[i][1] for i in members]
-    return clusters
-
-def countMolecularBarcodesPrefixtrie(molecular_barcodes, 
-                                     allowed_mismatches, 
-                                     min_cluster_size, 
-                                     allow_indels=True):
-    """
-    :param molecular_barcodes a list of tuples (molecular_barcode, read)
-    :param allowed_mismatches how much distance we allow between clusters
-    :param min_cluster_size min number of reads to be count as cluster
-    This functions tries to finds clusters of similar reads given a min cluster size
-    and a minimum distance (allowed_mismatches). The clusters are built using the molecular
-    barcodes present in the reads sequences
-    It will return a list with the all the reads, for clusters of reads a random
-    read will be chosen. This will quarante that the list of reads returned
-    is unique and does not contain biological duplicates
-    This approach builds clusters using a prefix trie
-    """
-    trie = ct.CountTrie()
-    # keep a map of molecular_barcode -> reads to obtain the reads later in the clusters
-    reads = defaultdict(list)
-    # add the molecular barcodes to the prefix tree and also the reads to the map
-    for molecular_barcode in molecular_barcodes:
-        trie.add(molecular_barcode[0])
-        reads[molecular_barcode[0]].append(molecular_barcode[1])
-    # find clusters and add them to the final list of they are bigger than the minimum size
-    clusters = []
-    for molecular_barcode in molecular_barcodes:
-        cluster = trie.find_equal_length_optimized(molecular_barcode[0], 
-                                                   allowed_mismatches, allow_indels)
-        size_cluster = 0
-        original_reads = []
-        for clustered_mc in cluster:
-            size_cluster += trie.get_count(clustered_mc)
-            # get the original reads
-            original_reads += reads[clustered_mc]
-            # remove the original reads to not add them twice
-            del reads[clustered_mc]
-            trie.remove(clustered_mc)
-        # if it is a cluster we add 1 random read otherwise we add
-        # all the reads
-        if size_cluster >= min_cluster_size and len(original_reads) > 0:
-            clusters.append(random.choice(original_reads))
-        else:
-            clusters += [read for read in original_reads]  
     return clusters
     
 def countMolecularBarcodesClustersNaive(molecular_barcodes, 

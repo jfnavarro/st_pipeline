@@ -138,73 +138,6 @@ def writefq(fp):  # This is a coroutine
             fp.write(read)
     except GeneratorExit:
         return
-
-#TODO Cythonize this 
-def filter_rRNA_reads(forward_reads, reverse_reads, qa_stats, outputFolder=None):
-    """
-    :param forward_reads reads coming from un-aligned in STAR (rRNA filter)
-    :param reverse_reads reads coming from un-aligned in STAR (rRNA filter)
-    :param outputFolder optional folder to output files
-    Very annoying but STAR when outputs un-aligned reads, it outputs all the reads
-    and adds a field to the header (00 for unaligned and 01 for aligned)
-    We use STAR for the rRNA filter before mapping so this function is needed
-    to extract un-aligned reads from all the reads. This function will only
-    work when used after the rRNA filter step. It returns the sub-set of un-aligned
-    reads
-    """
-    logger = logging.getLogger("STPipeline")
-    
-    out_rw = 'R2_rRNA_filtered_clean.fastq'
-    out_fw = 'R1_rRNA_filtered_clean.fastq'
-    
-    if outputFolder is not None and os.path.isdir(outputFolder):
-        out_rw = os.path.join(outputFolder, out_rw)
-        out_fw = os.path.join(outputFolder, out_fw)
-    
-    out_fw_handle = safeOpenFile(out_fw, 'w')
-    out_fw_writer = writefq(out_fw_handle)
-    out_rw_handle = safeOpenFile(out_rw, 'w')
-    out_rw_writer = writefq(out_rw_handle)
-    fw_file = safeOpenFile(forward_reads, "rU")
-    rw_file = safeOpenFile(reverse_reads, "rU")
-    
-    # If the line contains a 00 according to STAR it is un-mapped
-    # We write a fake sequence for the mapped ones (the one that are contaminated)
-    contaminated_fw = 0
-    contaminated_rv = 0
-    for line1, line2 in izip(readfq(fw_file), readfq(rw_file)):
-        header_fw = line1[0]
-        header_rv = line2[0]
-        # Check if forward read is mapped or not
-        if header_fw.split()[1] == "00":
-            out_fw_writer.send(line1)
-        else:
-            contaminated_fw += 1
-            out_fw_writer.send(getFake(header_fw, len(line1[1])))
-        # Check if reverse read is mapped or not    
-        if header_rv.split()[1] == "00":
-            out_rw_writer.send(line2)
-        else:
-            contaminated_rv += 1
-            out_rw_writer.send(getFake(header_rv, len(line2[1])))
-   
-    out_fw_writer.close()
-    out_rw_writer.close()
-    out_fw_handle.close()
-    out_rw_handle.close()
-    fw_file.close()
-    rw_file.close()
-    
-    if not fileOk(out_fw) or not fileOk(out_rw):
-        error = "Error filtering rRNA un-mapped, output file is not present %s,%s" % (out_fw,out_rw)
-        logger.error(error)
-        raise RuntimeError(error + "\n")
-    
-    # Add stats to QA Stats object
-    qa_stats.reads_after_rRNA_trimming = (qa_stats.reads_after_trimming_forward 
-                                          + qa_stats.reads_after_trimming_reverse) \
-                                          - (contaminated_fw + contaminated_rv)
-    return out_fw, out_rw
       
 def reverse_complement(seq):
     """
@@ -223,7 +156,7 @@ def reverse_complement(seq):
         bases = bases.replace(v,k)
     return bases
   
-#TODO optimize an refactor this
+#TODO optimize an refactor this (maybe use reg-exp)
 def check_umi_template(umi, template):
     """
     Checks that the UMI given as input complies
@@ -293,7 +226,7 @@ def check_umi_template(umi, template):
 
 #TODO Cythonize this 
 def reformatRawReads(fw, 
-                     rw, 
+                     rw,
                      qa_stats,
                      barcode_start=0, 
                      barcode_length=18,
@@ -301,7 +234,6 @@ def reformatRawReads(fw,
                      molecular_barcodes=False, 
                      mc_start=18, 
                      mc_end=27,
-                     trim_fw=42, 
                      trim_rw=5,
                      min_qual=20, 
                      min_length=28,
@@ -322,7 +254,6 @@ def reformatRawReads(fw,
     :param molecular_barcodes if True the forward reads contain molecular barcodes
     :param mc_start the start position of the molecular barcodes if any
     :param mc_end the end position of the molecular barcodes if any
-    :param trim_fw how many bases we want to trim (not consider in the forward)
     :param trim_rw how many bases we want to trim (not consider in the reverse)
     :param min_qual the min quality value to use to trim quality
     :param min_length the min valid length for a read after trimming
@@ -335,176 +266,111 @@ def reformatRawReads(fw,
     :param umi_filter performs a UMI quality filter when True
     :param umi_filter_template the template to use for the UMI filter
     This function does three things (all here for speed optimization)
-      - It appends the barcode and the molecular barcode (if any)
-        from forward reads to reverse reads
+      - It performs a sanity check
       - It performs a BWA quality trimming discarding very short reads
       - It removes adaptors from the reads (optional)
     """
     logger = logging.getLogger("STPipeline")
-    
+    # Create file handlers
     out_rw = 'R2_trimmed_formated.fastq'
-    out_fw = 'R1_trimmed_formated.fastq'
-    out_fw_discarded = 'R1_trimmed_formated_discarded.fastq'
     out_rw_discarded = 'R2_trimmed_formated_discarded.fastq'
-    
     if outputFolder and os.path.isdir(outputFolder):
         out_rw = os.path.join(outputFolder, out_rw)
-        out_fw = os.path.join(outputFolder, out_fw)
-        out_fw_discarded = os.path.join(outputFolder, out_fw_discarded)
         out_rw_discarded = os.path.join(outputFolder, out_rw_discarded)
-    
-    out_fw_handle = safeOpenFile(out_fw, 'w')
-    out_fw_writer = writefq(out_fw_handle)
     out_rw_handle = safeOpenFile(out_rw, 'w')
     out_rw_writer = writefq(out_rw_handle)
-
     if keep_discarded_files:
         out_rw_handle_discarded = safeOpenFile(out_rw_discarded, 'w')
         out_rw_writer_discarded = writefq(out_rw_handle_discarded)
-        out_fw_handle_discarded = safeOpenFile(out_fw_discarded, 'w')
-        out_fw_writer_discarded = writefq(out_fw_handle_discarded)
     
-    # Open fastq files with the fastq parser
-    fw_file = safeOpenFile(fw, "rU")
-    rw_file = safeOpenFile(rw, "rU")
-
     # Some counters
     total_reads = 0
-    dropped_fw = 0
     dropped_rw = 0
     dropped_umi = 0
     
-    # Build fake adpators with the parameters given
+    # Build fake sequence adaptors with the parameters given
     adaptorA = "".join("A" for k in xrange(polyA_min_distance))
     adaptorT = "".join("T" for k in xrange(polyT_min_distance))
     adaptorG = "".join("G" for k in xrange(polyG_min_distance))
     adaptorC = "".join("C" for k in xrange(polyG_min_distance))
     
+    # Check if barcode settings are correct
     iscorrect_mc = molecular_barcodes
     if mc_start < (barcode_start + barcode_length) \
     or mc_end < (barcode_start + barcode_length):
-        logger.warning("Your molecular barcodes sequences overlap with the barcodes sequences")
+        logger.warning("Your UMI sequences overlap with the barcodes sequences")
         iscorrect_mc = False
-        
+    
+    # Open fastq files with the fastq parser
+    fw_file = safeOpenFile(fw, "rU")
+    rw_file = safeOpenFile(rw, "rU")
+    # Iterate records in paralel (Assumes they are ordered by name)
     for line1, line2 in izip(readfq(fw_file), readfq(rw_file)):
         
-        if line1 is None or line2 is None:
+        if not line1 or not line2:
             logger.error("The input files %s,%s are not of the same length" % (fw,rw))
             break
         
         header_fw = line1[0]
         header_rv = line2[0]
         sequence_fw = line1[1]
-        num_bases_fw = len(sequence_fw)
         sequence_rv = line2[1]
         num_bases_rv = len(sequence_rv)
-        quality_fw = line1[2]
         quality_rv = line2[2]
         
         if header_fw.split()[0] != header_rv.split()[0]:
             logger.warning("Pair reads found with different names %s and %s" % (header_fw,header_rv))
-        
+            
+        # Increase reads counter
         total_reads += 1
         
-        # Get the barcode and molecular barcode if any from the forward read
-        # to be attached to the reverse read
-        to_append_sequence = sequence_fw[barcode_start:barcode_length]
-        to_append_sequence_quality = quality_fw[barcode_start:barcode_length]
-        if iscorrect_mc:
-            to_append_sequence += sequence_fw[mc_start:mc_end]
-            to_append_sequence_quality += quality_fw[mc_start:mc_end]
-            # If we want to check for UMI quality and the UMI is incorrect
-            # we discard the reads
-            if umi_filter and not check_umi_template(sequence_fw[mc_start:mc_end], umi_filter_template):
-                dropped_umi += 1
-                line1 = None
-                line2 = None
+        # If we want to check for UMI quality and the UMI is incorrect
+        # we discard the reads
+        if iscorrect_mc and umi_filter \
+        and not check_umi_template(sequence_fw[mc_start:mc_end], umi_filter_template):
+            dropped_umi += 1
+            line2 = None
                                                       
         # If read - trimming is not long enough or has a high AT content discard...
-        if (num_bases_fw - trim_fw) < min_length or \
-        ((sequence_fw.count("A") + sequence_fw.count("T")) / num_bases_fw) * 100 >= filter_AT_content:
-            line1 = None
         if (num_bases_rv - trim_rw) < min_length or \
         ((sequence_rv.count("A") + sequence_rv.count("T")) / num_bases_rv) * 100 >= filter_AT_content:
             line2 = None
               
-        # if indicated we remove the adaptor PolyA from both reads
-        if polyA_min_distance > 0:
-            line1 = removeAdaptor(line1, adaptorA, trim_fw, "5")
-            line2 = removeAdaptor(line2, adaptorA, trim_rw, "5")
+        # if indicated we remove the adaptor PolyA from reverse reads
+        if polyA_min_distance > 0 and line2: line2 = removeAdaptor(line2, adaptorA, trim_rw, "5") 
+        # if indicated we remove the adaptor PolyT from reverse reads
+        if polyT_min_distance > 0 and line2: line2 = removeAdaptor(line2, adaptorT, trim_rw, "5") 
+        # if indicated we remove the adaptor PolyG from reverse reads
+        if polyG_min_distance > 0 and line2: line2 = removeAdaptor(line2, adaptorG, trim_rw, "5") 
+        # if indicated we remove the adaptor PolyC from reverse reads
+        if polyC_min_distance > 0 and line2: line2 = removeAdaptor(line2, adaptorC, trim_rw, "5") 
             
-        # if indicated we remove the adaptor PolyT from both reads
-        if polyT_min_distance > 0:
-            line1 = removeAdaptor(line1, adaptorT, trim_fw, "5")
-            line2 = removeAdaptor(line2, adaptorT, trim_rw, "5")
-       
-        # if indicated we remove the adaptor PolyG from both reads
-        if polyG_min_distance > 0:
-            line1 = removeAdaptor(line1, adaptorG, trim_fw, "5")
-            line2 = removeAdaptor(line2, adaptorG, trim_rw, "5")
-        
-        # if indicated we remove the adaptor PolyC from both reads
-        if polyC_min_distance > 0:
-            line1 = removeAdaptor(line1, adaptorC, trim_fw, "5")
-            line2 = removeAdaptor(line2, adaptorC, trim_rw, "5")
-          
-        line2_trimmed = None
-        line1_trimmed = None
-             
         # Trim reverse read
-        if line2 is not None:
-            line2_trimmed = trim_quality(line2, trim_rw, min_qual, min_length, qual64)
-            
-        # Trim forward
-        if line1 is not None:
-            line1_trimmed = trim_quality(line1, trim_fw, min_qual, min_length, qual64)
+        line2 = trim_quality(line2, trim_rw, min_qual, min_length, qual64) if line2 else None
         
-        if line1_trimmed is not None:
-            out_fw_writer.send(line1_trimmed)
+        # Write reverse read to output
+        if line2:
+            out_rw_writer.send(line2)
         else:
-            # Write fake sequence so mapping wont fail for having reads with different lengths
-            out_fw_writer.send(getFake(header_fw, num_bases_fw))
-            dropped_fw += 1
-            if keep_discarded_files:
-                # Write to discarded the original record
-                out_fw_writer_discarded.send((header_fw, sequence_fw, quality_fw))
-
-        if line2_trimmed is not None:
-            # Attach the barcode from the forward read only if the reverse read has not been completely trimmed
-            new_seq = to_append_sequence + line2_trimmed[1]
-            new_qual = to_append_sequence_quality + line2_trimmed[2]
-            out_rw_writer.send((line2_trimmed[0], new_seq, new_qual))
-        else:
-            # Write fake sequence so mapping wont fail for having reads with different lengths
-            out_rw_writer.send(getFake(header_rv, num_bases_rv))
             dropped_rw += 1  
             if keep_discarded_files:
                 # Write to discarded the original record
                 out_rw_writer_discarded.send((header_rv, sequence_rv, quality_rv))
     
-    out_fw_writer.close()
-    out_rw_writer.close()
-    out_fw_handle.close()
     out_rw_handle.close()
-    if keep_discarded_files:
-        out_fw_handle_discarded.close()
-        out_rw_handle_discarded.close()
+    if keep_discarded_files: out_rw_handle_discarded.close()
     fw_file.close()
     rw_file.close()
     
-    if not fileOk(out_fw) or not fileOk(out_rw):
-        error = "Error reformatting raw reads: output file not present/s %s , %s" % (out_fw , out_rw)
+    if not fileOk(out_rw):
+        error = "Error reformatting raw reads: output file not present %s" % (out_rw)
         logger.error(error)
         raise RuntimeError(error + "\n")
     else:
         logger.info("Trimming stats total reads (pair): %s" % (str(total_reads)))
-        logger.info("Trimming stats forward: %s reads have been dropped!" % (str(dropped_fw)))
-        perc1 = '{percent:.2%}'.format(percent= float(dropped_fw) / float(total_reads))
-        logger.info("Trimming stats forward: you just lost about %s of your data" % (perc1))
         logger.info("Trimming stats reverse: %s reads have been dropped!" % (str(dropped_rw))) 
         perc2 = '{percent:.2%}'.format(percent= float(dropped_rw) / float(total_reads) )
         logger.info("Trimming stats reverse: you just lost about %s of your data" % (perc2))
-        logger.info("Trimming stats reads (forward) remaining: %s" % (str(total_reads - dropped_fw)))
         logger.info("Trimming stats reads (reverse) remaining: %s" % (str(total_reads - dropped_rw)))
         if umi_filter:
             logger.info("Trimming stats dropped pairs due to incorrect UMI: %s" % (str(dropped_umi)))
@@ -512,9 +378,42 @@ def reformatRawReads(fw,
         # Adding stats to QA Stats object
         qa_stats.input_reads_forward = total_reads
         qa_stats.input_reads_reverse = total_reads
-        qa_stats.reads_after_trimming_forward = total_reads - dropped_fw
+        qa_stats.reads_after_trimming_forward = 0
         qa_stats.reads_after_trimming_reverse = total_reads - dropped_rw
         
-    return out_fw, out_rw
+    return out_rw
 
-
+def hashDemultiplexedReads(reads,
+                           has_umi,
+                           umi_start,
+                           umi_end):
+    """
+    @param reads fastq reads after demultiplexing
+    @param has_umi True if the read sequence contains UMI
+    @param umi_start the start position of the UMI
+    @param umi_end the end position of the UMI
+    This function extracts the read name and the barcode
+    from the reads given as input and returns a hash
+    with the clean read name as key and (barcode,x,y,umi) as
+    values (umi is optional)
+    """
+    hash_reads = dict()
+    fastq_file = safeOpenFile(reads, "rU")
+    for line in readfq(fastq_file):
+        # Assumes the header ends like this B0:Z:GTCCCACTGGAACGACTGTCCCGCATC B1:Z:678 B2:Z:678
+        header_tokens = line[0].split()
+        assert(len(header_tokens) == 5) 
+        barcode = header_tokens[-3]
+        # TODO double check that the order of X and Y is correct
+        x = header_tokens[-2]
+        y = header_tokens[-1]
+        # Assumes STAR will only output the first token of the read name
+        # We keep the same naming for the extra attributes
+        tags = [barcode,x,y]
+        if has_umi:
+            # Add the UMI as an extra tag
+            umi = line[1][umi_start:umi_end]
+            tags.append("B3:Z:%s" % umi)
+        hash_reads[header_tokens[0]] = tags
+    fastq_file.close()
+    return hash_reads
