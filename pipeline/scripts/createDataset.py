@@ -21,6 +21,7 @@ except ImportError:
     found_gdbm = False
 from stpipeline.common.utils import getExtension
 from collections import defaultdict
+from blist import sorteddict
 from stpipeline.common.clustering import countMolecularBarcodesClustersHierarchical, countMolecularBarcodesClustersNaive
 
 class Transcript:
@@ -73,10 +74,10 @@ def parseUniqueEvents(filename, low_memory=False, molecular_barcodes=False):
     :param mc_end_position the end position of the molecular barcode in the read
     """
     if low_memory:
-        #TODO use a random generated temp file instead
-        unique_events = shelve.Shelf(gdbm.open("st_temp_hash", "n")) 
+        #TODO use a global static name variable
+        unique_events = shelve.Shelf(gdbm.open("st_temp_hash_create_dataset", "n")) 
     else:
-        unique_events = dict()
+        unique_events = sorteddict()
     sam_type = getExtension(filename).lower()
     flag = "r" if sam_type == "sam" else "rb"
     sam_file = pysam.AlignmentFile(filename, flag)
@@ -119,8 +120,9 @@ def parseUniqueEvents(filename, low_memory=False, molecular_barcodes=False):
     unique_transcripts = unique_events.values()
     if low_memory: 
         unique_events.close()
-        if os.path.isfile("st_temp_hash"):
-            os.remove("st_temp_hash")
+        #TODO use a global static name variable
+        if os.path.isfile("st_temp_hash_create_dataset"):
+            os.remove("st_temp_hash_create_dataset")
     return unique_transcripts
 
 def main(filename, 

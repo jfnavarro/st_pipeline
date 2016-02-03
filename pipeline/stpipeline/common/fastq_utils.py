@@ -8,7 +8,14 @@ from stpipeline.common.adaptors import removeAdaptor
 import logging 
 from stpipeline.common.stats import Stats
 from itertools import izip
-
+from blist import sorteddict
+import shelve
+try:
+    import gdbm
+    found_gdbm = True
+except ImportError:
+    found_gdbm = False
+    
 def coroutine(func):
     """ 
     Coroutine decorator, starts coroutines upon initialization.
@@ -220,7 +227,7 @@ def check_umi_template(umi, template):
             if umi_base == "G":
                 return False
         else:
-            False
+            return False
             
     return True
 
@@ -386,18 +393,25 @@ def reformatRawReads(fw,
 def hashDemultiplexedReads(reads,
                            has_umi,
                            umi_start,
-                           umi_end):
+                           umi_end,
+                           low_memory):
     """
     @param reads fastq reads after demultiplexing
     @param has_umi True if the read sequence contains UMI
     @param umi_start the start position of the UMI
     @param umi_end the end position of the UMI
+    @param low_memory True to use a key-value db instead of dict
     This function extracts the read name and the barcode
     from the reads given as input and returns a hash
     with the clean read name as key and (barcode,x,y,umi) as
     values (umi is optional)
     """
-    hash_reads = dict()
+    if low_memory and found_gdbm:
+        #TODO use a global static name variable
+        hash_reads = shelve.Shelf(gdbm.open("st_temp_hash_demux", "n")) 
+    else:
+        hash_reads = sorteddict()
+
     fastq_file = safeOpenFile(reads, "rU")
     for line in readfq(fastq_file):
         # Assumes the header ends like this B0:Z:GTCCCACTGGAACGACTGTCCCGCATC B1:Z:678 B2:Z:678

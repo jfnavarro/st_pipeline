@@ -263,3 +263,8 @@ Version 0.8.0
 * Option to use BAM format
 * Removed annotation filtering step
 * Removed forward trimming parameters
+
+Version 0.8.1
+* Removed the pair mode keep option
+* Removed un-neccessary pair mode and mapped checks
+  after alignment

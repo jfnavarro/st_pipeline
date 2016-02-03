@@ -15,7 +15,12 @@ from stpipeline.common.saturation import computeSaturation
 from stpipeline.version import version_number
 import logging
 import gzip
-
+try:
+    import gdbm
+    found_gdbm = True
+except ImportError:
+    found_gdbm = False
+    
 class Pipeline():
     
     LogName = "STPipeline"
@@ -38,7 +43,6 @@ class Pipeline():
         self.ref_annotation = None
         self.expName = None
         self.htseq_mode = "intersection-nonempty"
-        self.pair_mode_keep = "reverse"
         self.htseq_no_ambiguous = False
         self.qual64 = False
         self.contaminant_index = None
@@ -112,7 +116,6 @@ class Pipeline():
         conds["min_intron_size"] = self.min_intron_size >= 0 and self.min_intron_size < self.max_intron_size
         conds["max_intron_size"] = self.max_intron_size > 0
         conds["max_gap_size"] = self.max_gap_size > 0
-        conds["pair_keep_mode"] = self.pair_mode_keep in ["forward", "reverse", "both"]
         conds["filter_AT_content"] = self.filter_AT_content >= 0 and self.filter_AT_content <= 100
         conds["sam_type"] = self.sam_type in ["BAM", "SAM"]
         if self.two_pass_mode and not os.path.isfile(self.two_pass_mode_genome):
@@ -227,9 +230,6 @@ class Pipeline():
                                 help="Remove PolyGs and everything after it in the reads of a length at least as given number")
             parser.add_argument('--remove-polyC', default=0,
                                 help="Remove PolyCs and everything after it in the reads of a length at least as given number")
-            parser.add_argument('--pair-mode-keep', default="reverse", 
-                                help="When filtering out un-mapped reads if both strands map, " \
-                                "what action to perform to keep (forward, reverse or both)")
             parser.add_argument('--filter-AT-content', default=90,
                                 help="Discards reads whose number of A and T bases in total are more " \
                                 "or equal than the number given in percentage")
@@ -258,8 +258,6 @@ class Pipeline():
                                 "unique molecules and then a saturation curve")
             parser.add_argument('--include-non-annotated', action="store_true", default=False,
                                 help="Do not discard un-annotated reads (they will be labeled no_feature)")
-            parser.add_argument('--inverse-mapping-fw-trimming', default=0,
-                                help="Number of bases to trim in the forward reads for the Mapping on the 5' end")
             parser.add_argument('--inverse-mapping-rv-trimming', default=0,
                                 help="Number of bases to trim in the reverse reads for the Mapping on the 3' end")
             parser.add_argument('--low-memory', default=False, action="store_true",
@@ -314,7 +312,6 @@ class Pipeline():
         self.remove_polyT_distance = int(options.remove_polyT)
         self.remove_polyG_distance = int(options.remove_polyG)
         self.remove_polyC_distance = int(options.remove_polyC)
-        self.pair_mode_keep = str(options.pair_mode_keep)
         self.filter_AT_content = int(options.filter_AT_content)
         self.sam_type = str(options.sam_type)
         self.disable_multimap = options.disable_multimap
@@ -382,7 +379,6 @@ class Pipeline():
         self.logger.info("Mapping inverse reverse trimming " + str(self.inverse_trimming_rv))
         self.logger.info("Mapper : STAR")
         self.logger.info("Annotation Tool : HTSeq")
-        self.logger.info("When both strands are mapped, keep = " + str(self.pair_mode_keep))
         self.logger.info("Filter of AT content in reads : " + str(self.filter_AT_content))
         self.logger.info("Sam type : " + str(self.sam_type))
         if self.disable_clipping:
@@ -417,7 +413,10 @@ class Pipeline():
             self.logger.info("Using the low memory option")
         if self.two_pass_mode :
             self.logger.info("Using the STAR 2 pass mode with genome " + str(self.two_pass_mode_genome))
-             
+        if self.low_memory and not found_gdbm:
+            self.logger.warning("Warning: low memory option is active but GDBM was not found in your system\n")
+            self.low_memory = False
+        
     def run(self):
         """ 
         Runs the whole pipeline given the parameters present
@@ -517,7 +516,7 @@ class Pipeline():
                                                   self.min_intron_size,
                                                   self.max_intron_size,
                                                   self.max_gap_size,
-                                                  True,
+                                                  True, # enable splice variants alignments
                                                   self.sam_type,
                                                   self.disable_multimap,
                                                   self.disable_clipping,
@@ -540,7 +539,7 @@ class Pipeline():
                                                       self.min_intron_size,
                                                       self.max_intron_size,
                                                       self.max_gap_size,
-                                                      True,
+                                                      True, # enable splice variants alignments
                                                       self.sam_type,
                                                       self.disable_multimap,
                                                       self.disable_clipping,
@@ -571,10 +570,12 @@ class Pipeline():
         # STEP: OBTAIN HASH OF DEMULTIPLEXED READS
         # Hash demultiplexed reads to obtain a hash of read_name => (barcode,x,y,umi) 
         #=================================================================
+        self.logger.info("Parsing demultiplexed reads " + str(globaltime.getTimestamp()))
         hash_reads = hashDemultiplexedReads(fastq_fw_demultiplexed, 
                                             self.molecular_barcodes, 
                                             self.mc_start_position,
-                                            self.mc_end_position,)
+                                            self.mc_end_position,
+                                            self.low_memory)
         if self.clean: safeRemove(fastq_fw_demultiplexed)
         
         #================================================================
@@ -585,11 +586,15 @@ class Pipeline():
                                              self.qa_stats,
                                              hash_reads,
                                              self.min_length_trimming,
-                                             self.pair_mode_keep, 
                                              self.temp_folder, 
                                              self.keep_discarded_files)
         
         if self.clean: safeRemove(sam_mapped)
+        if self.low_memory: 
+            hash_reads.close()
+            #TODO use a global static name variable
+            if os.path.isfile("st_temp_hash_demux"):
+                os.remove("st_temp_hash_demux")
         del hash_reads
         
         #=================================================================

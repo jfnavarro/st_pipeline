@@ -37,7 +37,8 @@ setup(
     'scipy',
     'numpy',
     'taggd>=0.2.9',
-    'pandas'
+    'pandas',
+    'blist'
   ],
   test_suite = 'tests',
   scripts = glob.glob('scripts/*.py'),

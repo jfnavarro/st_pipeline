@@ -22,7 +22,7 @@ To install the st_pipeline on your MAC, Linux or UPPMAX follow the instructions 
 
 	For UPPMAX use:
 	- scp pipeline.zip youruser@milou.uppmax.uu.se:~/
-	- rm -rf pipeline
+	- rm -rf pipeline 
 	- unzip pipeline.zip
 
 4) Install STAR (if not installed already):
@@ -36,7 +36,6 @@ To install the st_pipeline on your MAC, Linux or UPPMAX follow the instructions 
 
 	cd pipeline
 	pip install numpy
-  	cd pipeline
   	python setup.py build
   	python setup.py install
   	pyenv rehash    
