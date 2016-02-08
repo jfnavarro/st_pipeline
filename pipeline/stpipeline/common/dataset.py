@@ -31,12 +31,11 @@ def createDataset(input_name,
     @param verbose True if we can to collect the stats in the logger
     @param low_memory True if we want to run a slower but more memmory efficient
     algorithm
-    parse annotated and mapped reads with the reads that contain barcodes to
-    create json files with the barcodes and coordinates and json file with the raw reads
-    and some useful stats and plots
+    The script createDataset parses the annotated reads whose barcode was matched
+    and then groups them by gene-barcode to count reads. 
+    It outputs the records in JSON format and BED format and it also 
+    writes out some statistics.
     It also allows to remove PCR Duplicates using molecular barcodes
-    We passes the number of forward bases trimmed for mapping to get a clean read
-    in the output
     """
     logger = logging.getLogger("STPipeline")
     
@@ -59,7 +58,7 @@ def createDataset(input_name,
                                 shell=False, close_fds=True)
         (stdout, errmsg) = proc.communicate()
     except Exception as e:
-        error = "Error creating dataset: createDataset execution failed"
+        error = "Error creating dataset: createDataset execution failed\n"
         logger.error(error)
         logger.error(e)
         raise
@@ -72,7 +71,7 @@ def createDataset(input_name,
     procOut = stdout.split("\n")
     for line in procOut:
         # Write QA stats
-        # TODO a more efficient way perhaps to use the line numbers 
+        # TODO find a cleaner way to do this
         if line.find("Number of unique transcripts present:") != -1:
             qa_stats.reads_after_duplicates_removal = int(line.split()[-1])
         if line.find("Number of unique events (gene-barcode) present:") != -1:

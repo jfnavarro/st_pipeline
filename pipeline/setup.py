@@ -38,6 +38,7 @@ setup(
     'numpy',
     'taggd>=0.2.9',
     'pandas',
+    'sqlitedict',
     'blist'
   ],
   test_suite = 'tests',

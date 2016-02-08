@@ -13,16 +13,13 @@ import argparse
 import pysam
 import numpy as np
 import os
-import shelve
-try:
-    import gdbm
-    found_gdbm = True
-except ImportError:
-    found_gdbm = False
+import tempfile
+import uuid
 from stpipeline.common.utils import getExtension
 from collections import defaultdict
 from blist import sorteddict
 from stpipeline.common.clustering import countMolecularBarcodesClustersHierarchical, countMolecularBarcodesClustersNaive
+from sqlitedict import SqliteDict
 
 class Transcript:
     """ 
@@ -74,8 +71,7 @@ def parseUniqueEvents(filename, low_memory=False, molecular_barcodes=False):
     :param mc_end_position the end position of the molecular barcode in the read
     """
     if low_memory:
-        #TODO use a global static name variable
-        unique_events = shelve.Shelf(gdbm.open("st_temp_hash_create_dataset", "n")) 
+        unique_events = SqliteDict(autocommit=False, flag='c', journal_mode='OFF')
     else:
         unique_events = sorteddict()
     sam_type = getExtension(filename).lower()
@@ -100,7 +96,7 @@ def parseUniqueEvents(filename, low_memory=False, molecular_barcodes=False):
             elif k == "XF":
                 gene = str(v)
             elif molecular_barcodes and k == "B3":
-                seq = str(v) ## The umi
+                seq = str(v) ## The UMI
             else:
                 continue
         # Check that all tags are present
@@ -115,14 +111,11 @@ def parseUniqueEvents(filename, low_memory=False, molecular_barcodes=False):
             unique_events[key] += transcript
         except KeyError:
             unique_events[key] = transcript
-            
+    
+    if low_memory: unique_events.commit()    
     sam_file.close()
     unique_transcripts = unique_events.values()
-    if low_memory: 
-        unique_events.close()
-        #TODO use a global static name variable
-        if os.path.isfile("st_temp_hash_create_dataset"):
-            os.remove("st_temp_hash_create_dataset")
+    if low_memory: unique_events.close()
     return unique_transcripts
 
 def main(filename, 
@@ -149,10 +142,6 @@ def main(filename,
     if mc_cluster not in ["naive","hierarchical"]:
         sys.stderr.write("Error: type of clustering algorithm is incorrect\n")
         sys.exit(-1)
-    
-    if low_memory and not found_gdbm:
-        sys.stdout.write("Warning: low memory option is active but GDBM was not found in your system\n")
-        low_memory = False
         
     if output_file_template:
         filenameJSON = str(output_file_template) + "_stdata.json"
@@ -177,7 +166,7 @@ def main(filename,
     else:
         clusters_func = countMolecularBarcodesClustersHierarchical
     # Parse unique events to generate JSON and BED files        
-    unique_events = parseUniqueEvents(filename, low_memory,molecular_barcodes)
+    unique_events = parseUniqueEvents(filename, low_memory, molecular_barcodes)
     
     with open(os.path.join(output_folder, filenameReadsBED), "w") as reads_handler:
         reads_handler.write("Chromosome\tStart\tEnd\tRead\tScore\tStrand\tGene\tBarcode\n")

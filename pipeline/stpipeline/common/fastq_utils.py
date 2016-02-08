@@ -9,13 +9,10 @@ import logging
 from stpipeline.common.stats import Stats
 from itertools import izip
 from blist import sorteddict
-import shelve
-try:
-    import gdbm
-    found_gdbm = True
-except ImportError:
-    found_gdbm = False
-    
+from sqlitedict import SqliteDict
+import tempfile
+import uuid
+
 def coroutine(func):
     """ 
     Coroutine decorator, starts coroutines upon initialization.
@@ -256,6 +253,7 @@ def reformatRawReads(fw,
     """ 
     :param fw the fastq file with the forward reads
     :param rw the fastq file with the reverse reads
+    :param qa_stats the Stats global object to store statistics
     :param barcode_start the base where the barcode sequence starts
     :param barcode_length the number of bases of the barcodes
     :param molecular_barcodes if True the forward reads contain molecular barcodes
@@ -385,7 +383,7 @@ def reformatRawReads(fw,
         # Adding stats to QA Stats object
         qa_stats.input_reads_forward = total_reads
         qa_stats.input_reads_reverse = total_reads
-        qa_stats.reads_after_trimming_forward = 0
+        qa_stats.reads_after_trimming_forward = total_reads
         qa_stats.reads_after_trimming_reverse = total_reads - dropped_rw
         
     return out_rw
@@ -406,9 +404,8 @@ def hashDemultiplexedReads(reads,
     with the clean read name as key and (barcode,x,y,umi) as
     values (umi is optional)
     """
-    if low_memory and found_gdbm:
-        #TODO use a global static name variable
-        hash_reads = shelve.Shelf(gdbm.open("st_temp_hash_demux", "n")) 
+    if low_memory:
+        hash_reads = SqliteDict(autocommit=False, flag='c', journal_mode='OFF')
     else:
         hash_reads = sorteddict()
 
@@ -416,18 +413,19 @@ def hashDemultiplexedReads(reads,
     for line in readfq(fastq_file):
         # Assumes the header ends like this B0:Z:GTCCCACTGGAACGACTGTCCCGCATC B1:Z:678 B2:Z:678
         header_tokens = line[0].split()
-        assert(len(header_tokens) == 5) 
         barcode = header_tokens[-3]
-        # TODO double check that the order of X and Y is correct
         x = header_tokens[-2]
         y = header_tokens[-1]
         # Assumes STAR will only output the first token of the read name
         # We keep the same naming for the extra attributes
+        # We add the UMI as tag is present
         tags = [barcode,x,y]
         if has_umi:
             # Add the UMI as an extra tag
             umi = line[1][umi_start:umi_end]
             tags.append("B3:Z:%s" % umi)
         hash_reads[header_tokens[0]] = tags
+        
+    if low_memory: hash_reads.commit()
     fastq_file.close()
     return hash_reads

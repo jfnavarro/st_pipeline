@@ -263,8 +263,14 @@ Version 0.8.0
 * Option to use BAM format
 * Removed annotation filtering step
 * Removed forward trimming parameters
+* Output gene names even with ENSEMBL
 
 Version 0.8.1
 * Removed the pair mode keep option
 * Removed un-neccessary pair mode and mapped checks
   after alignment
+  
+Version 0.8.2
+* Added stats for annotated reads
+* Replaced shelve dict for sqldict
+* Fixed some small bugs in the annotation

@@ -15,11 +15,6 @@ from stpipeline.common.saturation import computeSaturation
 from stpipeline.version import version_number
 import logging
 import gzip
-try:
-    import gdbm
-    found_gdbm = True
-except ImportError:
-    found_gdbm = False
     
 class Pipeline():
     
@@ -413,9 +408,6 @@ class Pipeline():
             self.logger.info("Using the low memory option")
         if self.two_pass_mode :
             self.logger.info("Using the STAR 2 pass mode with genome " + str(self.two_pass_mode_genome))
-        if self.low_memory and not found_gdbm:
-            self.logger.warning("Warning: low memory option is active but GDBM was not found in your system\n")
-            self.low_memory = False
         
     def run(self):
         """ 
@@ -591,11 +583,9 @@ class Pipeline():
         
         if self.clean: safeRemove(sam_mapped)
         if self.low_memory: 
-            hash_reads.close()
-            #TODO use a global static name variable
-            if os.path.isfile("st_temp_hash_demux"):
-                os.remove("st_temp_hash_demux")
-        del hash_reads
+            hash_reads.close() 
+        else: 
+            del hash_reads
         
         #=================================================================
         # STEP: SORT sam file with mapped reads by read name or position
@@ -611,6 +601,7 @@ class Pipeline():
         self.logger.info("Starting annotation " + str(globaltime.getTimestamp()))
         annotatedFilteredFile = annotateReads(sam_mapped_clean,
                                               self.ref_annotation,
+                                              self.qa_stats,
                                               self.htseq_mode,
                                               self.htseq_no_ambiguous,
                                               self.include_non_annotated,

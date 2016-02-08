@@ -38,30 +38,32 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, stranded
     Two parameters were added to filter out what to write in the sam output
     """
     # Set up the filters
-    filter_htseq = ["__too_low_aQual", "__not_aligned", "__alignment_not_unique"]
-    if not include_non_annotated: filter_htseq.append("__no_feature")
-    if htseq_no_ambiguous: filter_htseq.append("__ambiguous")
+    count_reads_in_features.filter_htseq = ["__too_low_aQual", "__not_aligned", "__alignment_not_unique"]
+    if not include_non_annotated: count_reads_in_features.filter_htseq.append("__no_feature")
+    if htseq_no_ambiguous: count_reads_in_features.filter_htseq.append("__ambiguous")
     # Open SAM output file
     flag_write = "wb" if samtype == "bam" else "wh"
     flag_read = "rb" if samtype == "bam" else "r"
     saminfile = pysam.AlignmentFile(sam_filename, flag_read)
-    samoutfile = pysam.AlignmentFile(samout, flag_write, template=saminfile)
+    count_reads_in_features.samoutfile = pysam.AlignmentFile(samout, flag_write, template=saminfile)
     saminfile.close()
+    # Counter of annotated records
+    count_reads_in_features.annotated = 0
+    
     # Function to write to SAM output
     def write_to_samout(r, assignment):
         if not pe_mode:
             r = (r,)
         for read in r:
-            if read is not None and assignment not in filter_htseq:
-                sam_record = read.to_pysam_AlignedRead(samoutfile)
+            if read is not None and assignment not in count_reads_in_features.filter_htseq:
+                sam_record = read.to_pysam_AlignedRead(count_reads_in_features.samoutfile)
                 sam_record.set_tag("XF", assignment, "Z")
-                samoutfile.write(sam_record)
-                #samoutfile.write(read.original_sam_line.rstrip() + 
-                #                 "\tXF:Z:" + assignment + "\n")
-      
+                count_reads_in_features.samoutfile.write(sam_record)
+                count_reads_in_features.annotated +=1
+                
+    # Annotation objects
     features = HTSeq.GenomicArrayOfSets("auto", stranded != "no")
     counts = {}
-
     gff = HTSeq.GFF_Reader(gff_filename)   
 
     try:
@@ -98,7 +100,7 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, stranded
         first_read = iter(read_seq).next()
         pe_mode = first_read.paired_end
     except:
-        sys.stderr.write("Error occured when reading beginning of SAM/BAM file.\n")
+        raise RuntimeError, "Error occured when reading beginning of SAM/BAM file."
         raise
 
     try:
@@ -181,7 +183,7 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, stranded
                                 else:
                                     fs = fs.intersection(fs2)
                 else:
-                    sys.exit("Illegal overlap mode.")
+                    raise RuntimeError, "Illegal overlap mode."
                 
                 if fs is None or len(fs) == 0:
                     write_to_samout(r, "__no_feature")
@@ -195,16 +197,23 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, stranded
 
     except:
         sys.stderr.write("Error occured when processing SAM input (%s):\n" % read_seq_file.get_line_number_string())
-        samoutfile.close()
+        count_reads_in_features.samoutfile.close()
         raise
 
-    samoutfile.close()
-      
-def annotateReads(samFile, gtfFile, mode, 
-                  htseq_no_ambiguous, include_non_annotated, outputFolder=None):
+    count_reads_in_features.samoutfile.close()
+    return count_reads_in_features.annotated
+
+def annotateReads(samFile, 
+                  gtfFile,
+                  qa_stats,
+                  mode, 
+                  htseq_no_ambiguous, 
+                  include_non_annotated, 
+                  outputFolder=None):
     """ 
     :param samFile sam file contained mapped reads sorted by coordinate
     :param gtfFile an annotation file in GTF format
+    :param qa_stats the Stats global object to store statistics
     :param mode htseq-count overlapping mode
     :param htseq_no_ambiguous true if we want to discard ambiguous annotations
     :param include_non_annotated true if we want to include non annotated reads as Na in the output
@@ -220,19 +229,19 @@ def annotateReads(samFile, gtfFile, mode,
         outputFile = os.path.join(outputFolder, outputFile)
 
     try:
-        count_reads_in_features(samFile, 
-                                gtfFile, 
-                                sam_type, 
-                                "pos", # Order pos or name
-                                "reverse", # Strand yes/no/reverse 
-                                mode, 
-                                "exon", # feature type in GFF
-                                "gene_name", # feature id in GFF
-                                True, # Quiet mode
-                                0, # Min quality score
-                                outputFile,
-                                include_non_annotated,
-                                htseq_no_ambiguous)
+        annotated = count_reads_in_features(samFile,
+                                            gtfFile,
+                                            sam_type,
+                                            "pos", # Order pos or name
+                                            "reverse", # Strand yes/no/reverse
+                                            mode,
+                                            "exon", # feature type in GFF
+                                            "gene_name", # feature id in GFF
+                                            True, # Quiet mode
+                                            0, # Min quality score
+                                            outputFile,
+                                            include_non_annotated,
+                                            htseq_no_ambiguous)
     except Exception as e:
         error = "Error annotation: HTSEQ execution failed\n"
         logger.error(error)
@@ -243,5 +252,7 @@ def annotateReads(samFile, gtfFile, mode,
         error = "Error annotation: HTSEQ execution failed, output not present\n"
         logger.error(error)
         raise RuntimeError(error + "\n")
-
+    
+    logger.info("Annotated reads: %s" % annotated)
+    qa_stats.reads_after_annotation = annotated
     return outputFile
