@@ -76,6 +76,7 @@ class Pipeline():
         self.low_memory = False
         self.two_pass_mode = False
         self.two_pass_mode_genome = None
+        self.strandness = "yes"
         
     def sanityCheck(self):
         """ 
@@ -113,6 +114,8 @@ class Pipeline():
         conds["max_gap_size"] = self.max_gap_size > 0
         conds["filter_AT_content"] = self.filter_AT_content >= 0 and self.filter_AT_content <= 100
         conds["sam_type"] = self.sam_type in ["BAM", "SAM"]
+        conds["strandness"] = self.strandness in ["yes", "no", "reverse"]
+        
         if self.two_pass_mode and not os.path.isfile(self.two_pass_mode_genome):
             conds["two_pass_mode"] = False
             
@@ -249,7 +252,7 @@ class Pipeline():
             parser.add_argument('--umi-filter-template', default="WSNNWSNNV",
                                 help="UMI template for the UMI filter, default = WSNNWSNNV")
             parser.add_argument('--compute-saturation', action="store_true", default=False,
-                                help="Performs a saturation curve computation by sub-sampling the annotated reads, computing" \
+                                help="Performs a saturation curve computation by sub-sampling the annotated reads, computing " \
                                 "unique molecules and then a saturation curve")
             parser.add_argument('--include-non-annotated', action="store_true", default=False,
                                 help="Do not discard un-annotated reads (they will be labeled no_feature)")
@@ -261,6 +264,8 @@ class Pipeline():
                                 help="Activates the 2 pass mode in STAR to also map against splice variants")
             parser.add_argument('--two-pass-mode-genome', default=None, type=str,
                                 help="When using the two pass mode the path of the fasta file with the genome is needed")
+            parser.add_argument('--strandness', default="pos", type=str,
+                                help="What strandness to use when annotating [no, yes, reverse]")
             parser.add_argument('--version', action='version',  version='%(prog)s ' + str(version_number))
             return parser
          
@@ -323,6 +328,7 @@ class Pipeline():
         self.low_memory = options.low_memory
         self.two_pass_mode = options.two_pass_mode
         self.two_pass_mode_genome = options.two_pass_mode_genome
+        self.strandness = str(options.strandness)
         # Assign class parameters to the QA stats object
         import inspect
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
@@ -374,6 +380,8 @@ class Pipeline():
         self.logger.info("Mapping inverse reverse trimming " + str(self.inverse_trimming_rv))
         self.logger.info("Mapper : STAR")
         self.logger.info("Annotation Tool : HTSeq")
+        self.logger.info("Annotation mode " + str(self.htseq_mode))
+        self.logger.info("Annotation strandness " + str(self.strandness))
         self.logger.info("Filter of AT content in reads : " + str(self.filter_AT_content))
         self.logger.info("Sam type : " + str(self.sam_type))
         if self.disable_clipping:
@@ -603,6 +611,7 @@ class Pipeline():
                                               self.ref_annotation,
                                               self.qa_stats,
                                               self.htseq_mode,
+                                              self.strandness,
                                               self.htseq_no_ambiguous,
                                               self.include_non_annotated,
                                               self.temp_folder)

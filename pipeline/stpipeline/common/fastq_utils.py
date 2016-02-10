@@ -6,12 +6,10 @@ This module contains some functions to deal with fastq files
 from stpipeline.common.utils import *
 from stpipeline.common.adaptors import removeAdaptor
 import logging 
-from stpipeline.common.stats import Stats
 from itertools import izip
 from blist import sorteddict
 from sqlitedict import SqliteDict
-import tempfile
-import uuid
+import dinopy
 
 def coroutine(func):
     """ 
@@ -22,75 +20,6 @@ def coroutine(func):
         cr.next()
         return cr
     return start
-
-def quality_trim_index(qualities, cutoff, base=33):
-    """
-    NOTE : function snippet from CutAdapt 
-    https://code.google.com/p/cutadapt/
-    
-    Find the position at which to trim a low-quality end from a nucleotide sequence.
-
-    Qualities are assumed to be ASCII-encoded as chr(qual + base).
-
-    The algorithm is the same as the one used by BWA within the function
-    'bwa_trim_read':
-    - Subtract the cutoff value from all qualities.
-    - Compute partial sums from all indices to the end of the sequence.
-    - Trim sequence at the index at which the sum is minimal.
-    """
-    s = 0
-    max_qual = 0
-    max_i = len(qualities)
-    for i in reversed(xrange(max_i)):
-        q = ord(qualities[i]) - base
-        s += cutoff - q
-        if s < 0:
-            break
-        if s > max_qual:
-            max_qual = s
-            max_i = i
-    return max_i
-
-def trim_quality(record, trim_distance, min_qual=20, 
-                 min_length=28, qual64=False):    
-    """
-    :param record the fastq read (name,sequence,quality)
-    :param trim_distance the number of bases to be trimmed (not considered)
-    :param min_qual the quality threshold to trim
-    :param min_length the min length of a valid read after trimming
-    :param qual64 true of the qualities are in phred64 format
-    Perfoms a bwa-like quality trimming on the sequence and 
-    quality in tuple record(name,seq,qual)
-    Returns the trimmed read or None if the read has to be discarded
-    """
-    qscore = record[2][trim_distance:]
-    sequence = record[1][trim_distance:]
-    num_bases_trimmed = len(sequence)
-    name = record[0]
-    phred = 64 if qual64 else 33
-    
-    # Get the position at which to trim
-    cut_index = quality_trim_index(qscore, min_qual, phred)
-    # Get the number of bases suggested to trim
-    nbases = num_bases_trimmed - cut_index
-    
-    # Check if the trimmed sequence would have min length (at least)
-    # if so return the trimmed read otherwise return None
-    if (num_bases_trimmed - nbases) >= min_length:
-        new_seq = record[1][:(num_bases_trimmed - nbases)]
-        new_qual = record[2][:(num_bases_trimmed - nbases)]
-        return name, new_seq, new_qual
-    else:
-        return None
-    
-def getFake(header, num_bases):
-    """ 
-    Generates a fake fastq record(name,seq,qual) from header and length
-    given as input
-    """
-    new_seq = "".join("N" for k in xrange(num_bases))
-    new_qual = "".join("B" for k in xrange(num_bases))
-    return header, new_seq, new_qual
 
 def readfq(fp): # this is a generator function
     """ 
@@ -142,7 +71,64 @@ def writefq(fp):  # This is a coroutine
             fp.write(read)
     except GeneratorExit:
         return
-      
+    
+def quality_trim_index(qualities, cutoff, base=33):
+    """
+    NOTE : function snippet from CutAdapt 
+    https://code.google.com/p/cutadapt/
+    
+    Find the position at which to trim a low-quality end from a nucleotide sequence.
+
+    Qualities are assumed to be ASCII-encoded as chr(qual + base).
+
+    The algorithm is the same as the one used by BWA within the function
+    'bwa_trim_read':
+    - Subtract the cutoff value from all qualities.
+    - Compute partial sums from all indices to the end of the sequence.
+    - Trim sequence at the index at which the sum is minimal.
+    """
+    s = 0
+    max_qual = 0
+    max_i = len(qualities)
+    for i in reversed(xrange(max_i)):
+        q = ord(qualities[i]) - base
+        s += cutoff - q
+        if s < 0:
+            break
+        if s > max_qual:
+            max_qual = s
+            max_i = i
+    return max_i
+
+def trim_quality(sequence,
+                 quality,
+                 min_qual=20, 
+                 min_length=28, 
+                 qual64=False):    
+    """
+    :param sequence the sequence of the read
+    :param quality the quality of the read
+    :param min_qual the quality threshold to trim (consider a base of bad quality)
+    :param min_length the minimum length of a valid read after trimming
+    :param qual64 true of the qualities are in phred64 format
+    Quality trims the fastq record using the BWA approach.
+    It returns the trimmed record or None if the number of bases
+    after trimming is below a minimum.
+    """
+    if len(sequence) < min_length:
+        return None, None
+    phred = 64 if qual64 else 33
+    # Get the position at which to trim (number of bases to trim)
+    cut_index = quality_trim_index(quality, min_qual, phred)
+    # Check if the trimmed sequence would have min length (at least)
+    # if so return the trimmed read otherwise return None
+    if cut_index >= min_length:
+        new_seq = sequence[:cut_index]
+        new_qual = quality[:cut_index]
+        return new_seq, new_qual
+    else:
+        return None, None
+    
 def reverse_complement(seq):
     """
     :param seq a FASTQ sequence
@@ -160,16 +146,16 @@ def reverse_complement(seq):
         bases = bases.replace(v,k)
     return bases
   
-#TODO optimize an refactor this (maybe use reg-exp)
+#TODO optimize and re-factor this (maybe use reg-exp)
 def check_umi_template(umi, template):
     """
-    Checks that the UMI given as input complies
-    with the pattern given in template
     :param umi a UMI from a read
     :param template a reg-based template with the same
     distance of the UMI that should tell how the UMI should
     look.
-    The functions returns true if the UMI complies
+    Checks that the UMI given as input complies
+    with the pattern given in template
+    Returns true if the UMI complies
     """
     assert(len(umi) == len(template))
 
@@ -228,7 +214,6 @@ def check_umi_template(umi, template):
             
     return True
 
-#TODO Cythonize this 
 def reformatRawReads(fw, 
                      rw,
                      qa_stats,
@@ -270,18 +255,23 @@ def reformatRawReads(fw,
     :param keep_discarded_files when true files containing the discarded reads will be created
     :param umi_filter performs a UMI quality filter when True
     :param umi_filter_template the template to use for the UMI filter
-    This function does three things (all here for speed optimization)
-      - It performs a sanity check
+    This function does four things (all done in one function for performance)
+      - It performs a sanity check (forward and reverse reads same length and order)
       - It performs a BWA quality trimming discarding very short reads
       - It removes adaptors from the reads (optional)
+      - It performs a sanity check on the UMI (optional)
+    Returns the path of the trimmed reverse read.
     """
     logger = logging.getLogger("STPipeline")
-    # Create file handlers
+    
+    # Create output file names
     out_rw = 'R2_trimmed_formated.fastq'
     out_rw_discarded = 'R2_trimmed_formated_discarded.fastq'
     if outputFolder and os.path.isdir(outputFolder):
         out_rw = os.path.join(outputFolder, out_rw)
         out_rw_discarded = os.path.join(outputFolder, out_rw_discarded)
+        
+    # Create output file writers
     out_rw_handle = safeOpenFile(out_rw, 'w')
     out_rw_writer = writefq(out_rw_handle)
     if keep_discarded_files:
@@ -297,7 +287,11 @@ def reformatRawReads(fw,
     adaptorA = "".join("A" for k in xrange(polyA_min_distance))
     adaptorT = "".join("T" for k in xrange(polyT_min_distance))
     adaptorG = "".join("G" for k in xrange(polyG_min_distance))
-    adaptorC = "".join("C" for k in xrange(polyG_min_distance))
+    adaptorC = "".join("C" for k in xrange(polyC_min_distance))
+    do_adaptorA = polyA_min_distance > 0
+    do_adaptorT = polyT_min_distance > 0
+    do_adaptorG = polyG_min_distance > 0
+    do_adaptorC = polyC_min_distance > 0
     
     # Check if barcode settings are correct
     iscorrect_mc = molecular_barcodes
@@ -309,63 +303,68 @@ def reformatRawReads(fw,
     # Open fastq files with the fastq parser
     fw_file = safeOpenFile(fw, "rU")
     rw_file = safeOpenFile(rw, "rU")
-    # Iterate records in paralel (Assumes they are ordered by name)
-    for line1, line2 in izip(readfq(fw_file), readfq(rw_file)):
+    for (header_fw, sequence_fw, _), (header_rv, sequence_rv, quality_rv) \
+    in izip(readfq(fw_file), readfq(rw_file)):
         
-        if not line1 or not line2:
+        if not sequence_fw or not sequence_fw:
             logger.error("The input files %s,%s are not of the same length" % (fw,rw))
             break
-        
-        header_fw = line1[0]
-        header_rv = line2[0]
-        sequence_fw = line1[1]
-        sequence_rv = line2[1]
-        num_bases_rv = len(sequence_rv)
-        quality_rv = line2[2]
         
         if header_fw.split()[0] != header_rv.split()[0]:
             logger.warning("Pair reads found with different names %s and %s" % (header_fw,header_rv))
             
         # Increase reads counter
         total_reads += 1
+        discard_read = False
         
         # If we want to check for UMI quality and the UMI is incorrect
         # we discard the reads
         if iscorrect_mc and umi_filter \
         and not check_umi_template(sequence_fw[mc_start:mc_end], umi_filter_template):
             dropped_umi += 1
-            line2 = None
+            discard_read = True
                                                       
         # If read - trimming is not long enough or has a high AT content discard...
+        num_bases_rv = len(sequence_rv)
         if (num_bases_rv - trim_rw) < min_length or \
         ((sequence_rv.count("A") + sequence_rv.count("T")) / num_bases_rv) * 100 >= filter_AT_content:
-            line2 = None
-              
-        # if indicated we remove the adaptor PolyA from reverse reads
-        if polyA_min_distance > 0 and line2: line2 = removeAdaptor(line2, adaptorA, trim_rw, "5") 
-        # if indicated we remove the adaptor PolyT from reverse reads
-        if polyT_min_distance > 0 and line2: line2 = removeAdaptor(line2, adaptorT, trim_rw, "5") 
-        # if indicated we remove the adaptor PolyG from reverse reads
-        if polyG_min_distance > 0 and line2: line2 = removeAdaptor(line2, adaptorG, trim_rw, "5") 
-        # if indicated we remove the adaptor PolyC from reverse reads
-        if polyC_min_distance > 0 and line2: line2 = removeAdaptor(line2, adaptorC, trim_rw, "5") 
-            
-        # Trim reverse read
-        line2 = trim_quality(line2, trim_rw, min_qual, min_length, qual64) if line2 else None
+            discard_read = True
         
+        # Store the original to write them to the discarded output if applies
+        if keep_discarded_files:    
+            orig_sequence_rv = sequence_rv
+            orig_quality_rv = quality_rv 
+            
+        if not discard_read:  
+            # if indicated we remove the adaptor PolyA from reverse reads
+            if do_adaptorA: 
+                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorA) 
+            # if indicated we remove the adaptor PolyT from reverse reads
+            if do_adaptorT: 
+                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorT) 
+            # if indicated we remove the adaptor PolyG from reverse reads
+            if do_adaptorG: 
+                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorG) 
+            # if indicated we remove the adaptor PolyC from reverse reads
+            if do_adaptorC: 
+                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorC) 
+            # Trim reverse read (will return None if length of trimmed sequence is lower than min)
+            sequence_rv, quality_rv = trim_quality(sequence_rv, quality_rv, min_qual, min_length, qual64)
+            if not sequence_rv or not quality_rv:
+                discard_read = True
+                
         # Write reverse read to output
-        if line2:
-            out_rw_writer.send(line2)
+        if not discard_read:
+            out_rw_writer.send((header_rv, sequence_rv, quality_rv))
         else:
             dropped_rw += 1  
             if keep_discarded_files:
-                # Write to discarded the original record
-                out_rw_writer_discarded.send((header_rv, sequence_rv, quality_rv))
+                out_rw_writer_discarded.send((header_rv, orig_sequence_rv, orig_quality_rv))
     
-    out_rw_handle.close()
-    if keep_discarded_files: out_rw_handle_discarded.close()
     fw_file.close()
     rw_file.close()
+    out_rw_writer.close()
+    if keep_discarded_files: out_rw_writer_discarded.close()
     
     if not fileOk(out_rw):
         error = "Error reformatting raw reads: output file not present %s" % (out_rw)
@@ -385,7 +384,7 @@ def reformatRawReads(fw,
         qa_stats.input_reads_reverse = total_reads
         qa_stats.reads_after_trimming_forward = total_reads
         qa_stats.reads_after_trimming_reverse = total_reads - dropped_rw
-        
+    # Return new trimmed reverse reads   
     return out_rw
 
 def hashDemultiplexedReads(reads,
@@ -405,14 +404,14 @@ def hashDemultiplexedReads(reads,
     values (umi is optional)
     """
     if low_memory:
-        hash_reads = SqliteDict(autocommit=False, flag='c', journal_mode='OFF')
+        hash_reads = SqliteDict(autocommit=True, flag='c', journal_mode='OFF')
     else:
         hash_reads = sorteddict()
-
+    
     fastq_file = safeOpenFile(reads, "rU")
-    for line in readfq(fastq_file):
+    for name, sequence, _ in readfq(fastq_file):
         # Assumes the header ends like this B0:Z:GTCCCACTGGAACGACTGTCCCGCATC B1:Z:678 B2:Z:678
-        header_tokens = line[0].split()
+        header_tokens = name.split()
         barcode = header_tokens[-3]
         x = header_tokens[-2]
         y = header_tokens[-1]
@@ -422,10 +421,8 @@ def hashDemultiplexedReads(reads,
         tags = [barcode,x,y]
         if has_umi:
             # Add the UMI as an extra tag
-            umi = line[1][umi_start:umi_end]
+            umi = sequence[umi_start:umi_end]
             tags.append("B3:Z:%s" % umi)
         hash_reads[header_tokens[0]] = tags
-        
-    if low_memory: hash_reads.commit()
-    fastq_file.close()
+    fastq_file.close()    
     return hash_reads

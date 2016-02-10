@@ -274,3 +274,7 @@ Version 0.8.2
 * Added stats for annotated reads
 * Replaced shelve dict for sqldict
 * Fixed some small bugs in the annotation
+
+Version 0.8.3
+* Added parameter for strandness in annotation (yes by default)
+* Simplified a bit the quality trimming step (do not account for user input trimmed bases)

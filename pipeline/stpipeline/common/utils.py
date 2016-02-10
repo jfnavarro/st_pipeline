@@ -94,17 +94,15 @@ def safeOpenFile(filename, atrib):
     if atrib.find("w") != -1:
         safeRemove(filename)
         usage = disk_usage('/')
-        if(usage.free <= 1073741824): ## at least 1GB
+        if usage.free <= 4073741824: # at least 4GB
             raise RuntimeError("Error : no free space available\n")
-    elif(atrib.find("r") != -1):
-        if filename is None or not os.path.isfile(filename):  # is present?
+    elif atrib.find("r") != -1:
+        if filename is None or not os.path.isfile(filename): # is it present?
             raise RuntimeError("Error : wrong filename\n")
     else:
         raise RuntimeError("Error : wrong attribute " + atrib + " opening file\n")
 
-    handler = open(filename, atrib)
-    return handler
-
+    return open(filename, atrib)
 
 def fileOk(_file):
     """

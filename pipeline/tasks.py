@@ -19,6 +19,7 @@ def clean():
     run('rm -rf pytest-2.6.4-py2.7.egg')
     run('rm -rf test/tmp/test*')
     run('rm -rf test/out/test*')
+    run('rm -rf .eggs/')
     run("find . -name '*.pyc' -delete")
     run("find . -name '*.pyo' -delete")
     run("find . -name '*~' -delete")

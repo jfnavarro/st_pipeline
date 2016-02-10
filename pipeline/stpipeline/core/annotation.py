@@ -100,7 +100,7 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, stranded
         first_read = iter(read_seq).next()
         pe_mode = first_read.paired_end
     except:
-        raise RuntimeError, "Error occured when reading beginning of SAM/BAM file."
+        raise RuntimeError, "Error occurred when reading beginning of SAM/BAM file."
         raise
 
     try:
@@ -113,6 +113,7 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, stranded
                 raise ValueError, "Illegal order specified."
 
         for r in read_seq:
+                
             if not pe_mode:
                 if not r.aligned:
                     write_to_samout(r, "__not_aligned")
@@ -206,15 +207,17 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, stranded
 def annotateReads(samFile, 
                   gtfFile,
                   qa_stats,
-                  mode, 
-                  htseq_no_ambiguous, 
-                  include_non_annotated, 
+                  mode,
+                  strandness="reverse",
+                  htseq_no_ambiguous=True, 
+                  include_non_annotated=False, 
                   outputFolder=None):
     """ 
     :param samFile sam file contained mapped reads sorted by coordinate
     :param gtfFile an annotation file in GTF format
     :param qa_stats the Stats global object to store statistics
     :param mode htseq-count overlapping mode
+    :param strandness the type of strandness to use when annotating
     :param htseq_no_ambiguous true if we want to discard ambiguous annotations
     :param include_non_annotated true if we want to include non annotated reads as Na in the output
     :param outputFolder true if we want to place the output file in a given folder
@@ -233,10 +236,10 @@ def annotateReads(samFile,
                                             gtfFile,
                                             sam_type,
                                             "pos", # Order pos or name
-                                            "reverse", # Strand yes/no/reverse
-                                            mode,
+                                            strandness, # Strand yes/no/reverse
+                                            mode, # intersection_nonempty, union, intersection_strict
                                             "exon", # feature type in GFF
-                                            "gene_name", # feature id in GFF
+                                            "gene_name", # gene_id or gene_name
                                             True, # Quiet mode
                                             0, # Min quality score
                                             outputFile,

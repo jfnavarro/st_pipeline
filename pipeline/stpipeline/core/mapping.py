@@ -240,9 +240,9 @@ def alignReads(reverse_reads,
                     uniquely_mapped = int(str(line).rstrip().split()[-1])
                 if line.find("Number of reads mapped to multiple loci") != -1:
                     multiple_mapped = int(str(line).rstrip().split()[-1])
-            logger.info("Total mapped reads : " + str(uniquely_mapped + multiple_mapped))           
+            logger.info("Total mapped reads : " + str(uniquely_mapped + multiple_mapped))    
+    # Remove log file       
     if os.path.isfile(log_final): os.remove(log_final)
-        
     return outputFile, outputFileDiscarded
 
 def barcodeDemultiplexing(reads, 

@@ -1,3 +1,5 @@
+
+
 #! /usr/bin/env python
 #@author Jose Fernandez
 """ 
@@ -71,7 +73,7 @@ def parseUniqueEvents(filename, low_memory=False, molecular_barcodes=False):
     :param mc_end_position the end position of the molecular barcode in the read
     """
     if low_memory:
-        unique_events = SqliteDict(autocommit=False, flag='c', journal_mode='OFF')
+        unique_events = SqliteDict(autocommit=True, flag='c', journal_mode='OFF')
     else:
         unique_events = sorteddict()
     sam_type = getExtension(filename).lower()
@@ -111,8 +113,7 @@ def parseUniqueEvents(filename, low_memory=False, molecular_barcodes=False):
             unique_events[key] += transcript
         except KeyError:
             unique_events[key] = transcript
-    
-    if low_memory: unique_events.commit()    
+      
     sam_file.close()
     unique_transcripts = unique_events.values()
     if low_memory: unique_events.close()

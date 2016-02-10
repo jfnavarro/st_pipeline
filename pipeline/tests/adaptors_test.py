@@ -24,31 +24,18 @@ class TestAdaptors(unittest.TestCase):
         """
         
         fake_qual = "AAAAAAAAAAAAAAAAAAAA"
-        fake_name = "FAKE"
-        seq_adaptor_beginning = (fake_name, "TTTTTAAAAAAAAAAAAAAA", fake_qual)
-        seq_adaptor_middle = (fake_name, "AAAAAAAAAATTTTTAAAAA", fake_qual)
-        seq_adaptor_end = (fake_name, "AAAAAAAAAAAAAAATTTTT", fake_qual)
+        seq_adaptor_beginning = "TTTTTAAAAAAAAAAAAAAA"
+        seq_adaptor_middle = "AAAAAAAAAATTTTTAAAAA"
+        seq_adaptor_end = "AAAAAAAAAAAAAAATTTTT"
+        adaptor = "TTTTT"
         
-        test_3end = removeAdaptor(seq_adaptor_beginning, "TTTTT", 0, "3")
-        self.assertTrue(len(test_3end[1]) == 15 and len(test_3end[2]) == 15)
-        test_3end = removeAdaptor(seq_adaptor_middle, "TTTTT", 0, "3")
-        self.assertTrue(len(test_3end[1]) == 5 and len(test_3end[2]) == 5)
-        test_3end = removeAdaptor(seq_adaptor_end, "TTTTT", 0, "3")
-        self.assertTrue(len(test_3end[1]) == 0 and len(test_3end[2]) == 0)
-        
-        test_5end = removeAdaptor(seq_adaptor_beginning, "TTTTT", 0, "5")
-        self.assertTrue(len(test_5end[1]) == 0 and len(test_5end[2]) == 0)
-        test_5end = removeAdaptor(seq_adaptor_middle, "TTTTT", 0, "5")
-        self.assertTrue(len(test_5end[1]) == 10 and len(test_5end[2]) == 10)
-        test_5end = removeAdaptor(seq_adaptor_end, "TTTTT", 0, "5")
-        self.assertTrue(len(test_5end[1]) == 15 and len(test_5end[2]) == 15)
-        
-        #test_discard = removeAdaptor(seq_adaptor_middle, "TTTTT", 0, "discard")
-        #self.assertTrue(test_discard is None)
-        
-        #test_wrong_option = removeAdaptor(seq_adaptor_middle, "TTTTT", 0, "wrong")
-        #self.assertTrue(test_wrong_option == seq_adaptor_middle)
-        
+        result_seq, result_qual = removeAdaptor(seq_adaptor_beginning, fake_qual, adaptor)
+        self.assertTrue(len(result_seq) == 0 and len(result_qual) == 0)
+        result_seq, result_qual = removeAdaptor(seq_adaptor_middle, fake_qual, adaptor)
+        self.assertTrue(len(result_seq) == 10 and len(result_qual) == 10)
+        result_seq, result_qual = removeAdaptor(seq_adaptor_end, fake_qual, adaptor)
+        self.assertTrue(len(result_seq) == 15 and len(result_qual) == 15)
+
         #self.assertRaises(ValueError, removeAdaptor, seq_adaptor_middle, "TTTTT", -1, "3")
         #self.assertRaises(ValueError, removeAdaptor, seq_adaptor_middle, "TTTTT", 21, "3")
         #self.assertRaises(ValueError, removeAdaptor, (fake_name,fake_qual), "TTTTT", 0, "3")
