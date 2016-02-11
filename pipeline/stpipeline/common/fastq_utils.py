@@ -9,7 +9,6 @@ import logging
 from itertools import izip
 from blist import sorteddict
 from sqlitedict import SqliteDict
-import dinopy
 
 def coroutine(func):
     """ 
@@ -223,7 +222,7 @@ def reformatRawReads(fw,
                      molecular_barcodes=False, 
                      mc_start=18, 
                      mc_end=27,
-                     trim_rw=5,
+                     trim_rw=0,
                      min_qual=20, 
                      min_length=28,
                      polyA_min_distance=0, 

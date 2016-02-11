@@ -39,7 +39,7 @@ setup(
     'taggd>=0.2.9',
     'pandas',
     'sqlitedict',
-    'blist'
+    #'blist'
   ],
   test_suite = 'tests',
   scripts = glob.glob('scripts/*.py'),

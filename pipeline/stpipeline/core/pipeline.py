@@ -26,7 +26,7 @@ class Pipeline():
         self.allowed_kmer = 6
         self.overhang = 2
         self.min_length_trimming = 28
-        self.trimming_rv = 5
+        self.trimming_rv = 0
         self.min_quality_trimming = 20 
         self.clean = True
         self.barcode_start = 0
@@ -116,7 +116,7 @@ class Pipeline():
         conds["sam_type"] = self.sam_type in ["BAM", "SAM"]
         conds["strandness"] = self.strandness in ["yes", "no", "reverse"]
         
-        if self.two_pass_mode and not os.path.isfile(self.two_pass_mode_genome):
+        if self.two_pass_mode and self.two_pass_mode_genome and not os.path.isfile(self.two_pass_mode_genome):
             conds["two_pass_mode"] = False
             
         # TODO add checks for trimming parameters
@@ -264,7 +264,7 @@ class Pipeline():
                                 help="Activates the 2 pass mode in STAR to also map against splice variants")
             parser.add_argument('--two-pass-mode-genome', default=None, type=str,
                                 help="When using the two pass mode the path of the fasta file with the genome is needed")
-            parser.add_argument('--strandness', default="pos", type=str,
+            parser.add_argument('--strandness', default="yes", type=str,
                                 help="What strandness to use when annotating [no, yes, reverse]")
             parser.add_argument('--version', action='version',  version='%(prog)s ' + str(version_number))
             return parser
