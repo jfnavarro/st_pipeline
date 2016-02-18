@@ -239,7 +239,7 @@ def annotateReads(samFile,
                                             strandness, # Strand yes/no/reverse
                                             mode, # intersection_nonempty, union, intersection_strict
                                             "exon", # feature type in GFF
-                                            "gene_name", # gene_id or gene_name
+                                            "gene_id", # gene_id or gene_name
                                             True, # Quiet mode
                                             0, # Min quality score
                                             outputFile,

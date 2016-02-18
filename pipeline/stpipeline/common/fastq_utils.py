@@ -7,7 +7,6 @@ from stpipeline.common.utils import *
 from stpipeline.common.adaptors import removeAdaptor
 import logging 
 from itertools import izip
-from blist import sorteddict
 from sqlitedict import SqliteDict
 
 def coroutine(func):
@@ -403,9 +402,9 @@ def hashDemultiplexedReads(reads,
     values (umi is optional)
     """
     if low_memory:
-        hash_reads = SqliteDict(autocommit=True, flag='c', journal_mode='OFF')
+        hash_reads = SqliteDict(autocommit=False, flag='c', journal_mode='OFF')
     else:
-        hash_reads = sorteddict()
+        hash_reads = dict()
     
     fastq_file = safeOpenFile(reads, "rU")
     for name, sequence, _ in readfq(fastq_file):
@@ -422,6 +421,10 @@ def hashDemultiplexedReads(reads,
             # Add the UMI as an extra tag
             umi = sequence[umi_start:umi_end]
             tags.append("B3:Z:%s" % umi)
-        hash_reads[header_tokens[0]] = tags
+        # The probability of a collision is very very low
+        key = hash(header_tokens[0])
+        hash_reads[key] = tags
+        
+    if low_memory: hash_reads.commit()
     fastq_file.close()    
     return hash_reads

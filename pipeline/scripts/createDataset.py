@@ -15,11 +15,8 @@ import argparse
 import pysam
 import numpy as np
 import os
-import tempfile
-import uuid
 from stpipeline.common.utils import getExtension
 from collections import defaultdict
-from blist import sorteddict
 from stpipeline.common.clustering import countMolecularBarcodesClustersHierarchical, countMolecularBarcodesClustersNaive
 from sqlitedict import SqliteDict
 
@@ -73,12 +70,14 @@ def parseUniqueEvents(filename, low_memory=False, molecular_barcodes=False):
     :param mc_end_position the end position of the molecular barcode in the read
     """
     if low_memory:
-        unique_events = SqliteDict(autocommit=True, flag='c', journal_mode='OFF')
+        unique_events = SqliteDict(autocommit=False, flag='c', journal_mode='OFF')
     else:
-        unique_events = sorteddict()
+        unique_events = dict()
+        
     sam_type = getExtension(filename).lower()
     flag = "r" if sam_type == "sam" else "rb"
     sam_file = pysam.AlignmentFile(filename, flag)
+    
     for rec in sam_file.fetch(until_eof=True):
         clear_name = str(rec.query_name)
         mapping_quality = int(rec.mapping_quality)
@@ -108,13 +107,15 @@ def parseUniqueEvents(filename, low_memory=False, molecular_barcodes=False):
         # Create a new transcript and assign it to dictionary
         transcript = Transcript(barcode=barcode, gene=gene, x=x, y=y, count=1, 
                                 reads=[(chrom, start, end, clear_name, mapping_quality, strand, seq)])
-        key = gene + barcode
+        # The probability of a collision is very very low
+        key = hash(gene + barcode)
         try:
             unique_events[key] += transcript
         except KeyError:
             unique_events[key] = transcript
       
     sam_file.close()
+    if low_memory: unique_events.commit()
     unique_transcripts = unique_events.values()
     if low_memory: unique_events.close()
     return unique_transcripts

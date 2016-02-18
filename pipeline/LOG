@@ -278,3 +278,7 @@ Version 0.8.2
 Version 0.8.3
 * Added parameter for strandness in annotation (yes by default)
 * Simplified a bit the quality trimming step (do not account for user input trimmed bases)
+
+Version 0.8.4
+* Added a normal hash with INT keys to increase speed and reduce memory
+* Using the gene_id for annotation again

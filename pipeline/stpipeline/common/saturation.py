@@ -70,15 +70,14 @@ def computeSaturation(nreads,
         # Generate a list of indexes in the sam file to extract sub samples 
         indices = list(xrange(nreads))
         random.shuffle(indices)
-        amount = spoint
-        subbed = indices[0:amount]
+        subbed = indices[0:spoint]
         subbed.sort()
         subsampling[spoint] = subbed
                  
     # Write subsamples
     index = 0
     sub_indexes = defaultdict(int)
-    for read in annotated_sam:
+    for read in annotated_sam.fetch(until_eof=True):
         for spoint in saturation_points:
             sub_index = sub_indexes[spoint]
             if sub_index < len(subsampling[spoint]) and subsampling[spoint][sub_index] == index:

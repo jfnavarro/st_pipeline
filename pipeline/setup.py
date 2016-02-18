@@ -38,8 +38,7 @@ setup(
     'numpy',
     'taggd>=0.2.9',
     'pandas',
-    'sqlitedict',
-    'blist'
+    'sqlitedict'
   ],
   test_suite = 'tests',
   scripts = glob.glob('scripts/*.py'),

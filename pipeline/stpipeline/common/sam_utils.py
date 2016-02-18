@@ -83,7 +83,9 @@ def filterMappedReads(mapped_reads,
         
         # Add the barcode and coordinates info if present otherwise discard
         try:
-            for tag in hash_reads[sam_record.query_name]:
+            # The probability of a collision is very very low
+            key = hash(sam_record.query_name)
+            for tag in hash_reads[key]:
                 tag_tokens = tag.split(":")
                 sam_record.set_tag(tag_tokens[0], tag_tokens[2], tag_tokens[1])
         except KeyError:
