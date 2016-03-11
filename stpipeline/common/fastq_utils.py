@@ -263,8 +263,8 @@ def reformatRawReads(fw,
     logger = logging.getLogger("STPipeline")
     
     # Create output file names
-    out_rw = 'R2_trimmed_formated.fastq'
-    out_rw_discarded = 'R2_trimmed_formated_discarded.fastq'
+    out_rw = 'R2_trimmed.fastq'
+    out_rw_discarded = 'R2_trimmed_discarded.fastq'
     if outputFolder and os.path.isdir(outputFolder):
         out_rw = os.path.join(outputFolder, out_rw)
         out_rw_discarded = os.path.join(outputFolder, out_rw_discarded)

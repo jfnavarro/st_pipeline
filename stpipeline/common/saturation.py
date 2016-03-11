@@ -24,7 +24,7 @@ def computeSaturation(nreads,
                       low_memory,
                       temp_folder=None):
     """
-    @param nreads the number of reads present in the annotated_reads sam file
+    @param nreads the number of reads present in the annotated_reads file
     @param annotated_reads a SAM file with the annotated reads
     @param molecular_barcodes True is the reads contain UMIs
     @param mc_allowed_mismatches the number of miss matches allowed to remove
@@ -32,7 +32,7 @@ def computeSaturation(nreads,
     @param min_cluster_size the min size of the clusters to remove duplicates
     by UMIs
     @param expName the name of the dataset
-    @param low_memory True if we want to use a slower but more memmory efficient
+    @param low_memory True if we want to use a slower but more memory efficient
     approach
     @param temp_folder the path where to put output files
     """
