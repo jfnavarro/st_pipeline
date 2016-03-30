@@ -11,12 +11,9 @@ To install the st_pipeline on your MAC, Linux or UPPMAX follow the instructions 
 	- pyenv rehash
 	- pyenv global 2.7.6
 	
-	NOTE (the following does not apply for UPPMAX) : 
-	you can use other type of virtual environments or install
-	in everything in your system with root permissions. 
-	For that you need to install PIP, SETUPTOOLS and do everything as SUDO user.
+	NOTE that you can also use ANACONDA as a virtual environment
 	
-2) download the pipeline file on your computer from ST Google DOCS
+2) download the pipeline release from github
 
 3) copy zip-file to your home folder or your UPPMAX home folder and unzip it
 

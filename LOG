@@ -282,3 +282,6 @@ Version 0.8.3
 Version 0.8.4
 * Added a normal hash with INT keys to increase speed and reduce memory
 * Using the gene_id for annotation again
+
+Version 0.8.5
+* Fixed a bug in the computation of saturation curves

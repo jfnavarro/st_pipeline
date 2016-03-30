@@ -51,7 +51,7 @@ def computeSaturation(nreads,
     subsampling = dict()
     file_ext = getExtension(annotated_reads).lower()
     flag_read = "rb"
-    flag_write = "wbh"
+    flag_write = "wb"
     if file_ext == "sam":
         flag_read = "r"
         flag_write = "wh"
