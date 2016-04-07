@@ -36,6 +36,18 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, stranded
     to the HTSeq team.
     The description of the parameters are the same as htseq-count.
     Two parameters were added to filter out what to write in the sam output
+    
+    The HTSEQ License
+    HTSeq is free software: you can redistribute it and/or modify it under the terms of 
+    the GNU General Public License as published by the Free Software Foundation, 
+    either version 3 of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful, 
+    but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+    or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+    The full text of the GNU General Public License, version 3, 
+    can be found here: http://www.gnu.org/licenses/gpl-3.0-standalone.html
     """
     # Set up the filters
     count_reads_in_features.filter_htseq = ["__too_low_aQual", "__not_aligned", "__alignment_not_unique"]
