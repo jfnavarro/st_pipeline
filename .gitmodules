@@ -1,0 +1,3 @@
+[submodule "dependencies/STAR"]
+	path = dependencies/STAR
+	url = https://github.com/alexdobin/STAR.git

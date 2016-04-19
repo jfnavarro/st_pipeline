@@ -1,9 +1,6 @@
 Validate and benchmark all the pipeline stats
 Add unit-test for all individual components and modules
-Fix TODOs
-Speed and code optimizations
+Fix TODOs in the code
 Add Python 3 compatibility
-Add better log and stats
-Add annotation tool FeatureCounts and enable BAM format
 Cython some functions
-Study the possibility to remove after mapping and after annotation functions.
+Improve the memory use in createDatasets and hash_mapped_reads
