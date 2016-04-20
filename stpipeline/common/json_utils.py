@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ 
-Module for parsing and dealing with ST data formats.
+Module that contains some functions to parse and save ST JSON data
 """
 
 import json
@@ -34,17 +34,6 @@ def save_json(data, json_file):
         for datum in data:
             data.append(datum)
         fh.write(json.dumps(data, indent=2, separators=(',', ': ')))
-
-def load_id_map(id_file):
-    """ 
-    Load a ids file in to a barcode -> coordinate dictionary.
-    """
-    id_map = {}
-    with open(id_file, "r") as fh:
-        for line in fh:
-            bc, x, y = line.split("\t")
-            id_map[bc] = (int(x), int(y))
-    return id_map
 
 def load_json(json_file):
     """ 

@@ -1,5 +1,3 @@
-
-
 #! /usr/bin/env python
 #@author Jose Fernandez
 """ 
@@ -58,16 +56,17 @@ class Transcript:
     def toBarcodeDict(self):
         return {'barcode': self.barcode, 'gene': self.gene, 'x': self.x, 'y': self.y, 'hits': self.count}
 
+#TODO this function takes too much memory, optimize it. (Maybe Cython)
 def parseUniqueEvents(filename, low_memory=False, molecular_barcodes=False):
     """
     Parses the transcripts present in the filename given as input.
     It expects a SAM file where the barcode and coordinates are present in the tags
     The output will be a list containing unique transcripts (gene,barcode) whose
     reads are aggregated
-    :param filename the input file containing the SAM/BAM records
-    :param low_memory if True a key-value DB will be used to save memory
-    :param mc_start_position the start position of the molecular barcode in the read
-    :param mc_end_position the end position of the molecular barcode in the read
+    :param filename: the input file containing the SAM/BAM records
+    :param low_memory: if True a key-value DB will be used to save memory
+    :param mc_start_position: the start position of the molecular barcode in the read
+    :param mc_end_position: the end position of the molecular barcode in the read
     """
     if low_memory:
         unique_events = SqliteDict(autocommit=False, flag='c', journal_mode='OFF')

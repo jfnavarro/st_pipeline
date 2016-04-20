@@ -11,7 +11,7 @@ from stpipeline.version import version_number
 
 # Get the long description from the relevant file
 here = os.path.abspath(os.path.dirname(__file__))
-with io.open(os.path.join(here, 'README'), encoding='utf-8') as f:
+with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(

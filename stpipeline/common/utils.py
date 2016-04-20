@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ 
-This file contains general utils and some file utils
+This file contains some general system utils and some file utils
 """
 
 import resource
@@ -12,9 +12,12 @@ import gc
 from collections import namedtuple
 _ntuple_diskusage = namedtuple('usage', 'total used free')
 
-def which(program):
+def which_program(program):
     """ 
-    check that a program exists and is executable 
+    Checks that a program exists and is executable
+    :param program: the program name
+    :type program: str
+    :returns: The program name if the program is in the system and is executable
     """
     def is_exe(fpath):
         return fpath is not None and os.path.exists(fpath) and os.access(fpath, os.X_OK)
@@ -37,9 +40,12 @@ def which(program):
 
     return None
 
-def Using(point):
+def memory_use(point):
     """ 
-    returns memory usage at a certain point 
+    Returns memory usage at a certain time point
+    :param point: a time point
+    :type point: str
+    :returns: a tuple (time, user memory, sys memory, total memory)
     """
     usage = resource.getrusage(resource.RUSAGE_SELF)
     return '''%s: usertime=%s systime=%s mem=%s mb
@@ -49,7 +55,7 @@ def Using(point):
            
 class TimeStamper(object):
     """
-    thread safe time stamper 
+    Thread safe time stamper 
     """
     def __init__(self):
         self.lock = threading.Lock()
@@ -69,8 +75,13 @@ class TimeStamper(object):
             
 def disk_usage(path):
     """
-    Return disk usage statistics about the given path 
-    """   
+    Return disk usage statistics on the given path 
+    :param path: the path to a folder
+    :type path: str
+    :returns: a tuple (total, used, free)
+    """
+    if not os.path.isdir(path):
+        return
     st = os.statvfs(path)
     free = st.f_bavail * st.f_frsize
     total = st.f_blocks * st.f_frsize
@@ -79,7 +90,9 @@ def disk_usage(path):
 
 def safeRemove(filename):
     """
-    safely remove a file 
+    Safely remove a file
+    :param filename: the path of the file
+    :type filename: str
     """
     try:
         if filename is not None and os.path.isfile(filename):
@@ -89,7 +102,13 @@ def safeRemove(filename):
         
 def safeOpenFile(filename, atrib):
     """
-    safely opens a file 
+    Safely opens a file
+    :param filename: the path of the file
+    :param atrib: the file open attribute
+    :type filename: str
+    :type atrib: str
+    :returns: the file descriptor
+    :raises: RuntimeError
     """
     if atrib.find("w") != -1:
         safeRemove(filename)
@@ -120,66 +139,28 @@ def replaceExtension(filename,extension):
     base = os.path.splitext(filename)[0]
     return base + extension
  
-def stripExtension(string):
+def stripExtension(filename):
     """
-    remove the extension from string
-    and returns it
+    Remove the extension from a file name
+    :param filename: the file name
+    :type filename: str
+    :returns: the file without the extension
     """
-    f = string.rsplit('.', 1)
-    if(f[0].find("/") != -1):
+    f = filename.rsplit('.', 1)
+    if f[0].find("/") != -1:
         return f[0].rsplit('/', 1)[1]
     else:
         return f[0]
 
-def getExtension(string):
+def getExtension(filename):
     """
-    gets the filename extension of a filename
+    Gets the extension of a filename
+    :param filename: the file name
+    :type filename: str
+    :returns: the extension of the filename
     """
-    f = string.rsplit('.', 1)
+    f = filename.rsplit('.', 1)
     return f[1]
-
-def getCleanFileName(path):
-    """
-    extracts and returns the filename from a complete path 
-    """
-    head, tail = os.path.split(path)
-    return tail
-
-class Prepender(object):
-    """
-    Allows to create a file handler from
-    a file where lines will be prepended
-    """
-    def __init__(self, file_path):
-        # Read in the existing file, so we can write it back later
-        with open(file_path, mode='r') as f:
-            self.__write_queue = f.readlines()
-        self.__open_file = file_path
-
-    def write_line(self, line):
-        """ 
-        Prepend just one line
-        """
-        self.__write_queue.insert(0,"%s\n" % line)
-
-    def write_lines(self, lines):
-        """ 
-        Prepend a bunch of lines
-        """
-        lines.reverse()
-        for line in lines:
-            self.write_line(line)
-
-    def close(self):
-        self.__exit__(None, None, None)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        if self.__write_queue:
-            with open(self.__open_file, "w") as filehandler:
-                filehandler.writelines(self.__write_queue)
         
 def getSTARVersion():
     """

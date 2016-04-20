@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#@Author Jose Fernandez
+#@author Jose Fernandez
 """ 
 Script that parses a ST features file JSON output
 with ENSEMBL IDs as gene names and convert

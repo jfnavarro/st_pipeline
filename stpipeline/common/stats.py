@@ -1,16 +1,16 @@
-'''
+"""
 This shared object is used to collect
 different statistics and QA parameters for
 the pipeline run.
-'''
+"""
 import json
         
 class Stats():
-    '''
+    """
     Stats is meant to be used
-    in different part of the pipeline
+    in different part of the ST pipeline
     to collect information and statistics
-    '''
+    """
     def __init__(self):
         self.input_reads_forward = 0
         self.input_reads_reverse = 0

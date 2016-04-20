@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """ 
-This module contains some functions to deal with fastq files
+This module contains some specific functionalities for
+ST fastq files
 """
 
 from stpipeline.common.utils import *
@@ -22,6 +23,10 @@ def coroutine(func):
 def readfq(fp): # this is a generator function
     """ 
     Heng Li's fasta/fastq reader function.
+    # https://github.com/lh3/readfq/blob/master/readfq.py
+    # Unlicensed. 
+    Parses fastq records from a file using a generator approach.
+    :param fp: opened file descriptor
     """
     last = None # this is a buffer keeping the last unprocessed line
     while True: # mimic closure; is it a bad idea?
@@ -70,11 +75,30 @@ def writefq(fp):  # This is a coroutine
     except GeneratorExit:
         return
     
-def quality_trim_index(qualities, cutoff, base=33):
+def quality_trim_index(bases, qualities, cutoff, base=33):
     """
-    NOTE : function snippet from CutAdapt 
-    https://code.google.com/p/cutadapt/
+    Function snippet and modified from CutAdapt 
+    https://github.com/marcelm/cutadapt/
     
+    Copyright (c) 2010-2016 Marcel Martin <marcel.martin@scilifelab.se>
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN C
+
     Find the position at which to trim a low-quality end from a nucleotide sequence.
 
     Qualities are assumed to be ASCII-encoded as chr(qual + base).
@@ -84,12 +108,22 @@ def quality_trim_index(qualities, cutoff, base=33):
     - Subtract the cutoff value from all qualities.
     - Compute partial sums from all indices to the end of the sequence.
     - Trim sequence at the index at which the sum is minimal.
+    
+    This variant works on NextSeq data.
+    With Illumina NextSeq, bases are encoded with two colors. 'No color' (a
+    dark cycle) usually means that a 'G' was sequenced, but that also occurs
+    when sequencing falls off the end of the fragment. The read then contains
+    a run of high-quality G bases in the end.
+    This routine works as the one above, but counts qualities belonging to 'G'
+    bases as being equal to cutoff - 1.
     """
     s = 0
     max_qual = 0
     max_i = len(qualities)
     for i in reversed(xrange(max_i)):
         q = ord(qualities[i]) - base
+        if bases[i] == 'G':
+            q = cutoff - 1
         s += cutoff - q
         if s < 0:
             break
@@ -104,20 +138,26 @@ def trim_quality(sequence,
                  min_length=28, 
                  qual64=False):    
     """
-    :param sequence the sequence of the read
-    :param quality the quality of the read
-    :param min_qual the quality threshold to trim (consider a base of bad quality)
-    :param min_length the minimum length of a valid read after trimming
-    :param qual64 true of the qualities are in phred64 format
-    Quality trims the fastq record using the BWA approach.
+    Quality trims the fastq record using a BWA approach.
     It returns the trimmed record or None if the number of bases
     after trimming is below a minimum.
+    :param sequence: the sequence of bases of the read
+    :param quality: the quality scores of the read
+    :param min_qual the quality threshold to trim (consider a base of bad quality)
+    :param min_length: the minimum length of a valid read after trimming
+    :param qual64: true of the qualities are in phred64 format
+    :type sequence: str
+    :type quality: str
+    :type min_qual: integer
+    :type min_length: integer
+    :type qual64: boolean
+    :returns: A tuple (base, qualities) or (None,None)
     """
     if len(sequence) < min_length:
         return None, None
     phred = 64 if qual64 else 33
     # Get the position at which to trim (number of bases to trim)
-    cut_index = quality_trim_index(quality, min_qual, phred)
+    cut_index = quality_trim_index(sequence, quality, min_qual, phred)
     # Check if the trimmed sequence would have min length (at least)
     # if so return the trimmed read otherwise return None
     if cut_index >= min_length:
@@ -126,34 +166,19 @@ def trim_quality(sequence,
         return new_seq, new_qual
     else:
         return None, None
-    
-def reverse_complement(seq):
-    """
-    :param seq a FASTQ sequence
-    This functions returns the reverse complement
-    of the sequence given as input
-    """
-    alt_map = {'ins':'0'}
-    complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}   
-    for k,v in alt_map.iteritems():
-        seq = seq.replace(k,v)
-    bases = list(seq) 
-    bases = reversed([complement.get(base,base) for base in bases])
-    bases = ''.join(bases)
-    for k,v in alt_map.iteritems():
-        bases = bases.replace(v,k)
-    return bases
   
 #TODO optimize and re-factor this (maybe use reg-exp)
 def check_umi_template(umi, template):
     """
-    :param umi a UMI from a read
-    :param template a reg-based template with the same
-    distance of the UMI that should tell how the UMI should
-    look.
-    Checks that the UMI given as input complies
+    Checks that the UMI (molecular barcode) given as input complies
     with the pattern given in template
     Returns true if the UMI complies
+    :param umi: a molecular barcode
+    :param template: a reg-based template with the same
+                    distance of the UMI that should tell how the UMI should be formed
+    :type umi: str
+    :type template: str
+    :returns: True if the givein molecular barcode fits the pattern given
     """
     assert(len(umi) == len(template))
 
@@ -233,32 +258,32 @@ def reformatRawReads(fw,
                      keep_discarded_files=False,
                      umi_filter=False,
                      umi_filter_template="WSNNWSNNV"):
-    """ 
-    :param fw the fastq file with the forward reads
-    :param rw the fastq file with the reverse reads
-    :param qa_stats the Stats global object to store statistics
-    :param barcode_start the base where the barcode sequence starts
-    :param barcode_length the number of bases of the barcodes
-    :param molecular_barcodes if True the forward reads contain molecular barcodes
-    :param mc_start the start position of the molecular barcodes if any
-    :param mc_end the end position of the molecular barcodes if any
-    :param trim_rw how many bases we want to trim (not consider in the reverse)
-    :param min_qual the min quality value to use to trim quality
-    :param min_length the min valid length for a read after trimming
-    :param polyA_min_distance if >0 we remove PolyA adaptors from the reads
-    :param polyT_min_distance if >0 we remove PolyT adaptors from the reads
-    :param polyG_min_distance if >0 we remove PolyG adaptors from the reads
-    :param qual64 true of qualities are in phred64 format
-    :param outputFolder optional folder to output files
-    :param keep_discarded_files when true files containing the discarded reads will be created
-    :param umi_filter performs a UMI quality filter when True
-    :param umi_filter_template the template to use for the UMI filter
-    This function does four things (all done in one function for performance)
+    """
+    This function does four things (all done in one loop for performance)
       - It performs a sanity check (forward and reverse reads same length and order)
       - It performs a BWA quality trimming discarding very short reads
       - It removes adaptors from the reads (optional)
       - It performs a sanity check on the UMI (optional)
-    Returns the path of the trimmed reverse read.
+    :param fw: the fastq file with the forward reads
+    :param rw: the fastq file with the reverse reads
+    :param qa_stats: the Stats global object to store statistics
+    :param barcode_start: the base where the barcode sequence starts
+    :param barcode_length: the number of bases of the barcodes
+    :param molecular_barcodes: if True the forward reads contain molecular barcodes
+    :param mc_start: the start position of the molecular barcodes if any
+    :param mc_end: the end position of the molecular barcodes if any
+    :param trim_rw: how many bases we want to trim (not consider in the reverse)
+    :param min_qual: the min quality value to use to trim quality
+    :param min_length: the min valid length for a read after trimming
+    :param polyA_min_distance: if >0 we remove PolyA adaptors from the reads
+    :param polyT_min_distance: if >0 we remove PolyT adaptors from the reads
+    :param polyG_min_distance: if >0 we remove PolyG adaptors from the reads
+    :param qual64: true of qualities are in phred64 format
+    :param outputFolder: optional folder to output files
+    :param keep_discarded_files: when true files containing the discarded reads will be created
+    :param umi_filter performs: a UMI quality filter when True
+    :param umi_filter_template: the template to use for the UMI filter
+    :returns: the path to the trimmed reverse read
     """
     logger = logging.getLogger("STPipeline")
     
@@ -385,22 +410,33 @@ def reformatRawReads(fw,
     # Return new trimmed reverse reads   
     return out_rw
 
+#TODO this approach uses too much memory
+#     find a better solution (maybe Cython)
+#TODO the barcode is not needed
 def hashDemultiplexedReads(reads,
                            has_umi,
                            umi_start,
                            umi_end,
                            low_memory):
     """
-    @param reads fastq reads after demultiplexing
-    @param has_umi True if the read sequence contains UMI
-    @param umi_start the start position of the UMI
-    @param umi_end the end position of the UMI
-    @param low_memory True to use a key-value db instead of dict
     This function extracts the read name and the barcode
     from the reads given as input and returns a hash
     with the clean read name as key and (barcode,x,y,umi) as
-    values (umi is optional)
+    values (umi is optional). X and Y correspond
+    to the array coordinates of the barcode of the read.
+    :param reads: path to a file with the fastq reads after demultiplexing
+    :param has_umi: True if the read sequence contains UMI
+    :param umi_start: the start position of the UMI
+    :param umi_end: the end position of the UMI
+    :param low_memory: True to use a key-value db instead of dict
+    :type reads: str
+    :type has_umi: boolean
+    :type umi_start: integer
+    :type umi_end: integer
+    :type low_memory: boolean
+    :returns: a dictionary of read_name -> (barcode,x,y,umi) tags where umi is optional
     """
+    assert(umi_start >= 0 and umi_start < umi_end)
     if low_memory:
         hash_reads = SqliteDict(autocommit=False, flag='c', journal_mode='OFF')
     else:

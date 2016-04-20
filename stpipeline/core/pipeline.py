@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ 
-This is the main API for the ST pipeline, it needs a bunch of files and parameters in order
+This is the main API for the ST pipeline, it needs a set of files and parameters in order
 to run the jobs, input files are fastq, output files are json. It logs status into a file.
 """
 
@@ -141,7 +141,7 @@ class Pipeline():
 
         unavailable_scripts = set()
         for script in required_scripts:
-            if which(script) is None: 
+            if which_program(script) is None: 
                 unavailable_scripts.add(script)
          
         if len(unavailable_scripts) == 0:
@@ -430,7 +430,7 @@ class Pipeline():
         self.logger.info("Starting the pipeline : " + str(start_exe_time))
 
         # Check if input fastq files are gzipped
-        # TODO it is faster to make a system call
+        # TODO it is faster to make a system call to gunzip
         # TODO add support to bzip 
         if self.fastq_fw.endswith("gz"):
             temp_fastq_fw = os.path.join(self.temp_folder, "unzipped_fastq_fw.fastq")

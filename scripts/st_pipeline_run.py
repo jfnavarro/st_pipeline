@@ -1,5 +1,7 @@
 #! /usr/bin/env python
-""" This is a terminal based API to run the ST pipeline on a single node
+#@author Jose Fernandez
+""" 
+This is a terminal based API to run the ST pipeline on a single node
 """
 
 import sys
@@ -10,21 +12,22 @@ def main(argv):
     
     pipeline = Pipeline()
     
-    #create a parser
+    # Create a parser
     parser = argparse.ArgumentParser(description=__doc__)
     parser = pipeline.createParameters(parser)
     
-    #parse arguments
+    # Parse arguments
     options = parser.parse_args()
-                          
+        
+    # Run the pipeline                  
     try:
         pipeline.load_parameters(options)
         pipeline.createLogger()
         pipeline.sanityCheck()
         pipeline.run()
     except Exception as e:
-        print e
-        sys.stderr.write("Error: Running the pipeline \n")
+        sys.stderr.write("Error: Running the pipeline\n")
+        sys.stderr.write(e)
         sys.exit(-1)
         
 if __name__ == "__main__":

@@ -24,9 +24,19 @@ def invert_strand( iv ):
         raise ValueError, "Illegal strand"  
     return iv2
 
-def count_reads_in_features(sam_filename, gff_filename, samtype, order, stranded,
-      overlap_mode, feature_type, id_attribute, quiet, minaqual, 
-      samout, include_non_annotated=False, htseq_no_ambiguous=True):
+def count_reads_in_features(sam_filename, 
+                            gff_filename, 
+                            samtype, 
+                            order, 
+                            stranded,
+                            overlap_mode, 
+                            feature_type, 
+                            id_attribute, 
+                            quiet, 
+                            minaqual, 
+                            samout, 
+                            include_non_annotated=False, 
+                            htseq_no_ambiguous=True):
     """
     This a copy of the function count_reads_in_features() from the 
     script htseq-count in the HTSeq package version 0.61.p2 
@@ -216,7 +226,7 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, stranded
     count_reads_in_features.samoutfile.close()
     return count_reads_in_features.annotated
 
-def annotateReads(samFile, 
+def annotateReads(mappedReads, 
                   gtfFile,
                   qa_stats,
                   mode,
@@ -224,27 +234,37 @@ def annotateReads(samFile,
                   htseq_no_ambiguous=True, 
                   include_non_annotated=False, 
                   outputFolder=None):
-    """ 
-    :param samFile sam file contained mapped reads sorted by coordinate
-    :param gtfFile an annotation file in GTF format
-    :param qa_stats the Stats global object to store statistics
-    :param mode htseq-count overlapping mode
-    :param strandness the type of strandness to use when annotating
-    :param htseq_no_ambiguous true if we want to discard ambiguous annotations
-    :param include_non_annotated true if we want to include non annotated reads as Na in the output
-    :param outputFolder true if we want to place the output file in a given folder
-    Annotate the reads using htseq-count tool and returns the annotated records in SAM/BAM format 
+    """
+    Annotate the a file with mapped reads (SAM/BAM) using htseq-count tool and returns 
+    the annotated records in SAM/BAM format
+    :param mappedReads: path to a SAM/BAM file with mapped reads sorted by coordinate
+    :param gtfFile: path to an annotation file in GTF format
+    :param qa_stats: the Stats global object to store statistics
+    :param mode: htseq-count overlapping mode
+    :param strandness: the type of strandness to use when annotating
+    :param htseq_no_ambiguous: true if we want to discard ambiguous annotations
+    :param include_non_annotated: true if we want to include non annotated reads as Na in the output
+    :param outputFolder: true if we want to place the output file in a given folder
+    :type mappedReads: str
+    :type gtfFile: str
+    :type mode: str
+    :type strandness: str
+    :type htseq_no_ambiguos: boolean
+    :param include_non_annotated: boolean
+    :param outputFolder: boolean
+    :returns: the path to the SAM/BAM file with the annotated records
+    :raises: RuntimeError
     """
     
     logger = logging.getLogger("STPipeline")
     
-    sam_type = getExtension(samFile).lower()
+    sam_type = getExtension(mappedReads).lower()
     outputFile = 'annotated.' + sam_type
     if outputFolder is not None and os.path.isdir(outputFolder):
         outputFile = os.path.join(outputFolder, outputFile)
 
     try:
-        annotated = count_reads_in_features(samFile,
+        annotated = count_reads_in_features(mappedReads,
                                             gtfFile,
                                             sam_type,
                                             "pos", # Order pos or name
@@ -261,12 +281,12 @@ def annotateReads(samFile,
         error = "Error annotation: HTSEQ execution failed\n"
         logger.error(error)
         logger.error(e)
-        raise
+        raise RuntimeError(error)
     
     if not fileOk(outputFile):
         error = "Error annotation: HTSEQ execution failed, output not present\n"
         logger.error(error)
-        raise RuntimeError(error + "\n")
+        raise RuntimeError(error)
     
     logger.info("Annotated reads: %s" % annotated)
     qa_stats.reads_after_annotation = annotated

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """ 
-This module contains some functions to for clustering reads
-by their molecular barcodes using different approaches
+This module contains some functions to cluster
+molecular barcodes (UMIs) by distance
 """
 
 import numpy as np
@@ -12,13 +12,16 @@ import random
 
 def extractMolecularBarcodes(reads, mc_start_position, mc_end_position):
     """ 
-    :param reads a list of tuples where the sequence of the read is at the first position
-    :param mc_start_position the start position of the molecular barcodes in the sequence
-    :param mc_end_position the end position of the molecular barcodes in the sequence
     Extracts a list of molecular barcodes from the list of reads given their
     start and end positions and returns a list of 
     (molecular_barcode, read object, occurrences, number Ns)
     sorted by molecular_barcode, occurrences(reverse) and number of Ns
+    :param reads: a list of tuples where the sequence of the read is at the first position
+    :param mc_start_position: the start position of the molecular barcodes in the sequence
+    :param mc_end_position: the end position of the molecular barcodes in the sequence
+    :type mc_start_position: integer
+    :type mc_end_position: integer
+    :return: a list of tuples
     """
     assert(mc_end_position > mc_start_position and mc_start_position >= 0)
     # Create a list with the molecular barcodes and a hash with the occurrences
@@ -42,18 +45,22 @@ def countMolecularBarcodesClustersHierarchical(molecular_barcodes,
                                                min_cluster_size, 
                                                method = "single"):
     """
-    :param molecular_barcodes a list of tuples (molecular_barcode, read)
-    :param allowed_mismatches how much distance we allow between clusters
-    :param min_cluster_size min number of reads to be count as cluster
-    :param method the type of distance algorithm when clustering 
-    (single more restrictive or complete less restrictive)
-    This functions tries to finds clusters of similar reads given a min cluster size
-    and a minimum distance (allowed_mismatches). The clusters are built using the molecular
-    barcodes present in the reads sequences
-    It will return a list with the all the reads, for clusters of reads a random
-    read will be chosen. This will quarante that the list of reads returned
-    is unique and does not contain biological duplicates
+    Tries to finds clusters of similar molecular barcodes given 
+    a minimum cluster size and a minimum distance (allowed_mismatches). 
+    It returns a list with the all the non clustered reads, for clusters of 
+    multiple reads a random read will be chosen. 
+    This will guarantee that the list of reads returned
+    is unique and does not contain duplicates
     This approach finds clusters using hierarchical clustering
+    :param molecular_barcodes: a list of tuples (molecular_barcode, read)
+    :param allowed_mismatches: how much distance we allow between clusters
+    :param min_cluster_size: minimum number of reads for a cluster to be
+    :param method: the type of distance algorithm when clustering 
+                   (single more restrictive or complete less restrictive)
+    :type allowed_mismatches: integer
+    :type min_cluser_size: integer
+    :type method: str 
+    :return: a list of unique reads
     """
     # linkage will not work for distance matrices of 1x1 or 2x2 so for these rare cases
     # we use the naive clustering
@@ -78,8 +85,7 @@ def countMolecularBarcodesClustersHierarchical(molecular_barcodes,
     for item, members in items.iteritems():
         if len(members) >= min_cluster_size:
             # Cluster so we get a random read
-            random_read = molecular_barcodes[random.choice(members)][1]
-            clusters.append(random_read)
+            clusters.append(molecular_barcodes[random.choice(members)][1])
         else:
             # Single cluster so we add all the reads
             clusters += [molecular_barcodes[i][1] for i in members]
@@ -89,17 +95,20 @@ def countMolecularBarcodesClustersNaive(molecular_barcodes,
                                         allowed_mismatches, 
                                         min_cluster_size):
     """
-    :param molecular_barcodes a list of tuples (molecular_barcode, read)
-    :param allowed_mismatches how much distance we allow between clusters
-    :param min_cluster_size min number of reads to be count as cluster
-    This functions tries to finds clusters of similar reads given a min cluster size
-    and a minimum distance (allowed_mismatches). The clusters are built using the molecular
-    barcodes present in the reads sequences
-    It will return a list with the all the reads, for clusters of reads a random
-    read will be chosen. This will quarantee that the list of reads returned
-    is unique and does not contain biological duplicates
+    Tries to finds clusters of similar molecular barcodes given 
+    a minimum cluster size and a minimum distance (allowed_mismatches). 
+    It returns a list with the all the non clustered reads, for clusters of 
+    multiple reads a random read will be chosen. 
+    This will guarantee that the list of reads returned
+    is unique and does not contain duplicates
     This approach is a quick naive approach where the molecular barcodes are sorted
     and then added to clusters until the min distance is above the threshold
+    :param molecular_barcodes: a list of tuples (molecular_barcode, read)
+    :param allowed_mismatches: how much distance we allow between clusters
+    :param min_cluster_size: minimum number of reads for a cluster to be
+    :type allowed_mismatches: integer
+    :type min_cluser_size: integer
+    :return: a list of unique reads
     """
     clusters_dict = {}
     nclusters = 0

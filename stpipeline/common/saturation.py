@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """ 
 This module contains routines
-to compute saturation points on the 
-annotated date at different sizes
+to compute saturation points on a
+set of annotated reads in BAM/SAM format
 """
 import pysam
 import random
@@ -24,17 +24,29 @@ def computeSaturation(nreads,
                       low_memory,
                       temp_folder=None):
     """
-    @param nreads the number of reads present in the annotated_reads file
-    @param annotated_reads a SAM file with the annotated reads
-    @param molecular_barcodes True is the reads contain UMIs
-    @param mc_allowed_mismatches the number of miss matches allowed to remove
-    duplicates by UMIs
-    @param min_cluster_size the min size of the clusters to remove duplicates
-    by UMIs
-    @param expName the name of the dataset
-    @param low_memory True if we want to use a slower but more memory efficient
-    approach
-    @param temp_folder the path where to put output files
+    It splits the input file up into sub-files containing
+    random reads from the input file up to the saturation point. 
+    It then calls createDataset.py and retrieve some stats to
+    compute the saturation points information that is then added
+    to the log file.
+    :param nreads: the number of reads present in the annotated_reads file
+    :param annotated_reads: path to a SAM/BAM file with the annotated reads
+    :param molecular_barcodes: True is the reads contain UMIs
+    :param mc_allowed_mismatches: the number of miss matches allowed to remove
+                                  duplicates by UMIs
+    :param min_cluster_size: the min size of the clusters to remove duplicates by UMIs
+    :param expName: the name of the dataset
+    :param low_memory: True if we want to use a slower but more memory efficient approach
+    :param temp_folder: the path where to put the output files
+    :type nreads: integer
+    :type annotated_reads: str
+    :type molecular_barcodes: boolean
+    :type mc_allowed_mismatches: boolean
+    :type min_cluster_size: integer
+    :type expName: str
+    :type low_memory: boolean
+    :type temp_folder: str
+    :raises: RuntimeError
     """
       
     logger = logging.getLogger("STPipeline")
@@ -97,15 +109,22 @@ def computeSaturation(nreads,
     for spoint in saturation_points:
         stats = Stats()
         input_file = file_names[spoint]
-        createDataset(input_file,
-                      stats,
-                      molecular_barcodes,
-                      mc_cluster,
-                      mc_allowed_mismatches,
-                      min_cluster_size,
-                      expName,
-                      False, # Verbose
-                      low_memory)
+        try:
+            createDataset(input_file,
+                          stats,
+                          molecular_barcodes,
+                          mc_cluster,
+                          mc_allowed_mismatches,
+                          min_cluster_size,
+                          expName,
+                          False, # Verbose
+                          low_memory)
+        except Exception as e:
+            error = "Error computing saturation curve: createDataset execution failed\n"
+            logger.error(error)
+            logger.error(e)
+            raise RuntimeError(error) 
+            
         saturation_points_values_unique_events.append(stats.unique_events)
         saturation_points_values_reads.append(stats.reads_after_duplicates_removal)
         saturation_points_values_genes.append(stats.genes_found)
@@ -114,7 +133,7 @@ def computeSaturation(nreads,
     for file_sam in file_names.itervalues():
         safeRemove(file_sam)
                          
-    # Generate plot
+    # Generate points for the plots
     logger.info("Saturation points:")
     logger.info(', '.join(str(a) for a in saturation_points))
     logger.info("Unique events per saturation point")

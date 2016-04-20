@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ 
-This module contains some functions and utilities for SAM/BAM files
+This module contains some functions and utilities for ST SAM/BAM files
 """
 
 from stpipeline.common.utils import *
@@ -9,13 +9,16 @@ import pysam
 
 def sortSamFile(input_sam, outputFolder=None):
     """
-    :param input is a SAM/BAM file with mapped reads
-    :param outputFolder the location where to place the output file
-    It simply sorts a sam/bam file containing mapped reads by position
+    It simply sorts by position a sam/bam  file containing mapped reads 
+    :param input: is a SAM/BAM file with mapped reads
+    :param outputFolder: the location where to place the output file (optional)
+    :type input: str
+    :type outputFolder: str
+    :returns: the path to the sorted file
+    :raises: RuntimeError
     """
     
     logger = logging.getLogger("STPipeline")
-    logger.info("Start SAM sorting")
     
     sam_type = getExtension(input_sam).lower()
     output_sam = 'mapped_filtered_sorted.' + sam_type
@@ -30,7 +33,6 @@ def sortSamFile(input_sam, outputFolder=None):
         logger.error(error)
         raise RuntimeError(error + "\n")
         
-    logger.info("Finish SAM sorting")
     return output_sam
 
 def filterMappedReads(mapped_reads, 
@@ -40,15 +42,25 @@ def filterMappedReads(mapped_reads,
                       outputFolder=None, 
                       keep_discarded_files=False):
     """ 
-    :param mapped_reads SAM file obtained from STAR containing the aligmnents
-    :param hash_reads a hash table with read names that contain barcode
-    :param min_length the min number of mapped bases we enforce in an alignment
-    :param outputFolder if we want to specify where to put the output file
-    :param keep_discarded_files true if we want to write the un-annotated reads to a file
-    Iterate the alignments and discards reads that are secondary or too short.
-    It also discards reads that do not contain a mapped barcode.
-    It will add the barcode, coordinates and umi as extra tags.
-    It assumes all the reads are mapped.
+    Iterate a SAM/BAM file containing mapped reads 
+    and discards reads that are secondary or too short.
+    It also discards reads that do not contain a valid barcode.
+    It will add the barcode, coordinates and umi as extra tags
+    to the output SAM/BAM file. The UMI will be added only if present.
+    It assumes all the reads are mapped (do not contain un-aligned reads).
+    :param mapped_reads: path to a SAM/BAM file containing the alignments
+    :param qa_stats: the global Stats objects to add some information
+    :param hash_reads: a hash table of read_names to (x,y,umi) tags
+    :param min_length: the min number of mapped bases we enforce in an alignment
+    :param outputFolder: if we want to specify where to put the output file
+    :param keep_discarded_files: true if we want to write the un-annotated reads to a file
+    :type mapped_reads: str
+    :type hash_reads: dict
+    :type min_length: integer
+    :type outputFolder: str
+    :type keep_discarded_files: bool
+    :returns: path to a SAM/BAM file
+    :raises: RuntimeError
     """
     
     logger = logging.getLogger("STPipeline")
