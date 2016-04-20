@@ -14,6 +14,12 @@ here = os.path.abspath(os.path.dirname(__file__))
 with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+try:
+    with open("requirements.txt", "r") as f:
+        install_requires = [x.strip() for x in f.readlines()]
+except IOError:
+    install_requires = []
+    
 setup(
   name = 'stpipeline',
   version = version_number,
@@ -28,18 +34,7 @@ setup(
   include_package_data = False,
   package_data = {'': ['RELEASE-VERSION']},
   zip_safe = False,
-  install_requires = [
-    'HTSeq>=0.6.0',
-    'setuptools',
-    'pysam>=0.8.2',
-    'invoke',
-    'argparse',
-    'scipy',
-    'numpy',
-    'taggd>=0.2.9',
-    'pandas',
-    'sqlitedict'
-  ],
+  install_requires = install_requires,
   test_suite = 'tests',
   scripts = glob.glob('scripts/*.py'),
   classifiers = [
