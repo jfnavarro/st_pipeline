@@ -1,13 +1,16 @@
-ST Pipeline contains the tools and scripts needed to process and analyze the sequenced
-reads files generated in the Spatial Transcriptomics group in FASTQ format. 
+Spatial Transcriptomics Pipeline
 
-The required input files are two fastq files, a genome reference, an annotation reference and the file
+ST Pipeline contains the tools and scripts needed to process and analyze the raw
+files generated in the Spatial Transcriptomics group in FASTQ format. 
+
+The required input files are two fastq files, a genome reference (STAR index), 
+an annotation reference (GTF) and the file
 containing the IDs (from the array-chip-plate) plus the optional configuration parameters. 
 
-The output will be two JSON files and a BED file, one containing
-the features (id,cordinates,gene) and another one containing the raw reads and the id.
+The output will be a JSON file and a BED file, one containing
+the features (id,cordinates,gene) and another one containing the raw reads.
 
-We recommend you install a virtual environment like Pyenv or Anaconda. 
+We recommend you install a virtual environment like Pyenv or Anaconda before you install the pipeline. 
 
 The ST Pipeline has the following dependencies :
 
@@ -37,7 +40,7 @@ For details, see <http://www.gnu.org/licenses/>.
 
 To install the pipeline type 
 
-- python setup.py
+- python setup.py build
 - python setup.py install
 
 To run a test type
