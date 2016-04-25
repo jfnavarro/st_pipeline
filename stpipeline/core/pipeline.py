@@ -164,29 +164,29 @@ class Pipeline():
             """
             parser.add_argument('fastq_files', nargs=2)
             parser.add_argument('--ids',
-                                help='The name of the file containing the barcodes and the coordinates.')
+                                help='Path to the file containing the barcodes and the array coordinates.')
             parser.add_argument('--ref-map',
-                                help="<path_to_genome_indexes> = Reference genome index " \
+                                help="<path_to_genome_indexes> = Reference genome STAR index " \
                                 "for the genome that you want to use to align the reads")
             parser.add_argument('--ref-annotation',
                                 help="Path to the reference annotation file " \
-                                "(htseq requires a GTF file annotation file that you want to use to annotate")
-            parser.add_argument('--expName', help="Name of the experiment (output file name)")
+                                "(GTF or GFF format is required)")
+            parser.add_argument('--expName', help="Name of the experiment/dataset (output file name)")
             parser.add_argument('--allowed-missed', default=6, 
-                                help="Number of allowed mismatches when mapping against the barcodes")
+                                help="Number of allowed mismatches when demultiplexing against the barcodes")
             parser.add_argument('--allowed-kmer', default=7, 
-                                help="KMer length when mapping against the barcodes")
+                                help="KMer length when demultiplexing against the barcodes")
             parser.add_argument('--overhang', default=2,
-                                help="Extra flanking bases added when mapping against the barcodes")
+                                help="Extra flanking bases added when demultiplexing against the barcodes")
             parser.add_argument('--min-length-qual-trimming', default=28,
-                                help="Minimum length of the sequence for mapping after trimming, " \
+                                help="Minimum length of the reads after trimming, " \
                                 "shorter reads will be discarded")
             parser.add_argument('--mapping-rv-trimming', default=5,
-                                help="Number of bases to trim in the reverse reads for the Mapping")
+                                help="Number of bases to trim in the reverse reads for the mapping step")
             parser.add_argument('--length-id', default=18, help="Length of IDs (the length of the barcodes)")
             parser.add_argument('--contaminant-index',
                                 help="<path_to_genome_indexes> = When provided, reads will be filtered "
-                                "against the specified genome index, non-mapping reads will be saved and demultiplexed")
+                                "against the specified genome STAR index, non-mapping reads will be saved and demultiplexed")
             parser.add_argument('--qual-64', action="store_true", default=False,
                                 help="Use phred-64 quality instead of phred-33(default)")
             parser.add_argument('--htseq-mode', default="intersection-nonempty",
@@ -196,11 +196,11 @@ class Pipeline():
                                 help="When using htseq discard reads annotating ambiguous genes")
             parser.add_argument('--start-id', default=0, help="Start position of the IDs (Barcodes) in the reads from 0")
             parser.add_argument('--no-clean-up', action="store_false", default=True,
-                                help="Do not remove temporary files at the end (useful for debugging)")
+                                help="Do not remove temporary/intermediary files (useful for debugging)")
             parser.add_argument('--verbose', action="store_true", default=False,
-                                help="Show extra information on the log")
+                                help="Show extra information on the log file")
             parser.add_argument('--mapping-threads', default=8, help="Number of threads to use in the mapping step")
-            parser.add_argument('--min-quality-trimming', default=20, help="Minimum quality for trimming")
+            parser.add_argument('--min-quality-trimming', default=20, help="Minimum phred quality for trimming bases in the trimming step")
             parser.add_argument('--bin-path', 
                                 help="Path to folder where binary executables are present (system path by default)")
             parser.add_argument('--log-file', 
@@ -209,15 +209,15 @@ class Pipeline():
             parser.add_argument('--temp-folder', help='Path of the location for temporary files')
             parser.add_argument('--molecular-barcodes',
                                 action="store_true", 
-                                help="Activates the molecular barcodes PCR duplicates filter")
+                                help="Activates the molecular barcodes (UMI) duplicates filter")
             parser.add_argument('--mc-allowed-mismatches', default=1,
-                                help='Number of allowed mismatches when applying the molecular barcodes PCR filter')
+                                help='Number of allowed mismatches when applying the molecular barcodes (UMI) duplicates filter')
             parser.add_argument('--mc-start-position', type=int, default=18,
                                 help='Position (base wise) of the first base of the molecular barcodes (starting by 0)')
             parser.add_argument('--mc-end-position', default=27,
                                 help='Position (base wise) of the last base of the molecular barcodes (starting by 1)')
             parser.add_argument('--min-cluster-size', default=2,
-                                help='Min number of equal molecular barcodes to count as a cluster')
+                                help='Min number of equal molecular barcodes to count as a cluster (duplicate)')
             parser.add_argument('--keep-discarded-files', action="store_true", default=False,
                                 help='Writes down discarded reads and barcodes into files')
             parser.add_argument('--remove-polyA', default=0, 
@@ -253,11 +253,11 @@ class Pipeline():
                                 help="UMI template for the UMI filter, default = WSNNWSNNV")
             parser.add_argument('--compute-saturation', action="store_true", default=False,
                                 help="Performs a saturation curve computation by sub-sampling the annotated reads, computing " \
-                                "unique molecules and then a saturation curve")
+                                "unique molecules and then a saturation curve (included in the log file)")
             parser.add_argument('--include-non-annotated', action="store_true", default=False,
                                 help="Do not discard un-annotated reads (they will be labeled no_feature)")
             parser.add_argument('--inverse-mapping-rv-trimming', default=0,
-                                help="Number of bases to trim in the reverse reads for the Mapping on the 3' end")
+                                help="Number of bases to trim in the reverse reads for the mapping step on the 3' end")
             parser.add_argument('--low-memory', default=False, action="store_true",
                                 help="Writes temporary records into disk in order to save memory but gaining a speed penalty")
             parser.add_argument('--two-pass-mode', default=False, action="store_true",
