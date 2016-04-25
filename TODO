@@ -1,4 +1,4 @@
-Validate and benchmark all the pipeline stats
+Perfom UMI duplicate removal for tuples barcode-gene with the same genomic coordinates
 Add unit-test for all individual components and modules
 Fix TODOs in the code
 Cython some functions
