@@ -58,29 +58,19 @@ The ST pipeline is open source under the MIT license which means that you can us
 
 **Dependencies** 
 
-The ST Pipeline has the following dependencies :
+The ST Pipeline depends on some Python packages that will
+be automatically installed during the installation process. 
+You can see them in the file dependencies.txt
 
-HTSeq is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+**Requirements**
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+The ST Pipeline requires to have installed
+in the system the aligner STAR :
+https://github.com/alexdobin/STAR
 
-The full text of the GNU General Public License, version 3, can be found here: http://www.gnu.org/licenses/gpl-3.0-standalone.html
-
-STAR
-Spliced Transcripts Alignment to a Reference
-© Alexander Dobin, 2009-2015
-
-STAR is a free open source software distributed under GPLv3
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-For details, see <http://www.gnu.org/licenses/>.
+The ST Pipeline requieres between
+32 and 64GB of RAM depending
+on the size of the data. 
+It is recommended to run it
+in a system with at least 8 cpu cores. 
 
