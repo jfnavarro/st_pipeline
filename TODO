@@ -4,3 +4,4 @@ Fix TODOs in the code
 Cython some functions
 Improve the memory use in createDatasets and hash_mapped_reads
 Remove barcodes from the output and replace JSON output for binary or table format
+Add an option to parse input parameters from a yaml file
