@@ -285,3 +285,10 @@ Version 0.8.4
 
 Version 0.8.5
 * Fixed a bug in the computation of saturation curves
+
+Version 0.8.7
+* Updated comments, manual and license
+* Small improvements
+
+Version 0.8.8
+* Removed barcodes from the code

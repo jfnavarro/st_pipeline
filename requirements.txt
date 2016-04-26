@@ -1,4 +1,4 @@
-HTSeq>=0.6.0'
+HTSeq>=0.6.0
 setuptools
 pysam>=0.8.2
 invoke
@@ -6,6 +6,5 @@ argparse
 scipy
 numpy
 taggd>=0.2.9
-pandas
 sqlitedict
  

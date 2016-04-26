@@ -25,9 +25,8 @@ class Transcript:
     x, count and y are int
     reads is a list of tuples (read_name, sequence, quality, chromosome, start, end)
     """
-    __slots__ = ('barcode','gene','x','y','count','reads')
-    def __init__(self, barcode = None, gene = None, x = -1, y = -1, count = 0, reads = []):
-        self.barcode = barcode
+    __slots__ = ('gene','x','y','count','reads')
+    def __init__(self, gene = None, x = -1, y = -1, count = 0, reads = []):
         self.gene = gene
         self.x = x
         self.y = y
@@ -35,10 +34,10 @@ class Transcript:
         self.reads = reads
         
     def __hash__(self):
-        return hash((self.barcode, self.gene))
+        return hash((self.x, self.y, self.gene))
     
     def __eq__(self, other):
-        return self.barcode == other.barcode and self.gene == other.gene
+        return self.x == other.x and self.y == other.y and self.gene == other.gene
         
     def __add__(self, other):
         assert self == other
@@ -47,14 +46,14 @@ class Transcript:
         return self
     
     def __cmp__(self, other):
-        return self.barcode == other.barcode and self.gene == other.gene
+        return self.x == other.x and self.y == other.y and self.gene == other.gene
     
     def __str__(self):
-        return "Barcode: %s Gene: %s X: %s Y: %s Hits: %s" % \
-            (self.barcode, self.gene, self.x, self.y, self.count)
+        return "Gene: %s X: %s Y: %s Hits: %s" % \
+            (self.gene, self.x, self.y, self.count)
             
     def toBarcodeDict(self):
-        return {'barcode': self.barcode, 'gene': self.gene, 'x': self.x, 'y': self.y, 'hits': self.count}
+        return {'Barcode':'', 'gene': self.gene, 'x': self.x, 'y': self.y, 'hits': self.count}
 
 #TODO this function takes too much memory, optimize it. (Maybe Cython)
 def parseUniqueEvents(filename, low_memory=False, molecular_barcodes=False):
@@ -85,29 +84,28 @@ def parseUniqueEvents(filename, low_memory=False, molecular_barcodes=False):
         chrom = str(sam_file.getrname(rec.reference_id))
         strand = "-" if rec.is_reverse else "+"
         # Get taggd tags
-        barcode,x,y,gene,seq = (None,None,None,None,None)
+        x,y,gene,seq = (None,None,None,None)
         for (k, v) in rec.tags:
-            if k == "B0":
-                barcode = str(v)
-            elif k == "B1":
+            if k == "B1":
                 x = int(v) ## The X coordinate
             elif k == "B2":
                 y = int(v) ## The Y coordinate
             elif k == "XF":
                 gene = str(v)
-            elif molecular_barcodes and k == "B3":
+            elif k == "B3":
                 seq = str(v) ## The UMI
             else:
                 continue
         # Check that all tags are present
-        if any(tag is None for tag in [barcode,x,y,gene]) or (molecular_barcodes and not seq):
+        if any(tag is None for tag in [x,y,gene]) or (molecular_barcodes and not seq):
             sys.stdout.write("Warning: Missing attributes for record %s\n" % clear_name)
             continue
         # Create a new transcript and assign it to dictionary
-        transcript = Transcript(barcode=barcode, gene=gene, x=x, y=y, count=1, 
+        transcript = Transcript(gene=gene, x=x, y=y, count=1, 
                                 reads=[(chrom, start, end, clear_name, mapping_quality, strand, seq)])
+        # We want to count reads and aggregate the reads
         # The probability of a collision is very very low
-        key = hash(gene + barcode)
+        key = hash((gene,x,y))
         try:
             unique_events[key] += transcript
         except KeyError:
@@ -153,7 +151,6 @@ def main(filename,
     
     total_record = 0
     unique_genes = set()
-    unique_barcodes = set()
     total_transcripts = 0
     discarded_reads = 0
     max_reads_unique_events = 0
@@ -170,40 +167,42 @@ def main(filename,
     unique_events = parseUniqueEvents(filename, low_memory, molecular_barcodes)
     
     with open(os.path.join(output_folder, filenameReadsBED), "w") as reads_handler:
-        reads_handler.write("Chromosome\tStart\tEnd\tRead\tScore\tStrand\tGene\tBarcode\n")
         for transcript in unique_events:
-            # Re-compute the read count accounting for PCR duplicates 
-            # if indicated (read sequence must contain molecular barcode)
+            # Re-compute the read count accounting for duplicates 
+            # (read sequences must contain a molecular barcode)
             if molecular_barcodes:
                 # Extract the molecular barcodes
                 mcs = [(read[6],read) for read in transcript.reads]
                 del transcript.reads
+                # Cluster the reads based on the molecular barcode
                 clusters = clusters_func(mcs,
                                          allowed_mismatches,
                                          min_cluster_size)
+                # Assign new reads to the transcript (Unique UMIs)
                 transcript.reads = clusters
                 num_clusters = len(clusters)
                 discarded_reads += (transcript.count - num_clusters)
+                # Update read counts in the transcript
                 transcript.count = num_clusters
              
             # Add a JSON entry for the transcript
             json_transcripts.append(transcript.toBarcodeDict())
              
-            # Add a READS object to a list 
+            # Write the reads in the transcript to the BED file
             for read in transcript.reads:
-                reads_handler.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (str(read[0]),
-                                                                          str(read[1]),
-                                                                          str(read[2]),
-                                                                          str(read[3]),
-                                                                          str(read[4]),
-                                                                          str(read[5]),
-                                                                          transcript.gene,
-                                                                          transcript.barcode))   
+                reads_handler.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (str(read[0]),
+                                                                              str(read[1]),
+                                                                              str(read[2]),
+                                                                              str(read[3]),
+                                                                              str(read[4]),
+                                                                              str(read[5]),
+                                                                              transcript.gene,
+                                                                              str(transcript.x),
+                                                                              str(transcript.y)))   
             # Some stats computation
-            barcode_genes[transcript.barcode] += 1
-            barcode_reads[transcript.barcode] += transcript.count
+            barcode_genes[(transcript.x, transcript.y)] += 1
+            barcode_reads[(transcript.x, transcript.y)] += transcript.count
             unique_genes.add(transcript.gene)
-            unique_barcodes.add(transcript.barcode)
             total_record += 1
             total_transcripts += transcript.count
             max_reads_unique_events = max(max_reads_unique_events, transcript.count)
@@ -221,7 +220,6 @@ def main(filename,
     # Print some stats
     print "Number of unique transcripts present: " + str(total_transcripts) 
     print "Number of unique events (gene-barcode) present: " + str(total_record) 
-    print "Number of unique barcodes present: " + str(len(unique_barcodes))
     print "Number of unique genes present: " + str(len(unique_genes))
     print "Barcode to genes percentiles: "
     print np.percentile(barcode_genes_array, [0,25,50,75,100])
@@ -235,11 +233,6 @@ def main(filename,
     print "Min number of reads over all unique events: " + str(min_reads_unique_events)
     if molecular_barcodes:
         print "Number of discarded reads (possible PCR duplicates): " + str(discarded_reads)
-        
-    del barcode_genes
-    del barcode_reads
-    del unique_genes
-    del unique_barcodes
      
     # Write JSON transcripts to file
     with open(os.path.join(output_folder, filenameJSON), "w") as json_handler:
@@ -264,7 +257,7 @@ if __name__ == "__main__":
     parser.add_argument('--min-cluster-size', default=2,
                         help='Min number of equal molecular barcodes to count as a cluster')
     parser.add_argument('--low-memory', default=False, action="store_true",
-                        help="Writes temporary records into disk in order to save memory but gaining a speed penalty")
+                        help="Writes temporary records to disk in order to save memory (slower)")
 
     args = parser.parse_args()
     main(args.input, 

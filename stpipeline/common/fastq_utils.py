@@ -412,7 +412,6 @@ def reformatRawReads(fw,
 
 #TODO this approach uses too much memory
 #     find a better solution (maybe Cython)
-#TODO the barcode is not needed
 def hashDemultiplexedReads(reads,
                            has_umi,
                            umi_start,
@@ -421,7 +420,7 @@ def hashDemultiplexedReads(reads,
     """
     This function extracts the read name and the barcode
     from the reads given as input and returns a hash
-    with the clean read name as key and (barcode,x,y,umi) as
+    with the clean read name as key and (x,y,umi) as
     values (umi is optional). X and Y correspond
     to the array coordinates of the barcode of the read.
     :param reads: path to a file with the fastq reads after demultiplexing
@@ -434,7 +433,7 @@ def hashDemultiplexedReads(reads,
     :type umi_start: integer
     :type umi_end: integer
     :type low_memory: boolean
-    :returns: a dictionary of read_name -> (barcode,x,y,umi) tags where umi is optional
+    :returns: a dictionary of read_name -> (x,y,umi) tags where umi is optional
     """
     assert(umi_start >= 0 and umi_start < umi_end)
     if low_memory:
@@ -446,13 +445,13 @@ def hashDemultiplexedReads(reads,
     for name, sequence, _ in readfq(fastq_file):
         # Assumes the header ends like this B0:Z:GTCCCACTGGAACGACTGTCCCGCATC B1:Z:678 B2:Z:678
         header_tokens = name.split()
-        barcode = header_tokens[-3]
+        #barcode = header_tokens[-3]
         x = header_tokens[-2]
         y = header_tokens[-1]
         # Assumes STAR will only output the first token of the read name
         # We keep the same naming for the extra attributes
         # We add the UMI as tag is present
-        tags = [barcode,x,y]
+        tags = [x,y]
         if has_umi:
             # Add the UMI as an extra tag
             umi = sequence[umi_start:umi_end]
