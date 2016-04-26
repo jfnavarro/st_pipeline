@@ -35,6 +35,7 @@ The ST pipeline will also output a log file and a stats file with useful informa
 **Installation**
 
 We recommend you install a virtual environment like Pyenv or Anaconda before you install the pipeline. 
+The ST Pipeline works with python 2.7.
 
 First clone the repository or download a tar/zip from the releases section. 
 Access the cloned repository folder or the folder where the tar/zip file has been decompressed. 
@@ -48,7 +49,7 @@ To run a test type
 
     python setup.py test
 
-To see the different options type 
+To see the different options type (you need internet connection to run the tests)
 
     st_pipeline_run.py --help
 
