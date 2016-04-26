@@ -45,11 +45,11 @@ To install the pipeline type then
     python setup.py build
     python setup.py install
 
-To run a test type
+To run a test type (you need internet connection to run the tests)
 
     python setup.py test
 
-To see the different options type (you need internet connection to run the tests)
+To see the different options type 
 
     st_pipeline_run.py --help
 
