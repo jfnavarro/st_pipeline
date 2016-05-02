@@ -57,7 +57,7 @@ To see the different options type
 
 An example run would be
 
-	st_pipeline_run.py --ids ids_file.txt --molecular-barcodes --ref-map path_to_index --ref-annotation 	  annotation_file.gtf file1.fastq file2.fastq
+	st_pipeline_run.py --ids ids_file.txt --molecular-barcodes --ref-map path_to_index --log-file log_file.txt --output-folder /home/me/results --ref-annotation annotation_file.gtf file1.fastq file2.fastq 
 
 **License**
 
