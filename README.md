@@ -52,6 +52,12 @@ To run a test type (you need internet connection to run the tests)
 To see the different options type 
 
     st_pipeline_run.py --help
+    
+**Example**
+
+An example run would be
+
+	st_pipeline_run.py --ids ids_file.txt --molecular-barcodes --ref-map path_to_index --log-file log_file.txt --output-folder /home/me/results --ref-annotation annotation_file.gtf file1.fastq file2.fastq 
 
 **License**
 
