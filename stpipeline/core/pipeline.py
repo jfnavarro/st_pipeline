@@ -15,7 +15,8 @@ from stpipeline.common.saturation import computeSaturation
 from stpipeline.version import version_number
 import logging
 import gzip
-    
+import argparse
+
 class Pipeline():
     
     LogName = "STPipeline"
@@ -87,7 +88,7 @@ class Pipeline():
                  "reverse_file": fileOk(self.fastq_rv), 
                  "ref_annotation": fileOk(self.ref_annotation), 
                  "ids_file": fileOk(self.ids),
-                 "ref_mapping": self.ref_map is not None, 
+                 "ref_mapping": self.ref_map is not None and os.path.isdir(self.ref_map), 
                  "Exp Name":  self.expName is not None}
         conds["annotation_extension"] = self.ref_annotation.endswith("gtf") \
                                         or self.ref_annotation.endswith("gff3") \
@@ -137,7 +138,7 @@ class Pipeline():
             raise RuntimeError(error)
 
         # Test the presence of the scripts 
-        required_scripts = set(['STAR', 'taggd_demultiplex.py'])
+        required_scripts = set(['STAR'])
 
         unavailable_scripts = set()
         for script in required_scripts:
@@ -154,6 +155,10 @@ class Pipeline():
         # Add scripts versions to QA Stats
         self.qa_stats.pipeline_version = version_number
         self.qa_stats.mapper_tool = getSTARVersion()
+        if self.qa_stats.mapper_tool.find("2.5") == -1:
+            error = "Error: you need STAR 2.5.x\n"
+            self.logger.error(error)
+            raise RuntimeError(error)            
         self.qa_stats.annotation_tool = "HTSeqCount " + getHTSeqCountVersion()
         self.qa_stats.demultiplex_tool = "Taggd " + getTaggdCountVersion()
        
@@ -162,110 +167,129 @@ class Pipeline():
             Adds the pipeline's parameters to a given
             Argparse object 
             """
+            class readable_dir(argparse.Action):
+                def __call__(self,parser, namespace, values, option_string=None):
+                    prospective_dir=values
+                    if not os.path.isdir(prospective_dir):
+                        raise argparse.ArgumentTypeError("readable_dir:{0} is not a valid path".format(prospective_dir))
+                    if os.access(prospective_dir, os.R_OK):
+                        setattr(namespace,self.dest,prospective_dir)
+                    else:
+                        raise argparse.ArgumentTypeError("readable_dir:{0} is not a readable dir".format(prospective_dir))
+
             parser.add_argument('fastq_files', nargs=2)
-            parser.add_argument('--ids',
+            parser.add_argument('--ids', metavar="[FILE]", type=argparse.FileType('r'), required=True,
                                 help='Path to the file containing the barcodes and the array coordinates.')
-            parser.add_argument('--ref-map',
-                                help="<path_to_genome_indexes> = Reference genome STAR index " \
+            parser.add_argument('--ref-map', metavar="[FOLDER]", action=readable_dir, required=True,
+                                help="Path to the folder with the genome STAR index " \
                                 "for the genome that you want to use to align the reads")
-            parser.add_argument('--ref-annotation',
+            parser.add_argument('--ref-annotation', metavar="[FILE]", type=argparse.FileType('r'), required=True,
                                 help="Path to the reference annotation file " \
                                 "(GTF or GFF format is required)")
-            parser.add_argument('--expName', help="Name of the experiment/dataset (output file name)")
-            parser.add_argument('--allowed-missed', default=6, 
+            parser.add_argument('--expName', type=str, metavar="[STRING]", required=True,
+                                help="Name of the experiment/dataset (The output files will prepend this name)")
+            parser.add_argument('--allowed-missed', default=2, metavar="[INT]", type=int, choices=range(0,6),
                                 help="Number of allowed mismatches when demultiplexing against the barcodes")
-            parser.add_argument('--allowed-kmer', default=7, 
+            parser.add_argument('--allowed-kmer', default=6, metavar="[INT]", type=int, choices=range(1,9),
                                 help="KMer length when demultiplexing against the barcodes")
-            parser.add_argument('--overhang', default=2,
+            parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0,6),
                                 help="Extra flanking bases added when demultiplexing against the barcodes")
-            parser.add_argument('--min-length-qual-trimming', default=28,
+            parser.add_argument('--min-length-qual-trimming', default=28, metavar="[INT]", type=int, choices=range(20,100),
                                 help="Minimum length of the reads after trimming, " \
                                 "shorter reads will be discarded")
-            parser.add_argument('--mapping-rv-trimming', default=5,
+            parser.add_argument('--mapping-rv-trimming', default=0, metavar="[INT]", type=int, choices=range(0,100),
                                 help="Number of bases to trim in the reverse reads for the mapping step")
-            parser.add_argument('--length-id', default=18, help="Length of IDs (the length of the barcodes)")
-            parser.add_argument('--contaminant-index',
-                                help="<path_to_genome_indexes> = When provided, reads will be filtered "
-                                "against the specified genome STAR index, non-mapping reads will be saved and demultiplexed")
+            parser.add_argument('--length-id', default=18, type=int, metavar="[INT]", choices=[18,21,24,27],
+                                help="Length of IDs (the length of the barcodes)")
+            parser.add_argument('--contaminant-index', metavar="[FOLDER]", action=readable_dir,
+                                help="Path to the folder with a STAR index with a contaminant genome. Reads will be filtered "
+                                "against the specified genome and mapping reads will be descarded")
             parser.add_argument('--qual-64', action="store_true", default=False,
                                 help="Use phred-64 quality instead of phred-33(default)")
-            parser.add_argument('--htseq-mode', default="intersection-nonempty",
+            parser.add_argument('--htseq-mode', default="intersection-nonempty", type=str, metavar="[STRING]", 
+                                choices=["union", "intersection-nonempty", "intersection-strict"],
                                 help="Mode of Annotation when using HTSeq. "
                                 "Modes = {union,intersection-nonempty(default),intersection-strict}")
-            parser.add_argument('--htseq-no-ambiguous', action="store_true",
-                                help="When using htseq discard reads annotating ambiguous genes")
-            parser.add_argument('--start-id', default=0, help="Start position of the IDs (Barcodes) in the reads from 0")
+            parser.add_argument('--htseq-no-ambiguous', action="store_true", default=False,
+                                help="When using htseq discard reads annotating ambiguous genes (default false)")
+            parser.add_argument('--start-id', default=0, metavar="[INT]", type=int, choices=range(0,25),
+                                help="Start position of the IDs (Barcodes) in the read 1 (counting from 0)")
             parser.add_argument('--no-clean-up', action="store_false", default=True,
                                 help="Do not remove temporary/intermediary files (useful for debugging)")
             parser.add_argument('--verbose', action="store_true", default=False,
                                 help="Show extra information on the log file")
-            parser.add_argument('--mapping-threads', default=8, help="Number of threads to use in the mapping step")
-            parser.add_argument('--min-quality-trimming', default=20, help="Minimum phred quality for trimming bases in the trimming step")
-            parser.add_argument('--bin-path', 
+            parser.add_argument('--mapping-threads', default=4, metavar="[INT]", type=int, choices=range(1,16),
+                                help="Number of threads to use in the mapping step")
+            parser.add_argument('--min-quality-trimming', default=20, metavar="[INT]", type=int, choices=range(10,60),
+                                help="Minimum phred quality for trimming bases in the trimming step")
+            parser.add_argument('--bin-path', metavar="[FOLDER]", action=readable_dir,
                                 help="Path to folder where binary executables are present (system path by default)")
-            parser.add_argument('--log-file', 
+            parser.add_argument('--log-file', metavar="[FILE]", type=argparse.FileType('r'),
                                 help="Name of the file that we want to use to store the logs (default output to screen)")
-            parser.add_argument('--output-folder', help='Path of the output folder')
-            parser.add_argument('--temp-folder', help='Path of the location for temporary files')
+            parser.add_argument('--output-folder', metavar="[FOLDER]", action=readable_dir,
+                                help='Path of the output folder')
+            parser.add_argument('--temp-folder', metavar="[FOLDER]", action=readable_dir,
+                                help='Path of the location for temporary files')
             parser.add_argument('--molecular-barcodes',
                                 action="store_true", 
                                 help="Activates the molecular barcodes (UMI) duplicates filter")
-            parser.add_argument('--mc-allowed-mismatches', default=1,
+            parser.add_argument('--mc-allowed-mismatches', default=1, metavar="[INT]", type=int, choices=range(0,4),
                                 help='Number of allowed mismatches when applying the molecular barcodes (UMI) duplicates filter')
-            parser.add_argument('--mc-start-position', type=int, default=18,
+            parser.add_argument('--mc-start-position', default=18, metavar="[INT]", type=int, choices=range(0,42),
                                 help='Position (base wise) of the first base of the molecular barcodes (starting by 0)')
-            parser.add_argument('--mc-end-position', default=27,
+            parser.add_argument('--mc-end-position', default=27, metavar="[INT]", type=int, choices=range(8,50),
                                 help='Position (base wise) of the last base of the molecular barcodes (starting by 1)')
-            parser.add_argument('--min-cluster-size', default=2,
+            parser.add_argument('--min-cluster-size', default=2, metavar="[INT]", type=int, choices=range(1,10),
                                 help='Min number of equal molecular barcodes to count as a cluster (duplicate)')
             parser.add_argument('--keep-discarded-files', action="store_true", default=False,
                                 help='Writes down discarded reads and barcodes into files')
-            parser.add_argument('--remove-polyA', default=0, 
+            parser.add_argument('--remove-polyA', default=0, metavar="[INT]", type=int, choices=range(0,25),
                                 help="Remove PolyAs and everything after it in the reads of a length at least as given number")
-            parser.add_argument('--remove-polyT', default=0, 
+            parser.add_argument('--remove-polyT', default=0, metavar="[INT]", type=int, choices=range(0,25),
                                 help="Remove PolyTs and everything after it in the reads of a length at least as given number")
-            parser.add_argument('--remove-polyG', default=0, 
+            parser.add_argument('--remove-polyG', default=0, metavar="[INT]", type=int, choices=range(0,25),
                                 help="Remove PolyGs and everything after it in the reads of a length at least as given number")
-            parser.add_argument('--remove-polyC', default=0,
+            parser.add_argument('--remove-polyC', default=0, metavar="[INT]", type=int, choices=range(0,25),
                                 help="Remove PolyCs and everything after it in the reads of a length at least as given number")
-            parser.add_argument('--filter-AT-content', default=90,
+            parser.add_argument('--filter-AT-content', default=90, metavar="[INT%]", type=int, choices=range(1,99),
                                 help="Discards reads whose number of A and T bases in total are more " \
                                 "or equal than the number given in percentage")
-            parser.add_argument('--sam-type', default="BAM",
+            parser.add_argument('--sam-type', default="BAM", metavar="[STRING]", type=str, choices=["SAM", "BAM"],
                                 help="Type of SAM format for intermediate files (SAM or BAM)")
             parser.add_argument('--disable-multimap', action="store_true", default=False,
                                 help="If activated, multiple aligned reads obtained during mapping will be all discarded. " \
                                 "Otherwise the highest scored one will be kept")
             parser.add_argument('--disable-clipping', action="store_true", default=False,
                                 help="If activated, disable soft-clipping (local alignment) in the mapping")
-            parser.add_argument('--mc-cluster', default="naive",
+            parser.add_argument('--mc-cluster', default="naive", metavar="[STRING]", type=str, choices=["naive", "hierarchical"],
                                 help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n" \
                                 "Modes = {naive(default), hierarchical}")
-            parser.add_argument('--min-intron-size', default=20,
+            parser.add_argument('--min-intron-size', default=20, metavar="[INT]", type=int, choices=range(0,1000),
                                 help="Minimum allowed intron size when searching for splice variants in the mapping step")
-            parser.add_argument('--max-intron-size', default=100000,
+            parser.add_argument('--max-intron-size', default=100000, metavar="[INT]", type=int, choices=range(0,1000000),
                                 help="Maximum allowed intron size when searching for splice variants in the mapping step")
-            parser.add_argument('--max-gap-size', default=1000000,
+            parser.add_argument('--max-gap-size', default=1000000, metavar="[INT]", type=int, choices=range(0,1000000),
                                 help="Maximum allowed distance between pairs in the mapping step")
             parser.add_argument('--umi-filter', action="store_true", default=False,
                                 help="Enables the UMI quality filter based on the template given in --umi-filter-template")
-            parser.add_argument('--umi-filter-template', default="WSNNWSNNV",
+            parser.add_argument('--umi-filter-template', default="WSNNWSNNV", type=str, metavar="[STRING]",
                                 help="UMI template for the UMI filter, default = WSNNWSNNV")
             parser.add_argument('--compute-saturation', action="store_true", default=False,
                                 help="Performs a saturation curve computation by sub-sampling the annotated reads, computing " \
                                 "unique molecules and then a saturation curve (included in the log file)")
             parser.add_argument('--include-non-annotated', action="store_true", default=False,
                                 help="Do not discard un-annotated reads (they will be labeled no_feature)")
-            parser.add_argument('--inverse-mapping-rv-trimming', default=0,
+            parser.add_argument('--inverse-mapping-rv-trimming', default=0, type=int, metavar="[INT]", choices=range(0,100),
                                 help="Number of bases to trim in the reverse reads for the mapping step on the 3' end")
             parser.add_argument('--low-memory', default=False, action="store_true",
                                 help="Writes temporary records into disk in order to save memory but gaining a speed penalty")
             parser.add_argument('--two-pass-mode', default=False, action="store_true",
                                 help="Activates the 2 pass mode in STAR to also map against splice variants")
-            parser.add_argument('--two-pass-mode-genome', default=None, type=str,
-                                help="When using the two pass mode the path of the fasta file with the genome is needed")
-            parser.add_argument('--strandness', default="yes", type=str,
-                                help="What strandness to use when annotating [no, yes, reverse]")
+            parser.add_argument('--two-pass-mode-genome', metavar="[FILE]", type=argparse.FileType('r'),
+                                help="Path to a genome file in fasta format. \n" \
+                                "When using the two pass mode the path of the fasta file with the genome is needed")
+            parser.add_argument('--strandness', default="yes", type=str, metavar="[STRING]", choices=["no", "yes", "reverse"],
+                                help="What strandness mode to use when annotating with htseq-count [no, yes(default), reverse]")
             parser.add_argument('--version', action='version',  version='%(prog)s ' + str(version_number))
             return parser
          
@@ -284,8 +308,7 @@ class Pipeline():
         self.barcode_length = int(options.length_id)
         self.threads = int(options.mapping_threads)
         self.verbose = options.verbose
-        if options.ids is not None:
-            self.ids = os.path.abspath(options.ids)
+        self.ids = os.path.abspath(options.ids)
         self.ref_map = os.path.abspath(options.ref_map)
         self.ref_annotation = os.path.abspath(options.ref_annotation)
         self.expName = options.expName
