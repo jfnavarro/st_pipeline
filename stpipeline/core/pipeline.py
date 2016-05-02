@@ -294,6 +294,9 @@ class Pipeline():
         self.qual64 = options.qual_64
         self.contaminant_index = options.contaminant_index
         self.path = options.bin_path
+        # Load the given path into the system PATH
+        if self.path is not None and os.path.isdir(self.path): 
+            os.environ["PATH"] += os.pathsep + self.path
         if options.log_file is not None:
             self.logfile = os.path.abspath(options.log_file)  
         self.fastq_fw = options.fastq_files[0]
@@ -302,6 +305,13 @@ class Pipeline():
             self.output_folder = os.path.abspath(options.output_folder)
         if options.temp_folder is not None and os.path.isdir(options.temp_folder): 
             self.temp_folder = os.path.abspath(options.temp_folder)
+        # Set default output and temp folders if erroneous given
+        if self.output_folder is None or not os.path.isdir(self.output_folder):
+            self.logger.info("Invalid path for output directory -- using current directory instead")
+            self.output_folder = os.path.abspath(os.getcwd())
+        if self.temp_folder is None or not os.path.isdir(self.temp_folder):
+            self.logger.info("Invalid path for temp directory -- using current directory instead")
+            self.temp_folder = os.path.abspath(os.getcwd())
         self.molecular_barcodes = options.molecular_barcodes
         self.mc_allowed_mismatches = int(options.mc_allowed_mismatches)
         self.mc_start_position = int(options.mc_start_position)
@@ -345,20 +355,8 @@ class Pipeline():
         else:
             logging.basicConfig(level=logging.DEBUG)
         self.logger = logging.getLogger(self.__class__.LogName)
-        
-        # Load the given path into the system PATH
-        if self.path is not None and os.path.isdir(self.path): 
-            os.environ["PATH"] += os.pathsep + self.path
 
         self.logger.info("ST Pipeline " + str(version_number))
-        
-        # Set default output and temp folders if erroneous given
-        if self.output_folder is None or not os.path.isdir(self.output_folder):
-            self.logger.info("Invalid path for output directory -- using current directory instead")
-            self.output_folder = os.path.abspath(os.getcwd())
-        if self.temp_folder is None or not os.path.isdir(self.temp_folder):
-            self.logger.info("Invalid path for temp directory -- using current directory instead")
-            self.temp_folder = os.path.abspath(os.getcwd())
         
         # Some info
         self.logger.info("Output directory : " + self.output_folder)

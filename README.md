@@ -16,7 +16,7 @@ Basically what the ST pipeline does is :
 	- Remove low quality bases
 	- Sanity check
 	- Check quality UMI
-	- Remove artiacts (PolyT, PolyA, PolyG and PolyC)
+	- Remove artifacts (PolyT, PolyA, PolyG and PolyC)
 	- Check for AT content
 	- Discard reads with a minimum number of bases
 - Mapping with STAR (only read 2)
