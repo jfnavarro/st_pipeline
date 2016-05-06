@@ -128,19 +128,19 @@ def main(filename,
     
     if filename is None or not os.path.isfile(filename):
         sys.stderr.write("Error, input file not present or invalid: %s\n" % (filename))
-        sys.exit(-1)
+        sys.exit(1)
 
     sam_type = getExtension(filename).lower()
     if sam_type != "sam" and sam_type != "bam":
         sys.stderr.write("Error, invalid input format: %s\n" % (sam_type))
-        sys.exit(-1)
+        sys.exit(1)
         
     if output_folder is None or not os.path.isdir(output_folder):
         output_folder = "."
     
     if mc_cluster not in ["naive","hierarchical"]:
         sys.stderr.write("Error: type of clustering algorithm is incorrect\n")
-        sys.exit(-1)
+        sys.exit(1)
         
     if output_file_template:
         filenameJSON = str(output_file_template) + "_stdata.json"
