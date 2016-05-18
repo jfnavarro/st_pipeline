@@ -1,4 +1,4 @@
-**Spatial Transcriptomics Pipeline**
+# Spatial Transcriptomics Pipeline
 
 ST Pipeline contains the tools and scripts needed to process and analyze the raw files generated with the Spatial Transcriptomics method in FASTQ format. 
 
