@@ -277,14 +277,14 @@ def annotateReads(mappedReads,
                                             outputFile,
                                             include_non_annotated,
                                             htseq_no_ambiguous)
-    except Exception as e:
-        error = "Error annotation: HTSEQ execution failed\n"
+    except Exception:
+        error = "Error during annotation. HTSEQ execution failed\n"
         logger.error(error)
-        logger.error(e)
-        raise RuntimeError(error)
+        print 'Error', error
+        raise
     
     if not fileOk(outputFile):
-        error = "Error annotation: HTSEQ execution failed, output not present\n"
+        error = "Error during annotation. Output file not present %s\n" % (outputFile)
         logger.error(error)
         raise RuntimeError(error)
     

@@ -29,9 +29,10 @@ def sortSamFile(input_sam, outputFolder=None):
     pysam.sort("-n", "-o", output_sam, "-O", sam_type, "-T", output_sam, input_sam)
     
     if not fileOk(output_sam):
-        error = "Error annotating: output file is not present " + output_sam
+        error = "Error sorting the SAM/BAM file. Output file is not present\n" % (output_sam)
         logger.error(error)
-        raise RuntimeError(error + "\n")
+        print "Error", error
+        raise RuntimeError(error)
         
     return output_sam
 
@@ -134,9 +135,10 @@ def filterMappedReads(mapped_reads,
         outfile_discarded.close()
 
     if not fileOk(file_output):
-        error = "Error filtering mapped reads: output file is not present " + file_output
+        error = "Error filtering mapped reads. Output file is not present\n" % (file_output)
         logger.error(error)
-        raise RuntimeError(error + "\n")
+        print "Error", error
+        raise RuntimeError(error)
             
     logger.info("Finish filtering mapped reads, stats:" \
                 "\nPresent: " + str(present) + \

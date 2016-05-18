@@ -23,7 +23,7 @@ class Pipeline():
     DefaultLogLevel = 'DEBUG'
     
     def __init__(self):
-        self.allowed_missed = 3
+        self.allowed_missed = 2
         self.allowed_kmer = 6
         self.overhang = 2
         self.min_length_trimming = 28
@@ -132,8 +132,7 @@ class Pipeline():
             conds["umi_filter"] = re.search(regex, self.umi_filter_template) is None and self.molecular_barcodes
             
         if not all(conds.values()):
-            error = "Error: required file/s and or parameters not " \
-            " found or incorrect parameters :" + str(conds)
+            error = "Error starting the pipeline. Input file or parameters are incorrect %s" % (str(conds))
             self.logger.error(error)
             raise RuntimeError(error)
 
@@ -146,9 +145,9 @@ class Pipeline():
                 unavailable_scripts.add(script)
          
         if len(unavailable_scripts) == 0:
-            self.logger.info("All tools present..starting the analysis")
+            self.logger.info("All tools present...Starting the pipeline")
         else:
-            error = "Error, these programs not found:\t".join(unavailable_scripts)
+            error = "Error starting the pipeline. Required software not found:\t".join(unavailable_scripts)
             self.logger.error(error)
             raise RuntimeError(error)
         
@@ -156,7 +155,7 @@ class Pipeline():
         self.qa_stats.pipeline_version = version_number
         self.qa_stats.mapper_tool = getSTARVersion()
         if self.qa_stats.mapper_tool.find("2.5") == -1:
-            error = "Error: you need STAR 2.5.x\n"
+            error = "Error starting the pipeline. You need STAR 2.5.x or bigger\n"
             self.logger.error(error)
             raise RuntimeError(error)            
         self.qa_stats.annotation_tool = "HTSeqCount " + getHTSeqCountVersion()

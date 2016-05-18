@@ -119,11 +119,11 @@ def computeSaturation(nreads,
                           expName,
                           False, # Verbose
                           low_memory)
-        except Exception as e:
+        except Exception:
             error = "Error computing saturation curve: createDataset execution failed\n"
             logger.error(error)
-            logger.error(e)
-            raise RuntimeError(error) 
+            print "Error", error
+            raise
             
         saturation_points_values_unique_events.append(stats.unique_events)
         saturation_points_values_reads.append(stats.reads_after_duplicates_removal)

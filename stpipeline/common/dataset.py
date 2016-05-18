@@ -68,14 +68,15 @@ def createDataset(input_file,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 shell=False, close_fds=True)
         (stdout, errmsg) = proc.communicate()
-    except Exception as e:
-        error = "Error creating dataset: createDataset execution failed\n"
+    except Exception:
+        error = "Error creating dataset. CreateDataset.py execution failed\n"
         logger.error(error)
-        logger.error(e)
-        raise RuntimeError(error) 
+        print "Error", error
+        raise
         
     if len(errmsg) > 0:
-        error = "Error, There was an error creating the dataset (%s\n%s)" % (stdout,errmsg)
+        error = "Error creating dataset. \n"
+        "createDataset.py output error messages.\n%s\n%s" % (stdout, errmsg)
         logger.error(error)
         raise RuntimeError(error)    
               

@@ -39,13 +39,14 @@ def createIndex(genome,
         log_sj = os.path.join(tmpFolder, log_sj)
     
     if not os.path.isfile(log_sj):
-        error = "STAR 2 pass, error creating index. Splices file not present\n"
+        error = "Error creating index with STAR. Splices file not present\n"
         logger.error(error)
         raise RuntimeError(error)
     
     os.mkdir(genome_dir)
     if not os.path.isdir(genome_dir):
-        error = "STAR 2 pass, error creating temp folder\n"
+        error = "Error creating index with STAR.\n "
+        "There was a problem creating a temp folder to place the index\n"
         logger.error(error)
         raise RuntimeError(error)   
     
@@ -62,21 +63,24 @@ def createIndex(genome,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 close_fds=True, shell=False)
         (stdout, errmsg) = proc.communicate()
-    except Exception as e:
-        error = "Error creating index: STAR execution failed\n"
+    except Exception:
+        error = "Error creating index with STAR. STAR execution failed\n"
         logger.error(error)
-        logger.error(e)
-        raise RuntimeError(error)   
+        print 'Error', error
+        raise
     
     if os.path.isfile(log_sj): os.remove(log_sj)
     if os.path.isfile(log): os.remove(log)
     if os.path.isfile(log_final): os.remove(log_final)
     
     if len(errmsg) > 0:
-        error = "STAR 2 pass error creating index\n"
+        logger.warning("STAR outputted an error message while "
+                       "creating the index.\n%s\n" % (str(errmsg)))
+    
+    if not os.path.isdir(genome_dir):
+        error = "Error creating index with STAR. The index output folder " 
+        "is not present\n%s\n" % (errmsg)
         logger.error(error)
-        logger.error(stdout)
-        logger.error(errmsg)
         raise RuntimeError(error)
     
     return genome_dir
@@ -203,19 +207,20 @@ def alignReads(reverse_reads,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 close_fds=True, shell=False)
         (stdout, errmsg) = proc.communicate()
-    except Exception as e:
-        error = "Error mapping: STAR execution failed\n"
+    except Exception:
+        error = "Error mapping with STAR. STAR execution failed\n"
         logger.error(error)
-        logger.error(e)
-        raise RuntimeError(error)
-    
-    if not fileOk(tmpOutputFile) or len(errmsg) > 0:
-        error = "Error mapping with STAR: output/s file/s not present: %s\n" % (tmpOutputFile)
+        print "Error", error
+        raise
+        
+    if not fileOk(tmpOutputFile):
+        error = "Error mapping with STAR. Output file not present %s\n%s\n" % (tmpOutputFile, errmsg)
         logger.error(error)
-        logger.error(stdout)
-        logger.error(errmsg)
         raise RuntimeError(error)
 
+    if len(errmsg) > 0:
+        logger.warning("STAR has generated error messages during mapping.\n%s\n" % (errmsg))
+        
     # Rename output files.
     os.rename(tmpOutputFile, outputFile)
     os.rename(tmpOutputFileDiscarded, outputFileDiscarded)
@@ -223,14 +228,12 @@ def alignReads(reverse_reads,
     # Remove temp files from STAR
     if os.path.isfile(log_std): os.remove(log_std)
     if os.path.isfile(log): os.remove(log)
-    # Do not remove to use it for computing splice variants
+    # Do not remove to use it for computing a new index in 2pass mode
     # if os.path.isfile(log_sj): os.remove(log_sj)
     if os.path.isfile(log_progress): os.remove(log_progress)
 
     if not os.path.isfile(log_final):
-        logger.info("Warning, log output from STAR is not present")
-        logger.info(stdout)
-        logger.info(errmsg)
+        logger.warning("Log output file from STAR is not present")
     else:
         logger.info("Mapping stats: ")
         logger.info("Mapping stats are computed from all the pair reads present in the raw files")
@@ -322,20 +325,22 @@ def barcodeDemultiplexing(reads,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
                                 close_fds=True, shell=False)
         (stdout, errmsg) = proc.communicate()
-    except Exception as e:
-        error = "Error demultiplexing: taggd execution failed"
+    except Exception:
+        error = "Error demultiplexing. Taggd execution failed\n"
         logger.error(error)
-        logger.error(e)
-        raise RuntimeError(error)
+        print 'Error', error
+        raise
     
     if not fileOk(outputFile):
-        error = "Error demultiplexing: output file is not present %s\n" % (outputFile)
+        error = "Error demultiplexing. Output file is not present %s\n%s\n" % (outputFile, errmsg)
         logger.error(error)
-        logger.error(stdout)
-        logger.error(errmsg)
         raise RuntimeError(error)
-    
-    #TODO must be a cleaner way to get the stats from the output file
+ 
+    if len(errmsg) > 0:
+        logger.warning("Taggd has generated error messages during "
+                       "demultiplexing.\n%s\n" % (errmsg))
+           
+    # TODO must be a cleaner way to get the stats from the output file
     procOut = stdout.split("\n")
     logger.info("Barcode Mapping stats:")
     for line in procOut: 
@@ -343,7 +348,7 @@ def barcodeDemultiplexing(reads,
             logger.info(str(line))
         if line.find("Total reads written:") != -1:
             # Update the QA stats
-            #TODO find a cleaner way to to this
+            # TODO find a cleaner way to to this
             qa_stats.reads_after_demultiplexing = int(line.split()[-1])
             logger.info(str(line))
         if line.find("Perfect Matches:") != -1:

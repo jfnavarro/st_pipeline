@@ -331,6 +331,7 @@ def reformatRawReads(fw,
         
         if not sequence_fw or not sequence_fw:
             logger.error("The input files %s,%s are not of the same length" % (fw,rw))
+            # TODO should maybe raise an Exception?
             break
         
         if header_fw.split()[0] != header_rv.split()[0]:
@@ -390,9 +391,9 @@ def reformatRawReads(fw,
     if keep_discarded_files: out_rw_writer_discarded.close()
     
     if not fileOk(out_rw):
-        error = "Error reformatting raw reads: output file not present %s" % (out_rw)
+        error = "Error reformatting raw reads. Output file not present %s\n" % (out_rw)
         logger.error(error)
-        raise RuntimeError(error + "\n")
+        raise RuntimeError(error)
     else:
         logger.info("Trimming stats total reads (pair): %s" % (str(total_reads)))
         logger.info("Trimming stats reverse: %s reads have been dropped!" % (str(dropped_rw))) 

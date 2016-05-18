@@ -292,3 +292,6 @@ Version 0.8.7
 
 Version 0.8.8
 * Removed barcodes from the code
+
+Version 0.8.9
+* Improved the error messages
