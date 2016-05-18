@@ -103,6 +103,8 @@ def safeRemove(filename):
 def safeOpenFile(filename, atrib):
     """
     Safely opens a file
+    In writing the file if it exists already and check for free space
+    In reading mode check that the file exists
     :param filename: the path of the file
     :param atrib: the file open attribute
     :type filename: str
@@ -112,26 +114,26 @@ def safeOpenFile(filename, atrib):
     """
     if atrib.find("w") != -1:
         safeRemove(filename)
-        usage = disk_usage('/')
+        usage = disk_usage(os.path.dirname(filename))
         if usage.free <= 4073741824: # at least 4GB
-            raise RuntimeError("Error : no free space available\n")
+            raise IOError("Error, no free space available to open file %s\n" % (filename))
     elif atrib.find("r") != -1:
         if filename is None or not os.path.isfile(filename): # is it present?
-            raise RuntimeError("Error : wrong filename\n")
+            raise IOError("Error, the file does not exist %s\n" % (filename))
     else:
-        raise RuntimeError("Error : wrong attribute " + atrib + " opening file\n")
+        raise IOError("Error, incorrect attribute %s\n" % (atrib))
 
     return open(filename, atrib)
 
 def fileOk(_file):
     """
-    checks file exists and is not zero size
+    Checks file exists and is not zero size
     """
     return _file is not None and os.path.isfile(_file) and not os.path.getsize(_file) == 0
     
 def replaceExtension(filename,extension):
     """
-    replace the extension of filename 
+    Replace the extension of filename 
     for the extension given, returns the new filename
     including the path 
     extension must be like .ext 

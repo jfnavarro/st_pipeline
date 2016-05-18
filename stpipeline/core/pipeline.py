@@ -154,7 +154,9 @@ class Pipeline():
         # Add scripts versions to QA Stats
         self.qa_stats.pipeline_version = version_number
         self.qa_stats.mapper_tool = getSTARVersion()
-        if self.qa_stats.mapper_tool.find("2.5") == -1:
+        # TODO replace this for a reg-exp
+        if self.qa_stats.mapper_tool.find("Not available") == -1 \
+        and self.qa_stats.mapper_tool.find("2.5") == -1:
             error = "Error starting the pipeline. You need STAR 2.5.x or bigger\n"
             self.logger.error(error)
             raise RuntimeError(error)            

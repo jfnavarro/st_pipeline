@@ -387,8 +387,11 @@ def reformatRawReads(fw,
     
     fw_file.close()
     rw_file.close()
+    out_rw_handle.flush()
     out_rw_writer.close()
-    if keep_discarded_files: out_rw_writer_discarded.close()
+    if keep_discarded_files:
+        out_rw_handle_discarded.flush()
+        out_rw_writer_discarded.close()
     
     if not fileOk(out_rw):
         error = "Error reformatting raw reads. Output file not present %s\n" % (out_rw)
