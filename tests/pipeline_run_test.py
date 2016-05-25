@@ -48,7 +48,7 @@ class TestPipeline(unittest.TestCase):
                                 genomefastagz)
             check_call(['gunzip', genomefastagz])
         except Exception as e:
-            print e
+            print str(e)
             self.assertTrue(0, "Downloading genome files failed \n")
    
         # Make genome indexes
@@ -68,7 +68,7 @@ class TestPipeline(unittest.TestCase):
                     "--genomeDir", self.contamdir,
                     "--genomeFastaFiles", contamfasta])
         except Exception as e:
-            print e
+            print str(e)
             self.assertTrue(0, "Creating genome index failed \n")
    
         # Remove STAR log files 
@@ -148,6 +148,7 @@ class TestPipeline(unittest.TestCase):
         
     @classmethod
     def tearDownClass(self):
+        return
         print "ST Pipeline Test Remove temporary output " + self.outdir
         for root, dirs, files in os.walk(self.outdir, topdown=False):
             for name in files:
@@ -184,7 +185,7 @@ class TestPipeline(unittest.TestCase):
             self.pipeline.sanityCheck()
             self.pipeline.run()
         except Exception as e:
-            print e
+            print str(e)
             self.assertTrue(0, "Running Pipeline Test failed \n")
  
         self.validateOutputData(self.expname)

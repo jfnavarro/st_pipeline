@@ -294,4 +294,4 @@ Version 0.8.8
 * Removed barcodes from the code
 
 Version 0.8.9
-* Improved the error messages
+* Improved the error messages and error handling

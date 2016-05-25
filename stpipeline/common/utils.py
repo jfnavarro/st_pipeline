@@ -1,8 +1,6 @@
-#!/usr/bin/env python
 """ 
-This file contains some general system utils and some file utils
+This file contains some general utilities
 """
-
 import resource
 import threading
 from datetime import datetime
@@ -171,7 +169,6 @@ def getSTARVersion():
     version and return it
     """
     version = ""
-    gc.collect()
     try:
         proc = subprocess.Popen(["STAR", "--version"], 
                                 stdout=subprocess.PIPE, 
@@ -179,7 +176,7 @@ def getSTARVersion():
                                 shell=False, close_fds=True)
         (stdout, errmsg) = proc.communicate()
         version = stdout
-    except Exception as e:
+    except Exception:
         version = "Not available"
     return version.rstrip()
 
@@ -190,7 +187,6 @@ def getTaggdCountVersion():
     version and return it
     """
     version = ""
-    gc.collect()
     try:
         proc = subprocess.Popen(["pip", "show", "taggd"], 
                                 stdout=subprocess.PIPE, 
@@ -200,7 +196,7 @@ def getTaggdCountVersion():
         for line in stdout.split("\n"):
             if line.find("Version:") != -1:
                 version = str(line.split()[-1])
-    except Exception as e:
+    except Exception:
         version = "Not available"
     return version.rstrip()
 
@@ -211,7 +207,6 @@ def getHTSeqCountVersion():
     version and return it
     """
     version = ""
-    gc.collect()
     try:
         proc = subprocess.Popen(["pip", "show", "htseq"], 
                                 stdout=subprocess.PIPE, 
@@ -221,6 +216,6 @@ def getHTSeqCountVersion():
         for line in stdout.split("\n"):
             if line.find("Version:") != -1:
                 version = str(line.split()[-1])
-    except Exception as e:
+    except Exception:
         version = "Not available"
     return version.rstrip()

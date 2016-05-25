@@ -1,9 +1,9 @@
 #! /usr/bin/env python
-#@Author Jose Fernandez
 """ 
 Script for merging json ST-data files.
 The idea is to merge (feature, gene, expression) triples from several
 json files so that (f, g, e_1) + (f, g, e_2 ) = (f, g, e_1 + e_2).
+@Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
 """
 
 import argparse

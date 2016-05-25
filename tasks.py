@@ -1,17 +1,20 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
 from invoke import run, task
 from invoke.util import log
 
 @task
 def test():
-    """Run the test runner."""
+    """
+    Run the tests
+    """
     run('python setup.py test', pty=True)
 
 @task
 def clean():
-    """clean - remove build artifacts."""
+    """
+    clean - remove build artifacts
+    """
     run('rm -rf build/')
     run('rm -rf dist/')
     run('rm -rf stpipeline.egg-info')
@@ -28,7 +31,9 @@ def clean():
     
 @task(clean)
 def publish():
-    """Publish to the cheeseshop."""
+    """
+    Publish to the cheeseshop
+    """
     run('python setup.py sdist upload', pty=True)
     run('python setup.py bdist_wheel upload', pty=True)
     log.info('published new release')

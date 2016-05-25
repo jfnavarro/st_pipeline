@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """ 
 This module contains some functions for computing distance between
 sequences

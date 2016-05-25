@@ -1,8 +1,6 @@
-#!/usr/bin/env python
 """ 
-Module that contains some functions to parse and save ST JSON data
+Module that contains some functions to parse and write ST JSON data
 """
-
 import json
 
 def serialize(feature_gene, hits):
@@ -11,7 +9,7 @@ def serialize(feature_gene, hits):
     doc['hits'] = hits
     return json.loads(doc)
 
-def write_json(out,hits):
+def write_json(out, hits):
     with open(out, 'w') as out_file:
         for k, v in hits.iteritems():
             out_file.write('{}\n'.format(serialize(k, v)))

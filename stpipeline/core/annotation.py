@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """ 
 This module contains wrappers to make systems calls for different annotation tools
 most of the options can be passed as arguments
@@ -7,7 +6,7 @@ import logging
 import os
 import pysam
 from stpipeline.common.utils import getExtension, fileOk
-import sys
+from stpipeline.common.stats import qa_stats
 import itertools
 import HTSeq
 
@@ -38,9 +37,9 @@ def count_reads_in_features(sam_filename,
                             include_non_annotated=False, 
                             htseq_no_ambiguous=True):
     """
-    This a copy of the function count_reads_in_features() from the 
+    This is taken from the function count_reads_in_features() from the 
     script htseq-count in the HTSeq package version 0.61.p2 
-    The reason is to fix two really small bugs related to the SAM output.
+    The reason to do so is to fix two really small bugs related to the SAM output.
     The code of the function is small and simple so for now we
     will use the patched function here. A patch request has been sent
     to the HTSeq team.
@@ -60,9 +59,12 @@ def count_reads_in_features(sam_filename,
     can be found here: http://www.gnu.org/licenses/gpl-3.0-standalone.html
     """
     # Set up the filters
-    count_reads_in_features.filter_htseq = ["__too_low_aQual", "__not_aligned", "__alignment_not_unique"]
-    if not include_non_annotated: count_reads_in_features.filter_htseq.append("__no_feature")
-    if htseq_no_ambiguous: count_reads_in_features.filter_htseq.append("__ambiguous")
+    count_reads_in_features.filter_htseq = \
+    ["__too_low_aQual", "__not_aligned", "__alignment_not_unique"]
+    if not include_non_annotated: 
+        count_reads_in_features.filter_htseq.append("__no_feature")
+    if htseq_no_ambiguous: 
+        count_reads_in_features.filter_htseq.append("__ambiguous")
     # Open SAM output file
     flag_write = "wb" if samtype == "bam" else "wh"
     flag_read = "rb" if samtype == "bam" else "r"
@@ -92,22 +94,21 @@ def count_reads_in_features(sam_filename,
         for f in gff:
             if f.type == feature_type:
                 try:
-                    feature_id = f.attr[ id_attribute ]
+                    feature_id = f.attr[id_attribute]
                 except KeyError:
-                    raise ValueError, ("Feature %s does not contain a '%s' attribute" % 
-                                       (f.name, id_attribute))
+                    raise ValueError, ("Feature %s does not contain a '%s' attribute" \
+                                       % (f.name, id_attribute))
                 if stranded != "no" and f.iv.strand == ".":
-                    raise ValueError, ("Feature %s at %s does not have strand information but you are "
+                    raise ValueError, ("Feature %s at %s does not have strand information but you are " \
                                        "running htseq-count in stranded mode. Use '--stranded=no'." % 
                                        (f.name, f.iv))
-                features[ f.iv ] += feature_id
-                counts[ f.attr[ id_attribute ] ] = 0
+                features[f.iv] += feature_id
+                counts[f.attr[id_attribute]] = 0
     except:
-        sys.stderr.write("Error occured when processing GFF file (%s):\n" % gff.get_line_number_string())
         raise
     
     if len(counts) == 0:
-        sys.stderr.write("Warning: No features of type '%s' found.\n" % feature_type)
+        raise RuntimeError, "No features of type '%s' found.\n" % feature_type
         
     if samtype == "sam":
         SAM_or_BAM_Reader = HTSeq.SAM_Reader
@@ -123,7 +124,6 @@ def count_reads_in_features(sam_filename,
         pe_mode = first_read.paired_end
     except:
         raise RuntimeError, "Error occurred when reading beginning of SAM/BAM file."
-        raise
 
     try:
         if pe_mode:
@@ -155,28 +155,40 @@ def count_reads_in_features(sam_filename,
                 if stranded != "reverse":
                     iv_seq = (co.ref_iv for co in r.cigar if co.type == "M" and co.size > 0)
                 else:
-                    iv_seq = (invert_strand(co.ref_iv) for co in r.cigar if co.type == "M" and co.size > 0)            
+                    iv_seq = (invert_strand(co.ref_iv) 
+                              for co in r.cigar 
+                              if co.type == "M" and co.size > 0)            
             else:
                 if r[0] is not None and r[0].aligned:
                     if stranded != "reverse":
-                        iv_seq = (co.ref_iv for co in r[0].cigar if co.type == "M" and co.size > 0)
+                        iv_seq = (co.ref_iv 
+                                  for co in r[0].cigar 
+                                  if co.type == "M" and co.size > 0)
                     else:
-                        iv_seq = (invert_strand(co.ref_iv) for co in r[0].cigar if co.type == "M" and co.size > 0)
+                        iv_seq = (invert_strand(co.ref_iv) 
+                                  for co in r[0].cigar 
+                                  if co.type == "M" and co.size > 0)
                 else:
                     iv_seq = tuple()
                 
                 if r[1] is not None and r[1].aligned:            
                     if stranded != "reverse":
                         iv_seq = itertools.chain(iv_seq,
-                                                 (invert_strand(co.ref_iv) for co in r[1].cigar if co.type == "M" and co.size > 0))
+                                                 (invert_strand(co.ref_iv) 
+                                                  for co in r[1].cigar 
+                                                  if co.type == "M" and co.size > 0))
                     else:
-                        iv_seq = itertools.chain(iv_seq, (co.ref_iv for co in r[1].cigar if co.type == "M" and co.size > 0))
+                        iv_seq = itertools.chain(iv_seq, 
+                                                 (co.ref_iv 
+                                                  for co in r[1].cigar 
+                                                  if co.type == "M" and co.size > 0))
                 else:
                     if (r[0] is None) or not (r[0].aligned):
                         write_to_samout(r, "__not_aligned")
                         continue         
                 try:
-                    if (r[0] is not None and r[0].optional_field("NH") > 1) or (r[1] is not None and r[1].optional_field("NH") > 1):
+                    if (r[0] is not None and r[0].optional_field("NH") > 1) \
+                    or (r[1] is not None and r[1].optional_field("NH") > 1):
                         write_to_samout(r, "__alignment_not_unique")
                         continue
                 except KeyError:
@@ -219,7 +231,6 @@ def count_reads_in_features(sam_filename,
                 write_to_samout(r, "__no_feature")
 
     except:
-        sys.stderr.write("Error occured when processing SAM input (%s):\n" % read_seq_file.get_line_number_string())
         count_reads_in_features.samoutfile.close()
         raise
 
@@ -228,7 +239,6 @@ def count_reads_in_features(sam_filename,
 
 def annotateReads(mappedReads, 
                   gtfFile,
-                  qa_stats,
                   mode,
                   strandness="reverse",
                   htseq_no_ambiguous=True, 
@@ -277,11 +287,10 @@ def annotateReads(mappedReads,
                                             outputFile,
                                             include_non_annotated,
                                             htseq_no_ambiguous)
-    except Exception:
+    except Exception as e:
         error = "Error during annotation. HTSEQ execution failed\n"
         logger.error(error)
-        print 'Error', error
-        raise
+        raise e
     
     if not fileOk(outputFile):
         error = "Error during annotation. Output file not present %s\n" % (outputFile)

@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-#@author Jose Fernandez
 """ 
 Script that parses a ST features file JSON output
 with ENSEMBL IDs as gene names and convert
@@ -8,6 +7,8 @@ a MAP file as input. The map file
 must have two columns:
 
 ENSEMBL_ID GENE_NAME
+
+@Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
 """
 
 import argparse
@@ -20,7 +21,7 @@ def main(json_file, names_map, output_file):
 
     if not fileOk(json_file) or not fileOk(names_map):
         sys.stderr.write("Error, input file not present or invalid format\n")
-        sys.exit(-1)
+        sys.exit(1)
         
     # loads a map with the ensembl -> gene name
     genes_map = dict()

@@ -1,6 +1,11 @@
 #!/usr/bin/python
 """
-ST Pipeline is a toolkit of Spatially resolved RNA-Seq data analysis for the Spatial Transcriptomics data.
+ST Pipeline is a tool to process the Spatial Transcriptomics raw data.
+The data is filtered, aligned to a genome, annotated to a reference,
+demultiplexed by array coordinates and then aggregated by counts
+that are not duplicates using the Unique Molecular Indentifiers. 
+The output contains the counts table, a stats file, a log file
+and a BED file with all the transcripts.
 """
 
 import os

@@ -6,9 +6,9 @@ demultiplexing in the ST pipeline
 
 import logging 
 import subprocess
-from stpipeline.common.stats import Stats
+from subprocess import CalledProcessError
 from stpipeline.common.utils import *
-import gc
+from stpipeline.common.stats import qa_stats
 import uuid
 
 def createIndex(genome,
@@ -25,7 +25,7 @@ def createIndex(genome,
     :type threads: int
     :type tmpFolder: str
     :returns: the path to the new index
-    :raises: RuntimeError
+    :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
     
     logger = logging.getLogger("STPipeline")
@@ -37,9 +37,11 @@ def createIndex(genome,
     if tmpFolder is not None and os.path.isdir(tmpFolder):
         genome_dir = os.path.join(tmpFolder, genome_dir)
         log_sj = os.path.join(tmpFolder, log_sj)
-    
+        log_final = os.path.join(tmpFolder, log_final)
+        log = os.path.join(tmpFolder, log)
+        
     if not os.path.isfile(log_sj):
-        error = "Error creating index with STAR. Splices file not present\n"
+        error = "Error creating index with STAR.\nSplices file not present\n"
         logger.error(error)
         raise RuntimeError(error)
     
@@ -58,23 +60,26 @@ def createIndex(genome,
              "--runThreadN", threads,
              "--sjdbFileChrStartEnd", log_sj]
     try:
-        gc.collect()
         proc = subprocess.Popen([str(i) for i in args],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 close_fds=True, shell=False)
         (stdout, errmsg) = proc.communicate()
-    except Exception:
-        error = "Error creating index with STAR. STAR execution failed\n"
-        logger.error(error)
-        print 'Error', error
-        raise
+    except ValueError as e:
+        logger.error("Error creating index with STAR\n Incorrect arguments.")
+        raise e
+    except OSError as e:
+        logger.error("Error creating index with STAR\n Executable not found.")
+        raise e
+    except CalledProcessError as e:
+        logger.error("Error creating index with STAR\n Program returned error.")
+        raise e
     
     if os.path.isfile(log_sj): os.remove(log_sj)
     if os.path.isfile(log): os.remove(log)
     if os.path.isfile(log_final): os.remove(log_final)
     
     if len(errmsg) > 0:
-        logger.warning("STAR outputted an error message while "
+        logger.warning("STAR outputted an error message while " \
                        "creating the index.\n%s\n" % (str(errmsg)))
     
     if not os.path.isdir(genome_dir):
@@ -100,8 +105,8 @@ def alignReads(reverse_reads,
                invTrimReverse=0,
                outputFolder=None):
     """
-    This function will perform a sequence alignment using STAR
-    mapped and unmapped reads are returned and the set of parameters
+    This function will perform a sequence alignment using STAR.
+    Mapped and unmapped reads are returned and the set of parameters
     used are described
     :param reverse_reads: file containing reverse reads in fastq format for pair end sequences
     :param ref_map: a path to the genome/transcriptome indexes
@@ -117,12 +122,29 @@ def alignReads(reverse_reads,
     :param diable_softclipping: it True no local alignment allowed
     :param invTrimReverse: number of bases to trim in the 5' of the read2
     :param outputFolder: if set all output files will be placed there
+    :type reverse_reads: str
+    :type ref_map: str
+    :type trimReverse: int
+    :type trimReverse: cores
+    :type file_name_patter: str
+    :type min_intron_size: int
+    :type max_intron: int
+    :type max_gap_size: int
+    :type use_splice_junctions: bool
+    :type sam_type: str
+    :type disable_multimap: bool
+    :type diable_softclipping: bool
+    :type invTrimReverse: int
+    :type outputFolder: str
+    :returns: the path to the SAM/BAM file with the alignments
+    :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
 
     logger = logging.getLogger("STPipeline")
     
     # STAR has predefined output names from the files
-    tmpOutputFile = "Aligned.sortedByCoord.out.bam" if sam_type.lower() == "bam" else "Aligned.out.sam"
+    tmpOutputFile = "Aligned.sortedByCoord.out.bam" \
+    if sam_type.lower() == "bam" else "Aligned.out.sam"
     tmpOutputFileDiscarded = "Unmapped.out.mate1"
     outputFile = file_name_pattern + "_mapped." + sam_type.lower()
     outputFileDiscarded = file_name_pattern + "_discarded.fastq"
@@ -164,6 +186,7 @@ def alignReads(reverse_reads,
     # chimSegmentMin if >0 To switch on detection of chimeric (fusion) alignments
     # --outMultimapperOrder Random multimap are written in Random order
     # --outSAMmultNmax Number of multimap that we want to output 
+    # put to 1 to not include multiple mappings (default 10)
     multi_map_number = 1 if disable_multimap else 10
     alignment_mode = "EndToEnd" if diable_softclipping else "Local"
     sjdb_overhang = 100 if use_splice_juntions else 0
@@ -173,11 +196,11 @@ def alignReads(reverse_reads,
                   "--clip3pNbases", invTrimReverse]
     io_flags   = ["--outFilterType", "Normal", 
                   "--outSAMtype", sam_type, "SortedByCoordinate", # or Usorted (name)
-                  "--alignEndsType", alignment_mode, # default Local (allows soft clipping) #EndToEnd disables soft clipping
+                  "--alignEndsType", alignment_mode, 
                   "--outSAMunmapped", "None", # unmapped reads not included in main output
                   "--outSAMorder", "Paired",    
                   "--outSAMprimaryFlag", "OneBestScore", 
-                  "--outFilterMultimapNmax", multi_map_number, # put to 1 to not include multiple mappings (default 10)
+                  "--outFilterMultimapNmax", multi_map_number, 
                   "--alignSJoverhangMin", 5, # default is 5
                   "--alignSJDBoverhangMin", 3, # default is 3
                   "--sjdbOverhang", sjdb_overhang, # 0 to not use splice junction database
@@ -202,19 +225,23 @@ def alignReads(reverse_reads,
     args += ["--outReadsUnmapped", "Fastx"]
     
     try:
-        gc.collect()
         proc = subprocess.Popen([str(i) for i in args],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 close_fds=True, shell=False)
         (stdout, errmsg) = proc.communicate()
-    except Exception:
-        error = "Error mapping with STAR. STAR execution failed\n"
-        logger.error(error)
-        print "Error", error
-        raise
+    except ValueError as e:
+        logger.error("Error mapping with STAR\n Incorrect arguments.")
+        raise e
+    except OSError as e:
+        logger.error("Error mapping with STAR\n Executable not found.")
+        raise e
+    except CalledProcessError as e:
+        logger.error("Error mapping with STAR\n Program returned error.")
+        raise e
         
     if not fileOk(tmpOutputFile):
-        error = "Error mapping with STAR. Output file not present %s\n%s\n" % (tmpOutputFile, errmsg)
+        error = "Error mapping with STAR.\n" \
+        "Output file not present %s\n%s\n" % (tmpOutputFile, errmsg)
         logger.error(error)
         raise RuntimeError(error)
 
@@ -254,14 +281,13 @@ def alignReads(reverse_reads,
                     uniquely_mapped = int(str(line).rstrip().split()[-1])
                 if line.find("Number of reads mapped to multiple loci") != -1:
                     multiple_mapped = int(str(line).rstrip().split()[-1])
-            logger.info("Total mapped reads : " + str(uniquely_mapped + multiple_mapped))    
+            logger.info("Total mapped reads: %s" % str(uniquely_mapped + multiple_mapped))    
     # Remove log file       
     if os.path.isfile(log_final): os.remove(log_final)
     return outputFile, outputFileDiscarded
 
 def barcodeDemultiplexing(reads, 
                           idFile,
-                          qa_stats,
                           mismatches,
                           kmer, 
                           start_positon,
@@ -283,6 +309,16 @@ def barcodeDemultiplexing(reads,
     :param over_hang: the number of bases to allow for overhang
     :param outputFolder: if set output files will be placed there
     :param keep_discarded_files: if True files with the non demultiplexed reads will be generated
+    :type reads: str
+    :type idFile: str
+    :type mismatches: int
+    :type kmer: int
+    :type start_positon: int
+    :type over_hang: int
+    :type outputFolder: str
+    :type keep_discarded_files: bool
+    :returns: the path to the SAM/BAM/FASTQ file with the demultiplexed reads
+    :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
     
     logger = logging.getLogger("STPipeline")
@@ -319,25 +355,30 @@ def barcodeDemultiplexing(reads,
         args.append("--no-results-output")
         
     args += [idFile, reads, outputFilePrefix]
-    gc.collect()
+
     try:
         proc = subprocess.Popen([str(i) for i in args], 
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
                                 close_fds=True, shell=False)
         (stdout, errmsg) = proc.communicate()
-    except Exception:
-        error = "Error demultiplexing. Taggd execution failed\n"
-        logger.error(error)
-        print 'Error', error
-        raise
+    except ValueError as e:
+        logger.error("Error demultiplexing with TAGGD\n Incorrect arguments.")
+        raise e
+    except OSError as e:
+        logger.error("Error demultiplexing with TAGGD\n Executable not found.")
+        raise e
+    except CalledProcessError as e:
+        logger.error("Error demultiplexing with TAGGD\n Program returned error.")
+        raise e
     
     if not fileOk(outputFile):
-        error = "Error demultiplexing. Output file is not present %s\n%s\n" % (outputFile, errmsg)
+        error = "Error demultiplexing with TAGGD.\n" \
+        "Output file is not present %s\n%s\n" % (outputFile, errmsg)
         logger.error(error)
         raise RuntimeError(error)
  
     if len(errmsg) > 0:
-        logger.warning("Taggd has generated error messages during "
+        logger.warning("Taggd has generated error messages during " \
                        "demultiplexing.\n%s\n" % (errmsg))
            
     # TODO must be a cleaner way to get the stats from the output file

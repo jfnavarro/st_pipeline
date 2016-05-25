@@ -3,9 +3,10 @@
 """ 
 Scripts that parses a SAM or BAM file containing
 the aligned reads and the BARCODE,X,Y,UMI as Tags (BZ)
-It generates JSON file with the ST data and a BED file with the reads. It does so
+It generatesa  JSON file with the ST data and a BED file with the reads. It does so
 by aggregating the reads for unique gene-barcode tuples and removing
-duplicates using the UMIs. 
+duplicates using the Unique Molecular Identifiers.
+@Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se> 
 """
 import sys
 import json
@@ -139,7 +140,7 @@ def main(filename,
         output_folder = "."
     
     if mc_cluster not in ["naive","hierarchical"]:
-        sys.stderr.write("Error: type of clustering algorithm is incorrect\n")
+        sys.stderr.write("Error, type of clustering algorithm is incorrect\n")
         sys.exit(1)
         
     if output_file_template:

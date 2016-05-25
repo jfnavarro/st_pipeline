@@ -4,7 +4,7 @@ different statistics and QA parameters for
 the pipeline run.
 """
 import json
-        
+    
 class Stats():
     """
     Stats is meant to be used
@@ -89,4 +89,5 @@ class Stats():
                          
         with open(filename, "w") as filehandler:
             json.dump(qa_parameters, filehandler, indent=2, separators=(',', ': '))
-            
+   
+qa_stats = Stats()         

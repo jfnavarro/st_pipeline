@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """ 
 This module contains some specific functionalities for
 ST fastq files
@@ -9,6 +8,7 @@ from stpipeline.common.adaptors import removeAdaptor
 import logging 
 from itertools import izip
 from sqlitedict import SqliteDict
+from stpipeline.common.stats import qa_stats
 
 def coroutine(func):
     """ 
@@ -138,7 +138,7 @@ def trim_quality(sequence,
                  min_length=28, 
                  qual64=False):    
     """
-    Quality trims the fastq record using a BWA approach.
+    Quality trims a fastq read using a BWA approach.
     It returns the trimmed record or None if the number of bases
     after trimming is below a minimum.
     :param sequence: the sequence of bases of the read
@@ -167,7 +167,7 @@ def trim_quality(sequence,
     else:
         return None, None
   
-#TODO optimize and re-factor this (maybe use reg-exp)
+#TODO optimize and re-factor this (maybe use reg-expressions)
 def check_umi_template(umi, template):
     """
     Checks that the UMI (molecular barcode) given as input complies
@@ -239,7 +239,6 @@ def check_umi_template(umi, template):
 
 def reformatRawReads(fw, 
                      rw,
-                     qa_stats,
                      barcode_start=0, 
                      barcode_length=18,
                      filter_AT_content=90,
@@ -259,14 +258,13 @@ def reformatRawReads(fw,
                      umi_filter=False,
                      umi_filter_template="WSNNWSNNV"):
     """
-    This function does four things (all done in one loop for performance)
+    This function does four things (all done in one loop for performance reasons)
       - It performs a sanity check (forward and reverse reads same length and order)
       - It performs a BWA quality trimming discarding very short reads
       - It removes adaptors from the reads (optional)
       - It performs a sanity check on the UMI (optional)
     :param fw: the fastq file with the forward reads
     :param rw: the fastq file with the reverse reads
-    :param qa_stats: the Stats global object to store statistics
     :param barcode_start: the base where the barcode sequence starts
     :param barcode_length: the number of bases of the barcodes
     :param molecular_barcodes: if True the forward reads contain molecular barcodes
@@ -330,19 +328,28 @@ def reformatRawReads(fw,
     in izip(readfq(fw_file), readfq(rw_file)):
         
         if not sequence_fw or not sequence_fw:
-            logger.error("The input files %s,%s are not of the same length" % (fw,rw))
-            # TODO should maybe raise an Exception?
-            break
+            error = "Error reformatting raw reads.\n" \
+            "The input files %s,%s are not of the same length" % (fw,rw)
+            logger.error(error)
+            fw_file.close()
+            rw_file.close()
+            out_rw_handle.flush()
+            out_rw_writer.close()
+            if keep_discarded_files:
+                out_rw_handle_discarded.flush()
+                out_rw_writer_discarded.close()
+            raise RuntimeError(error)
         
         if header_fw.split()[0] != header_rv.split()[0]:
-            logger.warning("Pair reads found with different names %s and %s" % (header_fw,header_rv))
+            logger.warning("Pair reads found with different " \
+                           "names %s and %s" % (header_fw,header_rv))
             
         # Increase reads counter
         total_reads += 1
         discard_read = False
         
         # If we want to check for UMI quality and the UMI is incorrect
-        # we discard the reads
+        # then we discard the reads
         if iscorrect_mc and umi_filter \
         and not check_umi_template(sequence_fw[mc_start:mc_end], umi_filter_template):
             dropped_umi += 1
@@ -354,7 +361,7 @@ def reformatRawReads(fw,
         ((sequence_rv.count("A") + sequence_rv.count("T")) / num_bases_rv) * 100 >= filter_AT_content:
             discard_read = True
         
-        # Store the original to write them to the discarded output if applies
+        # Store the original reads to write them to the discarded output if applies
         if keep_discarded_files:    
             orig_sequence_rv = sequence_rv
             orig_quality_rv = quality_rv 
@@ -422,7 +429,7 @@ def hashDemultiplexedReads(reads,
                            umi_end,
                            low_memory):
     """
-    This function extracts the read name and the barcode
+    This function extracts the read name and the x,y coordinates
     from the reads given as input and returns a hash
     with the clean read name as key and (x,y,umi) as
     values (umi is optional). X and Y correspond
@@ -449,7 +456,7 @@ def hashDemultiplexedReads(reads,
     for name, sequence, _ in readfq(fastq_file):
         # Assumes the header ends like this B0:Z:GTCCCACTGGAACGACTGTCCCGCATC B1:Z:678 B2:Z:678
         header_tokens = name.split()
-        #barcode = header_tokens[-3]
+        # TODO add an error check here
         x = header_tokens[-2]
         y = header_tokens[-1]
         # Assumes STAR will only output the first token of the read name

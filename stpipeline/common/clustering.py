@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 """ 
 This module contains some functions to cluster
-molecular barcodes (UMIs) by distance
+molecular barcodes (UMIs) by hamming distance
 """
 
 import numpy as np
@@ -16,7 +15,7 @@ def extractMolecularBarcodes(reads, mc_start_position, mc_end_position):
     start and end positions and returns a list of 
     (molecular_barcode, read object, occurrences, number Ns)
     sorted by molecular_barcode, occurrences(reverse) and number of Ns
-    :param reads: a list of tuples where the sequence of the read is at the first position
+    :param reads: a list of tuples (sequence, quality)
     :param mc_start_position: the start position of the molecular barcodes in the sequence
     :param mc_end_position: the end position of the molecular barcodes in the sequence
     :type mc_start_position: integer
@@ -47,7 +46,7 @@ def countMolecularBarcodesClustersHierarchical(molecular_barcodes,
     """
     Tries to finds clusters of similar molecular barcodes given 
     a minimum cluster size and a minimum distance (allowed_mismatches). 
-    It returns a list with the all the non clustered reads, for clusters of 
+    It returns a list with all the non clustered reads, for clusters of 
     multiple reads a random read will be chosen. 
     This will guarantee that the list of reads returned
     is unique and does not contain duplicates
@@ -97,7 +96,7 @@ def countMolecularBarcodesClustersNaive(molecular_barcodes,
     """
     Tries to finds clusters of similar molecular barcodes given 
     a minimum cluster size and a minimum distance (allowed_mismatches). 
-    It returns a list with the all the non clustered reads, for clusters of 
+    It returns a list with all the non clustered reads, for clusters of 
     multiple reads a random read will be chosen. 
     This will guarantee that the list of reads returned
     is unique and does not contain duplicates

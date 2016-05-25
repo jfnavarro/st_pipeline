@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """ 
 This module contains routines to create
 a ST dataset and some statistics. The dataset
@@ -6,7 +5,7 @@ will contain several files with the ST data in different
 formats
 """
 import subprocess
-import gc
+from subprocess import CalledProcessError
 import logging
 
 def createDataset(input_file,
@@ -29,7 +28,7 @@ def createDataset(input_file,
     It also allows to remove PCR Duplicates using molecular barcodes
     This function is a wrapper around createdDataset.py
     :param input_file: the file with the annotated-demultiplexed records
-    :param qa_stats: the Stats() object to store different stats
+    :param qa_stats: the Stats object to add some stats (THIS IS PASSED BY REFERENCE)
     :param molecular_barcodes: True if the reads contain UMIs
     :param mc_cluster: the type of clustering (naive or hierarchical)
     :param allowed_mismatches: how many mismatches allowed when clustering UMIS
@@ -46,7 +45,7 @@ def createDataset(input_file,
     :type output_template: str
     :type verbose: bool
     :type low_memory: bool
-    :raises: RuntimeError
+    :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
     logger = logging.getLogger("STPipeline")
     
@@ -61,22 +60,25 @@ def createDataset(input_file,
     if output_folder: args += ['--output-folder', output_folder]
     if output_template: args += ['--output-file-template', output_template]
     if low_memory: args += ['--low-memory']
-        
-    gc.collect()      
+         
     try:
         proc = subprocess.Popen([str(i) for i in args], 
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 shell=False, close_fds=True)
         (stdout, errmsg) = proc.communicate()
-    except Exception:
-        error = "Error creating dataset. CreateDataset.py execution failed\n"
-        logger.error(error)
-        print "Error", error
-        raise
+    except ValueError as e:
+        logger.error("Error invoking createDataset.py\n Incorrect arguments.")
+        raise e
+    except OSError as e:
+        logger.error("Error invoking createDataset.py\n Executable not found.")
+        raise e
+    except CalledProcessError as e:
+        logger.error("Error invoking createDataset.py\n Program returned error.")
+        raise e
         
     if len(errmsg) > 0:
-        error = "Error creating dataset. \n"
-        "createDataset.py output error messages.\n%s\n%s" % (stdout, errmsg)
+        error = "Error creating dataset.\n" \
+        "createDataset.py outputted error messages.\n%s\n%s\n" % (stdout, errmsg)
         logger.error(error)
         raise RuntimeError(error)    
               
@@ -86,25 +88,25 @@ def createDataset(input_file,
         # TODO find a cleaner way to do this
         if line.find("Number of unique transcripts present:") != -1:
             qa_stats.reads_after_duplicates_removal = int(line.split()[-1])
-        if line.find("Number of unique events (gene-barcode) present:") != -1:
+        elif line.find("Number of unique events (gene-barcode) present:") != -1:
             qa_stats.unique_events = int(line.split()[-1])
-        if line.find("Number of unique barcodes present:") != -1:
+        elif line.find("Number of unique barcodes present:") != -1:
             qa_stats.barcodes_found = int(line.split()[-1])
-        if line.find("Number of unique genes present:") != -1:
+        elif line.find("Number of unique genes present:") != -1:
             qa_stats.genes_found = int(line.split()[-1])
-        if line.find("Number of discarded reads (possible PCR duplicates):") != -1:
+        elif line.find("Number of discarded reads (possible PCR duplicates):") != -1:
             qa_stats.duplicates_found = int(line.split()[-1])
-        if line.find("Max number of genes over all features:") != -1:
+        elif line.find("Max number of genes over all features:") != -1:
             qa_stats.max_genes_feature = int(line.split()[-1])
-        if line.find("Min number of genes over all features:") != -1:
+        elif line.find("Min number of genes over all features:") != -1:
             qa_stats.min_genes_feature = int(line.split()[-1])
-        if line.find("Max number of reads over all features:") != -1:
+        elif line.find("Max number of reads over all features:") != -1:
             qa_stats.max_reads_feature = int(line.split()[-1])
-        if line.find("Min number of reads over all features:") != -1:
+        elif line.find("Min number of reads over all features:") != -1:
             qa_stats.min_reads_feature = int(line.split()[-1])
-        if line.find("Max number of reads over all unique events:") != -1:
+        elif line.find("Max number of reads over all unique events:") != -1:
             qa_stats.max_reads_unique_event = int(line.split()[-1])
-        if line.find("Min number of reads over all unique events:") != -1:
+        elif line.find("Min number of reads over all unique events:") != -1:
             qa_stats.min_reads_unique_event = int(line.split()[-1])
         if verbose:   
             logger.info(str(line))

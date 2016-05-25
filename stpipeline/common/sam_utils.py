@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """ 
 This module contains some functions and utilities for ST SAM/BAM files
 """
@@ -6,10 +5,11 @@ This module contains some functions and utilities for ST SAM/BAM files
 from stpipeline.common.utils import *
 import logging 
 import pysam
+from stpipeline.common.stats import qa_stats
 
 def sortSamFile(input_sam, outputFolder=None):
     """
-    It simply sorts by position a sam/bam  file containing mapped reads 
+    It simply sorts by position a sam/bam file containing mapped reads 
     :param input: is a SAM/BAM file with mapped reads
     :param outputFolder: the location where to place the output file (optional)
     :type input: str
@@ -26,18 +26,18 @@ def sortSamFile(input_sam, outputFolder=None):
     if outputFolder is not None and os.path.isdir(outputFolder):
         output_sam = os.path.join(outputFolder, output_sam)
         
-    pysam.sort("-n", "-o", output_sam, "-O", sam_type, "-T", output_sam, input_sam)
+    pysam.sort("-n", "-o", output_sam, "-O", sam_type, 
+               "-T", output_sam, input_sam)
     
     if not fileOk(output_sam):
-        error = "Error sorting the SAM/BAM file. Output file is not present\n" % (output_sam)
+        error = "Error sorting the SAM/BAM file.\n" \
+        "Output file is not present\n" % (output_sam)
         logger.error(error)
-        print "Error", error
         raise RuntimeError(error)
         
     return output_sam
 
-def filterMappedReads(mapped_reads, 
-                      qa_stats, 
+def filterMappedReads(mapped_reads,
                       hash_reads,
                       min_length=28,
                       outputFolder=None, 
@@ -47,10 +47,9 @@ def filterMappedReads(mapped_reads,
     and discards reads that are secondary or too short.
     It also discards reads that do not contain a valid barcode.
     It will add the barcode, coordinates and umi as extra tags
-    to the output SAM/BAM file. The UMI will be added only if present.
+    to the output SAM/BAM file. The UMI will be added only if it is present.
     It assumes all the reads are mapped (do not contain un-aligned reads).
     :param mapped_reads: path to a SAM/BAM file containing the alignments
-    :param qa_stats: the global Stats objects to add some information
     :param hash_reads: a hash table of read_names to (x,y,umi) tags
     :param min_length: the min number of mapped bases we enforce in an alignment
     :param outputFolder: if we want to specify where to put the output file
@@ -65,11 +64,10 @@ def filterMappedReads(mapped_reads,
     """
     
     logger = logging.getLogger("STPipeline")
-    
+    # Create output files
     sam_type = getExtension(mapped_reads).lower()
     file_output = 'mapped_filtered.' + sam_type
     file_output_discarded = 'mapped_discarded.' + sam_type
-        
     if outputFolder is not None and os.path.isdir(outputFolder):
         file_output = os.path.join(outputFolder, file_output)
         file_output_discarded = os.path.join(outputFolder, file_output_discarded)
@@ -79,17 +77,16 @@ def filterMappedReads(mapped_reads,
     if sam_type == "sam":
         flag_read = "r"
         flag_write = "wh"
-        
+    # Open files
     infile = pysam.AlignmentFile(mapped_reads, flag_read)
     outfile = pysam.AlignmentFile(file_output, flag_write, template=infile)
     if keep_discarded_files:
         outfile_discarded = pysam.AlignmentFile(file_output_discarded, flag_write, template=infile)
-       
+    # Create some counters and loop the records
     dropped_secondary = 0
     dropped_short = 0
     dropped_barcode = 0
     present = 0
-
     for sam_record in infile.fetch(until_eof=True):
         present += 1
         discard_read = False
@@ -135,9 +132,9 @@ def filterMappedReads(mapped_reads,
         outfile_discarded.close()
 
     if not fileOk(file_output):
-        error = "Error filtering mapped reads. Output file is not present\n" % (file_output)
+        error = "Error filtering mapped reads.\n" \
+        "Output file is not present\n" % (file_output)
         logger.error(error)
-        print "Error", error
         raise RuntimeError(error)
             
     logger.info("Finish filtering mapped reads, stats:" \

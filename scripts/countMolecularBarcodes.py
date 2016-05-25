@@ -1,10 +1,10 @@
 #! /usr/bin/env python
-#@author Jose Fernandez
 """ 
 Scripts that takes as input a file generated
 in the demultiplexing step (taggd) of the ST pipeline
 and computes a count-table of the UMIs presented
 in the reads
+@Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
 """
 
 import sys
@@ -22,7 +22,7 @@ def main(sam_filename, outfile, mc_start_position, mc_end_position):
     if not fileOk(sam_filename) or not sam_filename.endswith(".sam") \
     or start_pos < 0 or start_pos >= end_pos:
         sys.stderr.write("Error, input file not present or invalid format for the parameters\n")
-        sys.exit(-1)
+        sys.exit(1)
     
     if not outfile:
         outfile = "output_counts.txt"
