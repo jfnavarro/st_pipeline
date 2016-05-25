@@ -1,7 +1,0 @@
-Perfom UMI duplicate removal for tuples barcode-gene with the same genomic coordinates
-Add unit-test for all individual components and modules
-Fix TODOs in the code
-Cython some functions
-Improve the memory use in createDatasets and hash_mapped_reads
-Replace JSON output for binary data frame format
-Add an option to parse input parameters from a yaml file
