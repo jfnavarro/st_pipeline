@@ -35,16 +35,16 @@ def main(argv):
         # Parse arguments
         options = parser.parse_args()
         pipeline.load_parameters(options)
-        sys.stdout.write("ST Pipeline, parameters loaded")
+        sys.stdout.write("ST Pipeline, parameters loaded\n")
         pipeline.createLogger()
-        sys.stdout.write("ST Pipeline, logger created")
+        sys.stdout.write("ST Pipeline, logger created\n")
         pipeline.sanityCheck()
-        sys.stdout.write("ST Pipeline, sanity check passed. Starting the run.")
+        sys.stdout.write("ST Pipeline, sanity check passed. Starting the run.\n")
         pipeline.run()
-        sys.stdout.write("ST Pipeline, run completed!")
+        sys.stdout.write("ST Pipeline, run completed!\n")
     except Exception as e:
         sys.stderr.write("Error running the pipeline\n")
-        sys.stderr.write(str(e))
+        sys.stderr.write(str(e) + "\n")
         sys.exit(1)
     finally:
         pipeline.clean_filenames()

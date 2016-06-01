@@ -65,7 +65,6 @@ class Pipeline():
         self.contaminant_index = None
         self.fastq_fw = None
         self.fastq_rv = None
-        self.path = None
         self.logger = None
         self.logfile = None
         self.output_folder = None
@@ -113,14 +112,21 @@ class Pipeline():
         Performs some basic sanity checks on the input parameters
         """
 
-        if not self.ref_annotation.endswith(".gtf") \
+        if not os.path.isfile(self.ref_annotation) or \
+        (not self.ref_annotation.endswith(".gtf") \
         and not self.ref_annotation.endswith(".gff3") \
-        and not self.ref_annotation.endswith(".gff"):
+        and not self.ref_annotation.endswith(".gff")):
             error = "Error parsing parameters.\n" \
-            "Incorrect format for annotation file {}".format(self.ref_annotation)
+            "Invalid annotation file {}".format(self.ref_annotation)
             self.logger.error(error)
             raise RuntimeError(error)
-                
+          
+        if not os.path.isfile(self.fastq_fw) or not os.path.isfile(self.fastq_rv):
+            error = "Error parsing parameters.\n" \
+            "Invalid input files {} {}".format(self.fastq_fw, self.fastq_rv)
+            self.logger.error(error)
+            raise RuntimeError(error)
+                     
         if (not self.fastq_fw.endswith(".fastq") \
         and not self.fastq_fw.endswith(".fq") \
         and not self.fastq_fw.endswith(".gz")) \
@@ -131,7 +137,13 @@ class Pipeline():
             "Incorrect format for input files {} {}".format(self.fastq_fw, self.fastq_rv)
             self.logger.error(error)
             raise RuntimeError(error)
-                
+             
+        if not os.path.isfile(self.ids):
+            error = "Error parsing parameters.\n" \
+            "Invalid IDS file {}".format(self.ids)
+            self.logger.error(error)
+            raise RuntimeError(error)
+                  
         if self.two_pass_mode and self.two_pass_mode_genome \
         and not os.path.isfile(self.two_pass_mode_genome):
             error = "Error two pass mode is enabled but --two-pass-mode-genome is empty.\n"
@@ -177,12 +189,12 @@ class Pipeline():
                     raise argparse.ArgumentTypeError("{0} is not a readable dir".format(prospective_dir))
 
         parser.add_argument('fastq_files', nargs=2)
-        parser.add_argument('--ids', metavar="[FILE]", type=argparse.FileType('r'), required=True,
+        parser.add_argument('--ids', metavar="[FILE]", required=True,
                             help='Path to the file containing the barcodes and the array coordinates.')
         parser.add_argument('--ref-map', metavar="[FOLDER]", action=readable_dir, required=True,
                             help="Path to the folder with the genome STAR index " \
                             "for the genome that you want to use to align the reads")
-        parser.add_argument('--ref-annotation', metavar="[FILE]", type=argparse.FileType('r'), required=True,
+        parser.add_argument('--ref-annotation', metavar="[FILE]", required=True,
                             help="Path to the reference annotation file " \
                             "(GTF or GFF format is required)")
         parser.add_argument('--expName', type=str, metavar="[STRING]", required=True,
@@ -201,7 +213,7 @@ class Pipeline():
                             help="Number of bases to trim in the reverse reads for the mapping step (default: %(default)s)")
         parser.add_argument('--length-id', default=18, type=int, metavar="[INT]", choices=[18, 21, 24, 27],
                             help="Length of IDs (the length of the barcodes) (default: %(default)s)")
-        parser.add_argument('--contaminant-index', metavar="[FOLDER]", action=readable_dir,
+        parser.add_argument('--contaminant-index', metavar="[FOLDER]", action=readable_dir, default=None,
                             help="Path to the folder with a STAR index with a contaminant genome. Reads will be filtered "
                             "against the specified genome and mapping reads will be descarded")
         parser.add_argument('--qual-64', action="store_true", default=False,
@@ -222,13 +234,13 @@ class Pipeline():
                             help="Number of threads to use in the mapping step (default: %(default)s)")
         parser.add_argument('--min-quality-trimming', default=20, metavar="[INT]", type=int, choices=range(10, 60),
                             help="Minimum phred quality for trimming bases in the trimming step (default: %(default)s)")
-        parser.add_argument('--bin-path', metavar="[FOLDER]", action=readable_dir,
+        parser.add_argument('--bin-path', metavar="[FOLDER]", action=readable_dir, default=None,
                             help="Path to folder where binary executables are present (system path by default)")
-        parser.add_argument('--log-file', metavar="[FILE]", type=argparse.FileType('r'),
+        parser.add_argument('--log-file', metavar="[STR]", default=None,
                             help="Name of the file that we want to use to store the logs (default output to screen)")
-        parser.add_argument('--output-folder', metavar="[FOLDER]", action=readable_dir,
+        parser.add_argument('--output-folder', metavar="[FOLDER]", action=readable_dir, default=None,
                             help='Path of the output folder')
-        parser.add_argument('--temp-folder', metavar="[FOLDER]", action=readable_dir,
+        parser.add_argument('--temp-folder', metavar="[FOLDER]", action=readable_dir, default=None,
                             help='Path of the location for temporary files')
         parser.add_argument('--molecular-barcodes',
                             action="store_true",
@@ -293,7 +305,7 @@ class Pipeline():
                             help="Writes temporary records into disk in order to save memory but gaining a speed penalty")
         parser.add_argument('--two-pass-mode', default=False, action="store_true",
                             help="Activates the 2 pass mode in STAR to also map against splice variants")
-        parser.add_argument('--two-pass-mode-genome', metavar="[FILE]", type=argparse.FileType('r'),
+        parser.add_argument('--two-pass-mode-genome', metavar="[FILE]",
                             help="Path to a genome file in fasta format. \n" \
                             "When using the two pass mode the path of the fasta file with the genome is needed")
         parser.add_argument('--strandness', default="yes", type=str, metavar="[STRING]", choices=["no", "yes", "reverse"],
@@ -305,16 +317,16 @@ class Pipeline():
         """
         Load the input parameters from the argparse object
         """
-        self.allowed_missed = int(options.allowed_missed)
-        self.allowed_kmer = int(options.allowed_kmer)
-        self.overhang = int(options.overhang)
-        self.min_length_trimming = int(options.min_length_qual_trimming)
-        self.trimming_rv = int(options.mapping_rv_trimming)
-        self.min_quality_trimming = int(options.min_quality_trimming) 
+        self.allowed_missed = options.allowed_missed
+        self.allowed_kmer = options.allowed_kmer
+        self.overhang = options.overhang
+        self.min_length_trimming = options.min_length_qual_trimming
+        self.trimming_rv = options.mapping_rv_trimming
+        self.min_quality_trimming = options.min_quality_trimming
         self.clean = options.no_clean_up
-        self.barcode_start = int(options.start_id)
-        self.barcode_length = int(options.length_id)
-        self.threads = int(options.mapping_threads)
+        self.barcode_start = options.start_id
+        self.barcode_length = options.length_id
+        self.threads = options.mapping_threads
         self.verbose = options.verbose
         self.ids = os.path.abspath(options.ids)
         self.ref_map = os.path.abspath(options.ref_map)
@@ -324,51 +336,47 @@ class Pipeline():
         self.htseq_no_ambiguous = options.htseq_no_ambiguous
         self.qual64 = options.qual_64
         self.contaminant_index = options.contaminant_index
-        self.path = options.bin_path
         # Load the given path into the system PATH
-        if self.path is not None and os.path.isdir(self.path): 
-            os.environ["PATH"] += os.pathsep + self.path
+        if options.bin_path is not None and os.path.isdir(options.bin_path): 
+            os.environ["PATH"] += os.pathsep + options.bin_path
         if options.log_file is not None:
             self.logfile = os.path.abspath(options.log_file)  
-        self.fastq_fw = options.fastq_files[0]
-        self.fastq_rv = options.fastq_files[1]
+        self.fastq_fw = os.path.abspath(options.fastq_files[0])
+        self.fastq_rv = os.path.abspath(options.fastq_files[1])
         if options.output_folder is not None and os.path.isdir(options.output_folder):
             self.output_folder = os.path.abspath(options.output_folder)
+        else:
+            self.output_folder = os.path.abspath(os.getcwd())      
         if options.temp_folder is not None and os.path.isdir(options.temp_folder): 
             self.temp_folder = os.path.abspath(options.temp_folder)
-        # Set default output and temp folders if erroneous given
-        if self.output_folder is None or not os.path.isdir(self.output_folder):
-            self.logger.info("Invalid path for output directory -- using current directory instead")
-            self.output_folder = os.path.abspath(os.getcwd())
-        if self.temp_folder is None or not os.path.isdir(self.temp_folder):
-            self.logger.info("Invalid path for temp directory -- using current directory instead")
+        else:
             self.temp_folder = os.path.abspath(os.getcwd())
         self.molecular_barcodes = options.molecular_barcodes
-        self.mc_allowed_mismatches = int(options.mc_allowed_mismatches)
-        self.mc_start_position = int(options.mc_start_position)
-        self.mc_end_position = int(options.mc_end_position)
-        self.min_cluster_size = int(options.min_cluster_size)
+        self.mc_allowed_mismatches = options.mc_allowed_mismatches
+        self.mc_start_position = options.mc_start_position
+        self.mc_end_position = options.mc_end_position
+        self.min_cluster_size = options.min_cluster_size
         self.keep_discarded_files = options.keep_discarded_files
-        self.remove_polyA_distance = int(options.remove_polyA)
-        self.remove_polyT_distance = int(options.remove_polyT)
-        self.remove_polyG_distance = int(options.remove_polyG)
-        self.remove_polyC_distance = int(options.remove_polyC)
-        self.filter_AT_content = int(options.filter_AT_content)
+        self.remove_polyA_distance = options.remove_polyA
+        self.remove_polyT_distance = options.remove_polyT
+        self.remove_polyG_distance = options.remove_polyG
+        self.remove_polyC_distance = options.remove_polyC
+        self.filter_AT_content = options.filter_AT_content
         self.disable_multimap = options.disable_multimap
         self.disable_clipping = options.disable_clipping
-        self.mc_cluster = str(options.mc_cluster)
-        self.min_intron_size = int(options.min_intron_size)
-        self.max_intron_size = int(options.max_intron_size)
-        self.max_gap_size = int(options.max_gap_size)
+        self.mc_cluster = options.mc_cluster
+        self.min_intron_size = options.min_intron_size
+        self.max_intron_size = options.max_intron_size
+        self.max_gap_size = options.max_gap_size
         self.umi_filter = options.umi_filter
-        self.umi_filter_template = str(options.umi_filter_template).upper()
+        self.umi_filter_template = options.umi_filter_template.upper()
         self.compute_saturation = options.compute_saturation
         self.include_non_annotated = options.include_non_annotated
-        self.inverse_trimming_rv = int(options.inverse_mapping_rv_trimming)
+        self.inverse_trimming_rv = options.inverse_mapping_rv_trimming
         self.low_memory = options.low_memory
         self.two_pass_mode = options.two_pass_mode
         self.two_pass_mode_genome = options.two_pass_mode_genome
-        self.strandness = str(options.strandness)
+        self.strandness = options.strandness
         # Assign class parameters to the QA stats object
         import inspect
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
@@ -386,7 +394,7 @@ class Pipeline():
         """    
         # Create a logger
         if self.logfile is not None:
-            logging.basicConfig(filename=self.logfile ,level=logging.DEBUG)
+            logging.basicConfig(filename=self.logfile, level=logging.DEBUG)
         else:
             logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
             
