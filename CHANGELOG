@@ -300,3 +300,6 @@ Version 0.9.0
 * Replaced JSON for data frame in the output format
 * Replaced python gzip for system call (faster)
 * Changed the logic of how the filenames are stored and handled
+
+Version 0.9.1
+* Fixed a small bug with the location of discarded files

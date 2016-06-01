@@ -458,7 +458,7 @@ class Pipeline():
         if self.temp_folder:
             for key, value in FILENAMES.iteritems():
                 FILENAMES[key] = os.path.join(self.temp_folder, value)
-            for key, value in FILENAMES.iteritems():
+            for key, value in FILENAMES_DISCARDED.iteritems():
                 FILENAMES_DISCARDED[key] = os.path.join(self.temp_folder, value)
                       
         # Get the starting time to compute total execution time
