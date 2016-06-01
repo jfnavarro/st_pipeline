@@ -1,5 +1,8 @@
 # Spatial Transcriptomics Pipeline
 
+"" ADD TRAVIS BUILD STATUS HERE ""
+"" ADD TEST COVERAGE FLAG HERE ""
+
 ST Pipeline contains the tools and scripts needed to process and analyze the raw files generated with the Spatial Transcriptomics method in FASTQ format. 
 
 The following files/parameters are required :
