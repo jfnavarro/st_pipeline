@@ -11,6 +11,7 @@ from stpipeline.common.utils import fileOk
 from stpipeline.common.stats import qa_stats
 import uuid
 import os
+import shutil
 
 def createIndex(genome,
                 log_sj,
@@ -257,8 +258,8 @@ def alignReads(reverse_reads,
         logger.warning("STAR has generated error messages during mapping.\n{}\n".format(errmsg))
         
     # Rename output files.
-    os.rename(tmpOutputFile, outputFile)
-    os.rename(tmpOutputFileDiscarded, outputFileDiscarded)
+    shutil.move(tmpOutputFile, outputFile)
+    shutil.move(tmpOutputFileDiscarded, outputFileDiscarded)
         
     # Remove temp files from STAR
     if os.path.isfile(log_std): os.remove(log_std)
