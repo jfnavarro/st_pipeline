@@ -7,11 +7,13 @@ demultiplexing in the ST pipeline
 import logging 
 import subprocess
 from subprocess import CalledProcessError
-from stpipeline.common.utils import *
+from stpipeline.common.utils import fileOk
 from stpipeline.common.stats import qa_stats
 import uuid
+import os
 
 def createIndex(genome,
+                log_sj,
                 threads,
                 tmpFolder):
     """
@@ -21,27 +23,33 @@ def createIndex(genome,
     :param genome: the path to the fasta file with the original genome
     :param threads: number of threads to be used
     :param tmpFolder: where to place the temporary files and to find the file with variants
+    :param log_sj: the path to the file containing the splices
     :type genome: str
     :type threads: int
     :type tmpFolder: str
+    :type log_sj: str
     :returns: the path to the new index
     :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
-    
     logger = logging.getLogger("STPipeline")
+    
+    if not os.path.isfile(log_sj):
+        error = "Error, input file not present {}\n".format(log_sj)
+        logger.error(error)
+        raise RuntimeError(error)
+    
     # Unique identifier to the index folder
     genome_dir = str(uuid.uuid4())
-    log_sj = "SJ.out.tab"
     log = "Log.out"
     log_final = "Log.final.out"
     if tmpFolder is not None and os.path.isdir(tmpFolder):
         genome_dir = os.path.join(tmpFolder, genome_dir)
-        log_sj = os.path.join(tmpFolder, log_sj)
         log_final = os.path.join(tmpFolder, log_final)
         log = os.path.join(tmpFolder, log)
         
     if not os.path.isfile(log_sj):
-        error = "Error creating index with STAR.\nSplices file not present\n"
+        error = "Error creating index with STAR.\n" \
+        "Splices file {} not fount\n".format(log_sj)
         logger.error(error)
         raise RuntimeError(error)
     
@@ -80,74 +88,76 @@ def createIndex(genome,
     
     if len(errmsg) > 0:
         logger.warning("STAR outputted an error message while " \
-                       "creating the index.\n%s\n" % (str(errmsg)))
+                       "creating the index.\n{}\n".format(errmsg))
     
     if not os.path.isdir(genome_dir):
         error = "Error creating index with STAR. The index output folder " 
-        "is not present\n%s\n" % (errmsg)
+        "is not present\n{}\n".format(errmsg)
         logger.error(error)
         raise RuntimeError(error)
     
     return genome_dir
 
 def alignReads(reverse_reads, 
-               ref_map, 
-               trimReverse, 
-               cores,
-               file_name_pattern,
+               ref_map,
+               outputFile,
+               outputFileDiscarded=None,
+               outputFolder=None,
+               trimReverse=0, 
+               cores=4,
                min_intron_size=20,
                max_intron_size=1000000,
                max_gap_size=1000000,
                use_splice_juntions=True,
-               sam_type="BAM",
                disable_multimap=False,
                diable_softclipping=False,
-               invTrimReverse=0,
-               outputFolder=None):
+               invTrimReverse=0):
     """
     This function will perform a sequence alignment using STAR.
-    Mapped and unmapped reads are returned and the set of parameters
-    used are described
+    Mapped and unmapped reads are written to the paths given as
+    inputs. It needs the path of the STAR genome index. 
     :param reverse_reads: file containing reverse reads in fastq format for pair end sequences
     :param ref_map: a path to the genome/transcriptome indexes
-    :param trimReverse: the number of bases to trim in the reverse reasd (to not map)
+    :param outputFile: the name of the BAM output file to write the alignments
+    :param outputFileDiscarded: the name of the BAM output file to write discarded alignments
+    :param outputFolder: the path of the output folder
+    :param trimReverse: the number of bases to trim in the reverse reads (to not map)
     :param cores: the number of cores to use to speed up the alignment
     :param file_name_patter: indicates how the output files will be named
     :param min_intron_size: min allowed intron size when spanning splice junctions
     :param max_intron size: max allowed intron size when spanning splice junctions
     :param max_gap_size: max allowed gap between pairs
     :param use_splice_junctions: whether to use splice aware alignment or not
-    :param sam_type: SAM or BAM 
     :param disable_multimap: if True no multiple alignments will be allowed
     :param diable_softclipping: it True no local alignment allowed
     :param invTrimReverse: number of bases to trim in the 5' of the read2
-    :param outputFolder: if set all output files will be placed there
     :type reverse_reads: str
     :type ref_map: str
+    :type outputFile: str
+    :type outputFileDiscarded: str
+    :type outputFolder: str
     :type trimReverse: int
-    :type trimReverse: cores
+    :type cores: int
     :type file_name_patter: str
     :type min_intron_size: int
     :type max_intron: int
     :type max_gap_size: int
     :type use_splice_junctions: bool
-    :type sam_type: str
     :type disable_multimap: bool
     :type diable_softclipping: bool
     :type invTrimReverse: int
-    :type outputFolder: str
-    :returns: the path to the SAM/BAM file with the alignments
     :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
-
     logger = logging.getLogger("STPipeline")
     
-    # STAR has predefined output names from the files
-    tmpOutputFile = "Aligned.sortedByCoord.out.bam" \
-    if sam_type.lower() == "bam" else "Aligned.out.sam"
+    if not os.path.isfile(reverse_reads):
+        error = "Error, input file not present {}\n".format(reverse_reads)
+        logger.error(error)
+        raise RuntimeError(error)
+    
+    # STAR has predefined output names for the files
+    tmpOutputFile = "Aligned.sortedByCoord.out.bam" 
     tmpOutputFileDiscarded = "Unmapped.out.mate1"
-    outputFile = file_name_pattern + "_mapped." + sam_type.lower()
-    outputFileDiscarded = file_name_pattern + "_discarded.fastq"
     log_std = "Log.std.out"
     log = "Log.out"
     log_sj = "SJ.out.tab"
@@ -157,8 +167,6 @@ def alignReads(reverse_reads,
     if outputFolder is not None and os.path.isdir(outputFolder):
         tmpOutputFile = os.path.join(outputFolder, tmpOutputFile)
         tmpOutputFileDiscarded = os.path.join(outputFolder, tmpOutputFileDiscarded)
-        outputFile = os.path.join(outputFolder, outputFile)
-        outputFileDiscarded = os.path.join(outputFolder, outputFileDiscarded)
         log_std = os.path.join(outputFolder, log_std)
         log = os.path.join(outputFolder, log)
         log_sj = os.path.join(outputFolder, log_sj)
@@ -195,7 +203,7 @@ def alignReads(reverse_reads,
     trim_flags = ["--clip5pNbases", trimReverse, 
                   "--clip3pNbases", invTrimReverse]
     io_flags   = ["--outFilterType", "Normal", 
-                  "--outSAMtype", sam_type, "SortedByCoordinate", # or Usorted (name)
+                  "--outSAMtype", "BAM", "SortedByCoordinate", # or Usorted (name)
                   "--alignEndsType", alignment_mode, 
                   "--outSAMunmapped", "None", # unmapped reads not included in main output
                   "--outSAMorder", "Paired",    
@@ -221,7 +229,7 @@ def alignReads(reverse_reads,
     args += io_flags
     args += ["--genomeDir", ref_map,
              "--readFilesIn", reverse_reads,
-             "--outFileNamePrefix", outputFolder + "/"]  # MUST ENSURE AT LEAST ONE SLASH
+             "--outFileNamePrefix", outputFolder + os.sep]  # MUST ENSURE AT LEAST ONE SLASH
     args += ["--outReadsUnmapped", "Fastx"]
     
     try:
@@ -241,12 +249,12 @@ def alignReads(reverse_reads,
         
     if not fileOk(tmpOutputFile):
         error = "Error mapping with STAR.\n" \
-        "Output file not present %s\n%s\n" % (tmpOutputFile, errmsg)
+        "Output file not present {}\n{}\n".format(tmpOutputFile, errmsg)
         logger.error(error)
         raise RuntimeError(error)
 
     if len(errmsg) > 0:
-        logger.warning("STAR has generated error messages during mapping.\n%s\n" % (errmsg))
+        logger.warning("STAR has generated error messages during mapping.\n{}\n".format(errmsg))
         
     # Rename output files.
     os.rename(tmpOutputFile, outputFile)
@@ -255,10 +263,10 @@ def alignReads(reverse_reads,
     # Remove temp files from STAR
     if os.path.isfile(log_std): os.remove(log_std)
     if os.path.isfile(log): os.remove(log)
+    if os.path.isfile(log_progress): os.remove(log_progress)
     # Do not remove to use it for computing a new index in 2pass mode
     # if os.path.isfile(log_sj): os.remove(log_sj)
-    if os.path.isfile(log_progress): os.remove(log_progress)
-
+    
     if not os.path.isfile(log_final):
         logger.warning("Log output file from STAR is not present")
     else:
@@ -267,7 +275,7 @@ def alignReads(reverse_reads,
         uniquely_mapped = 0
         multiple_mapped = 0
         # Parse log file from STAR to get stats
-        #TODO find a cleaner way to do this
+        # TODO find a cleaner way to do this
         with open(log_final, "r") as star_log:
             for line in star_log.readlines():
                 if line.find("Uniquely mapped reads %") != -1 \
@@ -281,10 +289,10 @@ def alignReads(reverse_reads,
                     uniquely_mapped = int(str(line).rstrip().split()[-1])
                 if line.find("Number of reads mapped to multiple loci") != -1:
                     multiple_mapped = int(str(line).rstrip().split()[-1])
-            logger.info("Total mapped reads: %s" % str(uniquely_mapped + multiple_mapped))    
+            logger.info("Total mapped reads: {}".format(uniquely_mapped + multiple_mapped))   
+             
     # Remove log file       
     if os.path.isfile(log_final): os.remove(log_final)
-    return outputFile, outputFileDiscarded
 
 def barcodeDemultiplexing(reads, 
                           idFile,
@@ -293,7 +301,7 @@ def barcodeDemultiplexing(reads,
                           start_positon,
                           over_hang,
                           cores,
-                          outputFolder=None, 
+                          outputFilePrefix,
                           keep_discarded_files=False):
     """ 
     This functions performs a demultiplexing using Taggd. Input reads will be filtered
@@ -307,7 +315,7 @@ def barcodeDemultiplexing(reads,
     :param kmer: the kmer length
     :param start_positon: the start position of the barcode
     :param over_hang: the number of bases to allow for overhang
-    :param outputFolder: if set output files will be placed there
+    :param outputFilePrefix: location and prefix for the output files
     :param keep_discarded_files: if True files with the non demultiplexed reads will be generated
     :type reads: str
     :type idFile: str
@@ -315,21 +323,17 @@ def barcodeDemultiplexing(reads,
     :type kmer: int
     :type start_positon: int
     :type over_hang: int
-    :type outputFolder: str
+    :type outputFilePrefix: str
     :type keep_discarded_files: bool
-    :returns: the path to the SAM/BAM/FASTQ file with the demultiplexed reads
     :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
-    
     logger = logging.getLogger("STPipeline")
     
-    outputFilePrefix = 'demultiplexed'
-    if outputFolder is not None and os.path.isdir(outputFolder): 
-        outputFilePrefix = os.path.join(outputFolder, outputFilePrefix)
-
-    # We know the output file from the prefix and suffix
-    outputFile = outputFilePrefix + "_matched." + getExtension(reads).lower()
-
+    if not os.path.isfile(reads):
+        error = "Error, input file not present {}\n".format(reads)
+        logger.error(error)
+        raise RuntimeError(error)
+    
     # Taggd options
     #--metric (subglobal (default) , Levenshtein or Hamming)
     #--slider-increment (space between kmer searches, 0 is default = kmer length)
@@ -371,15 +375,17 @@ def barcodeDemultiplexing(reads,
         logger.error("Error demultiplexing with TAGGD\n Program returned error.")
         raise e
     
+    # We know the output file from the prefix and suffix
+    outputFile = "{}_matched{}".format(outputFilePrefix, os.path.splitext(reads)[1].lower())
     if not fileOk(outputFile):
         error = "Error demultiplexing with TAGGD.\n" \
-        "Output file is not present %s\n%s\n" % (outputFile, errmsg)
+        "Output file is not present {}\n{}\n".format(outputFile, errmsg)
         logger.error(error)
         raise RuntimeError(error)
  
     if len(errmsg) > 0:
         logger.warning("Taggd has generated error messages during " \
-                       "demultiplexing.\n%s\n" % (errmsg))
+                       "demultiplexing.\n{}\n".format(errmsg))
            
     # TODO must be a cleaner way to get the stats from the output file
     procOut = stdout.split("\n")
@@ -402,5 +408,3 @@ def barcodeDemultiplexing(reads,
             logger.info(str(line))
         if line.find("Unmatched:") != -1:
             logger.info(str(line))
-
-    return outputFile

@@ -2,10 +2,11 @@
 This module contains some functions and utilities for ST SAM/BAM files
 """
 
-from stpipeline.common.utils import *
+from stpipeline.common.utils import fileOk
+from stpipeline.common.stats import qa_stats
+import os
 import logging 
 import pysam
-from stpipeline.common.stats import qa_stats
 
 def sortSamFile(input_sam, outputFolder=None):
     """
@@ -20,8 +21,8 @@ def sortSamFile(input_sam, outputFolder=None):
     
     logger = logging.getLogger("STPipeline")
     
-    sam_type = getExtension(input_sam).lower()
-    output_sam = 'mapped_filtered_sorted.' + sam_type
+    sam_type = os.path.splitext(input_sam)[1].lower()
+    output_sam = 'mapped_filtered_sorted{}'.format(sam_type)
         
     if outputFolder is not None and os.path.isdir(outputFolder):
         output_sam = os.path.join(outputFolder, output_sam)
@@ -31,7 +32,7 @@ def sortSamFile(input_sam, outputFolder=None):
     
     if not fileOk(output_sam):
         error = "Error sorting the SAM/BAM file.\n" \
-        "Output file is not present\n" % (output_sam)
+        "Output file is not present\n {}".format(output_sam)
         logger.error(error)
         raise RuntimeError(error)
         
@@ -39,9 +40,9 @@ def sortSamFile(input_sam, outputFolder=None):
 
 def filterMappedReads(mapped_reads,
                       hash_reads,
-                      min_length=28,
-                      outputFolder=None, 
-                      keep_discarded_files=False):
+                      file_output,
+                      file_output_discarded=None,
+                      min_length=28):
     """ 
     Iterate a SAM/BAM file containing mapped reads 
     and discards reads that are secondary or too short.
@@ -52,36 +53,30 @@ def filterMappedReads(mapped_reads,
     :param mapped_reads: path to a SAM/BAM file containing the alignments
     :param hash_reads: a hash table of read_names to (x,y,umi) tags
     :param min_length: the min number of mapped bases we enforce in an alignment
-    :param outputFolder: if we want to specify where to put the output file
-    :param keep_discarded_files: true if we want to write the un-annotated reads to a file
+    :param file_output: the path where to put the records
+    :param file_output_discarded: the path where to put discarded files
     :type mapped_reads: str
     :type hash_reads: dict
     :type min_length: integer
-    :type outputFolder: str
-    :type keep_discarded_files: bool
-    :returns: path to a SAM/BAM file
+    :type file_output: str
+    :type file_output_discarded: str
     :raises: RuntimeError
     """
-    
     logger = logging.getLogger("STPipeline")
-    # Create output files
-    sam_type = getExtension(mapped_reads).lower()
-    file_output = 'mapped_filtered.' + sam_type
-    file_output_discarded = 'mapped_discarded.' + sam_type
-    if outputFolder is not None and os.path.isdir(outputFolder):
-        file_output = os.path.join(outputFolder, file_output)
-        file_output_discarded = os.path.join(outputFolder, file_output_discarded)
     
+    if not os.path.isfile(mapped_reads):
+        error = "Error, input file not present {}\n".format(mapped_reads)
+        logger.error(error)
+        raise RuntimeError(error)
+    
+    # Create output files handlers
     flag_read = "rb"
     flag_write = "wb"
-    if sam_type == "sam":
-        flag_read = "r"
-        flag_write = "wh"
-    # Open files
     infile = pysam.AlignmentFile(mapped_reads, flag_read)
     outfile = pysam.AlignmentFile(file_output, flag_write, template=infile)
-    if keep_discarded_files:
-        outfile_discarded = pysam.AlignmentFile(file_output_discarded, flag_write, template=infile)
+    if file_output_discarded is not None:
+        outfile_discarded = pysam.AlignmentFile(file_output_discarded, 
+                                                flag_write, template=infile)
     # Create some counters and loop the records
     dropped_secondary = 0
     dropped_short = 0
@@ -121,28 +116,31 @@ def filterMappedReads(mapped_reads,
             discard_read = True
 
         if discard_read:
-            if keep_discarded_files:
+            if file_output_discarded is not None:
                 outfile_discarded.write(sam_record)
         else:
             outfile.write(sam_record)
-                  
+    
+    # Close handlers           
     infile.close()
     outfile.close()
-    if keep_discarded_files:
+    if file_output_discarded is not None:
         outfile_discarded.close()
 
     if not fileOk(file_output):
         error = "Error filtering mapped reads.\n" \
-        "Output file is not present\n" % (file_output)
+        "Output file is not present\n {}".format(file_output)
         logger.error(error)
         raise RuntimeError(error)
             
     logger.info("Finish filtering mapped reads, stats:" \
-                "\nPresent: " + str(present) + \
-                "\nDropped - secondary alignment : " + str(dropped_secondary) + \
-                "\nDropped - too short : " + str(dropped_short) + \
-                "\nDropped - barcode : " + str(dropped_barcode))  
+                "\nPresent: {0}" \
+                "\nDropped - secondary alignment: {1}" \
+                "\nDropped - too short: {2}" \
+                "\nDropped - barcode: {3}".format(present,
+                                                  dropped_secondary,
+                                                  dropped_short,
+                                                  dropped_barcode))
     
     # Update QA object 
     qa_stats.reads_after_mapping = present - (dropped_secondary + dropped_short)
-    return file_output

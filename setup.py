@@ -35,7 +35,7 @@ setup(
   author_email = 'jose.fernandez.navarro@scilifelab.se',
   license = 'BSD',
   url = 'https://github.com/SpatialTranscriptomicsResearch/st_pipeline',
-  packages = find_packages(exclude=('tests*', 'dependencies', 'utils')),
+  packages = find_packages(exclude=('tests*', 'utils')),
   include_package_data = False,
   package_data = {'': ['RELEASE-VERSION']},
   zip_safe = False,

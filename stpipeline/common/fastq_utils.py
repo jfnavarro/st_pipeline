@@ -3,12 +3,13 @@ This module contains some specific functionalities for
 ST fastq files
 """
 
-from stpipeline.common.utils import *
+from stpipeline.common.utils import safeOpenFile, fileOk
 from stpipeline.common.adaptors import removeAdaptor
+from stpipeline.common.stats import qa_stats
 import logging 
 from itertools import izip
 from sqlitedict import SqliteDict
-from stpipeline.common.stats import qa_stats
+import os
 
 def coroutine(func):
     """ 
@@ -237,8 +238,10 @@ def check_umi_template(umi, template):
             
     return True
 
-def reformatRawReads(fw, 
+def filterInputReads(fw, 
                      rw,
+                     out_rw,
+                     out_rw_discarded=None,
                      barcode_start=0, 
                      barcode_length=18,
                      filter_AT_content=90,
@@ -252,9 +255,7 @@ def reformatRawReads(fw,
                      polyT_min_distance=0, 
                      polyG_min_distance=0, 
                      polyC_min_distance=0,
-                     qual64=False, 
-                     outputFolder=None, 
-                     keep_discarded_files=False,
+                     qual64=False,
                      umi_filter=False,
                      umi_filter_template="WSNNWSNNV"):
     """
@@ -265,6 +266,8 @@ def reformatRawReads(fw,
       - It performs a sanity check on the UMI (optional)
     :param fw: the fastq file with the forward reads
     :param rw: the fastq file with the reverse reads
+    :param out_rw: the name of the output file 
+    :param out_rw_discarded: the name of the output file for descarded reads
     :param barcode_start: the base where the barcode sequence starts
     :param barcode_length: the number of bases of the barcodes
     :param molecular_barcodes: if True the forward reads contain molecular barcodes
@@ -277,21 +280,19 @@ def reformatRawReads(fw,
     :param polyT_min_distance: if >0 we remove PolyT adaptors from the reads
     :param polyG_min_distance: if >0 we remove PolyG adaptors from the reads
     :param qual64: true of qualities are in phred64 format
-    :param outputFolder: optional folder to output files
-    :param keep_discarded_files: when true files containing the discarded reads will be created
     :param umi_filter performs: a UMI quality filter when True
     :param umi_filter_template: the template to use for the UMI filter
-    :returns: the path to the trimmed reverse read
     """
     logger = logging.getLogger("STPipeline")
     
-    # Create output file names
-    out_rw = 'R2_trimmed.fastq'
-    out_rw_discarded = 'R2_trimmed_discarded.fastq'
-    if outputFolder and os.path.isdir(outputFolder):
-        out_rw = os.path.join(outputFolder, out_rw)
-        out_rw_discarded = os.path.join(outputFolder, out_rw_discarded)
-        
+    if not os.path.isfile(fw) or not os.path.isfile(rw):
+        error = "Error, input file/s not present {}\n{}\n".format(fw,rw)
+        logger.error(error)
+        raise RuntimeError(error)
+    
+    # Check if discarded files must be written out 
+    keep_discarded_files = out_rw_discarded is not None
+    
     # Create output file writers
     out_rw_handle = safeOpenFile(out_rw, 'w')
     out_rw_writer = writefq(out_rw_handle)
@@ -328,8 +329,8 @@ def reformatRawReads(fw,
     in izip(readfq(fw_file), readfq(rw_file)):
         
         if not sequence_fw or not sequence_fw:
-            error = "Error reformatting raw reads.\n" \
-            "The input files %s,%s are not of the same length" % (fw,rw)
+            error = "Error doing quality trimming checks of raw reads.\n" \
+            "The input files {},{} are not of the same length".format(fw,rw)
             logger.error(error)
             fw_file.close()
             rw_file.close()
@@ -342,7 +343,7 @@ def reformatRawReads(fw,
         
         if header_fw.split()[0] != header_rv.split()[0]:
             logger.warning("Pair reads found with different " \
-                           "names %s and %s" % (header_fw,header_rv))
+                           "names {} and {}".format(header_fw,header_rv))
             
         # Increase reads counter
         total_reads += 1
@@ -401,25 +402,24 @@ def reformatRawReads(fw,
         out_rw_writer_discarded.close()
     
     if not fileOk(out_rw):
-        error = "Error reformatting raw reads. Output file not present %s\n" % (out_rw)
+        error = "Error doing quality trimming checks of raw reads." \
+        "\nOutput file not present {}\n".format(out_rw)
         logger.error(error)
         raise RuntimeError(error)
     else:
-        logger.info("Trimming stats total reads (pair): %s" % (str(total_reads)))
-        logger.info("Trimming stats reverse: %s reads have been dropped!" % (str(dropped_rw))) 
+        logger.info("Trimming stats total reads (pair): {}".format(total_reads))
+        logger.info("Trimming stats reverse: {} reads have been dropped!".format(dropped_rw)) 
         perc2 = '{percent:.2%}'.format(percent= float(dropped_rw) / float(total_reads) )
-        logger.info("Trimming stats reverse: you just lost about %s of your data" % (perc2))
-        logger.info("Trimming stats reads (reverse) remaining: %s" % (str(total_reads - dropped_rw)))
+        logger.info("Trimming stats reverse: you just lost about {} of your data".format(perc2))
+        logger.info("Trimming stats reads (reverse) remaining: {}".format(total_reads - dropped_rw))
         if umi_filter:
-            logger.info("Trimming stats dropped pairs due to incorrect UMI: %s" % (str(dropped_umi)))
+            logger.info("Trimming stats dropped pairs due to incorrect UMI: {}".format(dropped_umi))
             
         # Adding stats to QA Stats object
         qa_stats.input_reads_forward = total_reads
         qa_stats.input_reads_reverse = total_reads
         qa_stats.reads_after_trimming_forward = total_reads
         qa_stats.reads_after_trimming_reverse = total_reads - dropped_rw
-    # Return new trimmed reverse reads   
-    return out_rw
 
 #TODO this approach uses too much memory
 #     find a better solution (maybe Cython)
@@ -446,6 +446,13 @@ def hashDemultiplexedReads(reads,
     :type low_memory: boolean
     :returns: a dictionary of read_name -> (x,y,umi) tags where umi is optional
     """
+    logger = logging.getLogger("STPipeline")
+    
+    if not os.path.isfile(reads):
+        error = "Error, input file not present {}\n".format(reads)
+        logger.error(error)
+        raise RuntimeError(error)
+    
     assert(umi_start >= 0 and umi_start < umi_end)
     if low_memory:
         hash_reads = SqliteDict(autocommit=False, flag='c', journal_mode='OFF')

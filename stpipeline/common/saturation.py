@@ -11,7 +11,7 @@ from collections import defaultdict
 import logging
 from stpipeline.common.dataset import createDataset
 from stpipeline.common.stats import Stats
-from stpipeline.common.utils import safeRemove, getExtension
+from stpipeline.common.utils import safeRemove
 
 def computeSaturation(nreads, 
                       annotated_reads,
@@ -20,7 +20,6 @@ def computeSaturation(nreads,
                       mc_allowed_mismatches,
                       min_cluster_size,
                       expName,
-                      low_memory,
                       temp_folder=None):
     """
     It splits the input file up into sub-files containing
@@ -35,7 +34,6 @@ def computeSaturation(nreads,
                                   duplicates by UMIs
     :param min_cluster_size: the min size of the clusters to remove duplicates by UMIs
     :param expName: the name of the dataset
-    :param low_memory: True if we want to use a slower but more memory efficient approach
     :param temp_folder: the path where to put the output files
     :type nreads: integer
     :type annotated_reads: str
@@ -43,12 +41,16 @@ def computeSaturation(nreads,
     :type mc_allowed_mismatches: boolean
     :type min_cluster_size: integer
     :type expName: str
-    :type low_memory: boolean
     :type temp_folder: str
     :raises: RuntimeError
     """
-      
     logger = logging.getLogger("STPipeline")
+
+    if not os.path.isfile(annotated_reads):
+        error = "Error, input file not present {}\n".format(annotated_reads)
+        logger.error(error)
+        raise RuntimeError(error)
+    
     # Create a list of 15 saturation points (different number of reads)
     saturation_points = list()
     for x in xrange(0,15):
@@ -60,10 +62,10 @@ def computeSaturation(nreads,
     files = dict()
     file_names = dict()
     subsampling = dict()
-    file_ext = getExtension(annotated_reads).lower()
+    file_ext = os.path.splitext(annotated_reads)[1].lower()
     flag_read = "rb"
     flag_write = "wb"
-    if file_ext == "sam":
+    if file_ext == ".sam":
         flag_read = "r"
         flag_write = "wh"
                  
@@ -71,7 +73,7 @@ def computeSaturation(nreads,
     # Generate subsamples and SAM/BAM files for each saturation point
     for spoint in saturation_points:
         # Create a file for the sub sample point
-        file_name = "subsample_" + str(spoint) + "." + file_ext
+        file_name = "subsample_{}.{}".format(spoint, file_ext)
         if temp_folder is not None and os.path.isdir(temp_folder):
             file_name = os.path.join(temp_folder, file_name)
         output_sam = pysam.AlignmentFile(file_name, flag_write, template=annotated_sam)
@@ -116,8 +118,7 @@ def computeSaturation(nreads,
                           mc_allowed_mismatches,
                           min_cluster_size,
                           expName,
-                          False, # Verbose
-                          low_memory)
+                          False) # Verbose
         except Exception as e:
             error = "Error computing saturation curve: createDataset execution failed\n"
             logger.error(error)

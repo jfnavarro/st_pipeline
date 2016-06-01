@@ -1,88 +1,52 @@
 #! /usr/bin/env python
-#@author Jose Fernandez
 """ 
 Scripts that parses a SAM or BAM file containing
-the aligned reads and the BARCODE,X,Y,UMI as Tags (BZ)
-It generatesa  JSON file with the ST data and a BED file with the reads. It does so
-by aggregating the reads for unique gene-barcode tuples and removing
-duplicates using the Unique Molecular Identifiers.
+aligned/annotated reads and the spot coordinates,
+gene and UMI (X,Y,gene,UMI) as Tags (BZ).
+
+It then generates a data frame (genes as columns) 
+with the ST data and a BED file with the unique transcripts. 
+It does so by aggregating the reads to compute counts and it uses
+for each gene-spot. 
+
+It removes duplicates by using Unique Molecular Identifiers.
+To enable this you must activate the flag and indicate
+what type of algorithm to use for clustering and how many
+similar UMIs must be to be counted as one unique transcript
+(for this you can pass the number of mismatches).
+
 @Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se> 
 """
 import sys
-import json
 import argparse
 import pysam
-import numpy as np
 import os
-from stpipeline.common.utils import getExtension
+import numpy as np
 from collections import defaultdict
+import pandas as pd
 from stpipeline.common.clustering import countMolecularBarcodesClustersHierarchical, countMolecularBarcodesClustersNaive
-from sqlitedict import SqliteDict
-
-class Transcript:
-    """ 
-    Simple container for the transcripts
-    barcode and gene are str
-    x, count and y are int
-    reads is a list of tuples (read_name, sequence, quality, chromosome, start, end)
-    """
-    __slots__ = ('gene','x','y','count','reads')
-    def __init__(self, gene = None, x = -1, y = -1, count = 0, reads = []):
-        self.gene = gene
-        self.x = x
-        self.y = y
-        self.count = count
-        self.reads = reads
-        
-    def __hash__(self):
-        return hash((self.x, self.y, self.gene))
-    
-    def __eq__(self, other):
-        return self.x == other.x and self.y == other.y and self.gene == other.gene
-        
-    def __add__(self, other):
-        assert self == other
-        self.count += other.count
-        self.reads += other.reads
-        return self
-    
-    def __cmp__(self, other):
-        return self.x == other.x and self.y == other.y and self.gene == other.gene
-    
-    def __str__(self):
-        return "Gene: %s X: %s Y: %s Hits: %s" % \
-            (self.gene, self.x, self.y, self.count)
-            
-    def toBarcodeDict(self):
-        return {'Barcode':'', 'gene': self.gene, 'x': self.x, 'y': self.y, 'hits': self.count}
 
 #TODO this function takes too much memory, optimize it. (Maybe Cython)
-def parseUniqueEvents(filename, low_memory=False, molecular_barcodes=False):
+def parseUniqueEvents(filename, molecular_barcodes=False):
     """
     Parses the transcripts present in the filename given as input.
-    It expects a SAM file where the barcode and coordinates are present in the tags
-    The output will be a list containing unique transcripts (gene,barcode) whose
-    reads are aggregated
+    It expects a SAM/BAM file where the spot coordinates are present in the tags
+    The output will be hash table [spot][gene] -> list of transcripts. 
     :param filename: the input file containing the SAM/BAM records
-    :param low_memory: if True a key-value DB will be used to save memory
-    :param mc_start_position: the start position of the molecular barcode in the read
-    :param mc_end_position: the end position of the molecular barcode in the read
+    :param molecular_barcodes: if True a the records contain UMIs
     """
-    if low_memory:
-        unique_events = SqliteDict(autocommit=False, flag='c', journal_mode='OFF')
-    else:
-        unique_events = dict()
-        
-    sam_type = getExtension(filename).lower()
-    flag = "r" if sam_type == "sam" else "rb"
+    
+    unique_events = defaultdict(lambda : defaultdict(list))
+    sam_type = os.path.splitext(filename)[1].lower()
+    flag = "r" if sam_type == ".sam" else "rb"
     sam_file = pysam.AlignmentFile(filename, flag)
     
     for rec in sam_file.fetch(until_eof=True):
-        clear_name = str(rec.query_name)
-        mapping_quality = int(rec.mapping_quality)
-        start = int(rec.reference_start)
-        end = int(rec.reference_end)
-        chrom = str(sam_file.getrname(rec.reference_id))
+        clear_name = rec.query_name
+        mapping_quality = rec.mapping_quality
+        start = rec.reference_start
+        end = rec.reference_end
+        chrom = sam_file.getrname(rec.reference_id)
         strand = "-" if rec.is_reverse else "+"
         # Get taggd tags
         x,y,gene,seq = (None,None,None,None)
@@ -92,31 +56,22 @@ def parseUniqueEvents(filename, low_memory=False, molecular_barcodes=False):
             elif k == "B2":
                 y = int(v) ## The Y coordinate
             elif k == "XF":
-                gene = str(v)
+                gene = str(v) ## The gene name
             elif k == "B3":
-                seq = str(v) ## The UMI
+                seq = str(v) ## The UMI (opional)
             else:
                 continue
         # Check that all tags are present
         if any(tag is None for tag in [x,y,gene]) or (molecular_barcodes and not seq):
-            sys.stdout.write("Warning: Missing attributes for record %s\n" % clear_name)
+            sys.stdout.write("Warning: Missing attributes for record {}\n".format(clear_name))
             continue
-        # Create a new transcript and assign it to dictionary
-        transcript = Transcript(gene=gene, x=x, y=y, count=1, 
-                                reads=[(chrom, start, end, clear_name, mapping_quality, strand, seq)])
-        # We want to count reads and aggregate the reads
-        # The probability of a collision is very very low
-        key = hash((gene,x,y))
-        try:
-            unique_events[key] += transcript
-        except KeyError:
-            unique_events[key] = transcript
+        
+        # Create a new transcript and add it to the dictionary
+        transcript = (chrom, start, end, clear_name, mapping_quality, strand, seq)
+        unique_events[(x,y)][gene].append(transcript)
       
     sam_file.close()
-    if low_memory: unique_events.commit()
-    unique_transcripts = unique_events.values()
-    if low_memory: unique_events.close()
-    return unique_transcripts
+    return unique_events
 
 def main(filename, 
          output_folder,
@@ -124,141 +79,143 @@ def main(filename,
          molecular_barcodes,
          mc_cluster,
          allowed_mismatches,
-         min_cluster_size,
-         low_memory):
+         min_cluster_size):
     
     if filename is None or not os.path.isfile(filename):
-        sys.stderr.write("Error, input file not present or invalid: %s\n" % (filename))
+        sys.stderr.write("Error, input file not present or invalid: {}\n".format(filename))
         sys.exit(1)
 
-    sam_type = getExtension(filename).lower()
-    if sam_type != "sam" and sam_type != "bam":
-        sys.stderr.write("Error, invalid input format: %s\n" % (sam_type))
+    sam_type = os.path.splitext(filename)[1].lower()
+    if sam_type not in [".sam",".bam"]:
+        sys.stderr.write("Error, invalid input format: {}\n".format(sam_type))
         sys.exit(1)
         
     if output_folder is None or not os.path.isdir(output_folder):
-        output_folder = "."
+        output_folder = os.getcwd()
     
     if mc_cluster not in ["naive","hierarchical"]:
         sys.stderr.write("Error, type of clustering algorithm is incorrect\n")
         sys.exit(1)
         
     if output_file_template:
-        filenameJSON = str(output_file_template) + "_stdata.json"
-        filenameReadsBED = str(output_file_template) + "_reads.bed"
+        filenameDataFrame = "{}_stdata.tsv".format(output_file_template)
+        filenameReadsBED = "{}_reads.bed".format(output_file_template)
     else:
-        filenameJSON = "stdata.json"
+        filenameDataFrame = "stdata.tsv"
         filenameReadsBED = "reads.bed"
-    
+        
+    # Some counters
     total_record = 0
-    unique_genes = set()
-    total_transcripts = 0
     discarded_reads = 0
-    max_reads_unique_events = 0
-    min_reads_unique_events = 10e6
-    barcode_genes = defaultdict(int)
-    barcode_reads = defaultdict(int)
-    json_transcripts = list()
+    
     # Obtain the clustering function
     if mc_cluster == "naive":
         clusters_func = countMolecularBarcodesClustersNaive
     else:
         clusters_func = countMolecularBarcodesClustersHierarchical
-    # Parse unique events to generate JSON and BED files        
-    unique_events = parseUniqueEvents(filename, low_memory, molecular_barcodes)
+        
+    # Containers needed to create the data frame
+    list_row_values = list()
+    list_indexes = list()   
     
+    # Parse unique events to generate the unique counts and the BED file    
+    unique_events = parseUniqueEvents(filename, molecular_barcodes)
     with open(os.path.join(output_folder, filenameReadsBED), "w") as reads_handler:
-        for transcript in unique_events:
-            # Re-compute the read count accounting for duplicates 
-            # (read sequences must contain a molecular barcode)
-            if molecular_barcodes:
-                # Extract the molecular barcodes
-                mcs = [(read[6],read) for read in transcript.reads]
-                del transcript.reads
-                # Cluster the reads based on the molecular barcode
-                clusters = clusters_func(mcs,
-                                         allowed_mismatches,
-                                         min_cluster_size)
-                # Assign new reads to the transcript (Unique UMIs)
-                transcript.reads = clusters
-                num_clusters = len(clusters)
-                discarded_reads += (transcript.count - num_clusters)
-                # Update read counts in the transcript
-                transcript.count = num_clusters
+        # Unique events is a dict() [spot][gene] -> list(transcripts)
+        for spot, value in unique_events.iteritems():
+            x = spot[0]
+            y = spot[1]
+            for gene, transcripts in value.iteritems():
+                # Re-compute the read count accounting for duplicates 
+                # (read sequences must contain a molecular barcode)
+                if molecular_barcodes:
+                    # Get the original number of transcripts
+                    num_transcripts = len(transcripts)
+                    # Extract the molecular barcodes for the transcripts
+                    # as tuples (UMI, TRANSCRIPT)
+                    mcs = [(read[6],read) for read in transcripts]
+                    # Cluster the transcripts based on the molecular barcode
+                    # and returns the unique transcripts
+                    transcripts = clusters_func(mcs,
+                                                allowed_mismatches,
+                                                min_cluster_size)
+                    # Update the discarded transcripts count
+                    discarded_reads += (num_transcripts - len(transcripts))
+                
+                # Update read counts in the container (replace the list
+                # of transcripts for a number so it can be exported as a data frame)
+                value[gene] = len(transcripts)
              
-            # Add a JSON entry for the transcript
-            json_transcripts.append(transcript.toBarcodeDict())
-             
-            # Write the reads in the transcript to the BED file
-            for read in transcript.reads:
-                reads_handler.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (str(read[0]),
-                                                                              str(read[1]),
-                                                                              str(read[2]),
-                                                                              str(read[3]),
-                                                                              str(read[4]),
-                                                                              str(read[5]),
-                                                                              transcript.gene,
-                                                                              str(transcript.x),
-                                                                              str(transcript.y)))   
-            # Some stats computation
-            barcode_genes[(transcript.x, transcript.y)] += 1
-            barcode_reads[(transcript.x, transcript.y)] += transcript.count
-            unique_genes.add(transcript.gene)
-            total_record += 1
-            total_transcripts += transcript.count
-            max_reads_unique_events = max(max_reads_unique_events, transcript.count)
-            min_reads_unique_events = min(min_reads_unique_events, transcript.count)
-            del transcript
+                # Write every unique transcript to the BED output (adding spot coordinate and gene name)
+                for read in transcripts:
+                    reads_handler.write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\n".format(read[0],
+                                                                                               read[1],
+                                                                                               read[2],
+                                                                                               read[3],
+                                                                                               read[4],
+                                                                                               read[5],
+                                                                                               gene,
+                                                                                               x,y)) 
+                # keep a counter of the number of unique events (spot - gene) processed
+                total_record += 1
+                
+            # Add spot and dict [gene] -> count to containers
+            list_indexes.append("{0}x{1}".format(x, y))
+            list_row_values.append(value)
             
     if total_record == 0:
         sys.stderr.write("Error, the number of transcripts present is 0\n")
-        sys.exit(-1)
-     
-    del unique_events
-    # To compute percentiles
-    barcode_genes_array = np.sort(np.array(barcode_genes.values()))
-    barcode_reads_array = np.sort(np.array(barcode_reads.values()))
-    # Print some stats
-    print "Number of unique transcripts present: " + str(total_transcripts) 
-    print "Number of unique events (gene-barcode) present: " + str(total_record) 
-    print "Number of unique genes present: " + str(len(unique_genes))
-    print "Barcode to genes percentiles: "
-    print np.percentile(barcode_genes_array, [0,25,50,75,100])
-    print "Barcode to reads percentiles: "
-    print np.percentile(barcode_reads_array, [0,25,50,75,100])
-    print "Max number of genes over all features: " + str(barcode_genes_array[-1])
-    print "Min number of genes over all features: " + str(barcode_genes_array[1])
-    print "Max number of reads over all features: " + str(barcode_reads_array[-1])
-    print "Min number of reads over all features: " + str(barcode_reads_array[1])
-    print "Max number of reads over all unique events: " + str(max_reads_unique_events)
-    print "Min number of reads over all unique events: " + str(min_reads_unique_events)
+        sys.exit(1)
+    
+    # Create the data frame
+    counts_table = pd.DataFrame(list_row_values, index=list_indexes)
+    counts_table.fillna(0, inplace=True)
+    
+    # Compute some statistics
+    total_transcripts = np.sum(counts_table.values, dtype=np.int32)
+    number_genes = len(counts_table.columns)
+    max_count = counts_table.values.max()
+    min_count = counts_table.values.min()
+    aggregated_spot_counts = counts_table.sum(axis=0).values
+    aggregated_gene_counts = counts_table.sum(axis=1).values
+    
+    # Print some statistics
+    print "Number of unique transcripts present: {}".format(total_transcripts)
+    print "Number of unique events (gene-barcode) present: {}".format(total_record)
+    print "Number of unique genes present: {}".format(number_genes)
+    # TODO I really have no idea why this does not work {:f} would not work either
+    #print "Max number of genes over all features: {}".format(aggregated_gene_counts.max())
+    #print "Min number of genes over all features: {}".format(aggregated_gene_counts.min())
+    #print "Max number of reads over all features: {}".format(aggregated_spot_counts.max())
+    #print "Min number of reads over all features: {}".format(aggregated_spot_counts.min())
+    #print "Max number of reads over all unique events: {}".format(max_count)
+    #print "Min number of reads over all unique events: {}".format(min_count)
     if molecular_barcodes:
-        print "Number of discarded reads (possible PCR duplicates): " + str(discarded_reads)
+        print "Number of discarded reads (possible PCR duplicates): {}".format(discarded_reads)
      
-    # Write JSON transcripts to file
-    with open(os.path.join(output_folder, filenameJSON), "w") as json_handler:
-        json.dump(json_transcripts, json_handler, indent=2, separators=(",",": "))  
+    # Write data frame to file
+    counts_table.to_csv(os.path.join(output_folder,filenameDataFrame), sep="\t", na_rep=0)
             
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--input', type=str,
-                        help='Input file in SAM or BAM format containing barcodes and genes from taggd')
+    parser.add_argument('--input', type=str, required=True,
+                        help="Input file in SAM or BAM format containing annotated " \
+                        "records with the spot coordinates and the gene as tags")
     parser.add_argument('--output-folder', type=str, default=None,
-                        help='Path of the output folder (default is /.)')
+                        help="Path of the output folder (default is /.)")
     parser.add_argument('--output-file-template', type=str, default=None,
                         help="Describes how the output files will be called")
     parser.add_argument('--molecular-barcodes', 
                         action="store_true", default=False, 
-                        help="Activates the molecular barcodes duplicates filter")
-    parser.add_argument('--mc-cluster', default="naive",
+                        help="Activates the UMIs duplicates filter")
+    parser.add_argument('--mc-cluster', default="naive", metavar="[STR]", 
+                        type=str, choices=["naive", "hierarchical"],
                         help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n" \
                         "Modes = {naive(default), hierarchical}")
-    parser.add_argument('--mc-allowed-mismatches', default=1,
-                        help='Number of allowed mismatches when applying the molecular barcodes filter')
-    parser.add_argument('--min-cluster-size', default=2,
-                        help='Min number of equal molecular barcodes to count as a cluster')
-    parser.add_argument('--low-memory', default=False, action="store_true",
-                        help="Writes temporary records to disk in order to save memory (slower)")
+    parser.add_argument('--mc-allowed-mismatches', default=1,  metavar="[INT]", type=int, choices=range(1,10),
+                        help='Number of allowed mismatches when applying the UMIs filter (default: %(default)s)')
+    parser.add_argument('--min-cluster-size', default=2,  metavar="[INT]", type=int, choices=range(1, 100),
+                        help='Min number of equal UMIs to count as an unique transcript (default: %(default)s)')
 
     args = parser.parse_args()
     main(args.input, 
@@ -267,6 +224,5 @@ if __name__ == "__main__":
          args.molecular_barcodes, 
          args.mc_cluster,
          int(args.mc_allowed_mismatches), 
-         int(args.min_cluster_size),
-         args.low_memory)
+         int(args.min_cluster_size))
                                     

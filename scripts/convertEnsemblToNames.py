@@ -38,7 +38,7 @@ def main(json_file, names_map, output_file):
         try:
             doc['gene'] = genes_map[doc['gene']]
         except KeyError:
-            sys.stdout.write("Warning, " + doc['gene'] + " was not found in the MAP file\n")
+            sys.stdout.write("Warning, {} was not found in the MAP file\n".format(doc['gene']))
         adjustedList.append(doc)
         
     with open(output_file, "w") as filehandler:
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     parser.add_argument("json_file", help="JSON ST-data file")
     parser.add_argument("--output", default="output.json", 
                         help="Name of the output file, default output.json")
-    parser.add_argument("--names-map", 
+    parser.add_argument("--names-map", required=True,
                         help="File containing the map of ensembl ID to gene \
                         name as a two columns tab delimited file")
     args = parser.parse_args()

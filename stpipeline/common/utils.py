@@ -1,14 +1,10 @@
 """ 
 This file contains some general utilities
 """
-import resource
 import threading
 from datetime import datetime
 import os
 import subprocess
-import gc
-from collections import namedtuple
-_ntuple_diskusage = namedtuple('usage', 'total used free')
 
 def which_program(program):
     """ 
@@ -35,22 +31,8 @@ def which_program(program):
             for candidate in ext_candidates(exe_file):
                 if is_exe(candidate):
                     return candidate
-
     return None
-
-def memory_use(point):
-    """ 
-    Returns memory usage at a certain time point
-    :param point: a time point
-    :type point: str
-    :returns: a tuple (time, user memory, sys memory, total memory)
-    """
-    usage = resource.getrusage(resource.RUSAGE_SELF)
-    return '''%s: usertime=%s systime=%s mem=%s mb
-           '''%(point,usage[0],usage[1],
-                (usage[2]*resource.getpagesize()) / 1000000.0) 
-           
-           
+             
 class TimeStamper(object):
     """
     Thread safe time stamper 
@@ -70,21 +52,6 @@ class TimeStamper(object):
                 self.prev = ts
                 self.count = 1
         return ts
-            
-def disk_usage(path):
-    """
-    Return disk usage statistics on the given path 
-    :param path: the path to a folder
-    :type path: str
-    :returns: a tuple (total, used, free)
-    """
-    if not os.path.isdir(path):
-        return
-    st = os.statvfs(path)
-    free = st.f_bavail * st.f_frsize
-    total = st.f_blocks * st.f_frsize
-    used = (st.f_blocks - st.f_bfree) * st.f_frsize
-    return _ntuple_diskusage(total, used, free)
 
 def safeRemove(filename):
     """
@@ -101,25 +68,24 @@ def safeRemove(filename):
 def safeOpenFile(filename, atrib):
     """
     Safely opens a file
-    In writing the file if it exists already and check for free space
-    In reading mode check that the file exists
+    For writing mode it removes the previous file if it exits
+    For reading mode it check that the file exists
     :param filename: the path of the file
-    :param atrib: the file open attribute
+    :param atrib: the file open/write attribute
     :type filename: str
     :type atrib: str
     :returns: the file descriptor
-    :raises: RuntimeError
+    :raises: IOError
     """
+    if filename is None:
+        raise IOError("Error, no valid file name given\n")
     if atrib.find("w") != -1:
         safeRemove(filename)
-        usage = disk_usage(os.path.dirname(filename))
-        if usage.free <= 4073741824: # at least 4GB
-            raise IOError("Error, no free space available to open file %s\n" % (filename))
     elif atrib.find("r") != -1:
-        if filename is None or not os.path.isfile(filename): # is it present?
-            raise IOError("Error, the file does not exist %s\n" % (filename))
+        if not os.path.isfile(filename):
+            raise IOError("Error, the file does not exist {}\n".format(filename))
     else:
-        raise IOError("Error, incorrect attribute %s\n" % (atrib))
+        raise IOError("Error, incorrect attribute {}\n".format(atrib))
 
     return open(filename, atrib)
 
@@ -128,39 +94,6 @@ def fileOk(_file):
     Checks file exists and is not zero size
     """
     return _file is not None and os.path.isfile(_file) and not os.path.getsize(_file) == 0
-    
-def replaceExtension(filename,extension):
-    """
-    Replace the extension of filename 
-    for the extension given, returns the new filename
-    including the path 
-    extension must be like .ext 
-    """
-    base = os.path.splitext(filename)[0]
-    return base + extension
- 
-def stripExtension(filename):
-    """
-    Remove the extension from a file name
-    :param filename: the file name
-    :type filename: str
-    :returns: the file without the extension
-    """
-    f = filename.rsplit('.', 1)
-    if f[0].find("/") != -1:
-        return f[0].rsplit('/', 1)[1]
-    else:
-        return f[0]
-
-def getExtension(filename):
-    """
-    Gets the extension of a filename
-    :param filename: the file name
-    :type filename: str
-    :returns: the extension of the filename
-    """
-    f = filename.rsplit('.', 1)
-    return f[1]
         
 def getSTARVersion():
     """

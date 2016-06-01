@@ -18,7 +18,8 @@ by typing : st_pipeline_run.py --help\n\n
 """
 
 import sys
-from stpipeline.core.pipeline import *
+import argparse
+from stpipeline.core.pipeline import Pipeline
 
 def main(argv):
     
@@ -45,6 +46,8 @@ def main(argv):
         sys.stderr.write("Error running the pipeline\n")
         sys.stderr.write(str(e))
         sys.exit(1)
+    finally:
+        pipeline.clean_filenames()
         
 if __name__ == "__main__":
     main(sys.argv[1:])

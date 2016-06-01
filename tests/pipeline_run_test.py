@@ -8,28 +8,29 @@ import urllib
 import tempfile
 import multiprocessing
 from subprocess import check_call
-from stpipeline.core.pipeline import *
- 
+from stpipeline.core.pipeline import Pipeline
+import os
+
 class TestPipeline(unittest.TestCase):
  
     @classmethod
     def setUpClass(self):
         # Obtain paths and files.
         testdir = str(os.path.abspath(os.path.dirname(os.path.realpath(__file__))))
-        self.infile_fw = os.path.join(testdir, 'input/arrayjet_1002/testdata_R1.fastq.gz')
-        self.infile_rv = os.path.join(testdir, 'input/arrayjet_1002/testdata_R2.fastq.gz')
+        self.infile_fw = os.path.join(testdir, 'input/arrayjet_1002/testdata_R1.fastq')
+        self.infile_rv = os.path.join(testdir, 'input/arrayjet_1002/testdata_R2.fastq')
         self.annotfile = os.path.join(testdir, 'config/annotations/Homo_sapiens.GRCh38.79_chr19.gtf')
         self.chipfile = os.path.join(testdir, 'config/idfiles/150204_arrayjet_1000L2_probes.txt')
         self.expname = "test"
-   
+        
         # Obtain temp dir
         self.tmpdir = tempfile.mkdtemp(prefix="st_pipeline_test_temp")
-        print "ST Pipeline Test Temporary directory " + self.tmpdir
+        print "ST Pipeline Test Temporary directory {}".format(self.tmpdir)
         self.outdir = tempfile.mkdtemp(prefix="st_pipeline_test_output")
-        print "ST Pipeline Test Temporary output " + self.outdir
+        print "ST Pipeline Test Temporary output {}".format(self.outdir)
         self.error_file = os.path.join(self.tmpdir, 'error.log')
         self.logFile = tempfile.mktemp(prefix="st_pipeline_test_log")
-        print "ST Pipeline Test Log file " + self.logFile
+        print "ST Pipeline Test Log file {}".format(self.logFile)
    
         # Create genome index dirs.
         self.genomedir = os.path.join(self.tmpdir, 'config/genomes/mouse_grcm38')
@@ -70,23 +71,6 @@ class TestPipeline(unittest.TestCase):
         except Exception as e:
             print str(e)
             self.assertTrue(0, "Creating genome index failed \n")
-   
-        # Remove STAR log files 
-        log_std = "Log.std.out"
-        log = "Log.out"
-        log_sj = "SJ.out.tab"
-        log_final = "Log.final.out"
-        log_progress = "Log.progress.out"
-        if os.path.isfile(log_std):
-            os.remove(log_std)
-        if os.path.isfile(log):
-            os.remove(log)
-        if os.path.isfile(log_sj):
-            os.remove(log_sj)
-        if os.path.isfile(log_progress):
-            os.remove(log_progress)
-        if os.path.isfile(log_final):
-            os.remove(log_final)
                   
         # Verify existence of input files
         assert(os.path.exists(self.infile_fw))
@@ -148,31 +132,46 @@ class TestPipeline(unittest.TestCase):
         
     @classmethod
     def tearDownClass(self):
-        return
-        print "ST Pipeline Test Remove temporary output " + self.outdir
+        print "ST Pipeline Test Remove temporary output {}".format(self.outdir)
         for root, dirs, files in os.walk(self.outdir, topdown=False):
             for name in files:
                 os.remove(os.path.join(root, name))
             for name in dirs:
                 os.rmdir(os.path.join(root, name))
-        print "ST Pipeline Test Remove temporary directory " + self.tmpdir
+        print "ST Pipeline Test Remove temporary directory {}".format(self.tmpdir)
         for root, dirs, files in os.walk(self.tmpdir, topdown=False):
             for name in files:
                 os.remove(os.path.join(root, name))
             for name in dirs:
-                os.rmdir(os.path.join(root, name))
+                os.rmdir(os.path.join(root, name))        
+        # Remove STAR log files 
+        log_std = "Log.std.out"
+        log = "Log.out"
+        log_sj = "SJ.out.tab"
+        log_final = "Log.final.out"
+        log_progress = "Log.progress.out"
+        if os.path.isfile(log_std):
+            os.remove(log_std)
+        if os.path.isfile(log):
+            os.remove(log)
+        if os.path.isfile(log_sj):
+            os.remove(log_sj)
+        if os.path.isfile(log_progress):
+            os.remove(log_progress)
+        if os.path.isfile(log_final):
+            os.remove(log_final)
  
     def validateOutputData(self, expName):
         # Verify existence of output files and temp files
         self.assertNotEqual(os.listdir(self.outdir), [], "Output folder is not empty")
         self.assertNotEqual(os.listdir(self.tmpdir), [], "Tmp folder is not empty")
-        barcodesfile = os.path.join(self.outdir, str(self.pipeline.expName) + "_stdata.json")
+        barcodesfile = os.path.join(self.outdir, str(self.pipeline.expName) + "_stdata.tsv")
         readsfile = os.path.join(self.outdir, str(self.pipeline.expName) + "_reads.bed")
         statsfile = os.path.join(self.outdir, str(self.pipeline.expName) + "_qa_stats.json")
-        self.assertTrue(os.path.exists(barcodesfile), "Barcodes JSON file exists")
-        self.assertTrue(os.path.getsize(barcodesfile) > 1024, "Barcordes JSON file is not empty")
-        self.assertTrue(os.path.exists(readsfile), "Reads BED file exists")
-        self.assertTrue(os.path.getsize(readsfile) > 1024, "Reads BED file is not empty")
+        self.assertTrue(os.path.exists(barcodesfile), "ST Data file exists")
+        self.assertTrue(os.path.getsize(barcodesfile) > 1024, "ST Data file is not empty")
+        self.assertTrue(os.path.exists(readsfile), "ST Data BED file exists")
+        self.assertTrue(os.path.getsize(readsfile) > 1024, "ST Data BED file is not empty")
         self.assertTrue(os.path.exists(statsfile), "Stats JSON file exists")
          
     def test_normal_run(self):
@@ -184,6 +183,7 @@ class TestPipeline(unittest.TestCase):
             self.pipeline.createLogger()
             self.pipeline.sanityCheck()
             self.pipeline.run()
+            self.pipeline.clean_filenames()
         except Exception as e:
             print str(e)
             self.assertTrue(0, "Running Pipeline Test failed \n")

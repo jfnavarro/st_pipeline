@@ -8,17 +8,35 @@ do sanity check and ultimately run the pipeline.
 from stpipeline.common.utils import *
 from stpipeline.core.mapping import alignReads, barcodeDemultiplexing, createIndex
 from stpipeline.core.annotation import annotateReads
-from stpipeline.common.fastq_utils import reformatRawReads, hashDemultiplexedReads
+from stpipeline.common.fastq_utils import filterInputReads, hashDemultiplexedReads
 from stpipeline.common.sam_utils import filterMappedReads
 from stpipeline.common.stats import qa_stats
 from stpipeline.common.dataset import createDataset
 from stpipeline.common.saturation import computeSaturation
 from stpipeline.version import version_number
 import logging
-import gzip
 import argparse
 import sys
 import shutil
+import os
+from subprocess import check_call
+
+FILENAMES = {"mapped" : "mapped.bam",
+             "annotated" : "annotated.bam",
+             "contaminated_clean" : "contaminated_clean.fastq",
+             "demultiplexed_prefix" : "demultiplexed",
+             "demultiplexed_matched" : "demultiplexed_matched.fastq",
+             "mapped_filtered" : "mapped_filtered.bam",
+             "quality_trimmed" : "R2_quality_trimmed.fastq",
+             "two_pass_splices" : "SJ.out.tab"}
+
+FILENAMES_DISCARDED = {"mapped_discarded" : "mapping_discarded.fastq",
+                       "contaminated_discarded" : "contaminated.bam",
+                       "demultiplexed_ambiguos" : "demultiplexed_ambiguos.fastq",
+                       "demultiplexed_unmatched" : "demultiplexed_unmatched.fastq",
+                       "demultiplexed_results" : "demultiplexed_results.tsv",
+                       "mapped_filtered_discarded" : "mapped_filtered_discarded.bam",
+                       "quality_trimmed_discarded" : "R2_quality_trimmed_discarded.fastq"}
 
 class Pipeline():
     
@@ -63,7 +81,6 @@ class Pipeline():
         self.remove_polyG_distance = 0
         self.remove_polyC_distance = 0
         self.filter_AT_content = 90
-        self.sam_type = "BAM"
         self.disable_clipping = False
         self.disable_multimap = False
         self.mc_cluster = "naive"
@@ -79,98 +96,70 @@ class Pipeline():
         self.two_pass_mode = False
         self.two_pass_mode_genome = None
         self.strandness = "yes"
-        
+    
+    def clean_filenames(self):
+        """ Just makes sure to remove
+        all temp files
+        """
+        if self.clean:
+            for file_name in FILENAMES.itervalues():
+                safeRemove(file_name)
+        if not self.keep_discarded_files:
+            for file_name in FILENAMES_DISCARDED.itervalues():
+                safeRemove(file_name)
+            
     def sanityCheck(self):
         """ 
         Performs some basic sanity checks on the input parameters
         """
 
-        conds = {"forward_file": fileOk(self.fastq_fw), 
-                 "reverse_file": fileOk(self.fastq_rv), 
-                 "ref_annotation": fileOk(self.ref_annotation), 
-                 "ids_file": fileOk(self.ids),
-                 "ref_mapping": self.ref_map is not None and os.path.isdir(self.ref_map), 
-                 "Exp Name":  self.expName is not None}
-        conds["annotation_extension"] = self.ref_annotation.endswith(".gtf") \
-                                        or self.ref_annotation.endswith(".gff3") \
-                                        or self.ref_annotation.endswith(".gff")
-        conds["annotation_mode"] = self.htseq_mode in \
-        ["union","intersection-nonempty","intersection-strict"]
-        conds["mc_cluster"] = self.mc_cluster in ["naive", "hierarchical"]
-        conds["forward_extension"] = self.fastq_fw.endswith(".fastq") \
-                                     or self.fastq_fw.endswith(".fq") \
-                                     or self.fastq_fw.endswith(".gz")
-        conds["reverse_extension"] = self.fastq_rv.endswith(".fastq") \
-                                     or self.fastq_rv.endswith(".fq") \
-                                     or self.fastq_rv.endswith(".gz")
-        conds["polyA"] = self.remove_polyA_distance >= 0 
-        conds["polyT"] = self.remove_polyT_distance >= 0 
-        conds["polyG"] = self.remove_polyG_distance >= 0
-        conds["polyC"] = self.remove_polyC_distance >= 0
-        conds["barcode_start"] = self.barcode_start >= 0
-        conds["barcode_length"] = self.barcode_length > 0
-        conds["allowed_missed"] = self.allowed_missed >= 0 \
-        and self.allowed_missed < self.barcode_length
-        conds["allowed_kmer"] = self.allowed_kmer >= 0 \
-        and self.allowed_kmer <= self.barcode_length
-        conds["overhang"] = self.overhang >= 0 and self.overhang <= self.barcode_length
-        conds["min_intron_size"] = self.min_intron_size >= 0 \
-        and self.min_intron_size < self.max_intron_size
-        conds["max_intron_size"] = self.max_intron_size > 0
-        conds["max_gap_size"] = self.max_gap_size > 0
-        conds["filter_AT_content"] = self.filter_AT_content >= 0 and self.filter_AT_content <= 100
-        conds["sam_type"] = self.sam_type in ["BAM", "SAM"]
-        conds["strandness"] = self.strandness in ["yes", "no", "reverse"]
-        
+        if not self.ref_annotation.endswith(".gtf") \
+        and not self.ref_annotation.endswith(".gff3") \
+        and not self.ref_annotation.endswith(".gff"):
+            error = "Error parsing parameters.\n" \
+            "Incorrect format for annotation file {}".format(self.ref_annotation)
+            self.logger.error(error)
+            raise RuntimeError(error)
+                
+        if (not self.fastq_fw.endswith(".fastq") \
+        and not self.fastq_fw.endswith(".fq") \
+        and not self.fastq_fw.endswith(".gz")) \
+        or (not self.fastq_rv.endswith(".fastq") \
+        and not self.fastq_rv.endswith(".fq") \
+        and not self.fastq_rv.endswith(".gz")):
+            error = "Error parsing parameters.\n" \
+            "Incorrect format for input files {} {}".format(self.fastq_fw, self.fastq_rv)
+            self.logger.error(error)
+            raise RuntimeError(error)
+                
         if self.two_pass_mode and self.two_pass_mode_genome \
         and not os.path.isfile(self.two_pass_mode_genome):
-            conds["two_pass_mode"] = False
-            
-        # TODO add checks for trimming parameters
-        
-        if self.molecular_barcodes:
-            conds["molecular_barcodes"] = self.mc_end_position > self.mc_start_position
+            error = "Error two pass mode is enabled but --two-pass-mode-genome is empty.\n"
+            self.logger.error(error)
+            raise RuntimeError(error)        
            
-        if self.umi_filter:
+        if self.umi_filter and self.molecular_barcodes:
             # Check template validity
             import re
             regex = "[^ACGTURYSWKMBDHVN]"
-            conds["umi_filter"] = re.search(regex, self.umi_filter_template) is None \
-            and self.molecular_barcodes
+            if re.search(regex, self.umi_filter_template) is not None:
+                error = "Error invalid UMI template given {}.\n".format(self.umi_filter_template)
+                self.logger.error(error)
+                raise RuntimeError(error)                
             
-        if not all(conds.values()):
-            error = "Error starting the pipeline.\n" \
-            "Input file or parameters are incorrect %s" % (str(conds))
-            self.logger.error(error)
-            raise RuntimeError(error)
-
+        # TODO add checks for trimming parameters, demultiplex parameters and UMI parameters
+                
         # Test the presence of the scripts 
         required_scripts = set(['STAR'])
-
         unavailable_scripts = set()
         for script in required_scripts:
             if which_program(script) is None: 
                 unavailable_scripts.add(script)
-         
-        if len(unavailable_scripts) == 0:
-            self.logger.info("All tools present...Starting the pipeline")
-        else:
+        if len(unavailable_scripts) != 0:
             error = "Error starting the pipeline.\n" \
             "Required software not found:\t".join(unavailable_scripts)
             self.logger.error(error)
-            raise RuntimeError(error)
-        
-        # Add scripts versions to QA Stats
-        qa_stats.pipeline_version = version_number
-        qa_stats.mapper_tool = getSTARVersion()
-        # TODO replace this for a reg-exp
-        if qa_stats.mapper_tool.find("Not available") == -1 \
-        and qa_stats.mapper_tool.find("2.5") == -1:
-            error = "Error starting the pipeline. You need STAR 2.5.x or bigger\n"
-            self.logger.error(error)
-            raise RuntimeError(error)            
-        qa_stats.annotation_tool = "htseq-count " + getHTSeqCountVersion()
-        qa_stats.demultiplex_tool = "Taggd " + getTaggdCountVersion()
+            raise RuntimeError(error) 
        
     def createParameters(self, parser):
         """
@@ -273,8 +262,6 @@ class Pipeline():
         parser.add_argument('--filter-AT-content', default=90, metavar="[INT%]", type=int, choices=range(1, 99),
                             help="Discards reads whose number of A and T bases in total are more " \
                             "or equal than the number given in percentage (default: %(default)s)")
-        parser.add_argument('--sam-type', default="BAM", metavar="[STRING]", type=str, choices=["SAM", "BAM"],
-                            help="Type of SAM format for intermediate files (SAM or BAM) (default: %(default)s)")
         parser.add_argument('--disable-multimap', action="store_true", default=False,
                             help="If activated, multiple aligned reads obtained during mapping will be all discarded. " \
                             "Otherwise the highest scored one will be kept")
@@ -367,7 +354,6 @@ class Pipeline():
         self.remove_polyG_distance = int(options.remove_polyG)
         self.remove_polyC_distance = int(options.remove_polyC)
         self.filter_AT_content = int(options.filter_AT_content)
-        self.sam_type = str(options.sam_type)
         self.disable_multimap = options.disable_multimap
         self.disable_clipping = options.disable_clipping
         self.mc_cluster = str(options.mc_cluster)
@@ -387,7 +373,12 @@ class Pipeline():
         import inspect
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
         attributes_filtered = [a for a in attributes if not(a[0].startswith('__') and a[0].endswith('__'))]
+        # Assign general parameters to the qa_stats object
         qa_stats.input_parameters = attributes_filtered
+        qa_stats.annotation_tool = "htseq-count {}".format(getHTSeqCountVersion())
+        qa_stats.demultiplex_tool = "Taggd {}".format(getTaggdCountVersion())
+        qa_stats.pipeline_version = version_number
+        qa_stats.mapper_tool = getSTARVersion()    
         
     def createLogger(self):
         """
@@ -400,95 +391,97 @@ class Pipeline():
             logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
             
         self.logger = logging.getLogger(self.__class__.LogName)
-        self.logger.info("ST Pipeline " + str(version_number))
+        self.logger.info("ST Pipeline {}".format(version_number))
         
         # Some info
-        self.logger.info("Output directory : " + self.output_folder)
-        self.logger.info("Temp directory : " + self.temp_folder)
-        self.logger.info("Experiment : " + str(self.expName))
-        self.logger.info("Forward reads file : " + str(self.fastq_fw))
-        self.logger.info("Reverse reads file : " + str(self.fastq_rv))
-        self.logger.info("Reference mapping file : " + str(self.ref_map))
-        self.logger.info("Reference annotation file : " + str(self.ref_annotation))
+        self.logger.info("Output directory: {}".format(self.output_folder))
+        self.logger.info("Temp directory: {}".format(self.temp_folder))
+        self.logger.info("Experiment name: {}".format(self.expName))
+        self.logger.info("Forward input file: {}".format(self.fastq_fw))
+        self.logger.info("Reverse input file: {}".format(self.fastq_rv))
+        self.logger.info("Reference mapping index folder: {}".format(self.ref_map))
+        self.logger.info("Reference annotation file: {}".format(self.ref_annotation))
         if self.contaminant_index is not None:
-            self.logger.info("Using contamination filter with " + str(self.contaminant_index))
-        self.logger.info("Nodes : " + str(self.threads))
-        self.logger.info("Ids file : " + str(self.ids))
-        self.logger.info("TaggD allowed mismatches " + str(self.allowed_missed))
-        self.logger.info("TaggD barcode length " + str(self.barcode_length))
-        self.logger.info("TaggD kmer size " + str(self.allowed_kmer))
-        self.logger.info("TaggD overhang " + str(self.overhang))
-        self.logger.info("Mapping reverse trimming " + str(self.trimming_rv))
-        self.logger.info("Mapping inverse reverse trimming " + str(self.inverse_trimming_rv))
-        self.logger.info("Mapper : STAR")
-        self.logger.info("Annotation Tool : HTSeq")
-        self.logger.info("Annotation mode " + str(self.htseq_mode))
-        self.logger.info("Annotation strandness " + str(self.strandness))
-        self.logger.info("Filter of AT content in reads : " + str(self.filter_AT_content))
-        self.logger.info("Sam type : " + str(self.sam_type))
+            self.logger.info("Using contamination filter: {}".format(self.contaminant_index))
+        self.logger.info("CPU Nodes: {}".format(self.threads))
+        self.logger.info("Ids file: {}".format(self.ids))
+        self.logger.info("TaggD allowed mismatches: {}".format(self.allowed_missed))
+        self.logger.info("TaggD barcode length: {}".format(self.barcode_length))
+        self.logger.info("TaggD kmer size: {}".format(self.allowed_kmer))
+        self.logger.info("TaggD overhang: {}".format(self.overhang))
+        self.logger.info("Mapping reverse trimming: {}".format(self.trimming_rv))
+        self.logger.info("Mapping inverse reverse trimming: {}".format(self.inverse_trimming_rv))
+        self.logger.info("Mapping tool: STAR")
+        self.logger.info("Annotation tool: HTSeq")
+        self.logger.info("Annotation mode: {}".format(self.htseq_mode))
+        self.logger.info("Annotation strandness {}".format(self.strandness))
+        self.logger.info("Filter of AT content in reads: {}".format(self.filter_AT_content))
         if self.disable_clipping:
             self.logger.info("Not allowing soft clipping when mapping")
         if self.disable_multimap:
-            self.logger.info("Not allowing multiple alignments")
-        self.logger.info("Mapping minimum intron size " + str(self.min_intron_size))
-        self.logger.info("Mapping maximum intron size " + str(self.max_intron_size))
-        self.logger.info("Mapping maximum gap size " + str(self.max_gap_size))
+            self.logger.info("Not allowing multiple alignments when mapping")
+        self.logger.info("Mapping minimum intron size: {}".format(self.min_intron_size))
+        self.logger.info("Mapping maximum intron size: {}".format(self.max_intron_size))
+        self.logger.info("Mapping maximum gap size: {}".format(self.max_gap_size))
         if self.compute_saturation:
             self.logger.info("Computing saturation curve")
         if self.include_non_annotated:
             self.logger.info("Including non annotated reads")
         if self.molecular_barcodes:
-            self.logger.info("Using Molecular Barcodes")
-            self.logger.info("Molecular Barcode start position " + str(self.mc_start_position))
-            self.logger.info("Molecular Barcode end position " + str(self.mc_end_position))
-            self.logger.info("Molecular Barcode min cluster size " + str(self.min_cluster_size))
-            self.logger.info("Molecular Barcode allowed mismatches " + str(self.mc_allowed_mismatches))
-            self.logger.info("Molecular Barcode clustering algorithm " + str(self.mc_cluster))
+            self.logger.info("Using Unique Molecular Indentifiers to remove duplicates")
+            self.logger.info("Using Unique Molecular Indentifiers start position: {}".format(self.mc_start_position))
+            self.logger.info("Using Unique Molecular Indentifiersend position: {}".format(self.mc_end_position))
+            self.logger.info("Using Unique Molecular Indentifiers min cluster size: {}".format(self.min_cluster_size))
+            self.logger.info("Using Unique Molecular Indentifiers allowed mismatches: {}".format(self.mc_allowed_mismatches))
+            self.logger.info("Using Unique Molecular Indentifiers clustering algorithm: {}".format(self.mc_cluster))
             if self.umi_filter:
-                self.logger.info("Molecular Barcodes using filter " + str(self.umi_filter_template))    
+                self.logger.info("Molecular Barcodes using filter: {}".format(self.umi_filter_template))    
         if self.remove_polyA_distance > 0:
-            self.logger.info("Removing polyA adaptors of a length at least " + str(self.remove_polyA_distance))                        
+            self.logger.info("Removing polyA adaptors of a length of at least: {}".format(self.remove_polyA_distance))                        
         if self.remove_polyT_distance > 0:
-            self.logger.info("Removing polyT adaptors of a length at least " + str(self.remove_polyT_distance))
+            self.logger.info("Removing polyT adaptors of a length of at least: {}".format(self.remove_polyT_distance))
         if self.remove_polyG_distance > 0:
-            self.logger.info("Removing polyG adaptors of a length at least " + str(self.remove_polyG_distance))
+            self.logger.info("Removing polyG adaptors of a length of at least: {}".format(self.remove_polyG_distance))
         if self.remove_polyC_distance > 0:
-            self.logger.info("Removing polyC adaptors of a length at least " + str(self.remove_polyC_distance))
+            self.logger.info("Removing polyC adaptors of a length of at least: {}".format(self.remove_polyC_distance))
         if self.low_memory:
-            self.logger.info("Using the low memory option")
+            self.logger.info("Using a SQL based container to save memory")
         if self.two_pass_mode :
-            self.logger.info("Using the STAR 2 pass mode with genome " + str(self.two_pass_mode_genome))
+            self.logger.info("Using the STAR 2-pass mode with the genome: {}".format(self.two_pass_mode_genome))
         
     def run(self):
         """ 
         Runs the whole pipeline given the parameters present
         raises exections if something went wrong
         """
+        # First adjust the intermediate files with the temp_folder path
+        if self.temp_folder:
+            for key, value in FILENAMES.iteritems():
+                FILENAMES[key] = os.path.join(self.temp_folder, value)
+            for key, value in FILENAMES.iteritems():
+                FILENAMES_DISCARDED[key] = os.path.join(self.temp_folder, value)
+                      
+        # Get the starting time to compute total execution time
         globaltime = TimeStamper()
 
         #=================================================================
         # START PIPELINE
         #=================================================================
         start_exe_time = globaltime.getTimestamp()
-        self.logger.info("Starting the pipeline: %s" % str(start_exe_time))
+        self.logger.info("Starting the pipeline: {}".format(start_exe_time))
 
         # Check if input fastq files are gzipped
-        # TODO it is faster to make a system call with gunzip
-        # TODO add support to bzip 
-        if self.fastq_fw.endswith(".gz"):
-            temp_fastq_fw = os.path.join(self.temp_folder, "unzipped_fastq_fw.fastq")
-            with gzip.open(self.fastq_fw, "rb") as filehandler_read:
-                with open(temp_fastq_fw, "w") as filehandler_write:
-                    for line in filehandler_read:
-                        filehandler_write.write(line)
-            self.fastq_fw = temp_fastq_fw
-        if self.fastq_rv.endswith(".gz"):
-            temp_fastq_rv = os.path.join(self.temp_folder, "unzipped_fastq_rv.fastq")
-            with gzip.open(self.fastq_rv, "rb") as filehandler_read:
-                with open(temp_fastq_rv, "w") as filehandler_write:
-                    for line in filehandler_read:
-                        filehandler_write.write(line)
-            self.fastq_rv = temp_fastq_rv
+        # NOTE the python library for gzip files is very slow
+        try:
+            if self.fastq_fw.endswith(".gz"):
+                check_call(['gunzip', self.fastq_fw])
+                self.fastq_fw = os.path.splitext(self.fastq_fw)[0]
+            if self.fastq_rv.endswith(".gz"):
+                check_call(['gunzip', self.fastq_rv])
+                self.fastq_rv = os.path.splitext(self.fastq_rv)[0]
+        except Exception as e:
+            self.logger.error("Error gunziping input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
+            raise e
               
         #=================================================================
         # STEP: FILTERING 
@@ -497,28 +490,28 @@ class Pipeline():
         # NOTE after the trimming :
         #    - discarded reads will be replaced by Ns
         #    - The trimming is only performed in the reverse reads
-        self.logger.info("Start Quality Filtering raw reads %s" % str(globaltime.getTimestamp()))
-        try:
-            fastq_rv_trimmed = reformatRawReads(self.fastq_fw,
-                                                self.fastq_rv,
-                                                self.barcode_start,
-                                                self.barcode_length,
-                                                self.filter_AT_content,
-                                                self.molecular_barcodes,
-                                                self.mc_start_position,
-                                                self.mc_end_position,
-                                                self.trimming_rv,
-                                                self.min_quality_trimming,
-                                                self.min_length_trimming,
-                                                self.remove_polyA_distance,
-                                                self.remove_polyT_distance,
-                                                self.remove_polyG_distance,
-                                                self.remove_polyC_distance,
-                                                self.qual64,
-                                                self.temp_folder,
-                                                self.keep_discarded_files,
-                                                self.umi_filter,
-                                                self.umi_filter_template)
+        self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
+        try: 
+            filterInputReads(self.fastq_fw,
+                             self.fastq_rv,
+                             FILENAMES["quality_trimmed"],
+                             FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
+                             self.barcode_start,
+                             self.barcode_length,
+                             self.filter_AT_content,
+                             self.molecular_barcodes,
+                             self.mc_start_position,
+                             self.mc_end_position,
+                             self.trimming_rv,
+                             self.min_quality_trimming,
+                             self.min_length_trimming,
+                             self.remove_polyA_distance,
+                             self.remove_polyT_distance,
+                             self.remove_polyG_distance,
+                             self.remove_polyC_distance,
+                             self.qual64,
+                             self.umi_filter,
+                             self.umi_filter_template)
         except Exception:
             raise
           
@@ -526,106 +519,94 @@ class Pipeline():
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. typically bacterial rRNA
         #=================================================================
         if self.contaminant_index:
-            self.logger.info("rRNA filter")
             # To remove contaminants sequence we align the reads to the contaminant genome
             # and keep the un-mapped reads
-            old_rv_trimmed = fastq_rv_trimmed
-            self.logger.info("Starting rRNA filter alignment %s" % str(globaltime.getTimestamp()))
+            self.logger.info("Starting contaminant filter alignment {}".format(globaltime.getTimestamp()))
             try:
-                contaminated_sam, fastq_rv_trimmed = alignReads(fastq_rv_trimmed,
-                                                                self.contaminant_index,
-                                                                self.trimming_rv,
-                                                                self.threads,
-                                                                "rRNA_filter",
-                                                                self.min_intron_size,
-                                                                self.max_intron_size,
-                                                                self.max_gap_size,
-                                                                False, # disable splice variants alignments
-                                                                self.sam_type,
-                                                                False, # enable multimap in rRNA filter
-                                                                True, # disable softclipping in rRNA filter
-                                                                0, # do not use the inverse filter for now
-                                                                self.temp_folder)
+                alignReads(FILENAMES["quality_trimmed"], # input
+                           self.contaminant_index,
+                           FILENAMES_DISCARDED["contaminated_discarded"], # output mapped
+                           FILENAMES["contaminated_clean"], # output un-mapped
+                           self.temp_folder,
+                           self.trimming_rv,
+                           self.threads,
+                           self.min_intron_size,
+                           self.max_intron_size,
+                           self.max_gap_size,
+                           False, # disable splice variants alignments
+                           False, # enable multimap in rRNA filter
+                           True, # disable softclipping in rRNA filter
+                           0, # do not use the inverse filter for now
+                           )
             except Exception:
                 raise
-            finally:
-                if self.clean: safeRemove(old_rv_trimmed)
-                if not self.keep_discarded_files: safeRemove(contaminated_sam)
             
         #=================================================================
         # STEP: Maps against the genome using STAR
         #=================================================================
-        self.logger.info("Genome mapping")
-        self.logger.info("Starting genome alignment %s" % str(globaltime.getTimestamp()))
+        self.logger.info("Starting genome alignment {}".format(globaltime.getTimestamp()))
+        input_reads = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed"]
         try:
-            sam_mapped, unmapped_reverse = alignReads(fastq_rv_trimmed,
-                                                      self.ref_map,
-                                                      self.trimming_rv,
-                                                      self.threads,
-                                                      "alignment",
-                                                      self.min_intron_size,
-                                                      self.max_intron_size,
-                                                      self.max_gap_size,
-                                                      True, # enable splice variants alignments
-                                                      self.sam_type,
-                                                      self.disable_multimap,
-                                                      self.disable_clipping,
-                                                      self.inverse_trimming_rv,
-                                                      self.temp_folder)
+            alignReads(input_reads,
+                       self.ref_map,
+                       FILENAMES["mapped"],
+                       FILENAMES_DISCARDED["mapped_discarded"],
+                       self.temp_folder,
+                       self.trimming_rv,
+                       self.threads,
+                       self.min_intron_size,
+                       self.max_intron_size,
+                       self.max_gap_size,
+                       True, # enable splice variants alignments
+                       self.disable_multimap,
+                       self.disable_clipping,
+                       self.inverse_trimming_rv)
         except Exception:
             raise
-        finally:
-            if self.clean: safeRemove(fastq_rv_trimmed)
-            if not self.keep_discarded_files: safeRemove(unmapped_reverse)
         
         # 2 PASS mode, first create new genome index and then re-align
         if self.two_pass_mode:
-            self.logger.info("2 Pass mode creating index %s" % str(globaltime.getTimestamp()))
-            safeRemove(sam_mapped)
-            safeRemove(unmapped_reverse)
+            self.logger.info("STAR 2 Pass mode creating index {}".format(globaltime.getTimestamp()))
             try:
                 tmp_index = createIndex(self.two_pass_mode_genome,
+                                        FILENAMES["two_pass_splices"],
                                         self.threads,
                                         self.temp_folder)
 
-                self.logger.info("2 Pass mode re-alignment %s" % str(globaltime.getTimestamp()))
-                sam_mapped, unmapped_reverse = alignReads(fastq_rv_trimmed,
-                                                          tmp_index,
-                                                          self.trimming_rv,
-                                                          self.threads,
-                                                          "alignment",
-                                                          self.min_intron_size,
-                                                          self.max_intron_size,
-                                                          self.max_gap_size,
-                                                          True, # enable splice variants alignments
-                                                          self.sam_type,
-                                                          self.disable_multimap,
-                                                          self.disable_clipping,
-                                                          self.inverse_trimming_rv,
-                                                          self.temp_folder)
+                self.logger.info("STAR 2 Pass mode re-alignment {}".format(globaltime.getTimestamp()))
+                alignReads(input_reads,
+                           tmp_index,
+                           FILENAMES["mapped"],
+                           FILENAMES_DISCARDED["mapped_discarded"],
+                           self.temp_folder,
+                           self.trimming_rv,
+                           self.threads,
+                           self.min_intron_size,
+                           self.max_intron_size,
+                           self.max_gap_size,
+                           True, # enable splice variants alignments
+                           self.disable_multimap,
+                           self.disable_clipping,
+                           self.inverse_trimming_rv)
             except Exception:
                 raise
             finally:
-                safeRemove(os.path.join(self.temp_folder, "SJ.out.tab"))
                 if os.path.exists(tmp_index): shutil.rmtree(tmp_index)
-                if self.clean: safeRemove(fastq_rv_trimmed)
-                if not self.keep_discarded_files: safeRemove(unmapped_reverse)
             
         #=================================================================
         # STEP: DEMULTIPLEX READS Map against the barcodes
         #=================================================================
-        self.logger.info("Starting barcode demultiplexing %s" \
-                         % str(globaltime.getTimestamp()))
+        self.logger.info("Starting barcode demultiplexing {}".format(globaltime.getTimestamp()))
         try:
-            fastq_fw_demultiplexed = barcodeDemultiplexing(self.fastq_fw,
-                                                           self.ids,
-                                                           self.allowed_missed,
-                                                           self.allowed_kmer,
-                                                           self.barcode_start,
-                                                           self.overhang,
-                                                           self.threads,
-                                                           self.temp_folder,
-                                                           self.keep_discarded_files)
+            barcodeDemultiplexing(self.fastq_fw,
+                                  self.ids,
+                                  self.allowed_missed,
+                                  self.allowed_kmer,
+                                  self.barcode_start,
+                                  self.overhang,
+                                  self.threads,
+                                  FILENAMES["demultiplexed_prefix"], # Prefix for output files
+                                  self.keep_discarded_files)
         except Exception:
             raise
         
@@ -633,50 +614,42 @@ class Pipeline():
         # STEP: OBTAIN HASH OF DEMULTIPLEXED READS
         # Hash demultiplexed reads to obtain a hash of read_name => (barcode,x,y,umi) 
         #=================================================================
-        self.logger.info("Parsing demultiplexed reads %s" % str(globaltime.getTimestamp()))
-        hash_reads = hashDemultiplexedReads(fastq_fw_demultiplexed, 
+        self.logger.info("Parsing demultiplexed reads {}".format(globaltime.getTimestamp()))
+        hash_reads = hashDemultiplexedReads(FILENAMES["demultiplexed_matched"], 
                                             self.molecular_barcodes, 
                                             self.mc_start_position,
                                             self.mc_end_position,
                                             self.low_memory)
-        if self.clean: safeRemove(fastq_fw_demultiplexed)
         
         #================================================================
         # STEP: filters mapped reads and add the (Barcode,x,y,umi) as SAM tags
         #================================================================
-        self.logger.info("Starting genome alignment processing unmapped reads %s" \
-                         % str(globaltime.getTimestamp()))
+        self.logger.info("Starting processing aligned reads {}".format(globaltime.getTimestamp()))
         try:
-            sam_mapped_clean = filterMappedReads(sam_mapped,
-                                                 hash_reads,
-                                                 self.min_length_trimming,
-                                                 self.temp_folder, 
-                                                 self.keep_discarded_files)
+            filterMappedReads(FILENAMES["mapped"],
+                              hash_reads,
+                              FILENAMES["mapped_filtered"],
+                              FILENAMES_DISCARDED["mapped_filtered_discarded"] if self.keep_discarded_files else None,
+                              self.min_length_trimming)
         except Exception:
             raise
         finally:
-            if self.clean: safeRemove(sam_mapped)
-            if self.low_memory: 
-                hash_reads.close() 
-            else: 
-                del hash_reads
+            if self.low_memory: hash_reads.close() 
                 
         #=================================================================
         # STEP: annotate using htseq count
         #=================================================================
-        self.logger.info("Starting annotation %s" % str(globaltime.getTimestamp()))
+        self.logger.info("Starting annotation {}".format(globaltime.getTimestamp()))
         try:
-            annotatedFilteredFile = annotateReads(sam_mapped_clean,
-                                                  self.ref_annotation,
-                                                  self.htseq_mode,
-                                                  self.strandness,
-                                                  self.htseq_no_ambiguous,
-                                                  self.include_non_annotated,
-                                                  self.temp_folder)
+            annotateReads(FILENAMES["mapped_filtered"],
+                          self.ref_annotation,
+                          FILENAMES["annotated"],
+                          self.htseq_mode,
+                          self.strandness,
+                          self.htseq_no_ambiguous,
+                          self.include_non_annotated)
         except Exception:
             raise
-        finally:
-            if self.clean: safeRemove(sam_mapped_clean) 
 
         #=================================================================
         # STEP: compute saturation (Optional
@@ -685,16 +658,15 @@ class Pipeline():
         # the fastest way is to get that information from the stats object
         if self.compute_saturation:
             annotated_reads = qa_stats.reads_after_annotation
-            self.logger.info("Starting computing saturation points %s" % str(globaltime.getTimestamp()))
+            self.logger.info("Starting computing saturation points {}".format(globaltime.getTimestamp()))
             try:
                 computeSaturation(annotated_reads,
-                                  annotatedFilteredFile,
+                                  FILENAMES["annotated"],
                                   self.molecular_barcodes,
                                   self.mc_cluster,
                                   self.mc_allowed_mismatches,
                                   self.min_cluster_size,
                                   self.expName,
-                                  self.low_memory,
                                   self.temp_folder)
             except Exception:
                 raise
@@ -702,22 +674,19 @@ class Pipeline():
         #=================================================================
         # STEP: Create dataset and remove duplicates
         #=================================================================
-        self.logger.info("Starting creating dataset %s" % str(globaltime.getTimestamp()))
+        self.logger.info("Starting creating dataset {}".format(globaltime.getTimestamp()))
         try:
-            createDataset(annotatedFilteredFile,
-                          qa_stats, # Pass as reference
+            createDataset(FILENAMES["annotated"],
+                          qa_stats, # Passed as reference
                           self.molecular_barcodes,
                           self.mc_cluster,
                           self.mc_allowed_mismatches,
                           self.min_cluster_size,
                           self.output_folder,
                           self.expName,
-                          True, # Verbose
-                          self.low_memory)
+                          True) # Verbose
         except Exception:
             raise
-        finally:
-            if self.clean: safeRemove(annotatedFilteredFile)
 
         #=================================================================
         # END PIPELINE
@@ -727,4 +696,4 @@ class Pipeline():
         
         finish_exe_time = globaltime.getTimestamp()
         total_exe_time = finish_exe_time - start_exe_time
-        self.logger.info("Total Execution Time: %s" % str(total_exe_time))
+        self.logger.info("Total Execution Time: {}".format(total_exe_time))

@@ -5,7 +5,7 @@ most of the options can be passed as arguments
 import logging
 import os
 import pysam
-from stpipeline.common.utils import getExtension, fileOk
+from stpipeline.common.utils import fileOk
 from stpipeline.common.stats import qa_stats
 import itertools
 import HTSeq
@@ -239,14 +239,14 @@ def count_reads_in_features(sam_filename,
 
 def annotateReads(mappedReads, 
                   gtfFile,
+                  outputFile,
                   mode,
                   strandness="reverse",
                   htseq_no_ambiguous=True, 
-                  include_non_annotated=False, 
-                  outputFolder=None):
+                  include_non_annotated=False):
     """
-    Annotate the a file with mapped reads (SAM/BAM) using htseq-count tool and returns 
-    the annotated records in SAM/BAM format
+    Annotate the a file with mapped reads (SAM/BAM) using htseq-count tool 
+    and writes the records to the file given.
     :param mappedReads: path to a SAM/BAM file with mapped reads sorted by coordinate
     :param gtfFile: path to an annotation file in GTF format
     :param qa_stats: the Stats global object to store statistics
@@ -254,29 +254,28 @@ def annotateReads(mappedReads,
     :param strandness: the type of strandness to use when annotating
     :param htseq_no_ambiguous: true if we want to discard ambiguous annotations
     :param include_non_annotated: true if we want to include non annotated reads as Na in the output
-    :param outputFolder: true if we want to place the output file in a given folder
+    :param outputFile: the path to the output file
     :type mappedReads: str
     :type gtfFile: str
     :type mode: str
     :type strandness: str
     :type htseq_no_ambiguos: boolean
     :param include_non_annotated: boolean
-    :param outputFolder: boolean
-    :returns: the path to the SAM/BAM file with the annotated records
-    :raises: RuntimeError
+    :param outputFile: str
+    :raises: RuntimeError, ValueError
     """
     
     logger = logging.getLogger("STPipeline")
     
-    sam_type = getExtension(mappedReads).lower()
-    outputFile = 'annotated.' + sam_type
-    if outputFolder is not None and os.path.isdir(outputFolder):
-        outputFile = os.path.join(outputFolder, outputFile)
-
+    if not os.path.isfile(mappedReads):
+        error = "Error, input file not present {}\n".format(mappedReads)
+        logger.error(error)
+        raise RuntimeError(error)
+    
     try:
         annotated = count_reads_in_features(mappedReads,
                                             gtfFile,
-                                            sam_type,
+                                            "bam", # Type BAM for files
                                             "pos", # Order pos or name
                                             strandness, # Strand yes/no/reverse
                                             mode, # intersection_nonempty, union, intersection_strict
@@ -293,10 +292,9 @@ def annotateReads(mappedReads,
         raise e
     
     if not fileOk(outputFile):
-        error = "Error during annotation. Output file not present %s\n" % (outputFile)
+        error = "Error during annotation. Output file not present {}\n".format(outputFile)
         logger.error(error)
         raise RuntimeError(error)
     
-    logger.info("Annotated reads: %s" % annotated)
+    logger.info("Annotated reads: {}".format(annotated))
     qa_stats.reads_after_annotation = annotated
-    return outputFile

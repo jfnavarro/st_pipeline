@@ -21,6 +21,7 @@ def extractMolecularBarcodes(reads, mc_start_position, mc_end_position):
     :type mc_start_position: integer
     :type mc_end_position: integer
     :return: a list of tuples
+    :rtype: list
     """
     assert(mc_end_position > mc_start_position and mc_start_position >= 0)
     # Create a list with the molecular barcodes and a hash with the occurrences
@@ -60,6 +61,7 @@ def countMolecularBarcodesClustersHierarchical(molecular_barcodes,
     :type min_cluser_size: integer
     :type method: str 
     :return: a list of unique reads
+    :rtype: list
     """
     # linkage will not work for distance matrices of 1x1 or 2x2 so for these rare cases
     # we use the naive clustering
@@ -108,6 +110,7 @@ def countMolecularBarcodesClustersNaive(molecular_barcodes,
     :type allowed_mismatches: integer
     :type min_cluser_size: integer
     :return: a list of unique reads
+    :rtype: list
     """
     clusters_dict = {}
     nclusters = 0

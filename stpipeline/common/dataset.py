@@ -7,6 +7,7 @@ formats
 import subprocess
 from subprocess import CalledProcessError
 import logging
+import os
 
 def createDataset(input_file,
                   qa_stats,
@@ -16,8 +17,7 @@ def createDataset(input_file,
                   min_cluster_size=2,
                   output_folder=None,
                   output_template=None,
-                  verbose=True,
-                  low_memory=False):
+                  verbose=True):
     """
     The script createDataset.py parses reads in SAM/BAM format
     that had been annotated and demultiplexed (containing spatial
@@ -36,7 +36,6 @@ def createDataset(input_file,
     :param output_folder: path to place the output files
     :param output_template: the name of the dataset
     :param verbose: True if we can to collect the stats in the logger
-    :param low_memory: True if we want to run a slower but more memory efficient algorithm
     :type input_file: str
     :type molecular_barcodes: bool
     :type allowed_mismatches: integer
@@ -44,11 +43,15 @@ def createDataset(input_file,
     :type output_folder: str
     :type output_template: str
     :type verbose: bool
-    :type low_memory: bool
     :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
     logger = logging.getLogger("STPipeline")
     
+    if not os.path.isfile(input_file):
+        error = "Error, input file not present {}\n".format(input_file)
+        logger.error(error)
+        raise RuntimeError(error)
+       
     args = ['createDataset.py', '--input', str(input_file)]
         
     if molecular_barcodes:
@@ -59,7 +62,6 @@ def createDataset(input_file,
             
     if output_folder: args += ['--output-folder', output_folder]
     if output_template: args += ['--output-file-template', output_template]
-    if low_memory: args += ['--low-memory']
          
     try:
         proc = subprocess.Popen([str(i) for i in args], 
@@ -78,7 +80,7 @@ def createDataset(input_file,
         
     if len(errmsg) > 0:
         error = "Error creating dataset.\n" \
-        "createDataset.py outputted error messages.\n%s\n%s\n" % (stdout, errmsg)
+        "createDataset.py outputted error messages.\n{}\n{}\n".format(stdout, errmsg)
         logger.error(error)
         raise RuntimeError(error)    
               
