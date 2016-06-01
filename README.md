@@ -22,6 +22,7 @@ Basically what the ST pipeline does is :
 	- Remove artifacts (PolyT, PolyA, PolyG and PolyC)
 	- Check for AT content
 	- Discard reads with a minimum number of bases of that failed any of the checks above
+- Contamimant filter (Optional)
 - Mapping with STAR (only read 2)
 - Demultiplexing with taggd (https://github.com/JoelSjostrand/taggd) (only read 1)
 - Keep reads (read 2) that contain a valid barcode and are correctly mapped. 
@@ -31,9 +32,10 @@ Basically what the ST pipeline does is :
 
 You can see a graphical more detailed description of the workflow in the documents workflow.pdf and workflow_extended.pdf
 
-The output will be a JSON file containing
-the aggregated transcripts (spot coordinates, gene and count) and a BED file containing the transcripts (Read name, coordinate, gene, etc..)
-The ST pipeline will also output a log file and a stats file with useful information.
+The output will be a data frame file with the counts (genes as columns, spots as rows),
+a BED file containing the transcripts (Read name, coordinate, gene, etc..), and a JSON
+file with usefl stats.
+The ST pipeline will also output a log file with useful information.
 
 **Installation**
 
