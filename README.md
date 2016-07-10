@@ -66,7 +66,7 @@ An example run would be
 
 **License**
 
-The ST pipeline is open source under the BSD license which means that you can use it, change it and re-distribute but you must always refer to our license (see LICENSE and AUTHORS).
+The ST pipeline is open source under the MIT license which means that you can use it, change it and re-distribute but you must always refer to our license (see LICENSE and AUTHORS).
 
 **Dependencies** 
 
