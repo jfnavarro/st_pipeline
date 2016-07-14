@@ -11,10 +11,7 @@ before_install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  - wget https://github.com/alexdobin/STAR/archive/STAR_2.5.2a.tar.gz
-  - tar -xzf STAR_2.5.2a.tar.gz
-  - cd STAR_2.5.2a
-  - make STAR
+  - wget https://github.com/alexdobin/STAR/blob/master/bin/Linux_x86_64/STAR
   - cp STAR $HOME/miniconda/bin
 
 install:
