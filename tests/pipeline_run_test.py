@@ -45,10 +45,8 @@ class TestPipeline(unittest.TestCase):
             print "ST Pipeline Test Downloading genome files..."
             genomefasta = os.path.join(self.genomedir, "human_grcm38_chromosome19.fasta")
             genomefastagz = os.path.join(self.genomedir, "human_grcm38_chromosome19.fasta.gz")
-            (x,y) = urllib.urlretrieve ("ftp://ftp.ensembl.org/pub/release-79/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.19.fa.gz", 
+            urllib.urlretrieve ("ftp://ftp.ensembl.org/pub/release-79/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.19.fa.gz", 
                                 genomefastagz)
-            print x
-            print y
             print genomefastagz
             check_call(['gunzip', genomefastagz])
         except Exception as e:
