@@ -112,7 +112,8 @@ def alignReads(reverse_reads,
                use_splice_juntions=True,
                disable_multimap=False,
                diable_softclipping=False,
-               invTrimReverse=0):
+               invTrimReverse=0,
+               sortedBAMOutput=True):
     """
     This function will perform a sequence alignment using STAR.
     Mapped and unmapped reads are written to the paths given as
@@ -132,6 +133,7 @@ def alignReads(reverse_reads,
     :param disable_multimap: if True no multiple alignments will be allowed
     :param diable_softclipping: it True no local alignment allowed
     :param invTrimReverse: number of bases to trim in the 5' of the read2
+    :param sortedBAMOutput: True if the BAM output must be sorted
     :type reverse_reads: str
     :type ref_map: str
     :type outputFile: str
@@ -147,6 +149,7 @@ def alignReads(reverse_reads,
     :type disable_multimap: bool
     :type diable_softclipping: bool
     :type invTrimReverse: int
+    :type sortedBAMOutput: bool
     :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
     logger = logging.getLogger("STPipeline")
@@ -157,7 +160,7 @@ def alignReads(reverse_reads,
         raise RuntimeError(error)
     
     # STAR has predefined output names for the files
-    tmpOutputFile = "Aligned.sortedByCoord.out.bam" 
+    tmpOutputFile = "Aligned.sortedByCoord.out.bam" if sortedBAMOutput else "Aligned.out.bam"
     tmpOutputFileDiscarded = "Unmapped.out.mate1"
     log_std = "Log.std.out"
     log = "Log.out"
@@ -176,35 +179,38 @@ def alignReads(reverse_reads,
     
     # Options
     # outFilterType(BySJout) this will keep only reads 
-    # that contains junctions present in SJ.out.tab
+    #     that contains junctions present in SJ.out.tab
     # outSamOrder(Paired) one mate after the other 
     # outSAMprimaryFlag(OneBestScore) only one alignment with the best score is primary
-    # outFilterMultimapNmax = read alignments will be output only if the read maps fewer than this value
+    # outFilterMultimapNmax 
+    #     read alignments will be output only if the read maps fewer than this value
     # outFilterMismatchNmax = alignment will be output only if 
-    # it has fewer mismatches than this value
+    #     it has fewer mismatches than this value
     # outFilterMismatchNoverLmax = alignment will be output only if 
-    # its ratio of mismatches to *mapped* length is less than this value
+    #     its ratio of mismatches to *mapped* length is less than this value
     # alignIntronMin minimum intron size: genomic gap is considered intron 
-    # if its length>=alignIntronMin, otherwise it is considered Deletion
+    #     if its length>=alignIntronMin, otherwise it is considered Deletion
     # alignIntronMax maximum intron size, if 0, max intron size will be 
-    # determined by (2 to the power of winBinNbits)*winAnchorDistNbins
+    #     determined by (2 to the power of winBinNbits)*winAnchorDistNbins
     # alignMatesGapMax maximum gap between two mates, if 0, max intron gap will 
-    # be determined by (2 to the power of winBinNbits)*winAnchorDistNbins
+    #     be determined by (2 to the power of winBinNbits)*winAnchorDistNbins
     # alignEndsType Local standard local alignment with soft-clipping allowed EndToEnd: 
-    # force end-to-end read alignment, do not soft-clip
+    #     force end-to-end read alignment, do not soft-clip
     # chimSegmentMin if >0 To switch on detection of chimeric (fusion) alignments
     # --outMultimapperOrder Random multimap are written in Random order
     # --outSAMmultNmax Number of multimap that we want to output 
     # put to 1 to not include multiple mappings (default 10)
+    
     multi_map_number = 1 if disable_multimap else 10
     alignment_mode = "EndToEnd" if diable_softclipping else "Local"
     sjdb_overhang = 100 if use_splice_juntions else 0
+    bam_sorting = "SortedByCoordinate" if sortedBAMOutput else "Unsorted"
     
     core_flags = ["--runThreadN", str(max(cores, 1))]
     trim_flags = ["--clip5pNbases", trimReverse, 
                   "--clip3pNbases", invTrimReverse]
     io_flags   = ["--outFilterType", "Normal", 
-                  "--outSAMtype", "BAM", "SortedByCoordinate", # or Usorted (name)
+                  "--outSAMtype", "BAM", bam_sorting, 
                   "--alignEndsType", alignment_mode, 
                   "--outSAMunmapped", "None", # unmapped reads not included in main output
                   "--outSAMorder", "Paired",    

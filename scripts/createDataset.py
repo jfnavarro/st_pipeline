@@ -26,7 +26,7 @@ from collections import defaultdict
 import pandas as pd
 from stpipeline.common.clustering import countMolecularBarcodesClustersHierarchical, countMolecularBarcodesClustersNaive
 
-#TODO this function takes too much memory, optimize it. (Maybe Cython)
+#TODO this function uses too much memory, optimize it. (Maybe Cython)
 def parseUniqueEvents(filename, molecular_barcodes=False):
     """
     Parses the transcripts present in the filename given as input.
