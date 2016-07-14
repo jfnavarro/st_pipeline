@@ -12,7 +12,8 @@ before_install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - wget https://github.com/alexdobin/STAR/blob/master/bin/Linux_x86_64/STAR
-  - cp STAR $HOME/miniconda/bin
+  - chmod +x STAR
+  - cp STAR /usr/local/bin
   - STAR --help
 
 install:
