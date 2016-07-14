@@ -13,7 +13,9 @@ before_install:
   - conda update -q conda
   - wget https://github.com/alexdobin/STAR/blob/master/bin/Linux_x86_64/STAR
   - chmod +x STAR
-  - cp STAR /usr/local/bin
+  - mkdir $HOME/bin
+  - cp STAR $HOME/bin
+  - export PATH="$HOME/bin:$PATH"
   - STAR --help
 
 install:
