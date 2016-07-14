@@ -13,6 +13,7 @@ before_install:
   - conda update -q conda
   - wget https://github.com/alexdobin/STAR/blob/master/bin/Linux_x86_64/STAR
   - cp STAR $HOME/miniconda/bin
+  - STAR --help
 
 install:
     - conda create -q -n testenv --yes python=2.7 numpy scipy pandas
