@@ -142,7 +142,7 @@ class TestPipeline(unittest.TestCase):
         for root, dirs, files in os.walk(self.tmpdir, topdown=False):
             for name in files:
                 print name
-                 if name == "Log.out":
+                if name == "Log.out":
                     f = open(os.path.join(root, name), "r")
                     for line in f.readlines():
                         print line
