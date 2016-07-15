@@ -40,11 +40,12 @@ class TestPipeline(unittest.TestCase):
         self.contamdir = os.path.join(self.tmpdir, 'config/contaminant_genomes/R45S5_R5S1')
         os.makedirs(self.contamdir)
    
+        genomefasta = os.path.join(self.genomedir, "human_grcm38_chromosome19.fasta")
+        genomefastagz = os.path.join(self.genomedir, "human_grcm38_chromosome19.fasta.gz")
+            
         # Download and unpack fasta files
         try:
             print "ST Pipeline Test Downloading genome files..."
-            genomefasta = os.path.join(self.genomedir, "human_grcm38_chromosome19.fasta")
-            genomefastagz = os.path.join(self.genomedir, "human_grcm38_chromosome19.fasta.gz")
             urllib.urlretrieve ("ftp://ftp.ensembl.org/pub/release-79/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.19.fa.gz", 
                                 genomefastagz)
             check_call(['gunzip', genomefastagz])

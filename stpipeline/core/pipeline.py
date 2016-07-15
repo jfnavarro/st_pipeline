@@ -199,17 +199,17 @@ class Pipeline():
                             "(GTF or GFF format is required)")
         parser.add_argument('--expName', type=str, metavar="[STRING]", required=True,
                             help="Name of the experiment/dataset (The output files will prepend this name)")
-        parser.add_argument('--allowed-missed', default=2, metavar="[INT]", type=int, choices=range(0, 6),
+        parser.add_argument('--allowed-missed', default=2, metavar="[INT]", type=int, choices=range(0, 7),
                             help="Number of allowed mismatches when demultiplexing " \
                             "against the barcodes (default: %(default)s)")
-        parser.add_argument('--allowed-kmer', default=6, metavar="[INT]", type=int, choices=range(1, 9),
+        parser.add_argument('--allowed-kmer', default=6, metavar="[INT]", type=int, choices=range(1, 10),
                             help="KMer length when demultiplexing against the barcodes (default: %(default)s)")
-        parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0, 6),
+        parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0, 7),
                             help="Extra flanking bases added when demultiplexing against the barcodes")
-        parser.add_argument('--min-length-qual-trimming', default=28, metavar="[INT]", type=int, choices=range(20, 100),
+        parser.add_argument('--min-length-qual-trimming', default=28, metavar="[INT]", type=int, choices=range(20, 101),
                             help="Minimum length of the reads after trimming, " \
                             "shorter reads will be discarded (default: %(default)s)")
-        parser.add_argument('--mapping-rv-trimming', default=0, metavar="[INT]", type=int, choices=range(0, 100),
+        parser.add_argument('--mapping-rv-trimming', default=0, metavar="[INT]", type=int, choices=range(0, 101),
                             help="Number of bases to trim in the reverse reads for the mapping step (default: %(default)s)")
         parser.add_argument('--length-id', default=18, type=int, metavar="[INT]", choices=[18, 21, 24, 27],
                             help="Length of IDs (the length of the barcodes) (default: %(default)s)")
@@ -224,15 +224,15 @@ class Pipeline():
                             "Modes = {union,intersection-nonempty(default),intersection-strict}")
         parser.add_argument('--htseq-no-ambiguous', action="store_true", default=False,
                             help="When using htseq discard reads annotating ambiguous genes (default false)")
-        parser.add_argument('--start-id', default=0, metavar="[INT]", type=int, choices=range(0, 25),
+        parser.add_argument('--start-id', default=0, metavar="[INT]", type=int, choices=range(0, 27),
                             help="Start position of the IDs (Barcodes) in the read 1 (counting from 0) (default: %(default)s)")
         parser.add_argument('--no-clean-up', action="store_false", default=True,
                             help="Do not remove temporary/intermediary files (useful for debugging)")
         parser.add_argument('--verbose', action="store_true", default=False,
                             help="Show extra information on the log file")
-        parser.add_argument('--mapping-threads', default=4, metavar="[INT]", type=int, choices=range(1, 16),
+        parser.add_argument('--mapping-threads', default=4, metavar="[INT]", type=int, choices=range(1, 17),
                             help="Number of threads to use in the mapping step (default: %(default)s)")
-        parser.add_argument('--min-quality-trimming', default=20, metavar="[INT]", type=int, choices=range(10, 60),
+        parser.add_argument('--min-quality-trimming', default=20, metavar="[INT]", type=int, choices=range(10, 61),
                             help="Minimum phred quality for trimming bases in the trimming step (default: %(default)s)")
         parser.add_argument('--bin-path', metavar="[FOLDER]", action=readable_dir, default=None,
                             help="Path to folder where binary executables are present (system path by default)")
@@ -245,16 +245,16 @@ class Pipeline():
         parser.add_argument('--molecular-barcodes',
                             action="store_true",
                             help="Activates the molecular barcodes (UMI) duplicates filter")
-        parser.add_argument('--mc-allowed-mismatches', default=1, metavar="[INT]", type=int, choices=range(0, 4),
+        parser.add_argument('--mc-allowed-mismatches', default=1, metavar="[INT]", type=int, choices=range(0, 5),
                             help="Number of allowed mismatches when applying the molecular " \
                             "barcodes (UMI) duplicates filter (default: %(default)s)")
-        parser.add_argument('--mc-start-position', default=18, metavar="[INT]", type=int, choices=range(0, 42),
+        parser.add_argument('--mc-start-position', default=18, metavar="[INT]", type=int, choices=range(0, 43),
                             help="Position (base wise) of the first base of the " \
                             "molecular barcodes (starting by 0) (default: %(default)s)")
-        parser.add_argument('--mc-end-position', default=27, metavar="[INT]", type=int, choices=range(8, 50),
+        parser.add_argument('--mc-end-position', default=27, metavar="[INT]", type=int, choices=range(8, 51),
                             help="Position (base wise) of the last base of the "\
                             "molecular barcodes (starting by 1) (default: %(default)s)")
-        parser.add_argument('--min-cluster-size', default=2, metavar="[INT]", type=int, choices=range(1, 10),
+        parser.add_argument('--min-cluster-size', default=2, metavar="[INT]", type=int, choices=range(1, 11),
                             help="Min number of equal molecular barcodes to count" \
                             " as a cluster (duplicate) (default: %(default)s)")
         parser.add_argument('--keep-discarded-files', action="store_true", default=False,
@@ -479,18 +479,26 @@ class Pipeline():
         self.logger.info("Starting the pipeline: {}".format(start_exe_time))
 
         # Check if input fastq files are gzipped
-        # NOTE the python library for gzip files is very slow
+        # TODO it is faster to make a system call with gunzip
+        # TODO add support to bzip 
         try:
             if self.fastq_fw.endswith(".gz"):
-                check_call(['gunzip', self.fastq_fw])
-                self.fastq_fw = os.path.splitext(self.fastq_fw)[0]
-            if self.fastq_rv.endswith(".gz"):
-                check_call(['gunzip', self.fastq_rv])
-                self.fastq_rv = os.path.splitext(self.fastq_rv)[0]
+                temp_fastq_fw = os.path.join(self.temp_folder, "unzipped_fastq_fw.fastq")
+                with gzip.open(self.fastq_fw, "rb") as filehandler_read:
+                    with open(temp_fastq_fw, "w") as filehandler_write:
+                        for line in filehandler_read:
+                            filehandler_write.write(line)
+                self.fastq_fw = temp_fastq_fw
+                if self.fastq_rv.endswith(".gz"):
+                    temp_fastq_rv = os.path.join(self.temp_folder, "unzipped_fastq_rv.fastq")
+                    with gzip.open(self.fastq_rv, "rb") as filehandler_read:
+                        with open(temp_fastq_rv, "w") as filehandler_write:
+                            for line in filehandler_read:
+                                filehandler_write.write(line)
+                    self.fastq_rv = temp_fastq_rv
         except Exception as e:
             self.logger.error("Error gunziping input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
             raise e
-              
         #=================================================================
         # STEP: FILTERING 
         # Applies different filters : sanity, quality, short, adaptors, UMI...
@@ -542,9 +550,10 @@ class Pipeline():
                            self.max_intron_size,
                            self.max_gap_size,
                            False, # disable splice variants alignments
-                           False, # enable multimap in rRNA filter
+                           True, # disable multimap in rRNA filter
                            True, # disable softclipping in rRNA filter
                            0, # do not use the inverse filter for now
+                           False, # BAM sorted output disable
                            )
             except Exception:
                 raise
@@ -568,7 +577,8 @@ class Pipeline():
                        True, # enable splice variants alignments
                        self.disable_multimap,
                        self.disable_clipping,
-                       self.inverse_trimming_rv)
+                       self.inverse_trimming_rv,
+                       True)
         except Exception:
             raise
         
