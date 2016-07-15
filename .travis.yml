@@ -16,7 +16,8 @@ before_install:
   - mkdir $HOME/bin
   - cp STAR $HOME/bin
   - export PATH="$HOME/bin:$PATH"
-  - STAR --help
+  - mkdir $HOME/tmp
+  - export TMPDIR=$HOME/tmp
 
 install:
     - conda create -q -n testenv --yes python=2.7 numpy scipy pandas
