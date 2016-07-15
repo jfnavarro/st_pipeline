@@ -479,18 +479,26 @@ class Pipeline():
         self.logger.info("Starting the pipeline: {}".format(start_exe_time))
 
         # Check if input fastq files are gzipped
-        # NOTE the python library for gzip files is very slow
+        # TODO it is faster to make a system call with gunzip
+        # TODO add support to bzip 
         try:
             if self.fastq_fw.endswith(".gz"):
-                check_call(['gunzip', self.fastq_fw])
-                self.fastq_fw = os.path.splitext(self.fastq_fw)[0]
-            if self.fastq_rv.endswith(".gz"):
-                check_call(['gunzip', self.fastq_rv])
-                self.fastq_rv = os.path.splitext(self.fastq_rv)[0]
+                temp_fastq_fw = os.path.join(self.temp_folder, "unzipped_fastq_fw.fastq")
+                with gzip.open(self.fastq_fw, "rb") as filehandler_read:
+                    with open(temp_fastq_fw, "w") as filehandler_write:
+                        for line in filehandler_read:
+                            filehandler_write.write(line)
+                self.fastq_fw = temp_fastq_fw
+                if self.fastq_rv.endswith(".gz"):
+                    temp_fastq_rv = os.path.join(self.temp_folder, "unzipped_fastq_rv.fastq")
+                    with gzip.open(self.fastq_rv, "rb") as filehandler_read:
+                        with open(temp_fastq_rv, "w") as filehandler_write:
+                            for line in filehandler_read:
+                                filehandler_write.write(line)
+                    self.fastq_rv = temp_fastq_rv
         except Exception as e:
             self.logger.error("Error gunziping input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
             raise e
-              
         #=================================================================
         # STEP: FILTERING 
         # Applies different filters : sanity, quality, short, adaptors, UMI...
