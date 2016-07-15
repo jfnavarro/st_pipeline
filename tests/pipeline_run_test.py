@@ -47,7 +47,6 @@ class TestPipeline(unittest.TestCase):
             genomefastagz = os.path.join(self.genomedir, "human_grcm38_chromosome19.fasta.gz")
             urllib.urlretrieve ("ftp://ftp.ensembl.org/pub/release-79/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.19.fa.gz", 
                                 genomefastagz)
-            print genomefastagz
             check_call(['gunzip', genomefastagz])
         except Exception as e:
             print str(e)
@@ -136,12 +135,14 @@ class TestPipeline(unittest.TestCase):
         print "ST Pipeline Test Remove temporary output {}".format(self.outdir)
         for root, dirs, files in os.walk(self.outdir, topdown=False):
             for name in files:
+                print name
                 os.remove(os.path.join(root, name))
             for name in dirs:
                 os.rmdir(os.path.join(root, name))
         print "ST Pipeline Test Remove temporary directory {}".format(self.tmpdir)
         for root, dirs, files in os.walk(self.tmpdir, topdown=False):
             for name in files:
+                print name
                 os.remove(os.path.join(root, name))
             for name in dirs:
                 os.rmdir(os.path.join(root, name))        
