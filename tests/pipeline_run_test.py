@@ -136,6 +136,7 @@ class TestPipeline(unittest.TestCase):
         for root, dirs, files in os.walk(self.outdir, topdown=False):
             for name in files:
                 print name
+                print os.stat(name)
                 os.remove(os.path.join(root, name))
             for name in dirs:
                 os.rmdir(os.path.join(root, name))
@@ -143,6 +144,7 @@ class TestPipeline(unittest.TestCase):
         for root, dirs, files in os.walk(self.tmpdir, topdown=False):
             for name in files:
                 print name
+                print os.stat(name)
                 os.remove(os.path.join(root, name))
             for name in dirs:
                 os.rmdir(os.path.join(root, name))        
