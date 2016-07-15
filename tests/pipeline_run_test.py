@@ -135,11 +135,6 @@ class TestPipeline(unittest.TestCase):
         print "ST Pipeline Test Remove temporary output {}".format(self.outdir)
         for root, dirs, files in os.walk(self.outdir, topdown=False):
             for name in files:
-                print name
-                if name == "Log.out":
-                    f = open(os.path.join(root, name), "r")
-                    for line in f.readlines():
-                        print line
                 os.remove(os.path.join(root, name))
             for name in dirs:
                 os.rmdir(os.path.join(root, name))
