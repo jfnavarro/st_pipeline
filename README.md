@@ -1,7 +1,6 @@
 # Spatial Transcriptomics Pipeline
 
-"" ADD TRAVIS BUILD STATUS HERE ""
-"" ADD TEST COVERAGE FLAG HERE ""
+[![Build Status](https://travis-ci.org/jfnavarro/st_pipeline.svg?branch=master)](https://travis-ci.org/jfnavarro/st_pipeline)
 
 ST Pipeline contains the tools and scripts needed to process and analyze the raw files generated with the Spatial Transcriptomics method in FASTQ format. 
 
@@ -14,6 +13,8 @@ The following files/parameters are required :
 
 The ST pipeline has multiple parameters mostly related to trimming, mapping and annotation but generally the default values are good enough. You can see a full description of the parameters typing "st_pipeline_run.py --help" after you have installed the ST pipeline.
 
+The raw data can be given in gzip format as well. 
+
 Basically what the ST pipeline does is :
 - Quality trimming (read 1 and read 2) :
 	- Remove low quality bases
@@ -22,10 +23,10 @@ Basically what the ST pipeline does is :
 	- Remove artifacts (PolyT, PolyA, PolyG and PolyC)
 	- Check for AT content
 	- Discard reads with a minimum number of bases of that failed any of the checks above
-- Contamimant filter (Optional)
+- Contamimant filter e.x. rRNA genome (Optional)
 - Mapping with STAR (only read 2)
-- Demultiplexing with taggd (https://github.com/JoelSjostrand/taggd) (only read 1)
-- Keep reads (read 2) that contain a valid barcode and are correctly mapped. 
+- Demultiplexing with taggd (https://github.com/SpatialTranscriptomicsResearch/taggd) (only read 1)
+- Keep reads (read 2) that contain a valid barcode and are correctly mapped
 - Annotate the reads with htseq-count
 - Group annotated reads by barcode(spot position) and gene to get a read count
 - In the grouping/counting only unique molecules (UMIs) are kept. 
@@ -67,6 +68,11 @@ An example run would be
 **License**
 
 The ST pipeline is open source under the MIT license which means that you can use it, change it and re-distribute but you must always refer to our license (see LICENSE and AUTHORS).
+
+**Contact**
+
+For questions, bugs, feedback, etc.. you can contact 
+Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
 
 **Dependencies** 
 
