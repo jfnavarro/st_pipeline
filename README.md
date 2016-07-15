@@ -1,6 +1,6 @@
 # Spatial Transcriptomics Pipeline
 
-[https://travis-ci.org/jfnavarro/st_pipeline.svg?branch=master]
+[![Build Status](https://travis-ci.org/jfnavarro/st_pipeline.svg?branch=master)](https://travis-ci.org/jfnavarro/st_pipeline)
 
 ST Pipeline contains the tools and scripts needed to process and analyze the raw files generated with the Spatial Transcriptomics method in FASTQ format. 
 
