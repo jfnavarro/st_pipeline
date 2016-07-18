@@ -73,7 +73,7 @@ def computeSaturation(nreads,
     # Generate subsamples and SAM/BAM files for each saturation point
     for spoint in saturation_points:
         # Create a file for the sub sample point
-        file_name = "subsample_{}.{}".format(spoint, file_ext)
+        file_name = "subsample_{}{}".format(spoint, file_ext)
         if temp_folder is not None and os.path.isdir(temp_folder):
             file_name = os.path.join(temp_folder, file_name)
         output_sam = pysam.AlignmentFile(file_name, flag_write, template=annotated_sam)
