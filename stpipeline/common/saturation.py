@@ -123,15 +123,16 @@ def computeSaturation(nreads,
             error = "Error computing saturation curve: createDataset execution failed\n"
             logger.error(error)
             raise e
-        finally:
-            # Remove the files
-            for file_sam in file_names.itervalues():
-                safeRemove(file_sam)            
+       
         # Update lists with the computed points    
         saturation_points_values_unique_events.append(stats.unique_events)
         saturation_points_values_reads.append(stats.reads_after_duplicates_removal)
         saturation_points_values_genes.append(stats.genes_found)
-                                   
+       
+    # Remove the files
+    for file_sam in file_names.itervalues():
+        safeRemove(file_sam)     
+                                    
     # Update the log with the computed saturation points
     logger.info("Saturation points:")
     logger.info(', '.join(str(a) for a in saturation_points))

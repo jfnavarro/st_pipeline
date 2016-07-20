@@ -312,3 +312,6 @@ Version 0.9.3
 
 Version 0.9.4
 * Fixed a stupid bug in the compute saturation option
+
+Version 0.9.5
+* When a R2 is trimmed its correspondant R1 is trimmed as well

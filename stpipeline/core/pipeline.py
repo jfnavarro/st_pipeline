@@ -27,7 +27,8 @@ FILENAMES = {"mapped" : "mapped.bam",
              "demultiplexed_prefix" : "demultiplexed",
              "demultiplexed_matched" : "demultiplexed_matched.fastq",
              "mapped_filtered" : "mapped_filtered.bam",
-             "quality_trimmed" : "R2_quality_trimmed.fastq",
+             "quality_trimmed_R1" : "R1_quality_trimmed.fastq",
+             "quality_trimmed_R2" : "R2_quality_trimmed.fastq",
              "two_pass_splices" : "SJ.out.tab"}
 
 FILENAMES_DISCARDED = {"mapped_discarded" : "mapping_discarded.fastq",
@@ -510,7 +511,8 @@ class Pipeline():
         try: 
             filterInputReads(self.fastq_fw,
                              self.fastq_rv,
-                             FILENAMES["quality_trimmed"],
+                             FILENAMES["quality_trimmed_R1"],
+                             FILENAMES["quality_trimmed_R2"],
                              FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
                              self.barcode_start,
                              self.barcode_length,
@@ -539,7 +541,7 @@ class Pipeline():
             # and keep the un-mapped reads
             self.logger.info("Starting contaminant filter alignment {}".format(globaltime.getTimestamp()))
             try:
-                alignReads(FILENAMES["quality_trimmed"], # input
+                alignReads(FILENAMES["quality_trimmed_R2"], # input
                            self.contaminant_index,
                            FILENAMES_DISCARDED["contaminated_discarded"], # output mapped
                            FILENAMES["contaminated_clean"], # output un-mapped
@@ -562,7 +564,7 @@ class Pipeline():
         # STEP: Maps against the genome using STAR
         #=================================================================
         self.logger.info("Starting genome alignment {}".format(globaltime.getTimestamp()))
-        input_reads = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed"]
+        input_reads = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
         try:
             alignReads(input_reads,
                        self.ref_map,
@@ -616,7 +618,7 @@ class Pipeline():
         #=================================================================
         self.logger.info("Starting barcode demultiplexing {}".format(globaltime.getTimestamp()))
         try:
-            barcodeDemultiplexing(self.fastq_fw,
+            barcodeDemultiplexing(FILENAMES["quality_trimmed_R1"],
                                   self.ids,
                                   self.allowed_missed,
                                   self.allowed_kmer,
