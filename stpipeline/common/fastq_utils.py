@@ -240,6 +240,7 @@ def check_umi_template(umi, template):
 
 def filterInputReads(fw, 
                      rw,
+                     out_fw,
                      out_rw,
                      out_rw_discarded=None,
                      barcode_start=0, 
@@ -264,9 +265,11 @@ def filterInputReads(fw,
       - It performs a BWA quality trimming discarding very short reads
       - It removes adaptors from the reads (optional)
       - It performs a sanity check on the UMI (optional)
+    Reads that do not pass the filters are discarded (both R1 and R2)
     :param fw: the fastq file with the forward reads
     :param rw: the fastq file with the reverse reads
-    :param out_rw: the name of the output file 
+    :param out_fw: the name of the output file for the forward reads
+    :param out_rw: the name of the output file for the reverse reads
     :param out_rw_discarded: the name of the output file for descarded reads
     :param barcode_start: the base where the barcode sequence starts
     :param barcode_length: the number of bases of the barcodes
@@ -296,6 +299,8 @@ def filterInputReads(fw,
     # Create output file writers
     out_rw_handle = safeOpenFile(out_rw, 'w')
     out_rw_writer = writefq(out_rw_handle)
+    out_fw_handle = safeOpenFile(out_fw, 'w')
+    out_fw_writer = writefq(out_fw_handle)
     if keep_discarded_files:
         out_rw_handle_discarded = safeOpenFile(out_rw_discarded, 'w')
         out_rw_writer_discarded = writefq(out_rw_handle_discarded)
@@ -325,7 +330,7 @@ def filterInputReads(fw,
     # Open fastq files with the fastq parser
     fw_file = safeOpenFile(fw, "rU")
     rw_file = safeOpenFile(rw, "rU")
-    for (header_fw, sequence_fw, _), (header_rv, sequence_rv, quality_rv) \
+    for (header_fw, sequence_fw, quality_fw), (header_rv, sequence_rv, quality_rv) \
     in izip(readfq(fw_file), readfq(rw_file)):
         
         if not sequence_fw or not sequence_fw:
@@ -336,6 +341,8 @@ def filterInputReads(fw,
             rw_file.close()
             out_rw_handle.flush()
             out_rw_writer.close()
+            out_fw_handle.flush()
+            out_fw_writer.close()
             if keep_discarded_files:
                 out_rw_handle_discarded.flush()
                 out_rw_writer_discarded.close()
@@ -388,6 +395,7 @@ def filterInputReads(fw,
         # Write reverse read to output
         if not discard_read:
             out_rw_writer.send((header_rv, sequence_rv, quality_rv))
+            out_fw_writer.send((header_fw, sequence_fw, quality_fw))
         else:
             dropped_rw += 1  
             if keep_discarded_files:
@@ -397,6 +405,8 @@ def filterInputReads(fw,
     rw_file.close()
     out_rw_handle.flush()
     out_rw_writer.close()
+    out_fw_handle.flush()
+    out_fw_writer.close()
     if keep_discarded_files:
         out_rw_handle_discarded.flush()
         out_rw_writer_discarded.close()
