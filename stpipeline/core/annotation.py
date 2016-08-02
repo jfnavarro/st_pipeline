@@ -80,7 +80,7 @@ def count_reads_in_features(sam_filename,
             r = (r,)
         for read in r:
             if read is not None and assignment not in count_reads_in_features.filter_htseq \
-            and (count_reads_in_features.filter_htseq_no_ambiguous and assignment.find("__ambiguous") == -1):
+            and not (count_reads_in_features.filter_htseq_no_ambiguous and assignment.find("__ambiguous") != -1):
                 sam_record = read.to_pysam_AlignedRead(count_reads_in_features.samoutfile)
                 sam_record.set_tag("XF", assignment, "Z")
                 count_reads_in_features.samoutfile.write(sam_record)
