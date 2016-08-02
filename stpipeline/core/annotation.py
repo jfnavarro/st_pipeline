@@ -63,8 +63,8 @@ def count_reads_in_features(sam_filename,
     ["__too_low_aQual", "__not_aligned", "__alignment_not_unique"]
     if not include_non_annotated: 
         count_reads_in_features.filter_htseq.append("__no_feature")
-    if htseq_no_ambiguous: 
-        count_reads_in_features.filter_htseq.append("__ambiguous")
+    count_reads_in_features.filter_htseq_no_ambiguous = htseq_no_ambiguous
+
     # Open SAM output file
     flag_write = "wb" if samtype == "bam" else "wh"
     flag_read = "rb" if samtype == "bam" else "r"
@@ -79,7 +79,8 @@ def count_reads_in_features(sam_filename,
         if not pe_mode:
             r = (r,)
         for read in r:
-            if read is not None and assignment not in count_reads_in_features.filter_htseq:
+            if read is not None and assignment not in count_reads_in_features.filter_htseq \
+            and not (count_reads_in_features.filter_htseq_no_ambiguous and assignment.find("__ambiguous") != -1):
                 sam_record = read.to_pysam_AlignedRead(count_reads_in_features.samoutfile)
                 sam_record.set_tag("XF", assignment, "Z")
                 count_reads_in_features.samoutfile.write(sam_record)

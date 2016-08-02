@@ -141,7 +141,7 @@ class Pipeline():
              
         if not os.path.isfile(self.ids):
             error = "Error parsing parameters.\n" \
-            "Invalid IDS file {}".format(self.ids)
+            "Invalid IDs file {}".format(self.ids)
             self.logger.error(error)
             raise RuntimeError(error)
                   
@@ -437,14 +437,14 @@ class Pipeline():
         if self.include_non_annotated:
             self.logger.info("Including non annotated reads")
         if self.molecular_barcodes:
-            self.logger.info("Using Unique Molecular Indentifiers to remove duplicates")
-            self.logger.info("Using Unique Molecular Indentifiers start position: {}".format(self.mc_start_position))
-            self.logger.info("Using Unique Molecular Indentifiersend position: {}".format(self.mc_end_position))
-            self.logger.info("Using Unique Molecular Indentifiers min cluster size: {}".format(self.min_cluster_size))
-            self.logger.info("Using Unique Molecular Indentifiers allowed mismatches: {}".format(self.mc_allowed_mismatches))
-            self.logger.info("Using Unique Molecular Indentifiers clustering algorithm: {}".format(self.mc_cluster))
+            self.logger.info("Using UMIs to remove duplicates")
+            self.logger.info("Using UMIs start position: {}".format(self.mc_start_position))
+            self.logger.info("Using UMIs end position: {}".format(self.mc_end_position))
+            self.logger.info("Using UMIs min cluster size: {}".format(self.min_cluster_size))
+            self.logger.info("Using UMIs allowed mismatches: {}".format(self.mc_allowed_mismatches))
+            self.logger.info("Using UMIs clustering algorithm: {}".format(self.mc_cluster))
             if self.umi_filter:
-                self.logger.info("Molecular Barcodes using filter: {}".format(self.umi_filter_template))    
+                self.logger.info("UMIs using filter: {}".format(self.umi_filter_template))    
         if self.remove_polyA_distance > 0:
             self.logger.info("Removing polyA adaptors of a length of at least: {}".format(self.remove_polyA_distance))                        
         if self.remove_polyT_distance > 0:
