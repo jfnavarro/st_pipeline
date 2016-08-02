@@ -197,7 +197,8 @@ def main(filename,
     counts_table.to_csv(os.path.join(output_folder,filenameDataFrame), sep="\t", na_rep=0)
             
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--input', type=str, required=True,
                         help="Input file in SAM or BAM format containing annotated " \
                         "records with the spot coordinates and the gene as tags")

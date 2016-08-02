@@ -315,3 +315,6 @@ Version 0.9.4
 
 Version 0.9.5
 * When a R2 is trimmed its correspondant R1 is trimmed as well
+
+Version 0.9.6
+* Fixed a bug with the non ambiguous option

@@ -4,15 +4,15 @@ ST Pipeline is a tool to process the Spatial Transcriptomics raw data.
 The data is filtered, aligned to a genome, annotated to a reference,
 demultiplexed by array coordinates and then aggregated by counts
 that are not duplicates using the Unique Molecular Indentifiers. 
-The output contains the counts table, a stats file, a log file
-and a BED file with all the transcripts.\n\n
+The output contains the counts matrix, a stats file, a log file
+and a BED file with all the transcripts.
 
 The ST Pipeline requires two fastq files, an IDs files (BARCODE, X, Y)
 ,the path to a STAR genome index,
-the path to a annotation file in GTF format an a dataset name.\n\n
+the path to a annotation file in GTF format an a dataset name.
 
 The ST Pipeline has many parameters, you can see a description of them
-by typing : st_pipeline_run.py --help\n\n
+by typing : st_pipeline_run.py --help
 
 @Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
 """
@@ -27,7 +27,8 @@ def main(argv):
     pipeline = Pipeline()
     
     # Create a parser
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
         
     # Parse parameters, sanity check and run the pipeline                  
     try:
