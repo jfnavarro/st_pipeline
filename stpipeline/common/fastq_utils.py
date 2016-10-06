@@ -10,6 +10,7 @@ import logging
 from itertools import izip
 from sqlitedict import SqliteDict
 import os
+import re
 
 def coroutine(func):
     """ 
@@ -168,75 +169,20 @@ def trim_quality(sequence,
     else:
         return None, None
   
-#TODO optimize and re-factor this (maybe use reg-expressions)
 def check_umi_template(umi, template):
     """
     Checks that the UMI (molecular barcode) given as input complies
-    with the pattern given in template
+    with the pattern given in template.
     Returns true if the UMI complies
     :param umi: a molecular barcode
     :param template: a reg-based template with the same
                     distance of the UMI that should tell how the UMI should be formed
     :type umi: str
     :type template: str
-    :returns: True if the givein molecular barcode fits the pattern given
+    :returns: True if the given molecular barcode fits the pattern given
     """
-    assert(len(umi) == len(template))
-
-    for i,ele in enumerate(template):
-        umi_base = umi[i]
-        if ele == "W":
-            if umi_base != "A" and umi_base != "T":
-                return False
-        elif ele == "S":
-            if umi_base != "C" and umi_base != "G":
-                return False
-        elif ele == "N":
-            if umi_base != "A" and umi_base != "T" and umi_base != "C" and umi_base != "G":
-                return False
-        elif ele == "V":
-            if umi_base == "T":
-                return False
-        elif ele == "A":
-            if umi_base != "A":
-                return False
-        elif ele == "C":
-            if umi_base != "C":
-                return False
-        elif ele == "G":
-            if umi_base != "G":
-                return False
-        elif ele == "T":
-            if umi_base != "T":
-                return False
-        elif ele == "U":
-            if umi_base != "U":
-                return False
-        elif ele == "R":
-            if umi_base != "A" and umi_base != "G":
-                return False
-        elif ele == "Y":
-            if umi_base != "C" and umi_base != "T":
-                return False
-        elif ele == "K":
-            if umi_base != "G" and umi_base != "T":
-                return False
-        elif ele == "M":
-            if umi_base != "A" and umi_base != "C":
-                return False
-        elif ele == "B":
-            if umi_base == "A":
-                return False
-        elif ele == "D":
-            if umi_base == "C":
-                return False
-        elif ele == "H":
-            if umi_base == "G":
-                return False
-        else:
-            return False
-            
-    return True
+    p = re.compile(template)
+    return p.match(umi) is not None
 
 def filterInputReads(fw, 
                      rw,

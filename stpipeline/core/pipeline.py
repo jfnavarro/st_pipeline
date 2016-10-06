@@ -159,7 +159,50 @@ class Pipeline():
                 error = "Error invalid UMI template given {}.\n".format(self.umi_filter_template)
                 self.logger.error(error)
                 raise RuntimeError(error)                
+            # Check template length
+            if len(self.umi_filter_template) != (self.mc_end_position - self.mc_start_position):
+                error = "Error the UMI template given does not have the same " \
+                "length as the UMIs {}.\n".format(self.umi_filter_template)
+                self.logger.error(error)
+                raise RuntimeError(error) 
+            # Convert the template into a reg-exp
+            temp_reg_exp = ""
+            for ele in self.umi_filter_template:
+                if ele == "W":
+                    temp_reg_exp += "[AT]"
+                elif ele == "S":
+                    temp_reg_exp += "[CG]"
+                elif ele == "N":
+                    temp_reg_exp += "[ATCG]"
+                elif ele == "V":
+                    temp_reg_exp += "[T]"
+                elif ele == "A":
+                    temp_reg_exp += "[A]"
+                elif ele == "C":
+                    temp_reg_exp += "[C]"
+                elif ele == "G":
+                    temp_reg_exp += "[G]"
+                elif ele == "T":
+                    temp_reg_exp += "[T]"
+                elif ele == "U":
+                    temp_reg_exp += "[U]"
+                elif ele == "R":
+                    temp_reg_exp += "[AG]"
+                elif ele == "Y":
+                    temp_reg_exp += "[CT]"
+                elif ele == "K":
+                    temp_reg_exp += "[GT]"
+                elif ele == "M":
+                    temp_reg_exp += "[AC]"
+                elif ele == "B":
+                    temp_reg_exp += "[A]"
+                elif ele == "D":
+                    temp_reg_exp += "[C]"
+                elif ele == "H":
+                    temp_reg_exp += "[G]"
+            self.umi_filter_template = temp_reg_exp
             
+                  
         # TODO add checks for trimming parameters, demultiplex parameters and UMI parameters
                 
         # Test the presence of the scripts 
@@ -461,7 +504,7 @@ class Pipeline():
     def run(self):
         """ 
         Runs the whole pipeline given the parameters present
-        raises exections if something went wrong
+        raises different exceptions if something went wrong
         """
         # First adjust the intermediate files with the temp_folder path
         if self.temp_folder:

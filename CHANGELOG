@@ -318,3 +318,11 @@ Version 0.9.5
 
 Version 0.9.6
 * Fixed a bug with the non ambiguous option
+* Fix a bug in the saturation computation
+
+Version 0.9.9
+* Small bug fixes
+
+Version 1.0.0
+* Optimized the UMI template check code
+* Optimize how the unique molecules are counted
