@@ -19,6 +19,7 @@ import argparse
 import sys
 import shutil
 import os
+import gzip
 from subprocess import check_call
 
 FILENAMES = {"mapped" : "mapped.bam",
