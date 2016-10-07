@@ -133,7 +133,7 @@ def main(filename,
                     unique_transcripts = list()
                     # Get the original number of transcripts
                     num_transcripts = len(transcripts)
-                    # Group transcripts by pos and strand
+                    # Group transcripts by start pos and strand
                     grouped_transcripts = defaultdict(list)
                     for transcript in transcripts:
                         grouped_transcripts[(transcript[1], transcript[5])].append((transcript[6],transcript)) 

@@ -324,5 +324,7 @@ Version 0.9.9
 * Small bug fixes
 
 Version 1.0.0
+* Added option to check for UMI quality 
 * Optimized the UMI template check code
 * Optimize how the unique molecules are counted
+* Better stats for the quality filter step

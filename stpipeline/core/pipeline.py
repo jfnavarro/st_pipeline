@@ -43,7 +43,6 @@ FILENAMES_DISCARDED = {"mapped_discarded" : "mapping_discarded.fastq",
 class Pipeline():
     
     LogName = "STPipeline"
-    DefaultLogLevel = 'DEBUG'
     
     def __init__(self):
         self.allowed_missed = 2
@@ -97,6 +96,7 @@ class Pipeline():
         self.two_pass_mode = False
         self.two_pass_mode_genome = None
         self.strandness = "yes"
+        self.umi_quality_bases = 0
     
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -172,11 +172,11 @@ class Pipeline():
                 if ele == "W":
                     temp_reg_exp += "[AT]"
                 elif ele == "S":
-                    temp_reg_exp += "[CG]"
+                    temp_reg_exp += "[GC]"
                 elif ele == "N":
                     temp_reg_exp += "[ATCG]"
                 elif ele == "V":
-                    temp_reg_exp += "[T]"
+                    temp_reg_exp += "[ACG]"
                 elif ele == "A":
                     temp_reg_exp += "[A]"
                 elif ele == "C":
@@ -196,14 +196,13 @@ class Pipeline():
                 elif ele == "M":
                     temp_reg_exp += "[AC]"
                 elif ele == "B":
-                    temp_reg_exp += "[A]"
+                    temp_reg_exp += "[CGT]"
                 elif ele == "D":
-                    temp_reg_exp += "[C]"
+                    temp_reg_exp += "[AGT]"
                 elif ele == "H":
-                    temp_reg_exp += "[G]"
+                    temp_reg_exp += "[ACT]"
             self.umi_filter_template = temp_reg_exp
-            
-                  
+                         
         # TODO add checks for trimming parameters, demultiplex parameters and UMI parameters
                 
         # Test the presence of the scripts 
@@ -338,7 +337,7 @@ class Pipeline():
         parser.add_argument('--umi-filter', action="store_true", default=False,
                             help="Enables the UMI quality filter based on the template given in --umi-filter-template")
         parser.add_argument('--umi-filter-template', default="WSNNWSNNV", type=str, metavar="[STRING]",
-                            help="UMI template for the UMI filter, default = WSNNWSNNV")
+                            help="UMI template (IUPAC nucleotide code) for the UMI filter, default = WSNNWSNNV")
         parser.add_argument('--compute-saturation', action="store_true", default=False,
                             help="Performs a saturation curve computation by sub-sampling the annotated reads, computing " \
                             "unique molecules and then a saturation curve (included in the log file)")
@@ -355,6 +354,8 @@ class Pipeline():
                             "When using the two pass mode the path of the fasta file with the genome is needed")
         parser.add_argument('--strandness', default="yes", type=str, metavar="[STRING]", choices=["no", "yes", "reverse"],
                             help="What strandness mode to use when annotating with htseq-count [no, yes(default), reverse]")
+        parser.add_argument('--umi-quality-bases', default=0, metavar="[INT]", type=int, choices=range(0, 6),
+                            help="Maximum number of low quality bases allowed in an UMI (default: %(default)s)")        
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -422,6 +423,7 @@ class Pipeline():
         self.two_pass_mode = options.two_pass_mode
         self.two_pass_mode_genome = options.two_pass_mode_genome
         self.strandness = options.strandness
+        self.umi_quality_bases = umi_quality_bases
         # Assign class parameters to the QA stats object
         import inspect
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
@@ -487,6 +489,7 @@ class Pipeline():
             self.logger.info("Using UMIs min cluster size: {}".format(self.min_cluster_size))
             self.logger.info("Using UMIs allowed mismatches: {}".format(self.mc_allowed_mismatches))
             self.logger.info("Using UMIs clustering algorithm: {}".format(self.mc_cluster))
+            self.logger.info("Allowing {} low quality bases in an UMI".format(self.umi_quality_bases))
             if self.umi_filter:
                 self.logger.info("UMIs using filter: {}".format(self.umi_filter_template))    
         if self.remove_polyA_distance > 0:
@@ -564,7 +567,6 @@ class Pipeline():
                              self.molecular_barcodes,
                              self.mc_start_position,
                              self.mc_end_position,
-                             self.trimming_rv,
                              self.min_quality_trimming,
                              self.min_length_trimming,
                              self.remove_polyA_distance,
@@ -573,7 +575,8 @@ class Pipeline():
                              self.remove_polyC_distance,
                              self.qual64,
                              self.umi_filter,
-                             self.umi_filter_template)
+                             self.umi_filter_template,
+                             self.umi_quality_bases)
         except Exception:
             raise
           
