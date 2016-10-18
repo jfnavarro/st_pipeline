@@ -1,10 +1,10 @@
 #! /usr/bin/env python
 """ 
-Script that parses a ST features file JSON output
-with ENSEMBL IDs as gene names and convert
-the gene names to the real gene names using
-a MAP file as input. The map file
-must have two columns:
+Script that parses a ST data file generated
+with the pipeline in matrix (TSV) where the genes are named
+with ENSEMBL IDs and generates a new file
+with the ENSEMBL IDs converted to gene names IDS.
+For that the script also needs a tab delimited file like this:
 
 ENSEMBL_ID GENE_NAME
 
@@ -17,9 +17,9 @@ import json
 from stpipeline.common.json_utils import json_iterator
 from stpipeline.common.utils import fileOk
 
-def main(json_file, names_map, output_file):
+def main(st_data_file, names_map, output_file):
 
-    if not fileOk(json_file) or not fileOk(names_map):
+    if not fileOk(st_data_file) or not fileOk(names_map):
         sys.stderr.write("Error, input file not present or invalid format\n")
         sys.exit(1)
         
@@ -31,28 +31,31 @@ def main(json_file, names_map, output_file):
             assert(len(tokens) == 2)
             genes_map[tokens[0]] = tokens[1]
             
-    # iterates the JSON file to change the name
+    # Iterates the genes IDs to get gene names
+    st_data = pd.read_table(st_data_file, sep="\t", header=0, index_col=0)
     adjustedList = list()
-    it = json_iterator(json_file)
-    for doc in it:
+    for gene in st_data.columns:
         try:
-            doc['gene'] = genes_map[doc['gene']]
+            gene = genes_map[gene]
         except KeyError:
-            sys.stdout.write("Warning, {} was not found in the MAP file\n".format(doc['gene']))
-        adjustedList.append(doc)
+            sys.stdout.write("Warning, {} was not found in the MAP file\n".format(gene))
+        adjustedList.append(gene)
         
-    with open(output_file, "w") as filehandler:
-        # write well formed json file
-        json.dump(adjustedList, filehandler, indent=2, separators=(',', ': '))  
+    # Update the table with the gene names
+    st_data.columns = adjustedList
+    
+    # Write table to file
+    st_data.to_csv(output_file, sep="\t")
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("json_file", help="JSON ST-data file")
-    parser.add_argument("--output", default="output.json", 
-                        help="Name of the output file, default output.json")
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("st_data_file", help="ST data file in TSV format")
+    parser.add_argument("--output", default="output.tsv", 
+                        help="Name of the output file, default output.tsv")
     parser.add_argument("--names-map", required=True,
-                        help="File containing the map of ensembl ID to gene \
-                        name as a two columns tab delimited file")
+                        help="File containing the map of ENSEMBL IDs to gene \
+                        names as a two columns tab delimited file")
     args = parser.parse_args()
-    main(args.json_file, args.names_map, args.output)
+    main(args.st_data_file, args.names_map, args.output)
 

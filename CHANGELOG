@@ -291,7 +291,7 @@ Version 0.8.7
 * Small improvements
 
 Version 0.8.8
-* Removed barcodes from the code
+* Removed barcodes IDs from the output file
 
 Version 0.8.9
 * Improved the error messages and error handling
@@ -318,3 +318,15 @@ Version 0.9.5
 
 Version 0.9.6
 * Fixed a bug with the non ambiguous option
+* Fix a bug in the saturation computation
+
+Version 0.9.9
+* Small bug fixes
+
+Version 1.0.0
+* Added option to check for UMI quality 
+* Optimized the UMI template check code
+* Optimized how the unique molecules are counted
+* Better stats for the quality filter step
+* Updated convertEnsemblToNames script
+* Updated stringdocs

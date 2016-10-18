@@ -45,9 +45,9 @@ def filterMappedReads(mapped_reads,
                       min_length=28):
     """ 
     Iterate a SAM/BAM file containing mapped reads 
-    and discards reads that are secondary or too short.
+    and discards the reads that are secondary or too short.
     It also discards reads that do not contain a valid barcode.
-    It will add the barcode, coordinates and umi as extra tags
+    It will add the barcode, coordinates and UMI as extra tags
     to the output SAM/BAM file. The UMI will be added only if it is present.
     It assumes all the reads are mapped (do not contain un-aligned reads).
     :param mapped_reads: path to a SAM/BAM file containing the alignments

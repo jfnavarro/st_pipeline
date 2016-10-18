@@ -34,6 +34,9 @@ def parseUniqueEvents(filename, molecular_barcodes=False):
     The output will be hash table [spot][gene] -> list of transcripts. 
     :param filename: the input file containing the SAM/BAM records
     :param molecular_barcodes: if True a the records contain UMIs
+    :return: A map of spots(x,y) to a map of gene names to a list of transcript 
+    (chrom, start, end, clear_name, mapping_quality, strand, sequence)
+    As map[(x,y)][gene]->list((chrom, start, end, clear_name, mapping_quality, strand, sequence))
     """
     
     unique_events = defaultdict(lambda : defaultdict(list))
@@ -58,7 +61,7 @@ def parseUniqueEvents(filename, molecular_barcodes=False):
             elif k == "XF":
                 gene = str(v) ## The gene name
             elif k == "B3":
-                seq = str(v) ## The UMI (opional)
+                seq = str(v) ## The UMI (optional)
             else:
                 continue
         # Check that all tags are present
@@ -129,19 +132,25 @@ def main(filename,
                 # Re-compute the read count accounting for duplicates 
                 # (read sequences must contain a molecular barcode)
                 if molecular_barcodes:
+                    # New list of unique transcripts
+                    unique_transcripts = list()
                     # Get the original number of transcripts
                     num_transcripts = len(transcripts)
-                    # Extract the molecular barcodes for the transcripts
-                    # as tuples (UMI, TRANSCRIPT)
-                    mcs = [(read[6],read) for read in transcripts]
-                    # Cluster the transcripts based on the molecular barcode
+                    # Group transcripts by start pos and strand
+                    grouped_transcripts = defaultdict(list)
+                    for transcript in transcripts:
+                        grouped_transcripts[(transcript[1], transcript[5])].append((transcript[6],transcript)) 
+                    # For each group of transcripts
+                    # cluster the transcripts based on the molecular barcode
                     # and returns the unique transcripts
-                    transcripts = clusters_func(mcs,
-                                                allowed_mismatches,
-                                                min_cluster_size)
+                    for mcs in grouped_transcripts.values():
+                        unique_transcripts += clusters_func(mcs,
+                                                            allowed_mismatches,
+                                                            min_cluster_size)
                     # Update the discarded transcripts count
+                    transcripts = unique_transcripts
                     discarded_reads += (num_transcripts - len(transcripts))
-                
+                    
                 # Update read counts in the container (replace the list
                 # of transcripts for a number so it can be exported as a data frame)
                 value[gene] = len(transcripts)

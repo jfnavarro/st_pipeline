@@ -1,6 +1,6 @@
 """ 
 This module contains some specific functionalities for
-ST fastq files
+ST fastq files, mainly quality filtering functions.
 """
 
 from stpipeline.common.utils import safeOpenFile, fileOk
@@ -10,6 +10,7 @@ import logging
 from itertools import izip
 from sqlitedict import SqliteDict
 import os
+import re
 
 def coroutine(func):
     """ 
@@ -28,6 +29,7 @@ def readfq(fp): # this is a generator function
     # Unlicensed. 
     Parses fastq records from a file using a generator approach.
     :param fp: opened file descriptor
+    :returns an iterator over tuples (name,sequence,quality)
     """
     last = None # this is a buffer keeping the last unprocessed line
     while True: # mimic closure; is it a bad idea?
@@ -137,7 +139,7 @@ def trim_quality(sequence,
                  quality,
                  min_qual=20, 
                  min_length=28, 
-                 qual64=False):    
+                 phred=33):    
     """
     Quality trims a fastq read using a BWA approach.
     It returns the trimmed record or None if the number of bases
@@ -146,17 +148,16 @@ def trim_quality(sequence,
     :param quality: the quality scores of the read
     :param min_qual the quality threshold to trim (consider a base of bad quality)
     :param min_length: the minimum length of a valid read after trimming
-    :param qual64: true of the qualities are in phred64 format
+    :param phred: the format of the quality string (33 or 64)
     :type sequence: str
     :type quality: str
     :type min_qual: integer
     :type min_length: integer
-    :type qual64: boolean
-    :returns: A tuple (base, qualities) or (None,None)
+    :type phred: integer
+    :return: A tuple (base, qualities) or (None,None)
     """
     if len(sequence) < min_length:
         return None, None
-    phred = 64 if qual64 else 33
     # Get the position at which to trim (number of bases to trim)
     cut_index = quality_trim_index(sequence, quality, min_qual, phred)
     # Check if the trimmed sequence would have min length (at least)
@@ -168,75 +169,20 @@ def trim_quality(sequence,
     else:
         return None, None
   
-#TODO optimize and re-factor this (maybe use reg-expressions)
 def check_umi_template(umi, template):
     """
     Checks that the UMI (molecular barcode) given as input complies
-    with the pattern given in template
-    Returns true if the UMI complies
+    with the pattern given in template.
+    Returns True if the UMI complies
     :param umi: a molecular barcode
     :param template: a reg-based template with the same
                     distance of the UMI that should tell how the UMI should be formed
     :type umi: str
     :type template: str
-    :returns: True if the givein molecular barcode fits the pattern given
+    :return: True if the given molecular barcode fits the pattern given
     """
-    assert(len(umi) == len(template))
-
-    for i,ele in enumerate(template):
-        umi_base = umi[i]
-        if ele == "W":
-            if umi_base != "A" and umi_base != "T":
-                return False
-        elif ele == "S":
-            if umi_base != "C" and umi_base != "G":
-                return False
-        elif ele == "N":
-            if umi_base != "A" and umi_base != "T" and umi_base != "C" and umi_base != "G":
-                return False
-        elif ele == "V":
-            if umi_base == "T":
-                return False
-        elif ele == "A":
-            if umi_base != "A":
-                return False
-        elif ele == "C":
-            if umi_base != "C":
-                return False
-        elif ele == "G":
-            if umi_base != "G":
-                return False
-        elif ele == "T":
-            if umi_base != "T":
-                return False
-        elif ele == "U":
-            if umi_base != "U":
-                return False
-        elif ele == "R":
-            if umi_base != "A" and umi_base != "G":
-                return False
-        elif ele == "Y":
-            if umi_base != "C" and umi_base != "T":
-                return False
-        elif ele == "K":
-            if umi_base != "G" and umi_base != "T":
-                return False
-        elif ele == "M":
-            if umi_base != "A" and umi_base != "C":
-                return False
-        elif ele == "B":
-            if umi_base == "A":
-                return False
-        elif ele == "D":
-            if umi_base == "C":
-                return False
-        elif ele == "H":
-            if umi_base == "G":
-                return False
-        else:
-            return False
-            
-    return True
+    p = re.compile(template)
+    return p.match(umi) is not None
 
 def filterInputReads(fw, 
                      rw,
@@ -249,7 +195,6 @@ def filterInputReads(fw,
                      molecular_barcodes=False, 
                      mc_start=18, 
                      mc_end=27,
-                     trim_rw=0,
                      min_qual=20, 
                      min_length=28,
                      polyA_min_distance=0, 
@@ -258,7 +203,8 @@ def filterInputReads(fw,
                      polyC_min_distance=0,
                      qual64=False,
                      umi_filter=False,
-                     umi_filter_template="WSNNWSNNV"):
+                     umi_filter_template="WSNNWSNNV",
+                     umi_quality_bases=3):
     """
     This function does four things (all done in one loop for performance reasons)
       - It performs a sanity check (forward and reverse reads same length and order)
@@ -271,12 +217,11 @@ def filterInputReads(fw,
     :param out_fw: the name of the output file for the forward reads
     :param out_rw: the name of the output file for the reverse reads
     :param out_rw_discarded: the name of the output file for descarded reads
-    :param barcode_start: the base where the barcode sequence starts
-    :param barcode_length: the number of bases of the barcodes
+    :param barcode_start: the base index where the barcode sequence starts
+    :param barcode_length: the number of bases present in the barcodes
     :param molecular_barcodes: if True the forward reads contain molecular barcodes
     :param mc_start: the start position of the molecular barcodes if any
     :param mc_end: the end position of the molecular barcodes if any
-    :param trim_rw: how many bases we want to trim (not consider in the reverse)
     :param min_qual: the min quality value to use to trim quality
     :param min_length: the min valid length for a read after trimming
     :param polyA_min_distance: if >0 we remove PolyA adaptors from the reads
@@ -285,6 +230,7 @@ def filterInputReads(fw,
     :param qual64: true of qualities are in phred64 format
     :param umi_filter performs: a UMI quality filter when True
     :param umi_filter_template: the template to use for the UMI filter
+    :param umi_quality_bases: the number of low quality bases allowed in an UMI
     """
     logger = logging.getLogger("STPipeline")
     
@@ -309,6 +255,9 @@ def filterInputReads(fw,
     total_reads = 0
     dropped_rw = 0
     dropped_umi = 0
+    dropped_umi_template = 0
+    dropped_AT = 0
+    dropped_adaptor = 0
     
     # Build fake sequence adaptors with the parameters given
     adaptorA = "".join("A" for k in xrange(polyA_min_distance))
@@ -319,6 +268,9 @@ def filterInputReads(fw,
     do_adaptorT = polyT_min_distance > 0
     do_adaptorG = polyG_min_distance > 0
     do_adaptorC = polyC_min_distance > 0
+    
+    # Quality format
+    phred = 64 if qual64 else 33
     
     # Check if barcode settings are correct
     iscorrect_mc = molecular_barcodes
@@ -360,13 +312,19 @@ def filterInputReads(fw,
         # then we discard the reads
         if iscorrect_mc and umi_filter \
         and not check_umi_template(sequence_fw[mc_start:mc_end], umi_filter_template):
+            dropped_umi_template += 1
+            discard_read = True
+        
+        # Check if the UMI has any low quality base
+        if not discard_read and iscorrect_mc and \
+        len([b for b in quality_fw[mc_start:mc_end] if (ord(b) - phred) < min_qual]) > umi_quality_bases:
             dropped_umi += 1
             discard_read = True
-                                                      
-        # If read - trimming is not long enough or has a high AT content discard...
-        num_bases_rv = len(sequence_rv)
-        if (num_bases_rv - trim_rw) < min_length or \
-        ((sequence_rv.count("A") + sequence_rv.count("T")) / num_bases_rv) * 100 >= filter_AT_content:
+                                                            
+        # If reverse read has a high AT content discard...
+        if not discard_read and \
+        ((sequence_rv.count("A") + sequence_rv.count("T")) / len(sequence_rv)) * 100 >= filter_AT_content:
+            dropped_AT += 1
             discard_read = True
         
         # Store the original reads to write them to the discarded output if applies
@@ -375,22 +333,29 @@ def filterInputReads(fw,
             orig_quality_rv = quality_rv 
             
         if not discard_read:  
-            # if indicated we remove the adaptor PolyA from reverse reads
+            # if indicated we remove the artifacts PolyA from reverse reads
             if do_adaptorA: 
                 sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorA) 
-            # if indicated we remove the adaptor PolyT from reverse reads
+            # if indicated we remove the artifacts PolyT from reverse reads
             if do_adaptorT: 
                 sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorT) 
-            # if indicated we remove the adaptor PolyG from reverse reads
+            # if indicated we remove the artifacts PolyG from reverse reads
             if do_adaptorG: 
                 sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorG) 
-            # if indicated we remove the adaptor PolyC from reverse reads
+            # if indicated we remove the artifacts PolyC from reverse reads
             if do_adaptorC: 
-                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorC) 
-            # Trim reverse read (will return None if length of trimmed sequence is lower than min)
-            sequence_rv, quality_rv = trim_quality(sequence_rv, quality_rv, min_qual, min_length, qual64)
-            if not sequence_rv or not quality_rv:
+                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorC)
+            # Check if the read is smaller than the minimum after removing artifacts   
+            if len(sequence_rv) < min_length:
+                dropped_adaptor += 1
                 discard_read = True
+            else:              
+                # Trim reverse read (will return None if length of trimmed sequence is lower than min)
+                sequence_rv, quality_rv = trim_quality(sequence_rv, quality_rv, 
+                                                       min_qual, min_length, phred)
+                if not sequence_rv or not quality_rv:
+                    discard_read = True
+
                 
         # Write reverse read to output
         if not discard_read:
@@ -410,29 +375,33 @@ def filterInputReads(fw,
     if keep_discarded_files:
         out_rw_handle_discarded.flush()
         out_rw_writer_discarded.close()
+        
+    # Write info to the log
+    logger.info("Trimming stats total reads (pair): {}".format(total_reads))
+    logger.info("Trimming stats {} reads have been dropped!".format(dropped_rw)) 
+    perc2 = '{percent:.2%}'.format(percent= float(dropped_rw) / float(total_reads) )
+    logger.info("Trimming stats you just lost about {} of your data".format(perc2))
+    logger.info("Trimming stats reads remaining: {}".format(total_reads - dropped_rw))
+    logger.info("Trimming stats dropped pairs due to incorrect UMI: {}".format(dropped_umi_template))
+    logger.info("Trimming stats dropped pairs due to low quality UMI: {}".format(dropped_umi))
+    logger.info("Trimming stats dropped pairs due to high AT content: {}".format(dropped_AT))
+    logger.info("Trimming stats dropped pairs due to presence of artifacts: {}".format(dropped_adaptor))
     
+    # Check that output file was written ok
     if not fileOk(out_rw):
         error = "Error doing quality trimming checks of raw reads." \
         "\nOutput file not present {}\n".format(out_rw)
         logger.error(error)
         raise RuntimeError(error)
-    else:
-        logger.info("Trimming stats total reads (pair): {}".format(total_reads))
-        logger.info("Trimming stats reverse: {} reads have been dropped!".format(dropped_rw)) 
-        perc2 = '{percent:.2%}'.format(percent= float(dropped_rw) / float(total_reads) )
-        logger.info("Trimming stats reverse: you just lost about {} of your data".format(perc2))
-        logger.info("Trimming stats reads (reverse) remaining: {}".format(total_reads - dropped_rw))
-        if umi_filter:
-            logger.info("Trimming stats dropped pairs due to incorrect UMI: {}".format(dropped_umi))
-            
-        # Adding stats to QA Stats object
-        qa_stats.input_reads_forward = total_reads
-        qa_stats.input_reads_reverse = total_reads
-        qa_stats.reads_after_trimming_forward = total_reads
-        qa_stats.reads_after_trimming_reverse = total_reads - dropped_rw
+    
+    # Adding stats to QA Stats object
+    qa_stats.input_reads_forward = total_reads
+    qa_stats.input_reads_reverse = total_reads
+    qa_stats.reads_after_trimming_forward = total_reads
+    qa_stats.reads_after_trimming_reverse = total_reads - dropped_rw
 
 #TODO this approach uses too much memory
-#     find a better solution (maybe Cython)
+#     find a better solution (maybe Cython or C++)
 def hashDemultiplexedReads(reads,
                            has_umi,
                            umi_start,
@@ -454,7 +423,7 @@ def hashDemultiplexedReads(reads,
     :type umi_start: integer
     :type umi_end: integer
     :type low_memory: boolean
-    :returns: a dictionary of read_name -> (x,y,umi) tags where umi is optional
+    :return: a dictionary of read_name -> (x,y,umi) tags where umi is optional
     """
     logger = logging.getLogger("STPipeline")
     

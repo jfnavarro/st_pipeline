@@ -65,6 +65,20 @@ An example run would be
 
 	st_pipeline_run.py --ids ids_file.txt --molecular-barcodes --ref-map path_to_index --log-file log_file.txt --output-folder /home/me/results --ref-annotation annotation_file.gtf file1.fastq file2.fastq 
 
+**Emsembl ids**
+
+If you use an Ensembl annotation file and you would like change
+the ouput file so it contains gene Ids/names instead of Ensembl ids. 
+You can use this tool that comes with the ST Pipeline
+
+	convertEnsemblToNames.py --names-map map.txt --output st_data_updated.tsv st_data.tsv
+	
+Where map.txt is a tab delimited file with two columns:
+
+ENSEMBL_ID	GENE_NAME
+
+And st_data.tsv is the output from the ST Pipeline.
+
 **License**
 
 The ST pipeline is open source under the MIT license which means that you can use it, change it and re-distribute but you must always refer to our license (see LICENSE and AUTHORS).

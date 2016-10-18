@@ -1,6 +1,7 @@
 """ 
-This module contains wrappers to make systems calls for different annotation tools
-most of the options can be passed as arguments
+This module contains wrappers of htseq-count
+with slight modifications to perform annotation
+of ST mapped reads against a reference.
 """
 import logging
 import os
@@ -246,16 +247,16 @@ def annotateReads(mappedReads,
                   htseq_no_ambiguous=True, 
                   include_non_annotated=False):
     """
-    Annotate the a file with mapped reads (SAM/BAM) using htseq-count tool 
-    and writes the records to the file given.
+    Annotates a file with mapped reads (SAM/BAM) using a modified 
+    version of the htseq-count tool. It writes the annotated records to a file.
     :param mappedReads: path to a SAM/BAM file with mapped reads sorted by coordinate
     :param gtfFile: path to an annotation file in GTF format
-    :param qa_stats: the Stats global object to store statistics
-    :param mode: htseq-count overlapping mode
-    :param strandness: the type of strandness to use when annotating
+    :param mode: htseq-count overlapping mode (see htseq-count documentation)
+    :param strandness: the type of strandness to use when annotating (yes, no or reverse)
     :param htseq_no_ambiguous: true if we want to discard ambiguous annotations
-    :param include_non_annotated: true if we want to include non annotated reads as Na in the output
-    :param outputFile: the path to the output file
+    :param include_non_annotated: true if we want to include 
+    non annotated reads as __no_feature in the output
+    :param outputFile: the name/path to the output file
     :type mappedReads: str
     :type gtfFile: str
     :type mode: str
