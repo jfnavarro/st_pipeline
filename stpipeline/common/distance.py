@@ -10,7 +10,7 @@ def hamming_distance(s1, s2):
     :param s1: the second string/sequence
     :type s1: str
     :type s2: str
-    :returns: the number of number of different elements in both sequences
+    :return: the number of number of different elements in both sequences
     :rtype: int
     :raises: ValueError
     """

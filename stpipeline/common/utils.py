@@ -11,7 +11,7 @@ def which_program(program):
     Checks that a program exists and is executable
     :param program: the program name
     :type program: str
-    :returns: The program name if the program is in the system and is executable
+    :return: The program name if the program is in the system and is executable
     """
     def is_exe(fpath):
         return fpath is not None and os.path.exists(fpath) and os.access(fpath, os.X_OK)
@@ -74,7 +74,7 @@ def safeOpenFile(filename, atrib):
     :param atrib: the file open/write attribute
     :type filename: str
     :type atrib: str
-    :returns: the file descriptor
+    :return: the file descriptor
     :raises: IOError
     """
     if filename is None:
@@ -92,6 +92,8 @@ def safeOpenFile(filename, atrib):
 def fileOk(_file):
     """
     Checks file exists and is not zero size
+    :param file: a file name
+    :return: True if the file is correct
     """
     return _file is not None and os.path.isfile(_file) and not os.path.getsize(_file) == 0
         

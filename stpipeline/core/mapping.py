@@ -29,13 +29,14 @@ def createIndex(genome,
     :type threads: int
     :type tmpFolder: str
     :type log_sj: str
-    :returns: the path to the new index
+    :return: the path to the new index
     :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
     logger = logging.getLogger("STPipeline")
     
     if not os.path.isfile(log_sj):
-        error = "Error, input file not present {}\n".format(log_sj)
+        error = "Error creating index with STAR.\n" \
+        "input file not present {}\n".format(log_sj)
         logger.error(error)
         raise RuntimeError(error)
     
@@ -47,12 +48,6 @@ def createIndex(genome,
         genome_dir = os.path.join(tmpFolder, genome_dir)
         log_final = os.path.join(tmpFolder, log_final)
         log = os.path.join(tmpFolder, log)
-        
-    if not os.path.isfile(log_sj):
-        error = "Error creating index with STAR.\n" \
-        "Splices file {} not fount\n".format(log_sj)
-        logger.error(error)
-        raise RuntimeError(error)
     
     os.mkdir(genome_dir)
     if not os.path.isdir(genome_dir):
@@ -92,7 +87,7 @@ def createIndex(genome,
                        "creating the index.\n{}\n".format(errmsg))
     
     if not os.path.isdir(genome_dir):
-        error = "Error creating index with STAR. The index output folder " 
+        error = "Error creating index with STAR.\nThe index output folder " 
         "is not present\n{}\n".format(errmsg)
         logger.error(error)
         raise RuntimeError(error)
@@ -117,11 +112,11 @@ def alignReads(reverse_reads,
     """
     This function will perform a sequence alignment using STAR.
     Mapped and unmapped reads are written to the paths given as
-    inputs. It needs the path of the STAR genome index. 
-    :param reverse_reads: file containing reverse reads in fastq format for pair end sequences
-    :param ref_map: a path to the genome/transcriptome indexes
-    :param outputFile: the name of the BAM output file to write the alignments
-    :param outputFileDiscarded: the name of the BAM output file to write discarded alignments
+    parameters. It needs the path of the STAR genome index. 
+    :param reverse_reads: file containing reverse reads in fastq format (Illumina pair end)
+    :param ref_map: a path to the genome/transcriptome STAR index
+    :param outputFile: the name of the SAM/BAM output file to write the alignments to
+    :param outputFileDiscarded: the name of the SAM/BAM output file to write discarded alignments
     :param outputFolder: the path of the output folder
     :param trimReverse: the number of bases to trim in the reverse reads (to not map)
     :param cores: the number of cores to use to speed up the alignment

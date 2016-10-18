@@ -1,6 +1,6 @@
 """ 
 This module contains some specific functionalities for
-ST fastq files
+ST fastq files, mainly quality filtering functions.
 """
 
 from stpipeline.common.utils import safeOpenFile, fileOk
@@ -154,7 +154,7 @@ def trim_quality(sequence,
     :type min_qual: integer
     :type min_length: integer
     :type phred: integer
-    :returns: A tuple (base, qualities) or (None,None)
+    :return: A tuple (base, qualities) or (None,None)
     """
     if len(sequence) < min_length:
         return None, None
@@ -173,13 +173,13 @@ def check_umi_template(umi, template):
     """
     Checks that the UMI (molecular barcode) given as input complies
     with the pattern given in template.
-    Returns true if the UMI complies
+    Returns True if the UMI complies
     :param umi: a molecular barcode
     :param template: a reg-based template with the same
                     distance of the UMI that should tell how the UMI should be formed
     :type umi: str
     :type template: str
-    :returns: True if the given molecular barcode fits the pattern given
+    :return: True if the given molecular barcode fits the pattern given
     """
     p = re.compile(template)
     return p.match(umi) is not None
@@ -204,7 +204,7 @@ def filterInputReads(fw,
                      qual64=False,
                      umi_filter=False,
                      umi_filter_template="WSNNWSNNV",
-                     umi_quality_bases=0):
+                     umi_quality_bases=3):
     """
     This function does four things (all done in one loop for performance reasons)
       - It performs a sanity check (forward and reverse reads same length and order)
@@ -378,10 +378,10 @@ def filterInputReads(fw,
         
     # Write info to the log
     logger.info("Trimming stats total reads (pair): {}".format(total_reads))
-    logger.info("Trimming stats reverse: {} reads have been dropped!".format(dropped_rw)) 
+    logger.info("Trimming stats {} reads have been dropped!".format(dropped_rw)) 
     perc2 = '{percent:.2%}'.format(percent= float(dropped_rw) / float(total_reads) )
-    logger.info("Trimming stats reverse: you just lost about {} of your data".format(perc2))
-    logger.info("Trimming stats reads (reverse) remaining: {}".format(total_reads - dropped_rw))
+    logger.info("Trimming stats you just lost about {} of your data".format(perc2))
+    logger.info("Trimming stats reads remaining: {}".format(total_reads - dropped_rw))
     logger.info("Trimming stats dropped pairs due to incorrect UMI: {}".format(dropped_umi_template))
     logger.info("Trimming stats dropped pairs due to low quality UMI: {}".format(dropped_umi))
     logger.info("Trimming stats dropped pairs due to high AT content: {}".format(dropped_AT))
@@ -423,7 +423,7 @@ def hashDemultiplexedReads(reads,
     :type umi_start: integer
     :type umi_end: integer
     :type low_memory: boolean
-    :returns: a dictionary of read_name -> (x,y,umi) tags where umi is optional
+    :return: a dictionary of read_name -> (x,y,umi) tags where umi is optional
     """
     logger = logging.getLogger("STPipeline")
     

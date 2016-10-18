@@ -34,6 +34,9 @@ def parseUniqueEvents(filename, molecular_barcodes=False):
     The output will be hash table [spot][gene] -> list of transcripts. 
     :param filename: the input file containing the SAM/BAM records
     :param molecular_barcodes: if True a the records contain UMIs
+    :return: A map of spots(x,y) to a map of gene names to a list of transcript 
+    (chrom, start, end, clear_name, mapping_quality, strand, sequence)
+    As map[(x,y)][gene]->list((chrom, start, end, clear_name, mapping_quality, strand, sequence))
     """
     
     unique_events = defaultdict(lambda : defaultdict(list))

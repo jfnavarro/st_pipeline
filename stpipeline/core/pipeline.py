@@ -41,7 +41,11 @@ FILENAMES_DISCARDED = {"mapped_discarded" : "mapping_discarded.fastq",
                        "quality_trimmed_discarded" : "R2_quality_trimmed_discarded.fastq"}
 
 class Pipeline():
-    
+    """ This class contains all the ST pipeline
+    attributes and a bunch of methods to parse
+    the input parameters, do sanity check and
+    run the pipeline steps.
+    """
     LogName = "STPipeline"
     
     def __init__(self):
@@ -96,7 +100,7 @@ class Pipeline():
         self.two_pass_mode = False
         self.two_pass_mode_genome = None
         self.strandness = "yes"
-        self.umi_quality_bases = 0
+        self.umi_quality_bases = 3
     
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -172,7 +176,7 @@ class Pipeline():
                 if ele == "W":
                     temp_reg_exp += "[AT]"
                 elif ele == "S":
-                    temp_reg_exp += "[GC]"
+                    temp_reg_exp += "[CG]"
                 elif ele == "N":
                     temp_reg_exp += "[ATCG]"
                 elif ele == "V":
@@ -220,7 +224,9 @@ class Pipeline():
     def createParameters(self, parser):
         """
         Adds the pipeline's parameters to a given
-        Argparse object 
+        Argparse object
+        :param parser: the Argparse object
+        :return: a new Argparse object with the parameters
         """
         class readable_dir(argparse.Action):
             def __call__(self, parser, namespace, values, option_string=None):
@@ -354,14 +360,15 @@ class Pipeline():
                             "When using the two pass mode the path of the fasta file with the genome is needed")
         parser.add_argument('--strandness', default="yes", type=str, metavar="[STRING]", choices=["no", "yes", "reverse"],
                             help="What strandness mode to use when annotating with htseq-count [no, yes(default), reverse]")
-        parser.add_argument('--umi-quality-bases', default=0, metavar="[INT]", type=int, choices=range(0, 6),
+        parser.add_argument('--umi-quality-bases', default=3, metavar="[INT]", type=int, choices=range(0, 10),
                             help="Maximum number of low quality bases allowed in an UMI (default: %(default)s)")        
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
     def load_parameters(self, options):
         """
-        Load the input parameters from the argparse object
+        Load the input parameters from the argparse object given as parameter
+        :param options: a Argparse object
         """
         self.allowed_missed = options.allowed_missed
         self.allowed_kmer = options.allowed_kmer
@@ -507,8 +514,10 @@ class Pipeline():
         
     def run(self):
         """ 
-        Runs the whole pipeline given the parameters present
-        raises different exceptions if something went wrong
+        Runs the whole pipeline given the parameters present.
+        It performs several sequencial steps.
+        It logs information and running time.
+        It throws Exceptions if something went wrong.
         """
         # First adjust the intermediate files with the temp_folder path
         if self.temp_folder:
@@ -551,9 +560,6 @@ class Pipeline():
         # STEP: FILTERING 
         # Applies different filters : sanity, quality, short, adaptors, UMI...
         #=================================================================
-        # NOTE after the trimming :
-        #    - discarded reads will be replaced by Ns
-        #    - The trimming is only performed in the reverse reads
         self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
         try: 
             filterInputReads(self.fastq_fw,
@@ -704,7 +710,7 @@ class Pipeline():
             if self.low_memory: hash_reads.close() 
                 
         #=================================================================
-        # STEP: annotate using htseq count
+        # STEP: annotate using htseq-count
         #=================================================================
         self.logger.info("Starting annotation {}".format(globaltime.getTimestamp()))
         try:
@@ -719,7 +725,7 @@ class Pipeline():
             raise
 
         #=================================================================
-        # STEP: compute saturation (Optional
+        # STEP: compute saturation (Optional)
         #=================================================================
         # To compute saturation points we need the number of annotated reads
         # the fastest way is to get that information from the stats object
