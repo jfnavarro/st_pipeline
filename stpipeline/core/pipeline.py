@@ -430,7 +430,7 @@ class Pipeline():
         self.two_pass_mode = options.two_pass_mode
         self.two_pass_mode_genome = options.two_pass_mode_genome
         self.strandness = options.strandness
-        self.umi_quality_bases = umi_quality_bases
+        self.umi_quality_bases = options.umi_quality_bases
         # Assign class parameters to the QA stats object
         import inspect
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))

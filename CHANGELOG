@@ -330,3 +330,6 @@ Version 1.0.0
 * Better stats for the quality filter step
 * Updated convertEnsemblToNames script
 * Updated stringdocs
+
+Version 1.0.1
+* Fixed small bug in the parsing of the umi quality parameter
