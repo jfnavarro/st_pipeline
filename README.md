@@ -5,7 +5,7 @@
 ST Pipeline contains the tools and scripts needed to process and analyze the raw files generated with the Spatial Transcriptomics method in FASTQ format. 
 
 The following files/parameters are required :
-- FASTQ files (Read 1 containing the spatial information and the UMI and read 2 containing the real sequence) 
+- FASTQ files (Read 1 containing the spatial information and the UMI and read 2 containing the genomic sequence) 
 - A genome index generated with STAR 
 - An annotation file in GTF or GFF format
 - The file containing the barcodes and array coordinates (look at the folder "ids" and chose the correct one. 
@@ -63,7 +63,7 @@ To see the different options type
 
 An example run would be
 
-	st_pipeline_run.py --ids ids_file.txt --molecular-barcodes --ref-map path_to_index --log-file log_file.txt --output-folder /home/me/results --ref-annotation annotation_file.gtf file1.fastq file2.fastq 
+	st_pipeline_run.py --ids ids_file.txt --ref-map path_to_index --log-file log_file.txt --output-folder /home/me/results --ref-annotation annotation_file.gtf file1.fastq file2.fastq 
 
 **Emsembl ids**
 
