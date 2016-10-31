@@ -20,6 +20,7 @@ import sys
 import shutil
 import os
 import gzip
+import bz2
 from subprocess import check_call
 
 FILENAMES = {"mapped" : "mapped.bam",
@@ -135,10 +136,12 @@ class Pipeline():
                      
         if (not self.fastq_fw.endswith(".fastq") \
         and not self.fastq_fw.endswith(".fq") \
-        and not self.fastq_fw.endswith(".gz")) \
+        and not self.fastq_fw.endswith(".gz") \
+        and not self.fastq_rv.endswith(".bz2")) \
         or (not self.fastq_rv.endswith(".fastq") \
         and not self.fastq_rv.endswith(".fq") \
-        and not self.fastq_rv.endswith(".gz")):
+        and not self.fastq_rv.endswith(".gz") \
+        and not self.fastq_rv.endswith(".bz2")):
             error = "Error parsing parameters.\n" \
             "Incorrect format for input files {} {}".format(self.fastq_fw, self.fastq_rv)
             self.logger.error(error)
@@ -536,9 +539,9 @@ class Pipeline():
         start_exe_time = globaltime.getTimestamp()
         self.logger.info("Starting the pipeline: {}".format(start_exe_time))
 
-        # Check if input fastq files are gzipped
+        # Check if input fastq files are compressed
         # TODO it is faster to make a system call with gunzip
-        # TODO add support to bzip 
+        # TODO reliable way to test if files are compressed (something more robust than just file name endings)
         try:
             if self.fastq_fw.endswith(".gz"):
                 temp_fastq_fw = os.path.join(self.temp_folder, "unzipped_fastq_fw.fastq")
@@ -555,7 +558,25 @@ class Pipeline():
                             filehandler_write.write(line)
                 self.fastq_rv = temp_fastq_rv
         except Exception as e:
-            self.logger.error("Error gunziping input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
+            self.logger.error("Error decompressing gzipped input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
+            raise e
+        try:
+            if self.fastq_fw.endswith(".bz2"):
+                temp_fastq_fw = os.path.join(self.temp_folder, "unzipped_fastq_fw.fastq")
+                with bz2.BZ2File(self.fastq_fw, "rb") as filehandler_read:
+                    with open(temp_fastq_fw, "w") as filehandler_write:
+                        for line in filehandler_read:
+                            filehandler_write.write(line)
+                self.fastq_fw = temp_fastq_fw
+                if self.fastq_rv.endswith(".bz2"):
+                    temp_fastq_rv = os.path.join(self.temp_folder, "unzipped_fastq_rv.fastq")
+                    with bz2.BZ2File(self.fastq_rv, "rb") as filehandler_read:
+                        with open(temp_fastq_rv, "w") as filehandler_write:
+                            for line in filehandler_read:
+                                filehandler_write.write(line)
+                    self.fastq_rv = temp_fastq_rv
+        except Exception as e:
+            self.logger.error("Error decompressing bzip2'ed input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
             raise e
         #=================================================================
         # STEP: FILTERING 
