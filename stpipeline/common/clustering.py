@@ -9,50 +9,19 @@ from collections import defaultdict
 from stpipeline.common.distance import hamming_distance
 import random
 
-def extractMolecularBarcodes(reads, mc_start_position, mc_end_position):
-    """ 
-    Extracts a list of molecular barcodes from the list of reads given their
-    start and end positions and returns a list of 
-    (molecular_barcode, read object, occurrences, number Ns)
-    sorted by molecular_barcode, occurrences(reverse) and number of Ns
-    :param reads: a list of tuples (sequence, quality)
-    :param mc_start_position: the start position of the molecular barcodes in the sequence
-    :param mc_end_position: the end position of the molecular barcodes in the sequence
-    :type mc_start_position: integer
-    :type mc_end_position: integer
-    :return: a list of tuples
-    :rtype: list
-    """
-    assert(mc_end_position > mc_start_position and mc_start_position >= 0)
-    # Create a list with the molecular barcodes and a hash with the occurrences
-    molecular_barcodes = list()
-    molecular_barcodes_counts = defaultdict(int)
-    for read in reads:
-        mc = read[0][mc_start_position:mc_end_position]
-        molecular_barcodes.append((mc, read))
-        molecular_barcodes_counts[mc] += 1
-    # Creates a new list with the molecular barcodes, occurrences and N content
-    molecular_barcodes_count_list = list()
-    for mc in molecular_barcodes:
-        count = molecular_barcodes_counts[mc[0]]
-        count_n = mc[0].count("N")
-        molecular_barcodes_count_list.append((mc[0],mc[1],count,count_n))
-    # Return the list sorted by molecular barcode, occurrence(reverse) and number of Ns
-    return sorted(molecular_barcodes_count_list, key=lambda x: (x[0], -x[2], x[3]))
-
 def countMolecularBarcodesClustersHierarchical(molecular_barcodes, 
                                                allowed_mismatches,
                                                min_cluster_size, 
                                                method = "single"):
     """
-    Tries to finds clusters of similar molecular barcodes given 
+    Tries to finds clusters of similar UMIs given 
     a minimum cluster size and a minimum distance (allowed_mismatches). 
     It returns a list with all the non clustered reads, for clusters of 
     multiple reads a random read will be chosen. 
     This will guarantee that the list of reads returned
     is unique and does not contain duplicates
     This approach finds clusters using hierarchical clustering
-    :param molecular_barcodes: a list of tuples (molecular_barcode, read)
+    :param molecular_barcodes: a list of tuples (UMI, read)
     :param allowed_mismatches: how much distance we allow between clusters
     :param min_cluster_size: minimum number of reads for a cluster to be
     :param method: the type of distance algorithm when clustering 
@@ -96,7 +65,7 @@ def countMolecularBarcodesClustersNaive(molecular_barcodes,
                                         allowed_mismatches, 
                                         min_cluster_size):
     """
-    Tries to finds clusters of similar molecular barcodes given 
+    Tries to finds clusters of similar UMIs given 
     a minimum cluster size and a minimum distance (allowed_mismatches). 
     It returns a list with all the non clustered reads, for clusters of 
     multiple reads a random read will be chosen. 
@@ -104,7 +73,7 @@ def countMolecularBarcodesClustersNaive(molecular_barcodes,
     is unique and does not contain duplicates
     This approach is a quick naive approach where the molecular barcodes are sorted
     and then added to clusters until the min distance is above the threshold
-    :param molecular_barcodes: a list of tuples (molecular_barcode, read)
+    :param molecular_barcodes: a list of tuples (UMI, read)
     :param allowed_mismatches: how much distance we allow between clusters
     :param min_cluster_size: minimum number of reads for a cluster to be
     :type allowed_mismatches: integer

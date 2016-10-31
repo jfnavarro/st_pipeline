@@ -1,9 +1,7 @@
-#!/usr/bin/env python
 """ 
 This module contains functions related to sequence alignment and barcode
 demultiplexing in the ST pipeline
 """
-
 import logging 
 import subprocess
 from subprocess import CalledProcessError
@@ -150,7 +148,7 @@ def alignReads(reverse_reads,
     logger = logging.getLogger("STPipeline")
     
     if not os.path.isfile(reverse_reads):
-        error = "Error, input file not present {}\n".format(reverse_reads)
+        error = "Error mapping with STAR, input file not present {}\n".format(reverse_reads)
         logger.error(error)
         raise RuntimeError(error)
     

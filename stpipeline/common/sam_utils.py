@@ -7,6 +7,59 @@ from stpipeline.common.stats import qa_stats
 import os
 import logging 
 import pysam
+from collections import defaultdict
+
+#TODO this function uses too much memory, optimize it. (Maybe Cython or C++)
+def parseUniqueEvents(filename):
+    """
+    Parses the transcripts present in the filename given as input.
+    It expects a SAM/BAM file where the spot coordinates are present in the tags
+    The output will be hash table [spot][gene] -> list of transcripts. 
+    :param filename: the input file containing the annotated SAM/BAM records
+    :return: A map of spots(x,y) to a map of gene names to a list of transcript 
+    (chrom, start, end, clear_name, mapping_quality, strand, sequence)
+    As map[(x,y)][gene]->list((chrom, start, end, clear_name, mapping_quality, strand, UMI))
+    """
+    
+    logger = logging.getLogger("STPipeline")
+    
+    unique_events = defaultdict(lambda : defaultdict(list))
+    
+    sam_type = os.path.splitext(filename)[1].lower()
+    flag = "r" if sam_type == ".sam" else "rb"
+    sam_file = pysam.AlignmentFile(filename, flag)
+    for rec in sam_file.fetch(until_eof=True):
+        clear_name = rec.query_name
+        mapping_quality = rec.mapping_quality
+        start = rec.reference_start
+        end = rec.reference_end
+        chrom = sam_file.getrname(rec.reference_id)
+        strand = "-" if rec.is_reverse else "+"
+        # Get TAGGD tags
+        x,y,gene,seq = (None,None,None,None)
+        for (k, v) in rec.tags:
+            if k == "B1":
+                x = int(v) ## The X coordinate
+            elif k == "B2":
+                y = int(v) ## The Y coordinate
+            elif k == "XF":
+                gene = str(v) ## The gene name
+            elif k == "B3":
+                umi = str(v) ## The UMI
+            else:
+                continue
+        # Check that all tags are present
+        if any(tag is None for tag in [x,y,gene,umi]):
+            logger.warning("Warning creating dataset.\n" \
+                           "Missing attributes for record {}\n".format(clear_name))
+            continue
+        
+        # Create a new transcript and add it to the dictionary
+        transcript = (chrom, start, end, clear_name, mapping_quality, strand, umi)
+        unique_events[(x,y)][gene].append(transcript)
+      
+    sam_file.close()
+    return unique_events
 
 def sortSamFile(input_sam, outputFolder=None):
     """
@@ -15,7 +68,7 @@ def sortSamFile(input_sam, outputFolder=None):
     :param outputFolder: the location where to place the output file (optional)
     :type input: str
     :type outputFolder: str
-    :returns: the path to the sorted file
+    :return: the path to the sorted file
     :raises: RuntimeError
     """
     
@@ -70,8 +123,9 @@ def filterMappedReads(mapped_reads,
         raise RuntimeError(error)
     
     # Create output files handlers
-    flag_read = "rb"
-    flag_write = "wb"
+    sam_type = os.path.splitext(mapped_reads)[1].lower()
+    flag_read = "r" if sam_type == ".sam" else "rb"
+    flag_write = "w" if sam_type == ".sam" else "wb"
     infile = pysam.AlignmentFile(mapped_reads, flag_read)
     outfile = pysam.AlignmentFile(file_output, flag_write, template=infile)
     if file_output_discarded is not None:
@@ -88,9 +142,9 @@ def filterMappedReads(mapped_reads,
         
         # Add the barcode and coordinates info if present otherwise discard
         try:
-            # The probability of a collision is very very low
-            key = hash(sam_record.query_name)
-            for tag in hash_reads[key]:
+            # Using as key the read name as it was used to generate the dictionary
+            for tag in hash_reads[sam_record.query_name]:
+                # TODO add error check here
                 tag_tokens = tag.split(":")
                 sam_record.set_tag(tag_tokens[0], tag_tokens[2], tag_tokens[1])
         except KeyError:
@@ -98,14 +152,7 @@ def filterMappedReads(mapped_reads,
             continue
             
         # Get how many bases were mapped
-        mapped_bases = 0
-        for cigar_tuple in sam_record.cigartuples:
-            if cigar_tuple[0] == 0:
-                mapped_bases += cigar_tuple[1]
-        
-        # We need this so we don't duplicate reads
-        if not sam_record.is_secondary:
-            sam_record.set_tag("NH", None)
+        mapped_bases = sum([cigar[1] for cigar in sam_record.cigartuples if cigar[0] == 0])
             
         # Discard if secondary alignment or only few bases mapped  
         if sam_record.is_secondary:
@@ -114,7 +161,11 @@ def filterMappedReads(mapped_reads,
         elif mapped_bases != 0 and mapped_bases < min_length:
             dropped_short += 1
             discard_read = True
-
+        else:
+            # We need this so we don't duplicate reads
+            # in the annotation step
+            sam_record.set_tag("NH", None)
+                               
         if discard_read:
             if file_output_discarded is not None:
                 outfile_discarded.write(sam_record)

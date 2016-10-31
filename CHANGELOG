@@ -333,3 +333,10 @@ Version 1.0.0
 
 Version 1.0.1
 * Fixed small bug in the parsing of the umi quality parameter
+
+Version 1.0.2
+* If no temp folder is given a new unique one is created on top of the execution folder
+* integrate createDataset.py into the code of the pipeline
+* Adjusted some parameters names and descriptions (no UMI is default)
+* Added sliding window when counting unique molecules
+* Added support to bzip
