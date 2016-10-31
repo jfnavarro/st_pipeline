@@ -74,11 +74,10 @@ class Pipeline():
         self.logfile = None
         self.output_folder = None
         self.temp_folder = None
-        self.molecular_barcodes = False
-        self.mc_allowed_mismatches = 1
-        self.mc_start_position = 18
-        self.mc_end_position = 27
-        self.min_cluster_size = 2
+        self.umi_allowed_mismatches = 1
+        self.umi_start_position = 18
+        self.umi_end_position = 27
+        self.umi_min_cluster_size = 2
         self.keep_discarded_files = False
         self.remove_polyA_distance = 0
         self.remove_polyT_distance = 0
@@ -87,7 +86,7 @@ class Pipeline():
         self.filter_AT_content = 90
         self.disable_clipping = False
         self.disable_multimap = False
-        self.mc_cluster = "naive"
+        self.umi_cluster_algorithm = "naive"
         self.min_intron_size = 20
         self.max_intron_size = 1000000
         self.max_gap_size = 1000000
@@ -100,7 +99,8 @@ class Pipeline():
         self.two_pass_mode = False
         self.two_pass_mode_genome = None
         self.strandness = "yes"
-        self.umi_quality_bases = 3
+        self.umi_quality_bases = 4
+        self.umi_counting_offset = 50
     
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -156,7 +156,7 @@ class Pipeline():
             self.logger.error(error)
             raise RuntimeError(error)        
            
-        if self.umi_filter and self.molecular_barcodes:
+        if self.umi_filter:
             # Check template validity
             import re
             regex = "[^ACGTURYSWKMBDHVN]"
@@ -240,20 +240,20 @@ class Pipeline():
 
         parser.add_argument('fastq_files', nargs=2)
         parser.add_argument('--ids', metavar="[FILE]", required=True,
-                            help='Path to the file containing the barcodes and the array coordinates.')
+                            help='Path to the file containing the map of barcodes to the array coordinates')
         parser.add_argument('--ref-map', metavar="[FOLDER]", action=readable_dir, required=True,
-                            help="Path to the folder with the genome STAR index " \
+                            help="Path to the folder with the STAR index " \
                             "for the genome that you want to use to align the reads")
         parser.add_argument('--ref-annotation', metavar="[FILE]", required=True,
                             help="Path to the reference annotation file " \
-                            "(GTF or GFF format is required)")
+                            "(GTF or GFF format is required) to be used to annotated the reads")
         parser.add_argument('--expName', type=str, metavar="[STRING]", required=True,
                             help="Name of the experiment/dataset (The output files will prepend this name)")
         parser.add_argument('--allowed-missed', default=2, metavar="[INT]", type=int, choices=range(0, 7),
                             help="Number of allowed mismatches when demultiplexing " \
-                            "against the barcodes (default: %(default)s)")
+                            "against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--allowed-kmer', default=6, metavar="[INT]", type=int, choices=range(1, 10),
-                            help="KMer length when demultiplexing against the barcodes (default: %(default)s)")
+                            help="KMer length when demultiplexing against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0, 7),
                             help="Extra flanking bases added when demultiplexing against the barcodes")
         parser.add_argument('--min-length-qual-trimming', default=28, metavar="[INT]", type=int, choices=range(20, 101),
@@ -273,9 +273,9 @@ class Pipeline():
                             help="Mode of Annotation when using HTSeq. "
                             "Modes = {union,intersection-nonempty(default),intersection-strict}")
         parser.add_argument('--htseq-no-ambiguous', action="store_true", default=False,
-                            help="When using htseq discard reads annotating ambiguous genes (default false)")
+                            help="When using htseq discard reads annotating ambiguous genes (default False)")
         parser.add_argument('--start-id', default=0, metavar="[INT]", type=int, choices=range(0, 27),
-                            help="Start position of the IDs (Barcodes) in the read 1 (counting from 0) (default: %(default)s)")
+                            help="Start position of the IDs (Barcodes) in the R1 (counting from 0) (default: %(default)s)")
         parser.add_argument('--no-clean-up', action="store_false", default=True,
                             help="Do not remove temporary/intermediary files (useful for debugging)")
         parser.add_argument('--verbose', action="store_true", default=False,
@@ -283,7 +283,7 @@ class Pipeline():
         parser.add_argument('--mapping-threads', default=4, metavar="[INT]", type=int, choices=range(1, 17),
                             help="Number of threads to use in the mapping step (default: %(default)s)")
         parser.add_argument('--min-quality-trimming', default=20, metavar="[INT]", type=int, choices=range(10, 61),
-                            help="Minimum phred quality for trimming bases in the trimming step (default: %(default)s)")
+                            help="Minimum phred quality a base must have in the trimming step (default: %(default)s)")
         parser.add_argument('--bin-path', metavar="[FOLDER]", action=readable_dir, default=None,
                             help="Path to folder where binary executables are present (system path by default)")
         parser.add_argument('--log-file', metavar="[STR]", default=None,
@@ -292,35 +292,28 @@ class Pipeline():
                             help='Path of the output folder')
         parser.add_argument('--temp-folder', metavar="[FOLDER]", action=readable_dir, default=None,
                             help='Path of the location for temporary files')
-        parser.add_argument('--molecular-barcodes',
-                            action="store_true",
-                            help="Activates the molecular barcodes (UMI) duplicates filter")
-        parser.add_argument('--mc-allowed-mismatches', default=1, metavar="[INT]", type=int, choices=range(0, 5),
-                            help="Number of allowed mismatches when applying the molecular " \
-                            "barcodes (UMI) duplicates filter (default: %(default)s)")
-        parser.add_argument('--mc-start-position', default=18, metavar="[INT]", type=int, choices=range(0, 43),
-                            help="Position (base wise) of the first base of the " \
-                            "molecular barcodes (starting by 0) (default: %(default)s)")
-        parser.add_argument('--mc-end-position', default=27, metavar="[INT]", type=int, choices=range(8, 51),
-                            help="Position (base wise) of the last base of the "\
-                            "molecular barcodes (starting by 1) (default: %(default)s)")
-        parser.add_argument('--min-cluster-size', default=2, metavar="[INT]", type=int, choices=range(1, 11),
-                            help="Min number of equal molecular barcodes to count" \
-                            " as a cluster (duplicate) (default: %(default)s)")
+        parser.add_argument('--umi-allowed-mismatches', default=1, metavar="[INT]", type=int, choices=range(0, 5),
+                            help="Number of allowed mismatches (hamming distance) " \
+                            "that UMIs of the same gene-spot must have in order to cluster together (default: %(default)s)")
+        parser.add_argument('--umi-start-position', default=18, metavar="[INT]", type=int, choices=range(0, 43),
+                            help="Position in R1 (base wise) of the first base of the " \
+                            "UMI (starting by 0) (default: %(default)s)")
+        parser.add_argument('--umi-end-position', default=27, metavar="[INT]", type=int, choices=range(8, 51),
+                            help="Position in R1 (base wise) of the last base of the "\
+                            "UMI (starting by 1) (default: %(default)s)")
+        parser.add_argument('--umi-min-cluster-size', default=2, metavar="[INT]", type=int, choices=range(1, 11),
+                            help="Min number of equal UMIs to count" \
+                            " as a cluster (duplicate) given the allowed mismatches (default: %(default)s)")
         parser.add_argument('--keep-discarded-files', action="store_true", default=False,
-                            help='Writes down discarded reads and barcodes into files')
+                            help='Writes down unaligned, un-annotated and un-demultiplexed reads to files')
         parser.add_argument('--remove-polyA', default=0, metavar="[INT]", type=int, choices=range(0, 25),
-                            help="Remove PolyAs and everything after it in the reads of a " \
-                            "length at least as given number (default: %(default)s)")
+                            help="Remove PolyA stretches of the given length from R2 (default: %(default)s)")
         parser.add_argument('--remove-polyT', default=0, metavar="[INT]", type=int, choices=range(0, 25),
-                            help="Remove PolyTs and everything after it in the reads of a " \
-                            "length at least as given number (default: %(default)s)")
+                            help="Remove PolyT stretches of the given length from R2 (default: %(default)s)")
         parser.add_argument('--remove-polyG', default=0, metavar="[INT]", type=int, choices=range(0, 25),
-                            help="Remove PolyGs and everything after it in the reads of a " \
-                            "length at least as given number (default: %(default)s)")
+                            help="Remove PolyG stretches of the given length from R2 (default: %(default)s)")
         parser.add_argument('--remove-polyC', default=0, metavar="[INT]", type=int, choices=range(0, 25),
-                            help="Remove PolyCs and everything after it in the reads of a " \
-                            "length at least as given number (default: %(default)s)")
+                            help="Remove PolyC stretches of the given length from R2 (default: %(default)s)")
         parser.add_argument('--filter-AT-content', default=90, metavar="[INT%]", type=int, choices=range(1, 99),
                             help="Discards reads whose number of A and T bases in total are more " \
                             "or equal than the number given in percentage (default: %(default)s)")
@@ -328,8 +321,9 @@ class Pipeline():
                             help="If activated, multiple aligned reads obtained during mapping will be all discarded. " \
                             "Otherwise the highest scored one will be kept")
         parser.add_argument('--disable-clipping', action="store_true", default=False,
-                            help="If activated, disable soft-clipping (local alignment) in the mapping")
-        parser.add_argument('--mc-cluster', default="naive", metavar="[STRING]", type=str, choices=["naive", "hierarchical"],
+                            help="If activated, disable soft-clipping (local alignment) in the mapping step")
+        parser.add_argument('--umi-cluster-algorithm', default="naive", metavar="[STRING]", 
+                            type=str, choices=["naive", "hierarchical"],
                             help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n" \
                             "Modes = {naive(default), hierarchical}")
         parser.add_argument('--min-intron-size', default=20, metavar="[INT]", type=int, choices=range(0, 1000),
@@ -348,7 +342,7 @@ class Pipeline():
                             help="Performs a saturation curve computation by sub-sampling the annotated reads, computing " \
                             "unique molecules and then a saturation curve (included in the log file)")
         parser.add_argument('--include-non-annotated', action="store_true", default=False,
-                            help="Do not discard un-annotated reads (they will be labeled no_feature)")
+                            help="Do not discard un-annotated reads (they will be labeled __no_feature)")
         parser.add_argument('--inverse-mapping-rv-trimming', default=0, type=int, metavar="[INT]", choices=range(0, 100),
                             help="Number of bases to trim in the reverse reads for the mapping step on the 3' end")
         parser.add_argument('--low-memory', default=False, action="store_true",
@@ -360,8 +354,14 @@ class Pipeline():
                             "When using the two pass mode the path of the fasta file with the genome is needed")
         parser.add_argument('--strandness', default="yes", type=str, metavar="[STRING]", choices=["no", "yes", "reverse"],
                             help="What strandness mode to use when annotating with htseq-count [no, yes(default), reverse]")
-        parser.add_argument('--umi-quality-bases', default=3, metavar="[INT]", type=int, choices=range(0, 10),
-                            help="Maximum number of low quality bases allowed in an UMI (default: %(default)s)")        
+        parser.add_argument('--umi-quality-bases', default=4, metavar="[INT]", type=int, choices=range(0, 10),
+                            help="Maximum number of low quality bases allowed in an UMI (default: %(default)s)")
+        parser.add_argument('--umi-counting-offset', default=50, metavar="[INT]", type=int, choices=range(0, 300),
+                            help="Expression count for each gene-spot combination is expressed " \
+                            "as the number of unique UMIs in each strand/start position. However " \
+                            "some reads might have slightly different start positions due to " \
+                            "library preparation artifacts. This parameters allows to define this" \
+                            "offset (default: %(default)s)")       
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -403,12 +403,11 @@ class Pipeline():
         if options.temp_folder is not None and os.path.isdir(options.temp_folder): 
             self.temp_folder = os.path.abspath(options.temp_folder)
         else:
-            self.temp_folder = os.path.abspath(os.getcwd())
-        self.molecular_barcodes = options.molecular_barcodes
-        self.mc_allowed_mismatches = options.mc_allowed_mismatches
-        self.mc_start_position = options.mc_start_position
-        self.mc_end_position = options.mc_end_position
-        self.min_cluster_size = options.min_cluster_size
+            self.temp_folder = tempfile.mkdtemp(prefix="st_pipeline_temp")
+        self.umi_allowed_mismatches = options.umi_allowed_mismatches
+        self.umi_start_position = options.umi_start_position
+        self.umi_end_position = options.umi_end_position
+        self.umi_min_cluster_size = options.umi_min_cluster_size
         self.keep_discarded_files = options.keep_discarded_files
         self.remove_polyA_distance = options.remove_polyA
         self.remove_polyT_distance = options.remove_polyT
@@ -417,7 +416,7 @@ class Pipeline():
         self.filter_AT_content = options.filter_AT_content
         self.disable_multimap = options.disable_multimap
         self.disable_clipping = options.disable_clipping
-        self.mc_cluster = options.mc_cluster
+        self.umi_cluster_algorithm = options.umi_cluster_algorithm
         self.min_intron_size = options.min_intron_size
         self.max_intron_size = options.max_intron_size
         self.max_gap_size = options.max_gap_size
@@ -431,6 +430,7 @@ class Pipeline():
         self.two_pass_mode_genome = options.two_pass_mode_genome
         self.strandness = options.strandness
         self.umi_quality_bases = options.umi_quality_bases
+        self.umi_counting_offset = options.umi_counting_offset
         # Assign class parameters to the QA stats object
         import inspect
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
@@ -489,16 +489,17 @@ class Pipeline():
             self.logger.info("Computing saturation curve")
         if self.include_non_annotated:
             self.logger.info("Including non annotated reads")
-        if self.molecular_barcodes:
-            self.logger.info("Using UMIs to remove duplicates")
-            self.logger.info("Using UMIs start position: {}".format(self.mc_start_position))
-            self.logger.info("Using UMIs end position: {}".format(self.mc_end_position))
-            self.logger.info("Using UMIs min cluster size: {}".format(self.min_cluster_size))
-            self.logger.info("Using UMIs allowed mismatches: {}".format(self.mc_allowed_mismatches))
-            self.logger.info("Using UMIs clustering algorithm: {}".format(self.mc_cluster))
-            self.logger.info("Allowing {} low quality bases in an UMI".format(self.umi_quality_bases))
-            if self.umi_filter:
-                self.logger.info("UMIs using filter: {}".format(self.umi_filter_template))    
+        self.logger.info("Using UMIs to remove duplicates")
+        self.logger.info("Using UMIs start position: {}".format(self.mc_start_position))
+        self.logger.info("Using UMIs end position: {}".format(self.mc_end_position))
+        self.logger.info("Using UMIs min cluster size: {}".format(self.min_cluster_size))
+        self.logger.info("Using UMIs allowed mismatches: {}".format(self.mc_allowed_mismatches))
+        self.logger.info("Using UMIs clustering algorithm: {}".format(self.mc_cluster))
+        self.logger.info("Allowing an offset of {} when clustering UMIs " \
+                         "by strand-start in a gene-spot".format(self.umi_counting_offset))
+        self.logger.info("Allowing {} low quality bases in an UMI".format(self.umi_quality_bases))
+        if self.umi_filter:
+            self.logger.info("UMIs using filter: {}".format(self.umi_filter_template))    
         if self.remove_polyA_distance > 0:
             self.logger.info("Removing polyA adaptors of a length of at least: {}".format(self.remove_polyA_distance))                        
         if self.remove_polyT_distance > 0:
@@ -546,13 +547,13 @@ class Pipeline():
                         for line in filehandler_read:
                             filehandler_write.write(line)
                 self.fastq_fw = temp_fastq_fw
-                if self.fastq_rv.endswith(".gz"):
-                    temp_fastq_rv = os.path.join(self.temp_folder, "unzipped_fastq_rv.fastq")
-                    with gzip.open(self.fastq_rv, "rb") as filehandler_read:
-                        with open(temp_fastq_rv, "w") as filehandler_write:
-                            for line in filehandler_read:
-                                filehandler_write.write(line)
-                    self.fastq_rv = temp_fastq_rv
+            if self.fastq_rv.endswith(".gz"):
+                temp_fastq_rv = os.path.join(self.temp_folder, "unzipped_fastq_rv.fastq")
+                with gzip.open(self.fastq_rv, "rb") as filehandler_read:
+                    with open(temp_fastq_rv, "w") as filehandler_write:
+                        for line in filehandler_read:
+                            filehandler_write.write(line)
+                self.fastq_rv = temp_fastq_rv
         except Exception as e:
             self.logger.error("Error gunziping input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
             raise e
@@ -570,9 +571,8 @@ class Pipeline():
                              self.barcode_start,
                              self.barcode_length,
                              self.filter_AT_content,
-                             self.molecular_barcodes,
-                             self.mc_start_position,
-                             self.mc_end_position,
+                             self.umi_start_position,
+                             self.umi_end_position,
                              self.min_quality_trimming,
                              self.min_length_trimming,
                              self.remove_polyA_distance,
@@ -689,9 +689,8 @@ class Pipeline():
         #=================================================================
         self.logger.info("Parsing demultiplexed reads {}".format(globaltime.getTimestamp()))
         hash_reads = hashDemultiplexedReads(FILENAMES["demultiplexed_matched"], 
-                                            self.molecular_barcodes, 
-                                            self.mc_start_position,
-                                            self.mc_end_position,
+                                            self.umi_start_position,
+                                            self.umi_end_position,
                                             self.low_memory)
         
         #================================================================
@@ -735,10 +734,10 @@ class Pipeline():
             try:
                 computeSaturation(annotated_reads,
                                   FILENAMES["annotated"],
-                                  self.molecular_barcodes,
-                                  self.mc_cluster,
-                                  self.mc_allowed_mismatches,
-                                  self.min_cluster_size,
+                                  self.umi_cluster_algorithm,
+                                  self.umi_allowed_mismatches,
+                                  self.umi_min_cluster_size,
+                                  self.umi_counting_offset,
                                   self.expName,
                                   self.temp_folder)
             except Exception:
@@ -751,10 +750,10 @@ class Pipeline():
         try:
             createDataset(FILENAMES["annotated"],
                           qa_stats, # Passed as reference
-                          self.molecular_barcodes,
-                          self.mc_cluster,
-                          self.mc_allowed_mismatches,
-                          self.min_cluster_size,
+                          self.umi_cluster_algorithm,
+                          self.umi_allowed_mismatches,
+                          self.umi_min_cluster_size,
+                          self.umi_counting_offset,
                           self.output_folder,
                           self.expName,
                           True) # Verbose

@@ -185,16 +185,15 @@ def check_umi_template(umi, template):
     return p.match(umi) is not None
 
 def filterInputReads(fw, 
-                     rw,
+                     rv,
                      out_fw,
                      out_rw,
                      out_rw_discarded=None,
                      barcode_start=0, 
                      barcode_length=18,
                      filter_AT_content=90,
-                     molecular_barcodes=False, 
-                     mc_start=18, 
-                     mc_end=27,
+                     umi_start=18, 
+                     umi_end=27,
                      min_qual=20, 
                      min_length=28,
                      polyA_min_distance=0, 
@@ -213,15 +212,14 @@ def filterInputReads(fw,
       - It performs a sanity check on the UMI (optional)
     Reads that do not pass the filters are discarded (both R1 and R2)
     :param fw: the fastq file with the forward reads
-    :param rw: the fastq file with the reverse reads
+    :param rv: the fastq file with the reverse reads
     :param out_fw: the name of the output file for the forward reads
     :param out_rw: the name of the output file for the reverse reads
     :param out_rw_discarded: the name of the output file for descarded reads
     :param barcode_start: the base index where the barcode sequence starts
     :param barcode_length: the number of bases present in the barcodes
-    :param molecular_barcodes: if True the forward reads contain molecular barcodes
-    :param mc_start: the start position of the molecular barcodes if any
-    :param mc_end: the end position of the molecular barcodes if any
+    :param umi_start: the start position of the molecular barcodes if any
+    :param umi_end: the end position of the molecular barcodes if any
     :param min_qual: the min quality value to use to trim quality
     :param min_length: the min valid length for a read after trimming
     :param polyA_min_distance: if >0 we remove PolyA adaptors from the reads
@@ -234,8 +232,8 @@ def filterInputReads(fw,
     """
     logger = logging.getLogger("STPipeline")
     
-    if not os.path.isfile(fw) or not os.path.isfile(rw):
-        error = "Error, input file/s not present {}\n{}\n".format(fw,rw)
+    if not os.path.isfile(fw) or not os.path.isfile(rv):
+        error = "Error doing quality trimming, input file/s not present {}\n{}\n".format(fw,rv)
         logger.error(error)
         raise RuntimeError(error)
     
@@ -243,17 +241,17 @@ def filterInputReads(fw,
     keep_discarded_files = out_rw_discarded is not None
     
     # Create output file writers
-    out_rw_handle = safeOpenFile(out_rw, 'w')
-    out_rw_writer = writefq(out_rw_handle)
+    out_rv_handle = safeOpenFile(out_rw, 'w')
+    out_rv_writer = writefq(out_rv_handle)
     out_fw_handle = safeOpenFile(out_fw, 'w')
     out_fw_writer = writefq(out_fw_handle)
     if keep_discarded_files:
-        out_rw_handle_discarded = safeOpenFile(out_rw_discarded, 'w')
-        out_rw_writer_discarded = writefq(out_rw_handle_discarded)
+        out_rv_handle_discarded = safeOpenFile(out_rw_discarded, 'w')
+        out_rv_writer_discarded = writefq(out_rv_handle_discarded)
     
     # Some counters
     total_reads = 0
-    dropped_rw = 0
+    dropped_rv = 0
     dropped_umi = 0
     dropped_umi_template = 0
     dropped_AT = 0
@@ -272,33 +270,17 @@ def filterInputReads(fw,
     # Quality format
     phred = 64 if qual64 else 33
     
-    # Check if barcode settings are correct
-    iscorrect_mc = molecular_barcodes
-    if mc_start < (barcode_start + barcode_length) \
-    or mc_end < (barcode_start + barcode_length):
-        logger.warning("Your UMI sequences overlap with the barcodes sequences")
-        iscorrect_mc = False
-    
     # Open fastq files with the fastq parser
     fw_file = safeOpenFile(fw, "rU")
-    rw_file = safeOpenFile(rw, "rU")
+    rv_file = safeOpenFile(rv, "rU")
     for (header_fw, sequence_fw, quality_fw), (header_rv, sequence_rv, quality_rv) \
-    in izip(readfq(fw_file), readfq(rw_file)):
+    in izip(readfq(fw_file), readfq(rv_file)):
         
-        if not sequence_fw or not sequence_fw:
-            error = "Error doing quality trimming checks of raw reads.\n" \
-            "The input files {},{} are not of the same length".format(fw,rw)
+        if not sequence_fw or not sequence_rv:
+            error = "Error doing quality trimming, Checks of raw reads.\n" \
+            "The input files {},{} are not of the same length".format(fw,rv)
             logger.error(error)
-            fw_file.close()
-            rw_file.close()
-            out_rw_handle.flush()
-            out_rw_writer.close()
-            out_fw_handle.flush()
-            out_fw_writer.close()
-            if keep_discarded_files:
-                out_rw_handle_discarded.flush()
-                out_rw_writer_discarded.close()
-            raise RuntimeError(error)
+            break
         
         if header_fw.split()[0] != header_rv.split()[0]:
             logger.warning("Pair reads found with different " \
@@ -310,14 +292,14 @@ def filterInputReads(fw,
         
         # If we want to check for UMI quality and the UMI is incorrect
         # then we discard the reads
-        if iscorrect_mc and umi_filter \
-        and not check_umi_template(sequence_fw[mc_start:mc_end], umi_filter_template):
+        if umi_filter \
+        and not check_umi_template(sequence_fw[umi_start:umi_end], umi_filter_template):
             dropped_umi_template += 1
             discard_read = True
         
         # Check if the UMI has any low quality base
-        if not discard_read and iscorrect_mc and \
-        len([b for b in quality_fw[mc_start:mc_end] if (ord(b) - phred) < min_qual]) > umi_quality_bases:
+        if not discard_read and \
+        len([b for b in quality_fw[umi_start:umi_end] if (ord(b) - phred) < min_qual]) > umi_quality_bases:
             dropped_umi += 1
             discard_read = True
                                                             
@@ -355,33 +337,32 @@ def filterInputReads(fw,
                                                        min_qual, min_length, phred)
                 if not sequence_rv or not quality_rv:
                     discard_read = True
-
-                
+            
         # Write reverse read to output
         if not discard_read:
-            out_rw_writer.send((header_rv, sequence_rv, quality_rv))
+            out_rv_writer.send((header_rv, sequence_rv, quality_rv))
             out_fw_writer.send((header_fw, sequence_fw, quality_fw))
         else:
-            dropped_rw += 1  
+            dropped_rv += 1  
             if keep_discarded_files:
-                out_rw_writer_discarded.send((header_rv, orig_sequence_rv, orig_quality_rv))
+                out_rv_writer_discarded.send((header_rv, orig_sequence_rv, orig_quality_rv))
     
     fw_file.close()
-    rw_file.close()
-    out_rw_handle.flush()
-    out_rw_writer.close()
+    rv_file.close()
+    out_rv_handle.flush()
+    out_rv_writer.close()
     out_fw_handle.flush()
     out_fw_writer.close()
     if keep_discarded_files:
-        out_rw_handle_discarded.flush()
-        out_rw_writer_discarded.close()
+        out_rv_handle_discarded.flush()
+        out_rv_writer_discarded.close()
         
     # Write info to the log
     logger.info("Trimming stats total reads (pair): {}".format(total_reads))
-    logger.info("Trimming stats {} reads have been dropped!".format(dropped_rw)) 
-    perc2 = '{percent:.2%}'.format(percent= float(dropped_rw) / float(total_reads) )
+    logger.info("Trimming stats {} reads have been dropped!".format(dropped_rv)) 
+    perc2 = '{percent:.2%}'.format(percent= float(dropped_rv) / float(total_reads) )
     logger.info("Trimming stats you just lost about {} of your data".format(perc2))
-    logger.info("Trimming stats reads remaining: {}".format(total_reads - dropped_rw))
+    logger.info("Trimming stats reads remaining: {}".format(total_reads - dropped_rv))
     logger.info("Trimming stats dropped pairs due to incorrect UMI: {}".format(dropped_umi_template))
     logger.info("Trimming stats dropped pairs due to low quality UMI: {}".format(dropped_umi))
     logger.info("Trimming stats dropped pairs due to high AT content: {}".format(dropped_AT))
@@ -398,28 +379,24 @@ def filterInputReads(fw,
     qa_stats.input_reads_forward = total_reads
     qa_stats.input_reads_reverse = total_reads
     qa_stats.reads_after_trimming_forward = total_reads
-    qa_stats.reads_after_trimming_reverse = total_reads - dropped_rw
+    qa_stats.reads_after_trimming_reverse = (total_reads - dropped_rv)
 
 #TODO this approach uses too much memory
 #     find a better solution (maybe Cython or C++)
 def hashDemultiplexedReads(reads,
-                           has_umi,
                            umi_start,
                            umi_end,
                            low_memory):
     """
-    This function extracts the read name and the x,y coordinates
+    This function extracts the read name, the UMI and the x,y coordinates
     from the reads given as input and returns a hash
-    with the clean read name as key and (x,y,umi) as
-    values (umi is optional). X and Y correspond
+    with the clean read name as key and (x,y,umi). X and Y correspond
     to the array coordinates of the barcode of the read.
     :param reads: path to a file with the fastq reads after demultiplexing
-    :param has_umi: True if the read sequence contains UMI
     :param umi_start: the start position of the UMI
     :param umi_end: the end position of the UMI
     :param low_memory: True to use a key-value db instead of dict
     :type reads: str
-    :type has_umi: boolean
     :type umi_start: integer
     :type umi_end: integer
     :type low_memory: boolean
@@ -428,11 +405,10 @@ def hashDemultiplexedReads(reads,
     logger = logging.getLogger("STPipeline")
     
     if not os.path.isfile(reads):
-        error = "Error, input file not present {}\n".format(reads)
+        error = "Error parsing TaggD output, input file not present {}\n".format(reads)
         logger.error(error)
         raise RuntimeError(error)
     
-    assert(umi_start >= 0 and umi_start < umi_end)
     if low_memory:
         hash_reads = SqliteDict(autocommit=False, flag='c', journal_mode='OFF')
     else:
@@ -445,17 +421,12 @@ def hashDemultiplexedReads(reads,
         # TODO add an error check here
         x = header_tokens[-2]
         y = header_tokens[-1]
-        # Assumes STAR will only output the first token of the read name
+        # The UMI is retrieved from the sequence
+        umi = sequence[umi_start:umi_end]
         # We keep the same naming for the extra attributes
-        # We add the UMI as tag is present
-        tags = [x,y]
-        if has_umi:
-            # Add the UMI as an extra tag
-            umi = sequence[umi_start:umi_end]
-            tags.append("B3:Z:%s" % umi)
-        # The probability of a collision is very very low
-        key = hash(header_tokens[0])
-        hash_reads[key] = tags
+        tags = [x,y,"B3:Z:{}".format(umi)]
+        # Assumes STAR will only output the first token of the read name
+        hash_reads[header_tokens[0]] = tags
         
     if low_memory: hash_reads.commit()
     fastq_file.close()    

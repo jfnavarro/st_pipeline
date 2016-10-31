@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 """ 
 Script that parses a ST data file generated
-with the pipeline in matrix (TSV) where the genes are named
+with the pipeline in matrix (TSV) format where the genes are named
 with ENSEMBL IDs and generates a new file
 with the ENSEMBL IDs converted to gene names IDS.
 For that the script also needs a tab delimited file like this:

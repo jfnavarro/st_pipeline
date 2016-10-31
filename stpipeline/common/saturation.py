@@ -15,10 +15,10 @@ from stpipeline.common.utils import safeRemove
 
 def computeSaturation(nreads, 
                       annotated_reads,
-                      molecular_barcodes,
-                      mc_cluster,
-                      mc_allowed_mismatches,
-                      min_cluster_size,
+                      umi_cluster_algorithm,
+                      umi_allowed_mismatches,
+                      umi_min_cluster_size,
+                      umi_counting_offset,
                       expName,
                       temp_folder=None):
     """
@@ -29,17 +29,19 @@ def computeSaturation(nreads,
     to the log file.
     :param nreads: the number of reads present in the annotated_reads file
     :param annotated_reads: path to a SAM/BAM file with the annotated reads
-    :param molecular_barcodes: True is the reads contain UMIs
-    :param mc_allowed_mismatches: the number of miss matches allowed to remove
+    :param umi_cluster_algorithm: the clustering algorithm to cluster UMIs
+    :param umi_allowed_mismatches: the number of miss matches allowed to remove
                                   duplicates by UMIs
-    :param min_cluster_size: the min size of the clusters to remove duplicates by UMIs
+    :param umi_min_cluster_size: the min size of the clusters to remove duplicates by UMIs
+    :param umi_counting_offset: the number of bases allowed as offset when couting UMIs
     :param expName: the name of the dataset
     :param temp_folder: the path where to put the output files
     :type nreads: integer
     :type annotated_reads: str
-    :type molecular_barcodes: boolean
-    :type mc_allowed_mismatches: boolean
-    :type min_cluster_size: integer
+    :type umi_cluster_algorithm: str
+    :type umi_allowed_mismatches: boolean
+    :type umi_min_cluster_size: integer
+    :type umi_counting_offset: integer
     :type expName: str
     :type temp_folder: str
     :raises: RuntimeError
@@ -113,10 +115,10 @@ def computeSaturation(nreads,
         try:
             createDataset(input_file,
                           stats,
-                          molecular_barcodes,
-                          mc_cluster,
-                          mc_allowed_mismatches,
-                          min_cluster_size,
+                          umi_cluster_algorithm,
+                          umi_allowed_mismatches,
+                          umi_min_cluster_size,
+                          umi_counting_offset,
                           expName,
                           False) # Verbose
         except Exception as e:

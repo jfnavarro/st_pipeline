@@ -270,7 +270,7 @@ def annotateReads(mappedReads,
     logger = logging.getLogger("STPipeline")
     
     if not os.path.isfile(mappedReads):
-        error = "Error, input file not present {}\n".format(mappedReads)
+        error = "Error during annotation, input file not present {}\n".format(mappedReads)
         logger.error(error)
         raise RuntimeError(error)
     
