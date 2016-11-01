@@ -360,8 +360,8 @@ class Pipeline():
                             help="Expression count for each gene-spot combination is expressed " \
                             "as the number of unique UMIs in each strand/start position. However " \
                             "some reads might have slightly different start positions due to " \
-                            "library preparation artifacts. This parameters allows to define this" \
-                            "offset (default: %(default)s)")       
+                            "amplification artifacts. This parameters allows to define an " \
+                            "offset from where to count unique UMIs (default: %(default)s)")       
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          

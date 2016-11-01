@@ -340,3 +340,6 @@ Version 1.0.2
 * Adjusted some parameters names and descriptions (no UMI is default)
 * Added sliding window when counting unique molecules
 * Added support to bzip
+
+Version 1.0.3
+* Fixed a minor bug in the counting of UMIs or - strand

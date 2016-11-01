@@ -107,7 +107,7 @@ def createDataset(input_file,
                 for transcript in transcripts:
                     strand = str(transcript[5])
                     start = int(transcript[1]) if strand == "+" else int(transcript[2])
-                    grouped_transcripts[RangeKey(transcript[5], transcript[1], 
+                    grouped_transcripts[RangeKey(strand, start, 
                                                  umi_counting_offset)].append((transcript[6],transcript)) 
                 # For each group of transcripts
                 # cluster the transcripts based on the UMI

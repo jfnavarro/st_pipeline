@@ -162,9 +162,9 @@ def filterMappedReads(mapped_reads,
             dropped_short += 1
             discard_read = True
         else:
-            # We need this so we don't duplicate reads
-            # in the annotation step
-            sam_record.set_tag("NH", None)
+            # We need this so htseq-count
+            # does not discard the read thinking that it is secondary
+            sam_record.set_tag("NH", 1)
                                
         if discard_read:
             if file_output_discarded is not None:
