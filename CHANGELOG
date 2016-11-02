@@ -343,3 +343,7 @@ Version 1.0.2
 
 Version 1.0.3
 * Fixed a minor bug in the counting of UMIs or - strand
+
+Version 1.0.4
+* When removing adaptors (homopolymers streches) allow to up to 3 missmatches
+* Added GC content filter (same % as AT content)

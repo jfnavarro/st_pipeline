@@ -162,7 +162,7 @@ def trim_quality(sequence,
     cut_index = quality_trim_index(sequence, quality, min_qual, phred)
     # Check if the trimmed sequence would have min length (at least)
     # if so return the trimmed read otherwise return None
-    if cut_index >= min_length:
+    if (cut_index + 1) >= min_length:
         new_seq = sequence[:cut_index]
         new_qual = quality[:cut_index]
         return new_seq, new_qual
@@ -255,6 +255,7 @@ def filterInputReads(fw,
     dropped_umi = 0
     dropped_umi_template = 0
     dropped_AT = 0
+    dropped_GC = 0
     dropped_adaptor = 0
     
     # Build fake sequence adaptors with the parameters given
@@ -262,10 +263,11 @@ def filterInputReads(fw,
     adaptorT = "".join("T" for k in xrange(polyT_min_distance))
     adaptorG = "".join("G" for k in xrange(polyG_min_distance))
     adaptorC = "".join("C" for k in xrange(polyC_min_distance))
-    do_adaptorA = polyA_min_distance > 0
-    do_adaptorT = polyT_min_distance > 0
-    do_adaptorG = polyG_min_distance > 0
-    do_adaptorC = polyC_min_distance > 0
+    do_adaptorA = polyA_min_distance >= 10
+    do_adaptorT = polyT_min_distance >= 10
+    do_adaptorG = polyG_min_distance >= 10
+    do_adaptorC = polyC_min_distance >= 10
+    adaptor_missmatches = 3
     
     # Quality format
     phred = 64 if qual64 else 33
@@ -308,25 +310,31 @@ def filterInputReads(fw,
         ((sequence_rv.count("A") + sequence_rv.count("T")) / len(sequence_rv)) * 100 >= filter_AT_content:
             dropped_AT += 1
             discard_read = True
-        
+
+        # If reverse read has a high GC content discard...
+        if not discard_read and \
+        ((sequence_rv.count("G") + sequence_rv.count("C")) / len(sequence_rv)) * 100 >= filter_AT_content:
+            dropped_GC += 1
+            discard_read = True
+               
         # Store the original reads to write them to the discarded output if applies
         if keep_discarded_files:    
             orig_sequence_rv = sequence_rv
             orig_quality_rv = quality_rv 
             
-        if not discard_read:  
+        if not discard_read:
             # if indicated we remove the artifacts PolyA from reverse reads
             if do_adaptorA: 
-                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorA) 
+                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorA, adaptor_missmatches) 
             # if indicated we remove the artifacts PolyT from reverse reads
             if do_adaptorT: 
-                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorT) 
+                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorT, adaptor_missmatches) 
             # if indicated we remove the artifacts PolyG from reverse reads
             if do_adaptorG: 
-                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorG) 
+                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorG, adaptor_missmatches) 
             # if indicated we remove the artifacts PolyC from reverse reads
             if do_adaptorC: 
-                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorC)
+                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorC, adaptor_missmatches)
             # Check if the read is smaller than the minimum after removing artifacts   
             if len(sequence_rv) < min_length:
                 dropped_adaptor += 1
@@ -366,6 +374,7 @@ def filterInputReads(fw,
     logger.info("Trimming stats dropped pairs due to incorrect UMI: {}".format(dropped_umi_template))
     logger.info("Trimming stats dropped pairs due to low quality UMI: {}".format(dropped_umi))
     logger.info("Trimming stats dropped pairs due to high AT content: {}".format(dropped_AT))
+    logger.info("Trimming stats dropped pairs due to high GC content: {}".format(dropped_GC))
     logger.info("Trimming stats dropped pairs due to presence of artifacts: {}".format(dropped_adaptor))
     
     # Check that output file was written ok

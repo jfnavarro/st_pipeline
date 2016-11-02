@@ -8,4 +8,5 @@ numpy
 taggd>=0.2.9
 sqlitedict
 pandas
+regex
  
