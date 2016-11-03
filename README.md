@@ -18,10 +18,10 @@ The raw data can be given in gzip format as well.
 Basically what the ST pipeline does is :
 - Quality trimming (read 1 and read 2) :
 	- Remove low quality bases
-	- Sanity check
+	- Sanity check (reads same length, reads order, etc..)
 	- Check quality UMI
 	- Remove artifacts (PolyT, PolyA, PolyG and PolyC)
-	- Check for AT content
+	- Check for AT and GC content
 	- Discard reads with a minimum number of bases of that failed any of the checks above
 - Contamimant filter e.x. rRNA genome (Optional)
 - Mapping with STAR (only read 2)
