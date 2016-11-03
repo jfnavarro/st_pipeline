@@ -21,6 +21,7 @@ import shutil
 import os
 import gzip
 import bz2
+import tempfile
 from subprocess import check_call
 
 FILENAMES = {"mapped" : "mapped.bam",
