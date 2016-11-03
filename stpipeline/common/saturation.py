@@ -20,6 +20,7 @@ def computeSaturation(nreads,
                       umi_min_cluster_size,
                       umi_counting_offset,
                       expName,
+                      discard_antisense=False,
                       temp_folder=None):
     """
     It splits the input file up into sub-files containing
@@ -35,6 +36,7 @@ def computeSaturation(nreads,
     :param umi_min_cluster_size: the min size of the clusters to remove duplicates by UMIs
     :param umi_counting_offset: the number of bases allowed as offset when couting UMIs
     :param expName: the name of the dataset
+    :param discard_antisense: True if reads mapping to the anti-sense strand must be discarded
     :param temp_folder: the path where to put the output files
     :type nreads: integer
     :type annotated_reads: str
@@ -120,6 +122,7 @@ def computeSaturation(nreads,
                           umi_min_cluster_size,
                           umi_counting_offset,
                           expName,
+                          discard_antisense,
                           False) # Verbose
         except Exception as e:
             error = "Error computing saturation curve: createDataset execution failed\n"

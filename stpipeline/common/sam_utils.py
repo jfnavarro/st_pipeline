@@ -50,7 +50,7 @@ def parseUniqueEvents(filename):
                 continue
         # Check that all tags are present
         if any(tag is None for tag in [x,y,gene,umi]):
-            logger.warning("Warning creating dataset.\n" \
+            logger.warning("Warning parsing annotated reads.\n" \
                            "Missing attributes for record {}\n".format(clear_name))
             continue
         

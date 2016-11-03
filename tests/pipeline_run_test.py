@@ -90,17 +90,15 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.expName = self.expname
         self.pipeline.fastq_fw = self.infile_fw
         self.pipeline.fastq_rv = self.infile_rv
-        self.pipeline.molecular_barcodes = True
-        self.pipeline.mc_allowed_mismatches = 1
-        self.pipeline.mc_start_position = 18
-        self.pipeline.mc_end_position = 27
-        self.pipeline.min_cluster_size = 2
-        self.pipeline.trimming_fw = 31
+        self.pipeline.umi_allowed_mismatches = 1
+        self.pipeline.umi_start_position = 18
+        self.pipeline.umi_end_position = 27
+        self.pipeline.umi_min_cluster_size = 2
         self.pipeline.keep_discarded_files = True
         self.pipeline.allowed_missed = 2
         self.pipeline.allowed_kmer = 6
-        self.pipeline.min_length_trimming = 28
-        self.pipeline.trimming_rv = 5
+        self.pipeline.min_length_trimming = 25
+        self.pipeline.trimming_rv = 1
         self.pipeline.min_quality_trimming = 20
         self.pipeline.clean = False
         self.pipeline.barcode_start = 0
@@ -120,16 +118,15 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.remove_polyT_distance = 15
         self.pipeline.remove_polyG_distance = 15
         self.pipeline.remove_polyC_distance = 15
-        self.pipeline.mc_cluster = "hierarchical"
+        self.pipeline.umi_cluster_algorithm = "hierarchical"
         self.pipeline.umi_filter = True
         self.pipeline.compute_saturation = True
         self.pipeline.include_non_annotated = True
-        self.pipeline.inverse_trimming_fw = 1
         self.pipeline.inverse_trimming_rv = 1
         self.pipeline.low_memory = True
         self.pipeline.two_pass_mode = True
         self.pipeline.two_pass_mode_genome = genomefasta
-        self.pipeline.sam_type = "BAM"
+        self.pipeline.discard_antisense = True
         
     @classmethod
     def tearDownClass(self):

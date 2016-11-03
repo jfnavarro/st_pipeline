@@ -230,7 +230,7 @@ def count_reads_in_features(sam_filename,
                     write_to_samout(r, list(fs)[0])
                     
             except UnknownChrom:
-                write_to_samout(r, "__no_feature")
+                pass
 
     except:
         count_reads_in_features.samoutfile.close()
