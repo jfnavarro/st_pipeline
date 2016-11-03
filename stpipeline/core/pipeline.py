@@ -21,6 +21,7 @@ import shutil
 import os
 import gzip
 import bz2
+import tempfile
 from subprocess import check_call
 
 FILENAMES = {"mapped" : "mapped.bam",
@@ -656,49 +657,20 @@ class Pipeline():
             alignReads(input_reads,
                        self.ref_map,
                        FILENAMES["mapped"],
+                       self.ref_annotation,
                        FILENAMES_DISCARDED["mapped_discarded"],
                        self.temp_folder,
                        self.trimming_rv,
+                       self.inverse_trimming_rv,
                        self.threads,
                        self.min_intron_size,
                        self.max_intron_size,
                        self.max_gap_size,
-                       True, # enable splice variants alignments
                        self.disable_multimap,
                        self.disable_clipping,
-                       self.inverse_trimming_rv,
-                       True)
+                       self.two_pass_mode)
         except Exception:
             raise
-        
-        # 2 PASS mode, first create new genome index and then re-align
-        if self.two_pass_mode:
-            self.logger.info("STAR 2 Pass mode creating index {}".format(globaltime.getTimestamp()))
-            try:
-                tmp_index = createIndex(self.two_pass_mode_genome,
-                                        FILENAMES["two_pass_splices"],
-                                        self.threads,
-                                        self.temp_folder)
-
-                self.logger.info("STAR 2 Pass mode re-alignment {}".format(globaltime.getTimestamp()))
-                alignReads(input_reads,
-                           tmp_index,
-                           FILENAMES["mapped"],
-                           FILENAMES_DISCARDED["mapped_discarded"],
-                           self.temp_folder,
-                           self.trimming_rv,
-                           self.threads,
-                           self.min_intron_size,
-                           self.max_intron_size,
-                           self.max_gap_size,
-                           True, # enable splice variants alignments
-                           self.disable_multimap,
-                           self.disable_clipping,
-                           self.inverse_trimming_rv)
-            except Exception:
-                raise
-            finally:
-                if os.path.exists(tmp_index): shutil.rmtree(tmp_index)
             
         #=================================================================
         # STEP: DEMULTIPLEX READS Map against the barcodes
