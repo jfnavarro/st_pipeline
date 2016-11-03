@@ -33,6 +33,7 @@ def createDataset(input_file,
                   umi_counting_offset=50,
                   output_folder=None,
                   output_template=None,
+                  discard_antisense=False,
                   verbose=True):
     """
     The functions parses the reads in SAM/BAM format
@@ -51,6 +52,7 @@ def createDataset(input_file,
     :param umi_counting_offset: the number of bases allowed as offset when counting UMIs
     :param output_folder: path to place the output files
     :param output_template: the name of the dataset
+    :param discard_antisense: True if reads mapping to the anti-sense strand must be discarded
     :param verbose: True if we can to collect the stats in the logger
     :type input_file: str
     :type umi_cluster_algorithm: str
@@ -79,6 +81,7 @@ def createDataset(input_file,
     # Some counters
     total_record = 0
     discarded_reads = 0
+    discarded_neg_strand = 0
     
     # Obtain the clustering function
     if umi_cluster_algorithm == "naive":
@@ -106,7 +109,11 @@ def createDataset(input_file,
                 grouped_transcripts = defaultdict(list)
                 for transcript in transcripts:
                     strand = str(transcript[5])
-                    start = int(transcript[1]) if strand == "+" else int(transcript[2])
+                    is_pos_strand = strand == "+"
+                    start = int(transcript[1]) if is_pos_strand else int(transcript[2])
+                    if discard_antisense and not is_pos_strand:
+                        discarded_neg_strand += 1
+                        continue
                     grouped_transcripts[RangeKey(strand, start, 
                                                  umi_counting_offset)].append((transcript[6],transcript)) 
                 # For each group of transcripts
@@ -164,7 +171,7 @@ def createDataset(input_file,
     
     # Print some statistics
     if verbose:
-        logger.info("Number of unique transcripts present: {}".format(total_transcripts))
+        logger.info("Number of unique molecules present: {}".format(total_transcripts))
         logger.info("Number of unique events (gene-barcode) present: {}".format(total_record))
         logger.info("Number of unique genes present: {}".format(number_genes))
         logger.info("Max number of genes over all features: {}".format(max_genes_feature))
@@ -173,7 +180,9 @@ def createDataset(input_file,
         logger.info("Min number of reads over all features: {}".format(min_reads_feature))
         logger.info("Max number of reads over all unique events: {}".format(max_count))
         logger.info("Min number of reads over all unique events: {}".format(min_count))
-        logger.info("Number of discarded reads (possible PCR duplicates): {}".format(discarded_reads))
+        logger.info("Number of discarded reads (possible duplicates): {}".format(discarded_reads))
+        if discard_antisense:
+            logger.info("Number of reads discarded that map to the antisense strand {}".format(discarded_neg_strand))
         
     # Update the QA object
     qa_stats.reads_after_duplicates_removal = (total_transcripts - discarded_reads)

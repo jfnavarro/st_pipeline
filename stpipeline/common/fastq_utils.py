@@ -192,6 +192,7 @@ def filterInputReads(fw,
                      barcode_start=0, 
                      barcode_length=18,
                      filter_AT_content=90,
+                     filter_GC_content=90,
                      umi_start=18, 
                      umi_end=27,
                      min_qual=20, 
@@ -203,30 +204,33 @@ def filterInputReads(fw,
                      qual64=False,
                      umi_filter=False,
                      umi_filter_template="WSNNWSNNV",
-                     umi_quality_bases=3):
+                     umi_quality_bases=4):
     """
-    This function does four things (all done in one loop for performance reasons)
+    This function does few things (all done in one loop for performance reasons)
       - It performs a sanity check (forward and reverse reads same length and order)
       - It performs a BWA quality trimming discarding very short reads
       - It removes adaptors from the reads (optional)
+      - It checks for AT and GC content
       - It performs a sanity check on the UMI (optional)
     Reads that do not pass the filters are discarded (both R1 and R2)
     :param fw: the fastq file with the forward reads
     :param rv: the fastq file with the reverse reads
     :param out_fw: the name of the output file for the forward reads
     :param out_rw: the name of the output file for the reverse reads
-    :param out_rw_discarded: the name of the output file for descarded reads
+    :param out_rw_discarded: the name of the output file for discarded reverse reads
     :param barcode_start: the base index where the barcode sequence starts
     :param barcode_length: the number of bases present in the barcodes
-    :param umi_start: the start position of the molecular barcodes if any
-    :param umi_end: the end position of the molecular barcodes if any
-    :param min_qual: the min quality value to use to trim quality
+    :param filter_AT_content: % of A and T bases a read2 must have to be discarded
+    :param filter_GC_content: % of G and C bases a read2 must have to be discarded
+    :param umi_start: the start position of the UMI
+    :param umi_end: the end position of the UMI
+    :param min_qual: the min quality value to use in the trimming
     :param min_length: the min valid length for a read after trimming
-    :param polyA_min_distance: if >0 we remove PolyA adaptors from the reads
-    :param polyT_min_distance: if >0 we remove PolyT adaptors from the reads
-    :param polyG_min_distance: if >0 we remove PolyG adaptors from the reads
+    :param polyA_min_distance: if >10 we remove PolyA adaptors from the reads
+    :param polyT_min_distance: if >10 we remove PolyT adaptors from the reads
+    :param polyG_min_distance: if >10 we remove PolyG adaptors from the reads
     :param qual64: true of qualities are in phred64 format
-    :param umi_filter performs: a UMI quality filter when True
+    :param umi_filter: performs a UMI quality template filter when True
     :param umi_filter_template: the template to use for the UMI filter
     :param umi_quality_bases: the number of low quality bases allowed in an UMI
     """
@@ -267,6 +271,7 @@ def filterInputReads(fw,
     do_adaptorT = polyT_min_distance >= 10
     do_adaptorG = polyG_min_distance >= 10
     do_adaptorC = polyC_min_distance >= 10
+    # Allow for 3 miss-matches when removing adaptors
     adaptor_missmatches = 3
     
     # Quality format
@@ -313,7 +318,7 @@ def filterInputReads(fw,
 
         # If reverse read has a high GC content discard...
         if not discard_read and \
-        ((sequence_rv.count("G") + sequence_rv.count("C")) / len(sequence_rv)) * 100 >= filter_AT_content:
+        ((sequence_rv.count("G") + sequence_rv.count("C")) / len(sequence_rv)) * 100 >= filter_GC_content:
             dropped_GC += 1
             discard_read = True
                
@@ -325,16 +330,20 @@ def filterInputReads(fw,
         if not discard_read:
             # if indicated we remove the artifacts PolyA from reverse reads
             if do_adaptorA: 
-                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorA, adaptor_missmatches) 
+                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
+                                                        adaptorA, adaptor_missmatches) 
             # if indicated we remove the artifacts PolyT from reverse reads
             if do_adaptorT: 
-                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorT, adaptor_missmatches) 
+                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
+                                                        adaptorT, adaptor_missmatches) 
             # if indicated we remove the artifacts PolyG from reverse reads
             if do_adaptorG: 
-                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorG, adaptor_missmatches) 
+                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
+                                                        adaptorG, adaptor_missmatches) 
             # if indicated we remove the artifacts PolyC from reverse reads
             if do_adaptorC: 
-                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, adaptorC, adaptor_missmatches)
+                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
+                                                        adaptorC, adaptor_missmatches)
             # Check if the read is smaller than the minimum after removing artifacts   
             if len(sequence_rv) < min_length:
                 dropped_adaptor += 1

@@ -53,7 +53,7 @@ class Pipeline():
         self.allowed_missed = 2
         self.allowed_kmer = 6
         self.overhang = 2
-        self.min_length_trimming = 28
+        self.min_length_trimming = 25
         self.trimming_rv = 0
         self.min_quality_trimming = 20 
         self.clean = True
@@ -85,6 +85,7 @@ class Pipeline():
         self.remove_polyG_distance = 0
         self.remove_polyC_distance = 0
         self.filter_AT_content = 90
+        self.filter_GC_content = 90
         self.disable_clipping = False
         self.disable_multimap = False
         self.umi_cluster_algorithm = "naive"
@@ -102,7 +103,8 @@ class Pipeline():
         self.strandness = "yes"
         self.umi_quality_bases = 4
         self.umi_counting_offset = 50
-    
+        self.discard_antisense = False
+        
     def clean_filenames(self):
         """ Just makes sure to remove
         all temp files
@@ -168,7 +170,7 @@ class Pipeline():
                 self.logger.error(error)
                 raise RuntimeError(error)                
             # Check template length
-            if len(self.umi_filter_template) != (self.mc_end_position - self.mc_start_position):
+            if len(self.umi_filter_template) != (self.umi_end_position - self.umi_start_position):
                 error = "Error the UMI template given does not have the same " \
                 "length as the UMIs {}.\n".format(self.umi_filter_template)
                 self.logger.error(error)
@@ -259,7 +261,7 @@ class Pipeline():
                             help="KMer length when demultiplexing against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0, 7),
                             help="Extra flanking bases added when demultiplexing against the barcodes")
-        parser.add_argument('--min-length-qual-trimming', default=25, metavar="[INT]", type=int, choices=range(20, 101),
+        parser.add_argument('--min-length-qual-trimming', default=25, metavar="[INT]", type=int, choices=range(10, 101),
                             help="Minimum length of the reads after trimming, " \
                             "shorter reads will be discarded (default: %(default)s)")
         parser.add_argument('--mapping-rv-trimming', default=0, metavar="[INT]", type=int, choices=range(0, 101),
@@ -317,8 +319,11 @@ class Pipeline():
                             help="Remove PolyG stretches of the given length from R2 (default: %(default)s)")
         parser.add_argument('--remove-polyC', default=0, metavar="[INT]", type=int, choices=range(0, 50),
                             help="Remove PolyC stretches of the given length from R2 (default: %(default)s)")
-        parser.add_argument('--filter-AT-content', default=90, metavar="[INT%]", type=int, choices=range(1, 99),
+        parser.add_argument('--filter-AT-content', default=90, metavar="[INT%]", type=int, choices=range(0, 100),
                             help="Discards reads whose number of A and T bases in total are more " \
+                            "or equal than the number given in percentage (default: %(default)s)")
+        parser.add_argument('--filter-GC-content', default=90, metavar="[INT%]", type=int, choices=range(0, 100),
+                            help="Discards reads whose number of G and C bases in total are more " \
                             "or equal than the number given in percentage (default: %(default)s)")
         parser.add_argument('--disable-multimap', action="store_true", default=False,
                             help="If activated, multiple aligned reads obtained during mapping will be all discarded. " \
@@ -364,7 +369,9 @@ class Pipeline():
                             "as the number of unique UMIs in each strand/start position. However " \
                             "some reads might have slightly different start positions due to " \
                             "amplification artifacts. This parameters allows to define an " \
-                            "offset from where to count unique UMIs (default: %(default)s)")       
+                            "offset from where to count unique UMIs (default: %(default)s)")
+        parser.add_argument('--discard-antisense', default=False, action="store_true",
+                            help="Discard reads that map and annotate to the anti-sense strand of the gene")   
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -417,6 +424,7 @@ class Pipeline():
         self.remove_polyG_distance = options.remove_polyG
         self.remove_polyC_distance = options.remove_polyC
         self.filter_AT_content = options.filter_AT_content
+        self.filter_GC_content = options.filter_GC_content
         self.disable_multimap = options.disable_multimap
         self.disable_clipping = options.disable_clipping
         self.umi_cluster_algorithm = options.umi_cluster_algorithm
@@ -434,6 +442,8 @@ class Pipeline():
         self.strandness = options.strandness
         self.umi_quality_bases = options.umi_quality_bases
         self.umi_counting_offset = options.umi_counting_offset
+        self.discard_antisense = options.discard_antisense
+        
         # Assign class parameters to the QA stats object
         import inspect
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
@@ -481,6 +491,7 @@ class Pipeline():
         self.logger.info("Annotation mode: {}".format(self.htseq_mode))
         self.logger.info("Annotation strandness {}".format(self.strandness))
         self.logger.info("Filter of AT content in reads: {}".format(self.filter_AT_content))
+        self.logger.info("Filter of GC content in reads: {}".format(self.filter_GC_content))
         if self.disable_clipping:
             self.logger.info("Not allowing soft clipping when mapping")
         if self.disable_multimap:
@@ -493,11 +504,11 @@ class Pipeline():
         if self.include_non_annotated:
             self.logger.info("Including non annotated reads")
         self.logger.info("Using UMIs to remove duplicates")
-        self.logger.info("Using UMIs start position: {}".format(self.mc_start_position))
-        self.logger.info("Using UMIs end position: {}".format(self.mc_end_position))
-        self.logger.info("Using UMIs min cluster size: {}".format(self.min_cluster_size))
-        self.logger.info("Using UMIs allowed mismatches: {}".format(self.mc_allowed_mismatches))
-        self.logger.info("Using UMIs clustering algorithm: {}".format(self.mc_cluster))
+        self.logger.info("Using UMIs start position: {}".format(self.umi_start_position))
+        self.logger.info("Using UMIs end position: {}".format(self.umi_end_position))
+        self.logger.info("Using UMIs min cluster size: {}".format(self.umi_min_cluster_size))
+        self.logger.info("Using UMIs allowed mismatches: {}".format(self.umi_allowed_mismatches))
+        self.logger.info("Using UMIs clustering algorithm: {}".format(self.umi_cluster_algorithm))
         self.logger.info("Allowing an offset of {} when clustering UMIs " \
                          "by strand-start in a gene-spot".format(self.umi_counting_offset))
         self.logger.info("Allowing {} low quality bases in an UMI".format(self.umi_quality_bases))
@@ -515,6 +526,8 @@ class Pipeline():
             self.logger.info("Using a SQL based container to save memory")
         if self.two_pass_mode :
             self.logger.info("Using the STAR 2-pass mode with the genome: {}".format(self.two_pass_mode_genome))
+        if self.discard_antisense:
+            self.logger.info("Discarding reads that map and annotate to the anti-sense strand of the gene")
         
     def run(self):
         """ 
@@ -540,7 +553,7 @@ class Pipeline():
         self.logger.info("Starting the pipeline: {}".format(start_exe_time))
 
         # Check if input fastq files are compressed
-        # TODO it is faster to make a system call with gunzip
+        # TODO it is faster to make a system call with gunzip/bzip
         # TODO reliable way to test if files are compressed (something more robust than just file name endings)
         try:
             if self.fastq_fw.endswith(".gz"):
@@ -550,6 +563,14 @@ class Pipeline():
                         for line in filehandler_read:
                             filehandler_write.write(line)
                 self.fastq_fw = temp_fastq_fw
+            elif self.fastq_fw.endswith(".bz2"):
+                temp_fastq_fw = os.path.join(self.temp_folder, "unzipped_fastq_fw.fastq")
+                with bz2.BZ2File(self.fastq_fw, "rb") as filehandler_read:
+                    with open(temp_fastq_fw, "w") as filehandler_write:
+                        for line in filehandler_read:
+                            filehandler_write.write(line)
+                self.fastq_fw = temp_fastq_fw
+                
             if self.fastq_rv.endswith(".gz"):
                 temp_fastq_rv = os.path.join(self.temp_folder, "unzipped_fastq_rv.fastq")
                 with gzip.open(self.fastq_rv, "rb") as filehandler_read:
@@ -557,27 +578,18 @@ class Pipeline():
                         for line in filehandler_read:
                             filehandler_write.write(line)
                 self.fastq_rv = temp_fastq_rv
-        except Exception as e:
-            self.logger.error("Error decompressing gzipped input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
-            raise e
-        try:
-            if self.fastq_fw.endswith(".bz2"):
-                temp_fastq_fw = os.path.join(self.temp_folder, "unzipped_fastq_fw.fastq")
-                with bz2.BZ2File(self.fastq_fw, "rb") as filehandler_read:
-                    with open(temp_fastq_fw, "w") as filehandler_write:
-                        for line in filehandler_read:
-                            filehandler_write.write(line)
-                self.fastq_fw = temp_fastq_fw
-                if self.fastq_rv.endswith(".bz2"):
+            elif self.fastq_rv.endswith(".bz2"):
                     temp_fastq_rv = os.path.join(self.temp_folder, "unzipped_fastq_rv.fastq")
                     with bz2.BZ2File(self.fastq_rv, "rb") as filehandler_read:
                         with open(temp_fastq_rv, "w") as filehandler_write:
                             for line in filehandler_read:
                                 filehandler_write.write(line)
                     self.fastq_rv = temp_fastq_rv
+                    
         except Exception as e:
-            self.logger.error("Error decompressing bzip2'ed input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
+            self.logger.error("Error decompressing GZIP/BZIP2 input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
             raise e
+
         #=================================================================
         # STEP: FILTERING 
         # Applies different filters : sanity, quality, short, adaptors, UMI...
@@ -592,6 +604,7 @@ class Pipeline():
                              self.barcode_start,
                              self.barcode_length,
                              self.filter_AT_content,
+                             self.filter_GC_content,
                              self.umi_start_position,
                              self.umi_end_position,
                              self.min_quality_trimming,
@@ -760,6 +773,7 @@ class Pipeline():
                                   self.umi_min_cluster_size,
                                   self.umi_counting_offset,
                                   self.expName,
+                                  self.discard_antisense,
                                   self.temp_folder)
             except Exception:
                 raise
@@ -777,6 +791,7 @@ class Pipeline():
                           self.umi_counting_offset,
                           self.output_folder,
                           self.expName,
+                          self.discard_antisense,
                           True) # Verbose
         except Exception:
             raise
