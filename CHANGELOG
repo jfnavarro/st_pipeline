@@ -352,3 +352,6 @@ Version 1.1.0
 * Added flag to discard reads mapping to anti-sense strand
 * Parameters for GC content filter instead of using the same value as AT content filter
 * Fixed a small bug in the logging of some parameters
+
+Version 1.1.1
+* Simplified the two pass mode
