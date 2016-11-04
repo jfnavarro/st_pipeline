@@ -121,6 +121,7 @@ def computeSaturation(nreads,
                           umi_allowed_mismatches,
                           umi_min_cluster_size,
                           umi_counting_offset,
+                          temp_folder,
                           expName,
                           discard_antisense,
                           False) # Verbose
