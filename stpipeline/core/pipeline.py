@@ -22,6 +22,10 @@ import os
 import gzip
 import bz2
 import tempfile
+<<<<<<< HEAD
+from subprocess import check_call
+=======
+>>>>>>> master
 
 FILENAMES = {"mapped" : "mapped.bam",
              "annotated" : "annotated.bam",
