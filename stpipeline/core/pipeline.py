@@ -6,7 +6,7 @@ do sanity check and ultimately run the pipeline.
 """
 
 from stpipeline.common.utils import *
-from stpipeline.core.mapping import alignReads, barcodeDemultiplexing, createIndex
+from stpipeline.core.mapping import alignReads, barcodeDemultiplexing
 from stpipeline.core.annotation import annotateReads
 from stpipeline.common.fastq_utils import filterInputReads, hashDemultiplexedReads
 from stpipeline.common.sam_utils import filterMappedReads
@@ -22,7 +22,6 @@ import os
 import gzip
 import bz2
 import tempfile
-from subprocess import check_call
 
 FILENAMES = {"mapped" : "mapped.bam",
              "annotated" : "annotated.bam",
@@ -100,7 +99,6 @@ class Pipeline():
         self.inverse_trimming_rv = 0
         self.low_memory = False
         self.two_pass_mode = False
-        self.two_pass_mode_genome = None
         self.strandness = "yes"
         self.umi_quality_bases = 4
         self.umi_counting_offset = 50
@@ -154,13 +152,7 @@ class Pipeline():
             error = "Error parsing parameters.\n" \
             "Invalid IDs file {}".format(self.ids)
             self.logger.error(error)
-            raise RuntimeError(error)
-                  
-        if self.two_pass_mode and self.two_pass_mode_genome \
-        and not os.path.isfile(self.two_pass_mode_genome):
-            error = "Error two pass mode is enabled but --two-pass-mode-genome is empty.\n"
-            self.logger.error(error)
-            raise RuntimeError(error)        
+            raise RuntimeError(error)      
            
         if self.umi_filter:
             # Check template validity
@@ -358,9 +350,6 @@ class Pipeline():
                             help="Writes temporary records into disk in order to save memory but gaining a speed penalty")
         parser.add_argument('--two-pass-mode', default=False, action="store_true",
                             help="Activates the 2 pass mode in STAR to also map against splice variants")
-        parser.add_argument('--two-pass-mode-genome', metavar="[FILE]",
-                            help="Path to a genome file in fasta format. \n" \
-                            "When using the two pass mode the path of the fasta file with the genome is needed")
         parser.add_argument('--strandness', default="yes", type=str, metavar="[STRING]", choices=["no", "yes", "reverse"],
                             help="What strandness mode to use when annotating with htseq-count [no, yes(default), reverse]")
         parser.add_argument('--umi-quality-bases', default=4, metavar="[INT]", type=int, choices=range(0, 10),
@@ -439,7 +428,6 @@ class Pipeline():
         self.inverse_trimming_rv = options.inverse_mapping_rv_trimming
         self.low_memory = options.low_memory
         self.two_pass_mode = options.two_pass_mode
-        self.two_pass_mode_genome = options.two_pass_mode_genome
         self.strandness = options.strandness
         self.umi_quality_bases = options.umi_quality_bases
         self.umi_counting_offset = options.umi_counting_offset
@@ -526,7 +514,7 @@ class Pipeline():
         if self.low_memory:
             self.logger.info("Using a SQL based container to save memory")
         if self.two_pass_mode :
-            self.logger.info("Using the STAR 2-pass mode with the genome: {}".format(self.two_pass_mode_genome))
+            self.logger.info("Using the STAR 2-pass mode for the mapping step")
         if self.discard_antisense:
             self.logger.info("Discarding reads that map and annotate to the anti-sense strand of the gene")
         
@@ -629,22 +617,21 @@ class Pipeline():
             # and keep the un-mapped reads
             self.logger.info("Starting contaminant filter alignment {}".format(globaltime.getTimestamp()))
             try:
-                alignReads(FILENAMES["quality_trimmed_R2"], # input
+                alignReads(FILENAMES["quality_trimmed_R2"],
                            self.contaminant_index,
-                           FILENAMES_DISCARDED["contaminated_discarded"], # output mapped
-                           FILENAMES["contaminated_clean"], # output un-mapped
+                           FILENAMES_DISCARDED["contaminated_discarded"],
+                           None, # Do not pass the annotation file in contaminant filter
+                           FILENAMES["contaminated_clean"],
                            self.temp_folder,
                            self.trimming_rv,
+                           self.inverse_trimming_rv,
                            self.threads,
                            self.min_intron_size,
                            self.max_intron_size,
                            self.max_gap_size,
-                           False, # disable splice variants alignments
-                           True, # disable multimap in rRNA filter
-                           True, # disable softclipping in rRNA filter
-                           0, # do not use the inverse filter for now
-                           False, # BAM sorted output disable
-                           )
+                           False, # Enable multimap in contaminant filter
+                           True, # Disable softclipping in contaminant filter
+                           False) # Disable 2-pass mode in contaminant filter
             except Exception:
                 raise
             

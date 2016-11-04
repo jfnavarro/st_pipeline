@@ -14,7 +14,7 @@ import shutil
 def alignReads(reverse_reads, 
                ref_map,
                outputFile,
-               annotation,
+               annotation=None,
                outputFileDiscarded=None,
                outputFolder=None,
                trimReverse=0,
@@ -74,7 +74,7 @@ def alignReads(reverse_reads,
         raise RuntimeError(error)
     
     # STAR has predefined output names for the files
-    tmpOutputFile = "Aligned.sortedByCoord.out.bam" if sortedBAMOutput else "Aligned.out.bam"
+    tmpOutputFile = "Aligned.sortedByCoord.out.bam"
     tmpOutputFileDiscarded = "Unmapped.out.mate1"
     log_std = "Log.std.out"
     log = "Log.out"
@@ -116,10 +116,12 @@ def alignReads(reverse_reads,
     if twopassMode:
         flags += ["--twopassMode", "Basic"]
 
+    if annotation is not None:
+        flags += ["--sjdbGTFfile", annotation]
+        
     args = ["STAR",
             "--genomeDir", ref_map,
             "--readFilesIn", reverse_reads,
-            "--sjdbGTFfile", annotation,
             "--outFileNamePrefix", outputFolder + os.sep, # MUST ENSURE AT LEAST ONE SLASH
             "--outReadsUnmapped", "Fastx"]  
     args += flags
