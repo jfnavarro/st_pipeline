@@ -59,9 +59,7 @@ class TestPipeline(unittest.TestCase):
             check_call(["STAR", "--runMode", "genomeGenerate",
                     "--runThreadN", str(multiprocessing.cpu_count() - 1),
                     "--genomeDir", self.genomedir,
-                    "--genomeFastaFiles", genomefasta,
-                    "--sjdbGTFfile", self.annotfile,
-                    "--sjdbOverhang", "100"])
+                    "--genomeFastaFiles", genomefasta])
    
             print "ST Pipeline Test Creating contaminant genome index..."
             contamfasta = os.path.join(testdir, "config/contaminant_genomes/R45S5_R5S1/Rn45s_Rn5s.fasta")
@@ -125,7 +123,6 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.inverse_trimming_rv = 1
         self.pipeline.low_memory = True
         self.pipeline.two_pass_mode = True
-        self.pipeline.two_pass_mode_genome = genomefasta
         self.pipeline.discard_antisense = True
         
     @classmethod

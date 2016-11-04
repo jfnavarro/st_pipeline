@@ -11,138 +11,59 @@ import uuid
 import os
 import shutil
 
-def createIndex(genome,
-                log_sj,
-                threads,
-                tmpFolder):
-    """
-    When running STAR in two pass mode a new index needs to be created
-    using the discovered splice variants. This functions generates
-    the index and returns the location to the new index.
-    :param genome: the path to the fasta file with the original genome
-    :param threads: number of threads to be used
-    :param tmpFolder: where to place the temporary files and to find the file with variants
-    :param log_sj: the path to the file containing the splices
-    :type genome: str
-    :type threads: int
-    :type tmpFolder: str
-    :type log_sj: str
-    :return: the path to the new index
-    :raises: RuntimeError,ValueError,OSError,CalledProcessError
-    """
-    logger = logging.getLogger("STPipeline")
-    
-    if not os.path.isfile(log_sj):
-        error = "Error creating index with STAR.\n" \
-        "input file not present {}\n".format(log_sj)
-        logger.error(error)
-        raise RuntimeError(error)
-    
-    # Unique identifier to the index folder
-    genome_dir = str(uuid.uuid4())
-    log = "Log.out"
-    log_final = "Log.final.out"
-    if tmpFolder is not None and os.path.isdir(tmpFolder):
-        genome_dir = os.path.join(tmpFolder, genome_dir)
-        log_final = os.path.join(tmpFolder, log_final)
-        log = os.path.join(tmpFolder, log)
-    
-    os.mkdir(genome_dir)
-    if not os.path.isdir(genome_dir):
-        error = "Error creating index with STAR.\n "
-        "There was a problem creating a temp folder to place the index\n"
-        logger.error(error)
-        raise RuntimeError(error)   
-    
-    args = ['STAR']
-    args += ["--runMode", "genomeGenerate",
-             "--genomeDir", genome_dir,
-             "--genomeFastaFiles", genome,
-             "--sjdbOverhang", 100,
-             "--runThreadN", threads,
-             "--sjdbFileChrStartEnd", log_sj]
-    try:
-        proc = subprocess.Popen([str(i) for i in args],
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                close_fds=True, shell=False)
-        (stdout, errmsg) = proc.communicate()
-    except ValueError as e:
-        logger.error("Error creating index with STAR\n Incorrect arguments.")
-        raise e
-    except OSError as e:
-        logger.error("Error creating index with STAR\n Executable not found.")
-        raise e
-    except CalledProcessError as e:
-        logger.error("Error creating index with STAR\n Program returned error.")
-        raise e
-    
-    if os.path.isfile(log_sj): os.remove(log_sj)
-    if os.path.isfile(log): os.remove(log)
-    if os.path.isfile(log_final): os.remove(log_final)
-    
-    if len(errmsg) > 0:
-        logger.warning("STAR outputted an error message while " \
-                       "creating the index.\n{}\n".format(errmsg))
-    
-    if not os.path.isdir(genome_dir):
-        error = "Error creating index with STAR.\nThe index output folder " 
-        "is not present\n{}\n".format(errmsg)
-        logger.error(error)
-        raise RuntimeError(error)
-    
-    return genome_dir
-
 def alignReads(reverse_reads, 
                ref_map,
                outputFile,
+               annotation=None,
                outputFileDiscarded=None,
                outputFolder=None,
-               trimReverse=0, 
+               trimReverse=0,
+               invTrimReverse=0,
                cores=4,
                min_intron_size=20,
                max_intron_size=1000000,
                max_gap_size=1000000,
-               use_splice_juntions=True,
                disable_multimap=False,
                diable_softclipping=False,
-               invTrimReverse=0,
-               sortedBAMOutput=True):
+               twopassMode=False):
     """
     This function will perform a sequence alignment using STAR.
     Mapped and unmapped reads are written to the paths given as
-    parameters. It needs the path of the STAR genome index. 
+    parameters. It needs the path of the STAR genome index.
+    It allows to perform the 2-Pass mode.
+    It needs the annotation file to use the on-the-fly mode.
     :param reverse_reads: file containing reverse reads in fastq format (Illumina pair end)
     :param ref_map: a path to the genome/transcriptome STAR index
     :param outputFile: the name of the SAM/BAM output file to write the alignments to
+    :param annotation: the annotation file in GTF
     :param outputFileDiscarded: the name of the SAM/BAM output file to write discarded alignments
     :param outputFolder: the path of the output folder
-    :param trimReverse: the number of bases to trim in the reverse reads (to not map)
+    :param trimReverse: the number of bases to trim in the reverse reads (from 5')
+    :param invTrimReverse: number of bases to trim from the 3'
     :param cores: the number of cores to use to speed up the alignment
     :param file_name_patter: indicates how the output files will be named
     :param min_intron_size: min allowed intron size when spanning splice junctions
     :param max_intron size: max allowed intron size when spanning splice junctions
     :param max_gap_size: max allowed gap between pairs
-    :param use_splice_junctions: whether to use splice aware alignment or not
     :param disable_multimap: if True no multiple alignments will be allowed
     :param diable_softclipping: it True no local alignment allowed
-    :param invTrimReverse: number of bases to trim in the 5' of the read2
-    :param sortedBAMOutput: True if the BAM output must be sorted
+    :param twopassMode: True to use the 2-pass mode
     :type reverse_reads: str
     :type ref_map: str
     :type outputFile: str
+    :type annotation: str
     :type outputFileDiscarded: str
     :type outputFolder: str
     :type trimReverse: int
+    :type invTrimReverse: int
     :type cores: int
     :type file_name_patter: str
     :type min_intron_size: int
     :type max_intron: int
     :type max_gap_size: int
-    :type use_splice_junctions: bool
     :type disable_multimap: bool
     :type diable_softclipping: bool
-    :type invTrimReverse: int
-    :type sortedBAMOutput: bool
+    :type twopassMode: bool
     :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
     logger = logging.getLogger("STPipeline")
@@ -153,7 +74,7 @@ def alignReads(reverse_reads,
         raise RuntimeError(error)
     
     # STAR has predefined output names for the files
-    tmpOutputFile = "Aligned.sortedByCoord.out.bam" if sortedBAMOutput else "Aligned.out.bam"
+    tmpOutputFile = "Aligned.sortedByCoord.out.bam"
     tmpOutputFileDiscarded = "Unmapped.out.mate1"
     log_std = "Log.std.out"
     log = "Log.out"
@@ -170,67 +91,40 @@ def alignReads(reverse_reads,
         log_final = os.path.join(outputFolder, log_final)
         log_progress = os.path.join(outputFolder, log_progress)
     
-    # Options
-    # outFilterType(BySJout) this will keep only reads 
-    #     that contains junctions present in SJ.out.tab
-    # outSamOrder(Paired) one mate after the other 
-    # outSAMprimaryFlag(OneBestScore) only one alignment with the best score is primary
-    # outFilterMultimapNmax 
-    #     read alignments will be output only if the read maps fewer than this value
-    # outFilterMismatchNmax = alignment will be output only if 
-    #     it has fewer mismatches than this value
-    # outFilterMismatchNoverLmax = alignment will be output only if 
-    #     its ratio of mismatches to *mapped* length is less than this value
-    # alignIntronMin minimum intron size: genomic gap is considered intron 
-    #     if its length>=alignIntronMin, otherwise it is considered Deletion
-    # alignIntronMax maximum intron size, if 0, max intron size will be 
-    #     determined by (2 to the power of winBinNbits)*winAnchorDistNbins
-    # alignMatesGapMax maximum gap between two mates, if 0, max intron gap will 
-    #     be determined by (2 to the power of winBinNbits)*winAnchorDistNbins
-    # alignEndsType Local standard local alignment with soft-clipping allowed EndToEnd: 
-    #     force end-to-end read alignment, do not soft-clip
-    # chimSegmentMin if >0 To switch on detection of chimeric (fusion) alignments
-    # --outMultimapperOrder Random multimap are written in Random order
-    # --outSAMmultNmax Number of multimap that we want to output 
-    # put to 1 to not include multiple mappings (default 10)
-    
     multi_map_number = 1 if disable_multimap else 10
     alignment_mode = "EndToEnd" if diable_softclipping else "Local"
-    sjdb_overhang = 100 if use_splice_juntions else 0
-    bam_sorting = "SortedByCoordinate" if sortedBAMOutput else "Unsorted"
     
-    core_flags = ["--runThreadN", str(max(cores, 1))]
-    trim_flags = ["--clip5pNbases", trimReverse, 
-                  "--clip3pNbases", invTrimReverse]
-    io_flags   = ["--outFilterType", "Normal", 
-                  "--outSAMtype", "BAM", bam_sorting, 
-                  "--alignEndsType", alignment_mode, 
-                  "--outSAMunmapped", "None", # unmapped reads not included in main output
-                  "--outSAMorder", "Paired",    
-                  "--outSAMprimaryFlag", "OneBestScore", 
-                  "--outFilterMultimapNmax", multi_map_number, 
-                  "--alignSJoverhangMin", 5, # default is 5
-                  "--alignSJDBoverhangMin", 3, # default is 3
-                  "--sjdbOverhang", sjdb_overhang, # 0 to not use splice junction database
-                  "--outFilterMismatchNmax", 10, # large number switches it off (default 10)
-                  "--outFilterMismatchNoverLmax", 0.3, # default is 0.3
-                  "--alignIntronMin", min_intron_size,
-                  "--alignIntronMax", max_intron_size, 
-                  "--alignMatesGapMax", max_gap_size,
-                  "--winBinNbits", 16,
-                  "--winAnchorDistNbins", 9,
-                  "--chimSegmentMin", 0,
-                  "--readMatesLengthsIn", "NotEqual",
-                  "--genomeLoad", "NoSharedMemory"] # Options to use share remove can be given here 
+    flags = ["--clip3pNbases", invTrimReverse,
+             "--clip5pNbases", trimReverse,
+             "--runThreadN", str(max(cores, 1)),
+             "--outFilterType", "Normal", 
+             "--outSAMtype", "BAM", "SortedByCoordinate",
+             "--alignEndsType", alignment_mode, 
+             "--outSAMunmapped", "None", # unmapped reads not included in main output
+             "--outSAMorder", "Paired",    
+             "--outSAMprimaryFlag", "OneBestScore", 
+             "--outFilterMultimapNmax", multi_map_number,
+             "--sjdbOverhang", 100, # default is 100
+             "--outFilterMismatchNmax", 10, # large number switches it off (default 10)
+             "--outFilterMismatchNoverLmax", 0.3, # default is 0.3
+             "--alignIntronMin", min_intron_size,
+             "--alignIntronMax", max_intron_size, 
+             "--alignMatesGapMax", max_gap_size,
+             "--readMatesLengthsIn", "NotEqual",
+             "--genomeLoad", "NoSharedMemory"] 
+    
+    if twopassMode:
+        flags += ["--twopassMode", "Basic"]
 
-    args = ['STAR']
-    args += trim_flags
-    args += core_flags
-    args += io_flags
-    args += ["--genomeDir", ref_map,
-             "--readFilesIn", reverse_reads,
-             "--outFileNamePrefix", outputFolder + os.sep]  # MUST ENSURE AT LEAST ONE SLASH
-    args += ["--outReadsUnmapped", "Fastx"]
+    if annotation is not None:
+        flags += ["--sjdbGTFfile", annotation]
+        
+    args = ["STAR",
+            "--genomeDir", ref_map,
+            "--readFilesIn", reverse_reads,
+            "--outFileNamePrefix", outputFolder + os.sep, # MUST ENSURE AT LEAST ONE SLASH
+            "--outReadsUnmapped", "Fastx"]  
+    args += flags
     
     try:
         proc = subprocess.Popen([str(i) for i in args],
@@ -264,8 +158,7 @@ def alignReads(reverse_reads,
     if os.path.isfile(log_std): os.remove(log_std)
     if os.path.isfile(log): os.remove(log)
     if os.path.isfile(log_progress): os.remove(log_progress)
-    # Do not remove to use it for computing a new index in 2pass mode
-    # if os.path.isfile(log_sj): os.remove(log_sj)
+    if os.path.isfile(log_sj): os.remove(log_sj)
     
     if not os.path.isfile(log_final):
         logger.warning("Log output file from STAR is not present")
