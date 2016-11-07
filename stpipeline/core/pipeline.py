@@ -91,7 +91,6 @@ class Pipeline():
         self.umi_cluster_algorithm = "naive"
         self.min_intron_size = 20
         self.max_intron_size = 1000000
-        self.max_gap_size = 1000000
         self.umi_filter = False
         self.umi_filter_template = "WSNNWSNNV"
         self.compute_saturation = False
@@ -102,7 +101,6 @@ class Pipeline():
         self.strandness = "yes"
         self.umi_quality_bases = 4
         self.umi_counting_offset = 50
-        self.discard_antisense = False
         
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -333,8 +331,6 @@ class Pipeline():
         parser.add_argument('--max-intron-size', default=100000, metavar="[INT]", type=int, choices=range(0, 1000000),
                             help="Maximum allowed intron size when searching for splice " \
                             "variants in the mapping step (default: %(default)s)")
-        parser.add_argument('--max-gap-size', default=1000000, metavar="[INT]", type=int, choices=range(0, 1000000),
-                            help="Maximum allowed distance between pairs in the mapping step (default: %(default)s)")
         parser.add_argument('--umi-filter', action="store_true", default=False,
                             help="Enables the UMI quality filter based on the template given in --umi-filter-template")
         parser.add_argument('--umi-filter-template', default="WSNNWSNNV", type=str, metavar="[STRING]",
@@ -359,9 +355,7 @@ class Pipeline():
                             "as the number of unique UMIs in each strand/start position. However " \
                             "some reads might have slightly different start positions due to " \
                             "amplification artifacts. This parameters allows to define an " \
-                            "offset from where to count unique UMIs (default: %(default)s)")
-        parser.add_argument('--discard-antisense', default=False, action="store_true",
-                            help="Discard reads that map and annotate to the anti-sense strand of the gene")   
+                            "offset from where to count unique UMIs (default: %(default)s)") 
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -420,7 +414,6 @@ class Pipeline():
         self.umi_cluster_algorithm = options.umi_cluster_algorithm
         self.min_intron_size = options.min_intron_size
         self.max_intron_size = options.max_intron_size
-        self.max_gap_size = options.max_gap_size
         self.umi_filter = options.umi_filter
         self.umi_filter_template = options.umi_filter_template.upper()
         self.compute_saturation = options.compute_saturation
@@ -431,7 +424,6 @@ class Pipeline():
         self.strandness = options.strandness
         self.umi_quality_bases = options.umi_quality_bases
         self.umi_counting_offset = options.umi_counting_offset
-        self.discard_antisense = options.discard_antisense
         
         # Assign class parameters to the QA stats object
         import inspect
@@ -487,7 +479,6 @@ class Pipeline():
             self.logger.info("Not allowing multiple alignments when mapping")
         self.logger.info("Mapping minimum intron size: {}".format(self.min_intron_size))
         self.logger.info("Mapping maximum intron size: {}".format(self.max_intron_size))
-        self.logger.info("Mapping maximum gap size: {}".format(self.max_gap_size))
         if self.compute_saturation:
             self.logger.info("Computing saturation curve")
         if self.include_non_annotated:
@@ -515,8 +506,6 @@ class Pipeline():
             self.logger.info("Using a SQL based container to save memory")
         if self.two_pass_mode :
             self.logger.info("Using the STAR 2-pass mode for the mapping step")
-        if self.discard_antisense:
-            self.logger.info("Discarding reads that map and annotate to the anti-sense strand of the gene")
         
     def run(self):
         """ 
@@ -628,7 +617,6 @@ class Pipeline():
                            self.threads,
                            self.min_intron_size,
                            self.max_intron_size,
-                           self.max_gap_size,
                            False, # Enable multimap in contaminant filter
                            True, # Disable softclipping in contaminant filter
                            False) # Disable 2-pass mode in contaminant filter
@@ -652,7 +640,6 @@ class Pipeline():
                        self.threads,
                        self.min_intron_size,
                        self.max_intron_size,
-                       self.max_gap_size,
                        self.disable_multimap,
                        self.disable_clipping,
                        self.two_pass_mode)
@@ -732,7 +719,6 @@ class Pipeline():
                                   self.umi_min_cluster_size,
                                   self.umi_counting_offset,
                                   self.expName,
-                                  self.discard_antisense,
                                   self.temp_folder)
             except Exception:
                 raise
@@ -750,7 +736,6 @@ class Pipeline():
                           self.umi_counting_offset,
                           self.output_folder,
                           self.expName,
-                          self.discard_antisense,
                           True) # Verbose
         except Exception:
             raise

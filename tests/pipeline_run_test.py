@@ -123,7 +123,6 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.inverse_trimming_rv = 1
         self.pipeline.low_memory = True
         self.pipeline.two_pass_mode = True
-        self.pipeline.discard_antisense = True
         
     @classmethod
     def tearDownClass(self):
