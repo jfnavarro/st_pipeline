@@ -22,7 +22,6 @@ def alignReads(reverse_reads,
                cores=4,
                min_intron_size=20,
                max_intron_size=1000000,
-               max_gap_size=1000000,
                disable_multimap=False,
                diable_softclipping=False,
                twopassMode=False):
@@ -41,10 +40,8 @@ def alignReads(reverse_reads,
     :param trimReverse: the number of bases to trim in the reverse reads (from 5')
     :param invTrimReverse: number of bases to trim from the 3'
     :param cores: the number of cores to use to speed up the alignment
-    :param file_name_patter: indicates how the output files will be named
     :param min_intron_size: min allowed intron size when spanning splice junctions
-    :param max_intron size: max allowed intron size when spanning splice junctions
-    :param max_gap_size: max allowed gap between pairs
+    :param max_intron size: max allowed intron size when spanning splice junctions 
     :param disable_multimap: if True no multiple alignments will be allowed
     :param diable_softclipping: it True no local alignment allowed
     :param twopassMode: True to use the 2-pass mode
@@ -57,10 +54,8 @@ def alignReads(reverse_reads,
     :type trimReverse: int
     :type invTrimReverse: int
     :type cores: int
-    :type file_name_patter: str
     :type min_intron_size: int
     :type max_intron: int
-    :type max_gap_size: int
     :type disable_multimap: bool
     :type diable_softclipping: bool
     :type twopassMode: bool
@@ -108,8 +103,7 @@ def alignReads(reverse_reads,
              "--outFilterMismatchNmax", 10, # large number switches it off (default 10)
              "--outFilterMismatchNoverLmax", 0.3, # default is 0.3
              "--alignIntronMin", min_intron_size,
-             "--alignIntronMax", max_intron_size, 
-             "--alignMatesGapMax", max_gap_size,
+             "--alignIntronMax", max_intron_size,
              "--readMatesLengthsIn", "NotEqual",
              "--genomeLoad", "NoSharedMemory"] 
     

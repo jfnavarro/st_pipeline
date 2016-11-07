@@ -355,3 +355,6 @@ Version 1.1.0
 
 Version 1.1.1
 * Simplified the two pass mode
+
+Version 1.1.5
+* Removed some un-necessary parameters
