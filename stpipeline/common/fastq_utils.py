@@ -267,12 +267,13 @@ def filterInputReads(fw,
     adaptorT = "".join("T" for k in xrange(polyT_min_distance))
     adaptorG = "".join("G" for k in xrange(polyG_min_distance))
     adaptorC = "".join("C" for k in xrange(polyC_min_distance))
-    do_adaptorA = polyA_min_distance >= 10
-    do_adaptorT = polyT_min_distance >= 10
-    do_adaptorG = polyG_min_distance >= 10
-    do_adaptorC = polyC_min_distance >= 10
-    # Allow for 3 miss-matches when removing adaptors
-    adaptor_missmatches = 3
+    # Not recommended to do adaptor trimming for adaptors smaller than 8
+    do_adaptorA = polyA_min_distance >= 8
+    do_adaptorT = polyT_min_distance >= 8
+    do_adaptorG = polyG_min_distance >= 8
+    do_adaptorC = polyC_min_distance >= 8
+    # Allow for 2 miss-matches when removing adaptors
+    adaptor_missmatches = 2
     
     # Quality format
     phred = 64 if qual64 else 33
