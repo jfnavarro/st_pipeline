@@ -358,3 +358,7 @@ Version 1.1.1
 
 Version 1.1.5
 * Removed some un-necessary parameters
+
+Version 1.1.6
+* Fixed bug that would leave some files in /tmp
+* Allowed mis-matches when removing adaptors is now 2

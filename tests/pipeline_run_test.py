@@ -132,12 +132,18 @@ class TestPipeline(unittest.TestCase):
                 os.remove(os.path.join(root, name))
             for name in dirs:
                 os.rmdir(os.path.join(root, name))
+        if os.path.exists(self.outdir):
+            os.rmdir(self.outdir)  
+            
         print "ST Pipeline Test Remove temporary directory {}".format(self.tmpdir)
         for root, dirs, files in os.walk(self.tmpdir, topdown=False):
             for name in files:
                 os.remove(os.path.join(root, name))
             for name in dirs:
-                os.rmdir(os.path.join(root, name))        
+                os.rmdir(os.path.join(root, name))
+        if os.path.exists(self.tmpdir):
+            os.rmdir(self.tmpdir) 
+            
         # Remove STAR log files 
         log_std = "Log.std.out"
         log = "Log.out"

@@ -112,7 +112,9 @@ class Pipeline():
         if not self.keep_discarded_files:
             for file_name in FILENAMES_DISCARDED.itervalues():
                 safeRemove(file_name)
-            
+        safeRemove("unzipped_fastq_fw.fastq")
+        safeRemove("unzipped_fastq_rv.fastq")
+          
     def sanityCheck(self):
         """ 
         Performs some basic sanity checks on the input parameters
