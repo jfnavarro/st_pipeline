@@ -22,6 +22,7 @@ import os
 import gzip
 import bz2
 import tempfile
+import shutil
 
 FILENAMES = {"mapped" : "mapped.bam",
              "annotated" : "annotated.bam",
@@ -115,8 +116,12 @@ class Pipeline():
         if self.temp_folder is not None and os.path.isdir(self.temp_folder):
             safeRemove(os.path.join(self.temp_folder,"unzipped_fastq_fw.fastq"))
             safeRemove(os.path.join(self.temp_folder,"unzipped_fastq_rv.fastq"))
+            if os.path.isdir(os.path.join(self.temp_folder, "_STARgenome")):
+                shutil.rmtree(os.path.join(self.temp_folder, "_STARgenome"))
+            if os.path.isdir(os.path.join(self.temp_folder, "_STARpass1")):
+                shutil.rmtree(os.path.join(self.temp_folder, "_STARpass1"))
             if self.clean and not self.keep_discarded_files and os.path.isdir(self.temp_folder):
-                os.rmdir(self.temp_folder)
+                shutil.rmtree(self.temp_folder)
           
     def sanityCheck(self):
         """ 
