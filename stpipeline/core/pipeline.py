@@ -112,10 +112,11 @@ class Pipeline():
         if not self.keep_discarded_files:
             for file_name in FILENAMES_DISCARDED.itervalues():
                 safeRemove(file_name)
-        safeRemove(os.path.join(self.temp_folder,"unzipped_fastq_fw.fastq"))
-        safeRemove(os.path.join(self.temp_folder,"unzipped_fastq_rv.fastq"))
-        if self.clean and not self.keep_discarded_files and os.path.isdir(self.temp_folder):
-            os.rmdir(self.temp_folder)
+        if self.temp_folder is not None and os.path.isdir(self.temp_folder):
+            safeRemove(os.path.join(self.temp_folder,"unzipped_fastq_fw.fastq"))
+            safeRemove(os.path.join(self.temp_folder,"unzipped_fastq_rv.fastq"))
+            if self.clean and not self.keep_discarded_files and os.path.isdir(self.temp_folder):
+                os.rmdir(self.temp_folder)
           
     def sanityCheck(self):
         """ 

@@ -365,3 +365,6 @@ Version 1.1.6
 
 Version 1.1.7
 * Make sure to remove tmp files even if an error happens
+
+Version 1.1.8
+* Fixed a small bug
