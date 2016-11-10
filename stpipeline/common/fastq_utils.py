@@ -310,18 +310,6 @@ def filterInputReads(fw,
         len([b for b in quality_fw[umi_start:umi_end] if (ord(b) - phred) < min_qual]) > umi_quality_bases:
             dropped_umi += 1
             discard_read = True
-                                                            
-        # If reverse read has a high AT content discard...
-        if not discard_read and \
-        ((sequence_rv.count("A") + sequence_rv.count("T")) / len(sequence_rv)) * 100 >= filter_AT_content:
-            dropped_AT += 1
-            discard_read = True
-
-        # If reverse read has a high GC content discard...
-        if not discard_read and \
-        ((sequence_rv.count("G") + sequence_rv.count("C")) / len(sequence_rv)) * 100 >= filter_GC_content:
-            dropped_GC += 1
-            discard_read = True
                
         # Store the original reads to write them to the discarded output if applies
         if keep_discarded_files:    
@@ -350,11 +338,23 @@ def filterInputReads(fw,
                 dropped_adaptor += 1
                 discard_read = True
             else:              
-                # Trim reverse read (will return None if length of trimmed sequence is lower than min)
+                # Trim reverse read (will return None if length of trimmed sequence is less than min_length)
                 sequence_rv, quality_rv = trim_quality(sequence_rv, quality_rv, 
                                                        min_qual, min_length, phred)
                 if not sequence_rv or not quality_rv:
                     discard_read = True
+            
+        # If reverse read has a high AT content discard...
+        if not discard_read and \
+        ((sequence_rv.count("A") + sequence_rv.count("T")) / len(sequence_rv)) * 100 >= filter_AT_content:
+            dropped_AT += 1
+            discard_read = True
+
+        # If reverse read has a high GC content discard...
+        if not discard_read and \
+        ((sequence_rv.count("G") + sequence_rv.count("C")) / len(sequence_rv)) * 100 >= filter_GC_content:
+            dropped_GC += 1
+            discard_read = True
             
         # Write reverse read to output
         if not discard_read:

@@ -362,3 +362,6 @@ Version 1.1.5
 Version 1.1.6
 * Fixed bug that would leave some files in /tmp
 * Allowed mis-matches when removing adaptors is now 2
+
+Version 1.1.7
+* Make sure to remove tmp files even if an error happens
