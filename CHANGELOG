@@ -366,5 +366,5 @@ Version 1.1.6
 Version 1.1.7
 * Make sure to remove tmp files even if an error happens
 
-Version 1.1.9
-* Fixed a small bug
+Version 1.2.0
+* Fixed a small bug in the deletion of the tmp folder
