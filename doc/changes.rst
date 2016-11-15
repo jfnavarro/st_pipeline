@@ -51,7 +51,7 @@ Changes
 
 **Version 1.0.0**
 
-* Added option to check for UMI quality 
+* Added option to check for UMI quality
 * Optimized the UMI template check code
 * Optimized how the unique molecules are counted
 * Better stats for the quality filter step
@@ -334,7 +334,7 @@ aligned so it can be annotated
 
 **Version 0.4.3**
 
-* Small improvements with error checking and log in the mapping 
+* Small improvements with error checking and log in the mapping
 * Fixed a bug that would remove the file after filtering annoted reads
 * Make the sorting by name instead by position due to a bug in htseq-count
 
@@ -372,7 +372,7 @@ aligned so it can be annotated
 
 **Version 0.3.6**
 
-* Fixed a bug in the installation 
+* Fixed a bug in the installation
 
 **Version 0.3.5**
 
@@ -394,7 +394,7 @@ aligned so it can be annotated
 **Version 0.3.2**
 
 * Outputted reads JSON now only has the portion of the read that was used to map
-* Cutadapt is integrated but only using the quality trimming for now 
+* Cutadapt is integrated but only using the quality trimming for now
 * Internal refactoring and optimizations
 
 **Version 0.3.1**
@@ -412,7 +412,7 @@ aligned so it can be annotated
 * Ensure unit-test remove tmp files when failing
 * Add better error handling
 * Add unit-test for Molecular Barcodes
-* Add Molecular Barcodes functionality 
+* Add Molecular Barcodes functionality
 * General refactor and clean up
 * Add invoke options (clean, build, install)
 * Fix an important bug in createDatasets that caused incorrect computation of reads counts
@@ -447,4 +447,3 @@ aligned so it can be annotated
 * new version of FindIndexes
 * remove dependencies
 * added proper installers and documentation
-

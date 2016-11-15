@@ -3,7 +3,7 @@ License
 
 The MIT License (MIT)
 Copyright (c) 2016 Jose Fernandez Navarro, Jonas Frisen, Patrik Stahl,
-Joakim Lundeberg, KTH, KI. 
+Joakim Lundeberg, KTH, KI.
 All rights reserved.
 
 * Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>

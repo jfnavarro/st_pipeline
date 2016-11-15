@@ -9,7 +9,7 @@ Check that you have Anaconda installed, and that it is using python 2.7
 
 	``python -c "import sys; print sys.version"``
 
-Example output: 
+Example output:
 
 	``2.7.12 |Anaconda custom (64-bit)| (default, Jul  2 2016,
 	17:42:40) [GCC 4.4.7 20120313 (Red Hat 4.4.7-1)]``
@@ -45,7 +45,7 @@ command:
 
 Edit your ~/.bash_profile directly by entering the following text using your
 favourite text editor:
-	
+
 	``export PATH="~/anaconda2/bin:$PATH"``
 
 To make sure that the changes have been regestired by the shell you can either:
@@ -54,7 +54,7 @@ Log out from the server and then log back in
 
 **OR**
 
-Type 	
+Type
 	``source ~/.bash_profile``
 
 After doing this, we need to install a couple of packages using anaconda to use
