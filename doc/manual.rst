@@ -8,9 +8,9 @@ that are not duplicates using the Unique Molecular Indentifiers.
 The output contains the counts matrix, a stats file, a log file
 and a BED file with all the transcripts.
 
-The ST Pipeline requires two fastq files, an IDs files (BARCODE, X, Y)
-,the path to a STAR genome index,
-the path to a annotation file in GTF format an a dataset name.
+The ST Pipeline requires two fastq files, an IDs files (BARCODE, X, Y),
+the path to a STAR genome index, the path to a annotation file in GTF 
+format and a dataset name.
 
 The ST Pipeline has many parameters, you can see a description of them
 by typing : st_pipeline_run.py --help
@@ -113,7 +113,7 @@ by typing : st_pipeline_run.py --help
                                       trimming, shorter reads will be
                                       discarded (default: 25).
   --mapping-rv-trimming [INT]         Number of bases to trim in the reverse
-                                      reads for the mapping step (5\' end)
+                                      reads for the mapping step (5' end)
                                       (default: 0).
   --length-id [INT]                   Length of IDs
                                       (the length of the barcodes)
@@ -211,7 +211,7 @@ by typing : st_pipeline_run.py --help
                                       (they will be labeled __no_feature)
   --inverse-mapping-rv-trimming [INT] Number of bases to trim in the reverse
                                       reads for the mapping step on the
-                                      3\' end.
+                                      3' end.
   --low-memory                        Writes temporary records into disk in
                                       order to save memory but gaining a
                                       speed penalty.
@@ -231,4 +231,4 @@ by typing : st_pipeline_run.py --help
                                       parameters allows todefine an offset
                                       from where to count unique UMIs
                                       (default: 50).
-  --version                           Show program\'s version number and exit
+  --version                           Show program's version number and exit
