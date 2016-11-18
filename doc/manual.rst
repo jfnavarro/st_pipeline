@@ -9,11 +9,18 @@ The output contains the counts matrix, a stats file, a log file
 and a BED file with all the transcripts.
 
 The ST Pipeline requires two fastq files, an IDs files (BARCODE, X, Y),
-the path to a STAR genome index, the path to a annotation file in GTF 
+the path to a STAR genome index, the path to a annotation file in GTF
 format and a dataset name.
 
 The ST Pipeline has many parameters, you can see a description of them
 by typing : st_pipeline_run.py --help
+
+Note that the minimum read length is dependant on the type of kit used, and
+should be adjusted accordingly, i.e. a 150bp kit should have a different
+minimun read length than a 75bp kit.
+
+Soft clipping is also not recommended when using the 75bp kit, due to the
+shorter length.
 
 @Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
 
@@ -228,7 +235,7 @@ by typing : st_pipeline_run.py --help
                                       position. However some reads might have
                                       slightly different start positions due
                                       to amplification artifacts. This
-                                      parameters allows todefine an offset
-                                      from where to count unique UMIs
+                                      parameters allows one to define an
+                                      offset from where to count unique UMIs
                                       (default: 50).
   --version                           Show program's version number and exit
