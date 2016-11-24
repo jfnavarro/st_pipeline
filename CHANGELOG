@@ -368,3 +368,7 @@ Version 1.1.7
 
 Version 1.2.0
 * Fixed a small bug in the deletion of the tmp folder
+
+Version 1.2.1
+* Made homopolymers filters enabled by default
+* Added a test dataset to the docs

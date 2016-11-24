@@ -54,7 +54,7 @@ class Pipeline():
         self.allowed_missed = 2
         self.allowed_kmer = 6
         self.overhang = 2
-        self.min_length_trimming = 25
+        self.min_length_trimming = 30
         self.trimming_rv = 0
         self.min_quality_trimming = 20 
         self.clean = True
@@ -81,10 +81,10 @@ class Pipeline():
         self.umi_end_position = 27
         self.umi_min_cluster_size = 2
         self.keep_discarded_files = False
-        self.remove_polyA_distance = 0
-        self.remove_polyT_distance = 0
-        self.remove_polyG_distance = 0
-        self.remove_polyC_distance = 0
+        self.remove_polyA_distance = 15
+        self.remove_polyT_distance = 15
+        self.remove_polyG_distance = 15
+        self.remove_polyC_distance = 15
         self.filter_AT_content = 90
         self.filter_GC_content = 90
         self.disable_clipping = False
@@ -264,7 +264,7 @@ class Pipeline():
                             help="KMer length when demultiplexing against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0, 7),
                             help="Extra flanking bases added when demultiplexing against the barcodes")
-        parser.add_argument('--min-length-qual-trimming', default=25, metavar="[INT]", type=int, choices=range(10, 101),
+        parser.add_argument('--min-length-qual-trimming', default=30, metavar="[INT]", type=int, choices=range(10, 101),
                             help="Minimum length of the reads after trimming, " \
                             "shorter reads will be discarded (default: %(default)s)")
         parser.add_argument('--mapping-rv-trimming', default=0, metavar="[INT]", type=int, choices=range(0, 101),
@@ -314,13 +314,13 @@ class Pipeline():
                             " as a cluster (duplicate) given the allowed mismatches (default: %(default)s)")
         parser.add_argument('--keep-discarded-files', action="store_true", default=False,
                             help='Writes down unaligned, un-annotated and un-demultiplexed reads to files')
-        parser.add_argument('--remove-polyA', default=0, metavar="[INT]", type=int, choices=range(0, 50),
+        parser.add_argument('--remove-polyA', default=15, metavar="[INT]", type=int, choices=range(0, 50),
                             help="Remove PolyA stretches of the given length from R2 (default: %(default)s)")
-        parser.add_argument('--remove-polyT', default=0, metavar="[INT]", type=int, choices=range(0, 50),
+        parser.add_argument('--remove-polyT', default=15, metavar="[INT]", type=int, choices=range(0, 50),
                             help="Remove PolyT stretches of the given length from R2 (default: %(default)s)")
-        parser.add_argument('--remove-polyG', default=0, metavar="[INT]", type=int, choices=range(0, 50),
+        parser.add_argument('--remove-polyG', default=15, metavar="[INT]", type=int, choices=range(0, 50),
                             help="Remove PolyG stretches of the given length from R2 (default: %(default)s)")
-        parser.add_argument('--remove-polyC', default=0, metavar="[INT]", type=int, choices=range(0, 50),
+        parser.add_argument('--remove-polyC', default=15, metavar="[INT]", type=int, choices=range(0, 50),
                             help="Remove PolyC stretches of the given length from R2 (default: %(default)s)")
         parser.add_argument('--filter-AT-content', default=90, metavar="[INT%]", type=int, choices=range(0, 100),
                             help="Discards reads whose number of A and T bases in total are more " \
