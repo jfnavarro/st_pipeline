@@ -1,0 +1,161 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Introduction &#8212; ST Pipeline 1.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="ST Pipeline 1.0.0 documentation" href="index.html" />
+    <link rel="next" title="Installing the Spatial Transcriptomics pipeline" href="installation.html" />
+    <link rel="prev" title="Welcome to ST Pipeline&#39;s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p>ST Pipeline contains the tools and scripts needed to process and analyze the raw
+files generated with the Spatial Transcriptomics method in FASTQ format.</p>
+<p>The following files/parameters are required :</p>
+<blockquote>
+<div><ul class="simple">
+<li>FASTQ files (Read 1 containing the spatial information and the UMI and read
+2 containing the genomic sequence)</li>
+<li>A genome index generated with STAR</li>
+<li>An annotation file in GTF or GFF format</li>
+<li>The file containing the barcodes and array coordinates (look at the folder
+&quot;ids&quot; and chose the correct one.</li>
+<li>A name for the dataset</li>
+</ul>
+</div></blockquote>
+<p>The ST pipeline has multiple parameters mostly related to trimming, mapping and
+annotation but generally the default values are good enough. You can see a full
+description of the parameters typing &quot;st_pipeline_run.py --help&quot; after you have
+installed the ST pipeline.</p>
+<p>The raw data can be given in gzip format as well.</p>
+<p>Basically what the ST pipeline does is :</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt>Quality trimming (read 1 and read 2) :</dt>
+<dd><ul class="first last simple">
+<li>Remove low quality bases</li>
+<li>Sanity check (reads same length, reads order, etc..)</li>
+<li>Check quality UMI</li>
+<li>Remove artifacts (PolyT, PolyA, PolyG and PolyC)</li>
+<li>Check for AT and GC content</li>
+<li>Discard reads with a minimum number of bases of that failed any of the
+checks above</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">Contamimant filter e.x. rRNA genome (Optional)</p>
+</li>
+<li><p class="first">Mapping with STAR (only read 2)</p>
+</li>
+<li><p class="first">Demultiplexing with taggd
+(<a class="reference external" href="https://github.com/SpatialTranscriptomicsResearch/taggd">https://github.com/SpatialTranscriptomicsResearch/taggd</a>) (only read 1)</p>
+</li>
+<li><p class="first">Keep reads (read 2) that contain a valid barcode and are correctly mapped</p>
+</li>
+<li><p class="first">Annotate the reads with htseq-count</p>
+</li>
+<li><p class="first">Group annotated reads by barcode(spot position) and gene to get a read count</p>
+</li>
+<li><p class="first">In the grouping/counting only unique molecules (UMIs) are kept.</p>
+</li>
+</ul>
+</div></blockquote>
+<p>You can see a graphical more detailed description of the workflow in the
+documents workflow.pdf and workflow_extended.pdf</p>
+<p>The output will be a data frame file with the counts (genes as columns, spots as
+rows), a BED file containing the transcripts (Read name, coordinate, gene,
+etc..), and a JSON file with usefl stats. The ST pipeline will also output a log
+file with useful information.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to ST Pipeline's documentation!</a></li>
+      <li>Next: <a href="installation.html" title="next chapter">Installing the Spatial Transcriptomics pipeline</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/intro.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Jose Fernandez Navarro.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/intro.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

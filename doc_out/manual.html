@@ -1,0 +1,330 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Manual &#8212; ST Pipeline 1.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="ST Pipeline 1.0.0 documentation" href="index.html" />
+    <link rel="next" title="Examples" href="example.html" />
+    <link rel="prev" title="Installing the Spatial Transcriptomics pipeline" href="installation.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="manual">
+<h1>Manual<a class="headerlink" href="#manual" title="Permalink to this headline">¶</a></h1>
+<p>ST Pipeline is a tool to process the Spatial Transcriptomics raw data.
+The data is filtered, aligned to a genome, annotated to a reference,
+demultiplexed by array coordinates and then aggregated by counts
+that are not duplicates using the Unique Molecular Indentifiers.
+The output contains the counts matrix, a stats file, a log file
+and a BED file with all the transcripts.</p>
+<p>The ST Pipeline requires two fastq files, an IDs files (BARCODE, X, Y),
+the path to a STAR genome index, the path to a annotation file in GTF
+format and a dataset name.</p>
+<p>The ST Pipeline has many parameters, you can see a description of them
+by typing : st_pipeline_run.py --help</p>
+<p>Note that the minimum read length is dependant on the type of kit used, and
+should be adjusted accordingly, i.e. a 150bp kit should have a different
+minimun read length than a 75bp kit.</p>
+<p>Soft clipping is also not recommended when using the 75bp kit, due to the
+shorter length.</p>
+<p>The UMI filter can be used for array batches 1000L6 and older. It is
+unable to be used for array batches 1000L7 and newer as the UMI in
+these arrays is fully randomised.</p>
+<p>&#64;Author Jose Fernandez Navarro &lt;<a class="reference external" href="mailto:jose&#46;fernandez&#46;navarro&#37;&#52;&#48;scilifelab&#46;se">jose<span>&#46;</span>fernandez<span>&#46;</span>navarro<span>&#64;</span>scilifelab<span>&#46;</span>se</a>&gt;</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>usage: st_pipeline_run.py <span class="o">[</span>-h<span class="o">]</span>
+                        --ids <span class="o">[</span>FILE<span class="o">]</span>
+                        --ref-map <span class="o">[</span>FOLDER<span class="o">]</span>
+                        --ref-annotation <span class="o">[</span>FILE<span class="o">]</span>
+                        --expName <span class="o">[</span>STRING<span class="o">]</span>
+                        <span class="o">[</span>--allowed-missed <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--allowed-kmer <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--overhang <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--min-length-qual-trimming <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--mapping-rv-trimming <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--length-id <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--contaminant-index <span class="o">[</span>FOLDER<span class="o">]]</span>
+                        <span class="o">[</span>--qual-64<span class="o">]</span>
+                        <span class="o">[</span>--htseq-mode <span class="o">[</span>STRING<span class="o">]]</span>
+                        <span class="o">[</span>--htseq-no-ambiguous<span class="o">]</span>
+                        <span class="o">[</span>--start-id <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--no-clean-up<span class="o">]</span>
+                        <span class="o">[</span>--verbose<span class="o">]</span>
+                        <span class="o">[</span>--mapping-threads <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--min-quality-trimming <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--bin-path <span class="o">[</span>FOLDER<span class="o">]]</span>
+                        <span class="o">[</span>--log-file <span class="o">[</span>STR<span class="o">]]</span>
+                        <span class="o">[</span>--output-folder <span class="o">[</span>FOLDER<span class="o">]]</span>
+                        <span class="o">[</span>--temp-folder <span class="o">[</span>FOLDER<span class="o">]]</span>
+                        <span class="o">[</span>--umi-allowed-mismatches <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--umi-start-position <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--umi-end-position <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--umi-min-cluster-size <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--keep-discarded-files<span class="o">]</span>
+                        <span class="o">[</span>--remove-polyA <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--remove-polyT <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--remove-polyG <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--remove-polyC <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--filter-AT-content <span class="o">[</span>INT%<span class="o">]]</span>
+                        <span class="o">[</span>--filter-GC-content <span class="o">[</span>INT%<span class="o">]]</span>
+                        <span class="o">[</span>--disable-multimap<span class="o">]</span>
+                        <span class="o">[</span>--disable-clipping<span class="o">]</span>
+                        <span class="o">[</span>--umi-cluster-algorithm <span class="o">[</span>STRING<span class="o">]]</span>
+                        <span class="o">[</span>--min-intron-size <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--max-intron-size <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--umi-filter<span class="o">]</span>
+                        <span class="o">[</span>--umi-filter-template <span class="o">[</span>STRING<span class="o">]]</span>
+                        <span class="o">[</span>--compute-saturation<span class="o">]</span>
+                        <span class="o">[</span>--include-non-annotated<span class="o">]</span>
+                        <span class="o">[</span>--inverse-mapping-rv-trimming <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--low-memory<span class="o">]</span>
+                        <span class="o">[</span>--two-pass-mode<span class="o">]</span>
+                        <span class="o">[</span>--strandness <span class="o">[</span>STRING<span class="o">]]</span>
+                        <span class="o">[</span>--umi-quality-bases <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--umi-counting-offset <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--version<span class="o">]</span>
+                        fastq_file_fw fastq_file_rv
+</pre></div>
+</div>
+<p><strong>positional arguments</strong></p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>fastq_file_fw
+  Read_1 containing the spatial barcodes and UMIs <span class="k">for</span> each sequence.
+
+fastq_file_rv
+  Read_2 containing the gene sequence corresponding to the sequence in
+  Read_1.
+</pre></div>
+</div>
+<p><strong>optional arguments</strong></p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>-h, --help                          Show this help message and exit.
+--ids [FILE]                        Path to the file containing the map of
+                                    barcodes to the array coordinates.
+--ref-map [FOLDER]                  Path to the folder with the STAR index
+                                    for the genome that you want to use to
+                                    align the reads.
+--ref-annotation [FILE]             Path to the reference annotation file
+                                    (GTF or GFF format is required) to be
+                                    used to annotated the reads.
+--expName [STRING]                  Name of the experiment/dataset
+                                    (The output files will prepend this
+                                    name).
+--allowed-missed [INT]              Number of allowed mismatches when
+                                    demultiplexing against the barcodes
+                                    with TaggD (default: 2).
+--allowed-kmer [INT]                KMer length when demultiplexing against
+                                    the barcodes with TaggD (default: 6).
+--overhang [INT]                    Extra flanking bases added when
+                                    demultiplexing against the barcodes.
+--min-length-qual-trimming [INT]    Minimum length of the reads after
+                                    trimming, shorter reads will be
+                                    discarded (default: 25).
+--mapping-rv-trimming [INT]         Number of bases to trim in the reverse
+                                    reads for the mapping step (5&#39; end)
+                                    (default: 0).
+--length-id [INT]                   Length of IDs
+                                    (the length of the barcodes)
+                                    (default: 18).
+--contaminant-index [FOLDER]        Path to the folder with a STAR index
+                                    with a contaminant genome. Reads will
+                                    be filtered against the specified
+                                    genome and mapping reads will be
+                                    discarded.
+--qual-64                           Use phred-64 quality instead of
+                                    phred-33(default).
+--htseq-mode [STRING]               Mode of Annotation when using HTSeq.
+                                    Modes = {union ,
+                                    intersection-nonempty(default),
+                                    intersection-strict}.
+--htseq-no-ambiguous                When using htseq discard reads
+                                    annotating ambiguous genes
+                                    (default False).
+--start-id [INT]                    Start position of the IDs (Barcodes)
+                                    in the R1 (counting from 0)
+                                    (default: 0).
+--no-clean-up                       Do not remove temporary/intermediary
+                                    files (useful for debugging).
+--verbose                           Show extra information on the log file.
+--mapping-threads [INT]             Number of threads to use in the mapping
+                                    step (default: 4).
+--min-quality-trimming [INT]        Minimum phred quality a base must have
+                                    in the trimming step (default: 20).
+--bin-path [FOLDER]                 Path to folder where binary executables
+                                    are present (system path by default).
+--log-file [STR]                    Name of the file that we want to use to
+                                    store the logs
+                                    (default output to screen).
+--output-folder [FOLDER]            Path of the output folder.
+--temp-folder [FOLDER]              Path of the location for temporary
+                                    files.
+--umi-allowed-mismatches [INT]      Number of allowed mismatches
+                                    (hamming distance) that UMIs of the
+                                    same gene-spot must have in order to
+                                    cluster together (default: 1).
+--umi-start-position [INT]          Position in R1 (base wise) of the first
+                                    base of the UMI (starting by 0)
+                                    (default: 18).
+--umi-end-position [INT]            Position in R1 (base wise) of the last
+                                    base of the UMI (starting by 1)
+                                    (default: 27).
+--umi-min-cluster-size [INT]        Min number of equal UMIs to count as a
+                                    cluster (duplicate) given the allowed
+                                    mismatches (default: 2).
+--keep-discarded-files              Writes down unaligned, un-annotated
+                                    and un-demultiplexed reads to files.
+--remove-polyA [INT]                Remove PolyA stretches of the given
+                                    length from R2 (default: 0).
+--remove-polyT [INT]                Remove PolyT stretches of the given
+                                    length from R2 (default: 0).
+--remove-polyG [INT]                Remove PolyG stretches of the given
+                                    length from R2 (default: 0).
+--remove-polyC [INT]                Remove PolyC stretches of the given
+                                    length from R2 (default: 0).
+--filter-AT-content [INT%]          Discards reads whose number of A and T
+                                    bases in total are more or equal than
+                                    the number given in percentage
+                                    (default: 90).
+--filter-GC-content [INT%]          Discards reads whose number of G and C
+                                    bases in total are more or equal than
+                                    the number given in percentage
+                                    (default: 90).
+--disable-multimap                  If activated, multiple aligned reads
+                                    obtained during mapping will be all
+                                    discarded. Otherwise the highest scored
+                                    one will be kept.
+--disable-clipping                  If activated, disable soft-clipping
+                                    (local alignment) in the mapping step.
+--umi-cluster-algorithm [STRING]    Type of clustering algorithm to use
+                                    when performing UMIs duplicates
+                                    removal.
+                                    Modes = {naive(default), hierarchical}.
+--min-intron-size [INT]             Minimum allowed intron size when
+                                    searching for splice variants in the
+                                    mapping step (default: 20).
+--max-intron-size [INT]             Maximum allowed intron size when
+                                    searching for splice variants in the
+                                    mapping step (default: 100000).
+--umi-filter                        Enables the UMI quality filter based on
+                                    the template given in
+                                    --umi-filter-template.
+--umi-filter-template [STRING]      UMI template (IUPAC nucleotide code)
+                                    for the UMI filter, default = WSNNWSNNV
+--compute-saturation                Performs a saturation curve computation
+                                    by sub-sampling the annotated reads,
+                                    computing unique molecules and then a
+                                    saturation curve
+                                    (included in the log file).
+--include-non-annotated             Do not discard un-annotated reads
+                                    (they will be labeled __no_feature)
+--inverse-mapping-rv-trimming [INT] Number of bases to trim in the reverse
+                                    reads for the mapping step on the
+                                    3&#39; end.
+--low-memory                        Writes temporary records into disk in
+                                    order to save memory but gaining a
+                                    speed penalty.
+--two-pass-mode                     Activates the 2 pass mode in STAR to
+                                    also map against splice variants.
+--strandness [STRING]               What strandness mode to use when
+                                    annotating with htseq-count
+                                    [no, yes(default), reverse].
+--umi-quality-bases [INT]           Maximum number of low quality bases
+                                    allowed in an UMI (default: 4).
+--umi-counting-offset [INT]         Expression count for each gene-spot
+                                    combination is expressed as the number
+                                    of unique UMIs in each strand/start
+                                    position. However some reads might have
+                                    slightly different start positions due
+                                    to amplification artifacts. This
+                                    parameters allows one to define an
+                                    offset from where to count unique UMIs
+                                    (default: 50).
+--version                           Show program&#39;s version number and exit
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="installation.html" title="previous chapter">Installing the Spatial Transcriptomics pipeline</a></li>
+      <li>Next: <a href="example.html" title="next chapter">Examples</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/manual.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Jose Fernandez Navarro.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/manual.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
