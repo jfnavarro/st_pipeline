@@ -187,6 +187,8 @@ def barcodeDemultiplexing(reads,
                           kmer, 
                           start_positon,
                           over_hang,
+                          taggd_metric,
+                          taggd_multiple_hits_keep_one,
                           cores,
                           outputFilePrefix,
                           keep_discarded_files=False):
@@ -202,6 +204,8 @@ def barcodeDemultiplexing(reads,
     :param kmer: the kmer length
     :param start_positon: the start position of the barcode
     :param over_hang: the number of bases to allow for overhang
+    :param taggd_metric: the distance metric algorithm (Subglobal, Levensthein or Hamming)
+    :param taggd_multiple_hits_keep_one: when True keep one random hit when multiple candidates
     :param outputFilePrefix: location and prefix for the output files
     :param keep_discarded_files: if True files with the non demultiplexed reads will be generated
     :type reads: str
@@ -210,6 +214,8 @@ def barcodeDemultiplexing(reads,
     :type kmer: int
     :type start_positon: int
     :type over_hang: int
+    :type taggd_metric: str
+    :type taggd_multiple_hits_keep_one: bool
     :type outputFilePrefix: str
     :type keep_discarded_files: bool
     :raises: RuntimeError,ValueError,OSError,CalledProcessError
@@ -225,21 +231,24 @@ def barcodeDemultiplexing(reads,
     #--metric (subglobal (default) , Levenshtein or Hamming)
     #--slider-increment (space between kmer searches, 0 is default = kmer length)
     #--seed
-    #--no-multiprocessing
     #--overhang additional flanking bases around read barcode to allow
     #--estimate-min-edit-distance is set estimate the min edit distance among true barcodes
     #--no-offset-speedup turns off speed up, 
     #  it might yield more hits (exactly as findIndexes)
-    #--homopolymer-filter if set excludes erads where barcode 
+    #--homopolymer-filter if set excludes reads where barcode 
     #  contains a homolopymer of the given length (0 no filter), default 8
     args = ['taggd_demultiplex.py',
             "--max-edit-distance", mismatches,
             "--k", kmer,
             "--start-position", start_positon,
-            "--homopolymer-filter", 8,
+            "--homopolymer-filter", 0,
             "--subprocesses", cores,
+            "--metric", taggd_metric,
             "--overhang", over_hang]
     
+    if taggd_multiple_hits_keep_one:
+        args.append("--multiple-hits-keep-one")
+        
     if not keep_discarded_files:
         args.append("--no-unmatched-output")
         args.append("--no-ambiguous-output")

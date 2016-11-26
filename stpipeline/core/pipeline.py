@@ -102,6 +102,8 @@ class Pipeline():
         self.strandness = "yes"
         self.umi_quality_bases = 4
         self.umi_counting_offset = 50
+        self.taggd_metric = "Subglobal"
+        self.taggd_multiple_hits_keep_one = False
         
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -367,7 +369,12 @@ class Pipeline():
                             "as the number of unique UMIs in each strand/start position. However " \
                             "some reads might have slightly different start positions due to " \
                             "amplification artifacts. This parameters allows to define an " \
-                            "offset from where to count unique UMIs (default: %(default)s)") 
+                            "offset from where to count unique UMIs (default: %(default)s)")
+        parser.add_argument('--demultiplexing-metric', default="Subglobal", metavar="[STRING]", type=str,
+                            help="Distance metric for TaggD demultiplexing: Subglobal, Levenshtein or Hamming (default: Subglobal)",
+                            choices=["Subglobal","Levenshtein","Hamming"])
+        parser.add_argument("--demultiplexing-multiple-hits-keep-one", default=False, action="store_true",
+                            help="When multiple hits with same scored are found in the demultiplexing, keep one (random)." )
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -436,6 +443,8 @@ class Pipeline():
         self.strandness = options.strandness
         self.umi_quality_bases = options.umi_quality_bases
         self.umi_counting_offset = options.umi_counting_offset
+        self.taggd_metric = options.demultiplexing_metric
+        self.taggd_multiple_hits_keep_one = options.demultiplexing_multiple_hits_keep_one
         
         # Assign class parameters to the QA stats object
         import inspect
@@ -477,6 +486,9 @@ class Pipeline():
         self.logger.info("TaggD barcode length: {}".format(self.barcode_length))
         self.logger.info("TaggD kmer size: {}".format(self.allowed_kmer))
         self.logger.info("TaggD overhang: {}".format(self.overhang))
+        self.logger.info("TaggD metric: {}".format(self.taggd_metric))
+        if self.taggd_multiple_hits_keep_one:
+            self.logger.info("TaggD multiple hits keep one (random) enabled")
         self.logger.info("Mapping reverse trimming: {}".format(self.trimming_rv))
         self.logger.info("Mapping inverse reverse trimming: {}".format(self.inverse_trimming_rv))
         self.logger.info("Mapping tool: STAR")
@@ -669,6 +681,8 @@ class Pipeline():
                                   self.allowed_kmer,
                                   self.barcode_start,
                                   self.overhang,
+                                  self.taggd_metric,
+                                  self.taggd_multiple_hits_keep_one,
                                   self.threads,
                                   FILENAMES["demultiplexed_prefix"], # Prefix for output files
                                   self.keep_discarded_files)

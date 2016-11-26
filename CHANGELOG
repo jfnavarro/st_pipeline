@@ -372,3 +372,8 @@ Version 1.2.0
 Version 1.2.1
 * Made homopolymers filters enabled by default
 * Added a test dataset to the docs
+
+Version 1.2.2
+* Fixed bugs in convertEnsemblToNames
+* Added some parameteter for TaggD demultiplexing
+* Bumped version of TaggD
