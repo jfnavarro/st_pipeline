@@ -5,7 +5,7 @@ invoke
 argparse
 scipy
 numpy
-taggd>=0.2.9
+taggd>=0.3.0
 sqlitedict
 pandas
 regex

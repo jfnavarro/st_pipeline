@@ -13,13 +13,12 @@ ENSEMBL_ID GENE_NAME
 
 import argparse
 import sys
-import json
-from stpipeline.common.json_utils import json_iterator
-from stpipeline.common.utils import fileOk
+import pandas as pd
+import os
 
 def main(st_data_file, names_map, output_file):
 
-    if not fileOk(st_data_file) or not fileOk(names_map):
+    if not os.path.isfile(st_data_file) or not os.path.isfile(names_map):
         sys.stderr.write("Error, input file not present or invalid format\n")
         sys.exit(1)
         
