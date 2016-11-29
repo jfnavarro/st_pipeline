@@ -265,7 +265,7 @@ class Pipeline():
         parser.add_argument('--allowed-kmer', default=6, metavar="[INT]", type=int, choices=range(1, 10),
                             help="KMer length when demultiplexing against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0, 7),
-                            help="Extra flanking bases added when demultiplexing against the barcodes")
+                            help="Extra flanking bases added when demultiplexing against the barcodes (default: %(default)s)")
         parser.add_argument('--min-length-qual-trimming', default=30, metavar="[INT]", type=int, choices=range(10, 101),
                             help="Minimum length of the reads after trimming, " \
                             "shorter reads will be discarded (default: %(default)s)")

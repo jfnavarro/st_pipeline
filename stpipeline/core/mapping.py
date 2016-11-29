@@ -237,6 +237,8 @@ def barcodeDemultiplexing(reads,
     #  it might yield more hits (exactly as findIndexes)
     #--homopolymer-filter if set excludes reads where barcode 
     #  contains a homolopymer of the given length (0 no filter), default 8
+    
+    if taggd_metric == "Hamming": over_hang = 0 
     args = ['taggd_demultiplex.py',
             "--max-edit-distance", mismatches,
             "--k", kmer,
