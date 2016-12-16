@@ -189,6 +189,7 @@ def barcodeDemultiplexing(reads,
                           over_hang,
                           taggd_metric,
                           taggd_multiple_hits_keep_one,
+                          taggd_trim_sequences,
                           cores,
                           outputFilePrefix,
                           keep_discarded_files=False):
@@ -206,6 +207,7 @@ def barcodeDemultiplexing(reads,
     :param over_hang: the number of bases to allow for overhang
     :param taggd_metric: the distance metric algorithm (Subglobal, Levensthein or Hamming)
     :param taggd_multiple_hits_keep_one: when True keep one random hit when multiple candidates
+    :param taggd_trim_sequences: coordinates to trim in the barcode
     :param outputFilePrefix: location and prefix for the output files
     :param keep_discarded_files: if True files with the non demultiplexed reads will be generated
     :type reads: str
@@ -216,6 +218,7 @@ def barcodeDemultiplexing(reads,
     :type over_hang: int
     :type taggd_metric: str
     :type taggd_multiple_hits_keep_one: bool
+    :type taggd_trim_sequences: list
     :type outputFilePrefix: str
     :type keep_discarded_files: bool
     :raises: RuntimeError,ValueError,OSError,CalledProcessError
@@ -251,6 +254,11 @@ def barcodeDemultiplexing(reads,
     if taggd_multiple_hits_keep_one:
         args.append("--multiple-hits-keep-one")
         
+    if taggd_trim_sequences is not None:
+        args.append("--trim-sequences") 
+        for pos in taggd_trim_sequences:
+            args.append(pos)   
+            
     if not keep_discarded_files:
         args.append("--no-unmatched-output")
         args.append("--no-ambiguous-output")

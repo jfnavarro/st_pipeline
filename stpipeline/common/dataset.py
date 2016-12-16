@@ -155,24 +155,32 @@ def createDataset(input_file,
     number_genes = len(counts_table.columns)
     max_count = counts_table.values.max()
     min_count = counts_table.values.min()
-    aggregated_spot_counts = counts_table.sum(axis=0).values
-    aggregated_gene_counts = counts_table.sum(axis=1).values
+    aggregated_spot_counts = counts_table.sum(axis=1).values
+    aggregated_gene_counts = (counts_table != 0).sum(axis=1).values
     max_genes_feature = aggregated_gene_counts.max()
     min_genes_feature = aggregated_gene_counts.min()
     max_reads_feature = aggregated_spot_counts.max()
     min_reads_feature = aggregated_spot_counts.min()
-    
+    average_reads_feature = np.mean(aggregated_spot_counts)
+    average_genes_feature = np.mean(aggregated_gene_counts)
+    std_reads_feature = np.std(aggregated_spot_counts)
+    std_genes_feature = np.std(aggregated_gene_counts)
+        
     # Print some statistics
     if verbose:
         logger.info("Number of unique molecules present: {}".format(total_transcripts))
-        logger.info("Number of unique events (gene-barcode) present: {}".format(total_record))
+        logger.info("Number of unique events (gene-feature) present: {}".format(total_record))
         logger.info("Number of unique genes present: {}".format(number_genes))
         logger.info("Max number of genes over all features: {}".format(max_genes_feature))
         logger.info("Min number of genes over all features: {}".format(min_genes_feature))
-        logger.info("Max number of reads over all features: {}".format(max_reads_feature))
-        logger.info("Min number of reads over all features: {}".format(min_reads_feature))
-        logger.info("Max number of reads over all unique events: {}".format(max_count))
-        logger.info("Min number of reads over all unique events: {}".format(min_count))
+        logger.info("Max number of unique molecules over all features: {}".format(max_reads_feature))
+        logger.info("Min number of unique molecules over all features: {}".format(min_reads_feature))
+        logger.info("Average number genes per feature: {}".format(average_genes_feature))
+        logger.info("Average number unique molecules per feature: {}".format(average_reads_feature))
+        logger.info("Std number genes per feature: {}".format(std_genes_feature))
+        logger.info("Std number unique molecules per feature: {}".format(std_reads_feature))
+        logger.info("Max number of unique molecules over all unique events: {}".format(max_count))
+        logger.info("Min number of unique molecules over all unique events: {}".format(min_count))
         logger.info("Number of discarded reads (possible duplicates): {}".format(discarded_reads))
         
     # Update the QA object
