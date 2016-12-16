@@ -79,6 +79,23 @@ ENSEMBL_ID	GENE_NAME
 
 And st_data.tsv is the output from the ST Pipeline.
 
+**Quality stats**
+
+The ST Pipeline generate useful statistical information in the LOG file but if you
+want to obtain more detail information about the quality of the data, you can run the following script:
+
+	st_qa.py --input-data stdata.tsv
+	
+**Documentation**
+
+You can see a more detailed documentation in the folder "doc_out".
+
+**Example data***
+
+You can see a real dataset obtained from the public data from
+the following publication (http://science.sciencemag.org/content/353/6294/78)
+in the folder called "test_data".
+
 **License**
 
 The ST pipeline is open source under the MIT license which means that you can use it, change it and re-distribute but you must always refer to our license (see LICENSE and AUTHORS).
