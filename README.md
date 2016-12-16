@@ -90,7 +90,7 @@ want to obtain more detail information about the quality of the data, you can ru
 
 You can see a more detailed documentation in the folder "doc_out".
 
-**Example data***
+**Example data**
 
 You can see a real dataset obtained from the public data from
 the following publication (http://science.sciencemag.org/content/353/6294/78)
