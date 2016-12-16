@@ -104,6 +104,7 @@ class Pipeline():
         self.umi_counting_offset = 50
         self.taggd_metric = "Subglobal"
         self.taggd_multiple_hits_keep_one = False
+        self.taggd_trim_sequences = None
         
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -375,6 +376,11 @@ class Pipeline():
                             choices=["Subglobal","Levenshtein","Hamming"])
         parser.add_argument("--demultiplexing-multiple-hits-keep-one", default=False, action="store_true",
                             help="When multiple hits with same scored are found in the demultiplexing, keep one (random)." )
+        parser.add_argument('--demultiplexing-trim-sequences', nargs='+', type=int, default=None, 
+                            help="Trims from the barcodes in the input file when doing demultiplexing.\n" \
+                            "The bases given in the list of tuples as START END START END .. where\n" \
+                            "START is the integer position of the first base (0 based) and END is the integer\n" \
+                            "position of the last base (1 based).\nTrimmng sequences can be given several times.")
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -445,6 +451,7 @@ class Pipeline():
         self.umi_counting_offset = options.umi_counting_offset
         self.taggd_metric = options.demultiplexing_metric
         self.taggd_multiple_hits_keep_one = options.demultiplexing_multiple_hits_keep_one
+        self.taggd_trim_sequences = options.demultiplexing_trim_sequences
         
         # Assign class parameters to the QA stats object
         import inspect
@@ -489,6 +496,8 @@ class Pipeline():
         self.logger.info("TaggD metric: {}".format(self.taggd_metric))
         if self.taggd_multiple_hits_keep_one:
             self.logger.info("TaggD multiple hits keep one (random) enabled")
+        if self.taggd_trim_sequences is not None:
+            self.logger.info("TaggD trimming from the barcodes " + str(self.taggd_trim_sequences))
         self.logger.info("Mapping reverse trimming: {}".format(self.trimming_rv))
         self.logger.info("Mapping inverse reverse trimming: {}".format(self.inverse_trimming_rv))
         self.logger.info("Mapping tool: STAR")
@@ -683,6 +692,7 @@ class Pipeline():
                                   self.overhang,
                                   self.taggd_metric,
                                   self.taggd_multiple_hits_keep_one,
+                                  self.taggd_trim_sequences,
                                   self.threads,
                                   FILENAMES["demultiplexed_prefix"], # Prefix for output files
                                   self.keep_discarded_files)

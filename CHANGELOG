@@ -375,5 +375,11 @@ Version 1.2.1
 
 Version 1.2.2
 * Fixed bugs in convertEnsemblToNames
-* Added some parameteter for TaggD demultiplexing
+* Added some parameters for TaggD demultiplexing
 * Bumped version of TaggD
+
+Version 1.2.3
+* Bumped TaggD version
+* Added more stats to the dataset output
+* Added scripts to compute stats
+* Added new option for TaggD
