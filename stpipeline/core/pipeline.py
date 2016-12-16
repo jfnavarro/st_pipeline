@@ -497,7 +497,7 @@ class Pipeline():
         if self.taggd_multiple_hits_keep_one:
             self.logger.info("TaggD multiple hits keep one (random) enabled")
         if self.taggd_trim_sequences is not None:
-            self.logger.info("TaggD trimming from the barcodes " + str(self.taggd_trim_sequences))
+            self.logger.info("TaggD trimming from the barcodes " + '-'.join(str(x) for x in self.taggd_trim_sequences))
         self.logger.info("Mapping reverse trimming: {}".format(self.trimming_rv))
         self.logger.info("Mapping inverse reverse trimming: {}".format(self.inverse_trimming_rv))
         self.logger.info("Mapping tool: STAR")
