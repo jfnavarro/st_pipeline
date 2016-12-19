@@ -260,10 +260,10 @@ class Pipeline():
                             "(GTF or GFF format is required) to be used to annotated the reads")
         parser.add_argument('--expName', type=str, metavar="[STRING]", required=True,
                             help="Name of the experiment/dataset (The output files will prepend this name)")
-        parser.add_argument('--allowed-missed', default=2, metavar="[INT]", type=int, choices=range(0, 7),
+        parser.add_argument('--allowed-missed', default=2, metavar="[INT]", type=int, choices=range(0, 9),
                             help="Number of allowed mismatches when demultiplexing " \
                             "against the barcodes with TaggD (default: %(default)s)")
-        parser.add_argument('--allowed-kmer', default=6, metavar="[INT]", type=int, choices=range(1, 10),
+        parser.add_argument('--allowed-kmer', default=6, metavar="[INT]", type=int, choices=range(1, 30),
                             help="KMer length when demultiplexing against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0, 7),
                             help="Extra flanking bases added when demultiplexing against the barcodes (default: %(default)s)")
@@ -285,13 +285,13 @@ class Pipeline():
                             "Modes = {union,intersection-nonempty(default),intersection-strict}")
         parser.add_argument('--htseq-no-ambiguous', action="store_true", default=False,
                             help="When using htseq discard reads annotating ambiguous genes (default False)")
-        parser.add_argument('--start-id', default=0, metavar="[INT]", type=int, choices=range(0, 27),
+        parser.add_argument('--start-id', default=0, metavar="[INT]", type=int, choices=range(0, 120),
                             help="Start position of the IDs (Barcodes) in the R1 (counting from 0) (default: %(default)s)")
         parser.add_argument('--no-clean-up', action="store_false", default=True,
                             help="Do not remove temporary/intermediary files (useful for debugging)")
         parser.add_argument('--verbose', action="store_true", default=False,
                             help="Show extra information on the log file")
-        parser.add_argument('--mapping-threads', default=4, metavar="[INT]", type=int, choices=range(1, 17),
+        parser.add_argument('--mapping-threads', default=4, metavar="[INT]", type=int, choices=range(1, 33),
                             help="Number of threads to use in the mapping step (default: %(default)s)")
         parser.add_argument('--min-quality-trimming', default=20, metavar="[INT]", type=int, choices=range(10, 61),
                             help="Minimum phred quality a base must have in the trimming step (default: %(default)s)")
@@ -303,13 +303,13 @@ class Pipeline():
                             help='Path of the output folder')
         parser.add_argument('--temp-folder', metavar="[FOLDER]", action=readable_dir, default=None,
                             help='Path of the location for temporary files')
-        parser.add_argument('--umi-allowed-mismatches', default=1, metavar="[INT]", type=int, choices=range(0, 5),
+        parser.add_argument('--umi-allowed-mismatches', default=1, metavar="[INT]", type=int, choices=range(0, 6),
                             help="Number of allowed mismatches (hamming distance) " \
                             "that UMIs of the same gene-spot must have in order to cluster together (default: %(default)s)")
-        parser.add_argument('--umi-start-position', default=18, metavar="[INT]", type=int, choices=range(0, 43),
+        parser.add_argument('--umi-start-position', default=18, metavar="[INT]", type=int, choices=range(0, 120),
                             help="Position in R1 (base wise) of the first base of the " \
                             "UMI (starting by 0) (default: %(default)s)")
-        parser.add_argument('--umi-end-position', default=27, metavar="[INT]", type=int, choices=range(8, 51),
+        parser.add_argument('--umi-end-position', default=27, metavar="[INT]", type=int, choices=range(0, 120),
                             help="Position in R1 (base wise) of the last base of the "\
                             "UMI (starting by 1) (default: %(default)s)")
         parser.add_argument('--umi-min-cluster-size', default=2, metavar="[INT]", type=int, choices=range(1, 11),
@@ -317,13 +317,13 @@ class Pipeline():
                             " as a cluster (duplicate) given the allowed mismatches (default: %(default)s)")
         parser.add_argument('--keep-discarded-files', action="store_true", default=False,
                             help='Writes down unaligned, un-annotated and un-demultiplexed reads to files')
-        parser.add_argument('--remove-polyA', default=15, metavar="[INT]", type=int, choices=range(0, 50),
+        parser.add_argument('--remove-polyA', default=15, metavar="[INT]", type=int, choices=range(0, 25),
                             help="Remove PolyA stretches of the given length from R2 (default: %(default)s)")
-        parser.add_argument('--remove-polyT', default=15, metavar="[INT]", type=int, choices=range(0, 50),
+        parser.add_argument('--remove-polyT', default=15, metavar="[INT]", type=int, choices=range(0, 25),
                             help="Remove PolyT stretches of the given length from R2 (default: %(default)s)")
-        parser.add_argument('--remove-polyG', default=15, metavar="[INT]", type=int, choices=range(0, 50),
+        parser.add_argument('--remove-polyG', default=15, metavar="[INT]", type=int, choices=range(0, 25),
                             help="Remove PolyG stretches of the given length from R2 (default: %(default)s)")
-        parser.add_argument('--remove-polyC', default=15, metavar="[INT]", type=int, choices=range(0, 50),
+        parser.add_argument('--remove-polyC', default=15, metavar="[INT]", type=int, choices=range(0, 25),
                             help="Remove PolyC stretches of the given length from R2 (default: %(default)s)")
         parser.add_argument('--filter-AT-content', default=90, metavar="[INT%]", type=int, choices=range(0, 100),
                             help="Discards reads whose number of A and T bases in total are more " \
@@ -355,7 +355,7 @@ class Pipeline():
                             "unique molecules and then a saturation curve (included in the log file)")
         parser.add_argument('--include-non-annotated', action="store_true", default=False,
                             help="Do not discard un-annotated reads (they will be labeled __no_feature)")
-        parser.add_argument('--inverse-mapping-rv-trimming', default=0, type=int, metavar="[INT]", choices=range(0, 100),
+        parser.add_argument('--inverse-mapping-rv-trimming', default=0, type=int, metavar="[INT]", choices=range(0, 50),
                             help="Number of bases to trim in the reverse reads for the mapping step on the 3' end")
         parser.add_argument('--low-memory', default=False, action="store_true",
                             help="Writes temporary records into disk in order to save memory but gaining a speed penalty")

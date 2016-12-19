@@ -7,7 +7,6 @@ import subprocess
 from subprocess import CalledProcessError
 from stpipeline.common.utils import fileOk
 from stpipeline.common.stats import qa_stats
-import uuid
 import os
 import shutil
 
@@ -99,9 +98,6 @@ def alignReads(reverse_reads,
              "--outSAMorder", "Paired",    
              "--outSAMprimaryFlag", "OneBestScore", 
              "--outFilterMultimapNmax", multi_map_number,
-             "--sjdbOverhang", 100, # default is 100
-             "--outFilterMismatchNmax", 10, # large number switches it off (default 10)
-             "--outFilterMismatchNoverLmax", 0.3, # default is 0.3
              "--alignIntronMin", min_intron_size,
              "--alignIntronMax", max_intron_size,
              "--readMatesLengthsIn", "NotEqual",
@@ -116,7 +112,7 @@ def alignReads(reverse_reads,
     args = ["STAR",
             "--genomeDir", ref_map,
             "--readFilesIn", reverse_reads,
-            "--outFileNamePrefix", outputFolder + os.sep, # MUST ENSURE AT LEAST ONE SLASH
+            "--outFileNamePrefix", outputFolder,
             "--outReadsUnmapped", "Fastx"]  
     args += flags
     
@@ -251,13 +247,13 @@ def barcodeDemultiplexing(reads,
             "--metric", taggd_metric,
             "--overhang", over_hang]
     
-    if taggd_multiple_hits_keep_one:
-        args.append("--multiple-hits-keep-one")
-        
     if taggd_trim_sequences is not None:
         args.append("--trim-sequences") 
         for pos in taggd_trim_sequences:
-            args.append(pos)   
+            args.append(pos) 
+            
+    if taggd_multiple_hits_keep_one:
+        args.append("--multiple-hits-keep-one")  
             
     if not keep_discarded_files:
         args.append("--no-unmatched-output")
