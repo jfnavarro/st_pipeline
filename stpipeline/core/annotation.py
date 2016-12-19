@@ -262,8 +262,8 @@ def annotateReads(mappedReads,
     :type mode: str
     :type strandness: str
     :type htseq_no_ambiguos: boolean
-    :param include_non_annotated: boolean
-    :param outputFile: str
+    :type include_non_annotated: str
+    :type outputFile: str
     :raises: RuntimeError, ValueError
     """
     

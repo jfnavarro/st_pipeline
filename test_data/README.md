@@ -4,7 +4,7 @@ of the Mouse Olfatory Bulb Replicate number 7
 from the publication http://science.sciencemag.org/content/353/6294/78
 
 
-The data was analysed with the ST Pipeline 1.2.3
+The data was analysed with the ST Pipeline 1.1.6
 and with a STAR genome index generated from
 the Mus Musculus Ensembl annotation version 86. 
 The annotation file used Mus Musculus GenCode 25 vM11.
