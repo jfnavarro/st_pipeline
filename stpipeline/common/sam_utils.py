@@ -49,7 +49,7 @@ def parseUniqueEvents(filename):
             else:
                 continue
         # Check that all tags are present
-        if any(tag is None for tag in [x,y,gene,umi]):
+        if None in [x,y,gene,umi]:
             logger.warning("Warning parsing annotated reads.\n" \
                            "Missing attributes for record {}\n".format(clear_name))
             continue
@@ -194,4 +194,5 @@ def filterMappedReads(mapped_reads,
                                                   dropped_barcode))
     
     # Update QA object 
-    qa_stats.reads_after_mapping = present - (dropped_secondary + dropped_short)
+    qa_stats.reads_after_mapping = present - \
+    (dropped_secondary + dropped_short + dropped_barcode)

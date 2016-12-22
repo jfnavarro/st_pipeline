@@ -13,17 +13,17 @@ import shutil
 def alignReads(reverse_reads, 
                ref_map,
                outputFile,
-               annotation=None,
-               outputFileDiscarded=None,
-               outputFolder=None,
-               trimReverse=0,
-               invTrimReverse=0,
-               cores=4,
-               min_intron_size=20,
-               max_intron_size=1000000,
-               disable_multimap=False,
-               diable_softclipping=False,
-               twopassMode=False):
+               annotation,
+               outputFileDiscarded,
+               outputFolder,
+               trimReverse,
+               invTrimReverse,
+               cores,
+               min_intron_size,
+               max_intron_size,
+               disable_multimap,
+               diable_softclipping,
+               twopassMode):
     """
     This function will perform a sequence alignment using STAR.
     Mapped and unmapped reads are written to the paths given as
@@ -112,7 +112,7 @@ def alignReads(reverse_reads,
     args = ["STAR",
             "--genomeDir", ref_map,
             "--readFilesIn", reverse_reads,
-            "--outFileNamePrefix", outputFolder,
+            "--outFileNamePrefix", outputFolder + os.sep, # MUST ENSURE AT LEAST ONE SLASH
             "--outReadsUnmapped", "Fastx"]  
     args += flags
     
@@ -238,19 +238,20 @@ def barcodeDemultiplexing(reads,
     #  contains a homolopymer of the given length (0 no filter), default 8
     
     if taggd_metric == "Hamming": over_hang = 0 
-    args = ['taggd_demultiplex.py',
-            "--max-edit-distance", mismatches,
+    args = ['taggd_demultiplex.py']
+    
+    if taggd_trim_sequences is not None:
+        args.append("--trim-sequences") 
+        for pos in taggd_trim_sequences:
+            args.append(pos) 
+            
+    args += ["--max-edit-distance", mismatches,
             "--k", kmer,
             "--start-position", start_positon,
             "--homopolymer-filter", 0,
             "--subprocesses", cores,
             "--metric", taggd_metric,
             "--overhang", over_hang]
-    
-    if taggd_trim_sequences is not None:
-        args.append("--trim-sequences") 
-        for pos in taggd_trim_sequences:
-            args.append(pos) 
             
     if taggd_multiple_hits_keep_one:
         args.append("--multiple-hits-keep-one")  
