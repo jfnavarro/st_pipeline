@@ -195,6 +195,8 @@ def createDataset(input_file,
     qa_stats.min_reads_feature = min_reads_feature
     qa_stats.max_reads_unique_event = max_count
     qa_stats.min_reads_unique_event = min_count
-            
+    qa_stats.avergage_gene_feature = average_genes_feature
+    qa_stats.average_reads_feature = average_reads_feature
+     
     # Write data frame to file
     counts_table.to_csv(os.path.join(output_folder, filenameDataFrame), sep="\t", na_rep=0)       

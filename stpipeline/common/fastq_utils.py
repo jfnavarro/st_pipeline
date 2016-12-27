@@ -188,23 +188,21 @@ def filterInputReads(fw,
                      rv,
                      out_fw,
                      out_rw,
-                     out_rw_discarded=None,
-                     barcode_start=0, 
-                     barcode_length=18,
-                     filter_AT_content=90,
-                     filter_GC_content=90,
-                     umi_start=18, 
-                     umi_end=27,
-                     min_qual=20, 
-                     min_length=28,
-                     polyA_min_distance=0, 
-                     polyT_min_distance=0, 
-                     polyG_min_distance=0, 
-                     polyC_min_distance=0,
-                     qual64=False,
-                     umi_filter=False,
-                     umi_filter_template="WSNNWSNNV",
-                     umi_quality_bases=4):
+                     out_rw_discarded,
+                     filter_AT_content,
+                     filter_GC_content,
+                     umi_start, 
+                     umi_end,
+                     min_qual, 
+                     min_length,
+                     polyA_min_distance, 
+                     polyT_min_distance, 
+                     polyG_min_distance, 
+                     polyC_min_distance,
+                     qual64,
+                     umi_filter,
+                     umi_filter_template,
+                     umi_quality_bases):
     """
     This function does few things (all done in one loop for performance reasons)
       - It performs a sanity check (forward and reverse reads same length and order)
@@ -218,8 +216,6 @@ def filterInputReads(fw,
     :param out_fw: the name of the output file for the forward reads
     :param out_rw: the name of the output file for the reverse reads
     :param out_rw_discarded: the name of the output file for discarded reverse reads
-    :param barcode_start: the base index where the barcode sequence starts
-    :param barcode_length: the number of bases present in the barcodes
     :param filter_AT_content: % of A and T bases a read2 must have to be discarded
     :param filter_GC_content: % of G and C bases a read2 must have to be discarded
     :param umi_start: the start position of the UMI

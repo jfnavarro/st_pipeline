@@ -59,7 +59,6 @@ class Pipeline():
         self.min_quality_trimming = 20 
         self.clean = True
         self.barcode_start = 0
-        self.barcode_length = 18
         self.threads = 8
         self.verbose = False
         self.ids = None
@@ -260,20 +259,18 @@ class Pipeline():
                             "(GTF or GFF format is required) to be used to annotated the reads")
         parser.add_argument('--expName', type=str, metavar="[STRING]", required=True,
                             help="Name of the experiment/dataset (The output files will prepend this name)")
-        parser.add_argument('--allowed-missed', default=2, metavar="[INT]", type=int, choices=range(0, 9),
+        parser.add_argument('--allowed-missed', default=2, metavar="[INT]", type=int, choices=range(0, 11),
                             help="Number of allowed mismatches when demultiplexing " \
                             "against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--allowed-kmer', default=6, metavar="[INT]", type=int, choices=range(1, 30),
                             help="KMer length when demultiplexing against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0, 7),
-                            help="Extra flanking bases added when demultiplexing against the barcodes (default: %(default)s)")
+                            help="Extra flanking bases added when demultiplexing against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--min-length-qual-trimming', default=30, metavar="[INT]", type=int, choices=range(10, 101),
                             help="Minimum length of the reads after trimming, " \
                             "shorter reads will be discarded (default: %(default)s)")
-        parser.add_argument('--mapping-rv-trimming', default=0, metavar="[INT]", type=int, choices=range(0, 101),
+        parser.add_argument('--mapping-rv-trimming', default=0, metavar="[INT]", type=int, choices=range(0, 51),
                             help="Number of bases to trim in the reverse reads for the mapping step (5' end) (default: %(default)s)")
-        parser.add_argument('--length-id', default=18, type=int, metavar="[INT]", choices=[18, 21, 24, 27],
-                            help="Length of IDs (the length of the barcodes) (default: %(default)s)")
         parser.add_argument('--contaminant-index', metavar="[FOLDER]", action=readable_dir, default=None,
                             help="Path to the folder with a STAR index with a contaminant genome. Reads will be filtered "
                             "against the specified genome and mapping reads will be descarded")
@@ -285,7 +282,7 @@ class Pipeline():
                             "Modes = {union,intersection-nonempty(default),intersection-strict}")
         parser.add_argument('--htseq-no-ambiguous', action="store_true", default=False,
                             help="When using htseq discard reads annotating ambiguous genes (default False)")
-        parser.add_argument('--start-id', default=0, metavar="[INT]", type=int, choices=range(0, 120),
+        parser.add_argument('--start-id', default=0, metavar="[INT]", type=int, choices=range(0, 101),
                             help="Start position of the IDs (Barcodes) in the R1 (counting from 0) (default: %(default)s)")
         parser.add_argument('--no-clean-up', action="store_false", default=True,
                             help="Do not remove temporary/intermediary files (useful for debugging)")
@@ -293,7 +290,7 @@ class Pipeline():
                             help="Show extra information on the log file")
         parser.add_argument('--mapping-threads', default=4, metavar="[INT]", type=int, choices=range(1, 33),
                             help="Number of threads to use in the mapping step (default: %(default)s)")
-        parser.add_argument('--min-quality-trimming', default=20, metavar="[INT]", type=int, choices=range(10, 61),
+        parser.add_argument('--min-quality-trimming', default=20, metavar="[INT]", type=int, choices=range(5, 61),
                             help="Minimum phred quality a base must have in the trimming step (default: %(default)s)")
         parser.add_argument('--bin-path', metavar="[FOLDER]", action=readable_dir, default=None,
                             help="Path to folder where binary executables are present (system path by default)")
@@ -303,13 +300,13 @@ class Pipeline():
                             help='Path of the output folder')
         parser.add_argument('--temp-folder', metavar="[FOLDER]", action=readable_dir, default=None,
                             help='Path of the location for temporary files')
-        parser.add_argument('--umi-allowed-mismatches', default=1, metavar="[INT]", type=int, choices=range(0, 6),
+        parser.add_argument('--umi-allowed-mismatches', default=1, metavar="[INT]", type=int, choices=range(0, 7),
                             help="Number of allowed mismatches (hamming distance) " \
                             "that UMIs of the same gene-spot must have in order to cluster together (default: %(default)s)")
-        parser.add_argument('--umi-start-position', default=18, metavar="[INT]", type=int, choices=range(0, 120),
+        parser.add_argument('--umi-start-position', default=18, metavar="[INT]", type=int, choices=range(0, 91),
                             help="Position in R1 (base wise) of the first base of the " \
                             "UMI (starting by 0) (default: %(default)s)")
-        parser.add_argument('--umi-end-position', default=27, metavar="[INT]", type=int, choices=range(0, 120),
+        parser.add_argument('--umi-end-position', default=27, metavar="[INT]", type=int, choices=range(0, 101),
                             help="Position in R1 (base wise) of the last base of the "\
                             "UMI (starting by 1) (default: %(default)s)")
         parser.add_argument('--umi-min-cluster-size', default=2, metavar="[INT]", type=int, choices=range(1, 11),
@@ -375,7 +372,7 @@ class Pipeline():
                             help="Distance metric for TaggD demultiplexing: Subglobal, Levenshtein or Hamming (default: Subglobal)",
                             choices=["Subglobal","Levenshtein","Hamming"])
         parser.add_argument("--demultiplexing-multiple-hits-keep-one", default=False, action="store_true",
-                            help="When multiple hits with same scored are found in the demultiplexing, keep one (random)." )
+                            help="When multiple ambiguous hits with same score are found in the demultiplexing, keep one (random)." )
         parser.add_argument('--demultiplexing-trim-sequences', nargs='+', type=int, default=None, 
                             help="Trims from the barcodes in the input file when doing demultiplexing.\n" \
                             "The bases given in the list of tuples as START END START END .. where\n" \
@@ -397,7 +394,6 @@ class Pipeline():
         self.min_quality_trimming = options.min_quality_trimming
         self.clean = options.no_clean_up
         self.barcode_start = options.start_id
-        self.barcode_length = options.length_id
         self.threads = options.mapping_threads
         self.verbose = options.verbose
         self.ids = os.path.abspath(options.ids)
@@ -479,23 +475,22 @@ class Pipeline():
         
         # Some info
         self.logger.info("Output directory: {}".format(self.output_folder))
-        self.logger.info("Temp directory: {}".format(self.temp_folder))
-        self.logger.info("Experiment name: {}".format(self.expName))
-        self.logger.info("Forward input file: {}".format(self.fastq_fw))
-        self.logger.info("Reverse input file: {}".format(self.fastq_rv))
-        self.logger.info("Reference mapping index folder: {}".format(self.ref_map))
+        self.logger.info("Temporary directory: {}".format(self.temp_folder))
+        self.logger.info("Dataset name: {}".format(self.expName))
+        self.logger.info("Forward(R1) input file: {}".format(self.fastq_fw))
+        self.logger.info("Reverse(R2) input file: {}".format(self.fastq_rv))
+        self.logger.info("Reference mapping STAR index folder: {}".format(self.ref_map))
         self.logger.info("Reference annotation file: {}".format(self.ref_annotation))
         if self.contaminant_index is not None:
-            self.logger.info("Using contamination filter: {}".format(self.contaminant_index))
+            self.logger.info("Using contamination filter STAR index: {}".format(self.contaminant_index))
         self.logger.info("CPU Nodes: {}".format(self.threads))
-        self.logger.info("Ids file: {}".format(self.ids))
+        self.logger.info("Ids(barcodes) file: {}".format(self.ids))
         self.logger.info("TaggD allowed mismatches: {}".format(self.allowed_missed))
-        self.logger.info("TaggD barcode length: {}".format(self.barcode_length))
         self.logger.info("TaggD kmer size: {}".format(self.allowed_kmer))
         self.logger.info("TaggD overhang: {}".format(self.overhang))
         self.logger.info("TaggD metric: {}".format(self.taggd_metric))
         if self.taggd_multiple_hits_keep_one:
-            self.logger.info("TaggD multiple hits keep one (random) enabled")
+            self.logger.info("TaggD multiple hits keep one (random) is enabled")
         if self.taggd_trim_sequences is not None:
             self.logger.info("TaggD trimming from the barcodes " + '-'.join(str(x) for x in self.taggd_trim_sequences))
         self.logger.info("Mapping reverse trimming: {}".format(self.trimming_rv))
@@ -504,37 +499,37 @@ class Pipeline():
         self.logger.info("Annotation tool: HTSeq")
         self.logger.info("Annotation mode: {}".format(self.htseq_mode))
         self.logger.info("Annotation strandness {}".format(self.strandness))
-        self.logger.info("Filter of AT content in reads: {}".format(self.filter_AT_content))
-        self.logger.info("Filter of GC content in reads: {}".format(self.filter_GC_content))
+        self.logger.info("Remove reads whose AT content is {}%".format(self.filter_AT_content))
+        self.logger.info("Remove reads whose GC content is {}%".format(self.filter_GC_content))
         if self.disable_clipping:
-            self.logger.info("Not allowing soft clipping when mapping")
+            self.logger.info("Not allowing soft clipping when mapping with STAR")
         if self.disable_multimap:
-            self.logger.info("Not allowing multiple alignments when mapping")
-        self.logger.info("Mapping minimum intron size: {}".format(self.min_intron_size))
-        self.logger.info("Mapping maximum intron size: {}".format(self.max_intron_size))
+            self.logger.info("Not allowing multiple alignments when mapping with STAR")
+        self.logger.info("Mapping minimum intron size when mapping: {}".format(self.min_intron_size))
+        self.logger.info("Mapping maximum intron size when mapping: {}".format(self.max_intron_size))
         if self.compute_saturation:
-            self.logger.info("Computing saturation curve")
+            self.logger.info("Computing saturation curve with several sub-samples...")
         if self.include_non_annotated:
-            self.logger.info("Including non annotated reads")
-        self.logger.info("Using UMIs to remove duplicates")
-        self.logger.info("Using UMIs start position: {}".format(self.umi_start_position))
-        self.logger.info("Using UMIs end position: {}".format(self.umi_end_position))
-        self.logger.info("Using UMIs min cluster size: {}".format(self.umi_min_cluster_size))
-        self.logger.info("Using UMIs allowed mismatches: {}".format(self.umi_allowed_mismatches))
-        self.logger.info("Using UMIs clustering algorithm: {}".format(self.umi_cluster_algorithm))
+            self.logger.info("Including non annotated reads in the output")
+        self.logger.info("UMIs start position: {}".format(self.umi_start_position))
+        self.logger.info("UMIs end position: {}".format(self.umi_end_position))
+        self.logger.info("UMIs min cluster size: {}".format(self.umi_min_cluster_size))
+        self.logger.info("UMIs allowed mismatches: {}".format(self.umi_allowed_mismatches))
+        self.logger.info("UMIs clustering algorithm: {}".format(self.umi_cluster_algorithm))
         self.logger.info("Allowing an offset of {} when clustering UMIs " \
                          "by strand-start in a gene-spot".format(self.umi_counting_offset))
         self.logger.info("Allowing {} low quality bases in an UMI".format(self.umi_quality_bases))
+        self.logger.info("Discarding reads that after trimming are shorter than {}".format(self.min_length_trimming))
         if self.umi_filter:
             self.logger.info("UMIs using filter: {}".format(self.umi_filter_template))    
         if self.remove_polyA_distance > 0:
-            self.logger.info("Removing polyA adaptors of a length of at least: {}".format(self.remove_polyA_distance))                        
+            self.logger.info("Removing polyA sequences of a length of at least: {}".format(self.remove_polyA_distance))                        
         if self.remove_polyT_distance > 0:
-            self.logger.info("Removing polyT adaptors of a length of at least: {}".format(self.remove_polyT_distance))
+            self.logger.info("Removing polyT sequences of a length of at least: {}".format(self.remove_polyT_distance))
         if self.remove_polyG_distance > 0:
-            self.logger.info("Removing polyG adaptors of a length of at least: {}".format(self.remove_polyG_distance))
+            self.logger.info("Removing polyG sequences of a length of at least: {}".format(self.remove_polyG_distance))
         if self.remove_polyC_distance > 0:
-            self.logger.info("Removing polyC adaptors of a length of at least: {}".format(self.remove_polyC_distance))
+            self.logger.info("Removing polyC sequences of a length of at least: {}".format(self.remove_polyC_distance))
         if self.low_memory:
             self.logger.info("Using a SQL based container to save memory")
         if self.two_pass_mode :
@@ -612,8 +607,6 @@ class Pipeline():
                              FILENAMES["quality_trimmed_R1"],
                              FILENAMES["quality_trimmed_R2"],
                              FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
-                             self.barcode_start,
-                             self.barcode_length,
                              self.filter_AT_content,
                              self.filter_GC_content,
                              self.umi_start_position,
