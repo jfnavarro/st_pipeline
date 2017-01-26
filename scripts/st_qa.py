@@ -18,34 +18,23 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
 def histogram(x_points, output, title="Histogram", xlabel="X",
-              nbins=50, normed=1, color="blue", alpha=1.0):
-    """ This function generates a simple density histogram
+              ylabel="Y", nbins=50, color="blue"):
+    """ This function generates a simple histogram
     with the points given as input.
     :param x_points: a list of x coordinates
     :param title: the title for the plot
     :param xlabel: the name of the X label
+    :param ylabel: the name of the X label
     :param output: the name/path of the output file
-    :param alpha: the alpha transparency level for the histogram
     :param nbins: the number of bings for the histogram
-    :param normed: the normalization factor
     :param color: the color for the histogram
     """
+    # Create the plot
     fig = plt.figure()
-
-    # the histogram of the data
-    n, bins, patches = plt.hist(x_points, bins=nbins, 
-                                normed=normed, facecolor=color, alpha=alpha)
-    
-    mean = np.mean(x_points)
-    std_dev = np.std(x_points)
-    # add a 'best fit' line
-    y = mlab.normpdf(bins, mean, std_dev)
-    plt.plot(bins, y, 'r--', linewidth=1)
-    # generate plot
+    plt.hist(x_points, bins=nbins, facecolor=color)
     plt.xlabel(xlabel)
-    plt.ylabel("Probability")
+    plt.ylabel(ylabel)
     plt.title(title)
-
     # Tweak spacing to prevent clipping of ylabel
     plt.subplots_adjust(left=0.15)
     fig.set_size_inches(16, 16)
@@ -70,8 +59,10 @@ def main(input_data):
     average_genes_feature = np.mean(aggregated_gene_counts)
     std_reads_feature = np.std(aggregated_spot_counts)
     std_genes_feature = np.std(aggregated_gene_counts)
-    histogram(aggregated_spot_counts, nbins=20, output="histogram_counts.png", title="Reads per feature")
-    histogram(aggregated_gene_counts, nbins=20, output="histogram_genes.png", title="Genes per feature")
+    histogram(aggregated_spot_counts, nbins=20, xlabel="#Transcripts", ylabel="#Features",
+              output="hist_counts.png", title="Transcripts per feature")
+    histogram(aggregated_gene_counts, nbins=20, xlabel="#Genes", ylabel="#Features", 
+              output="hist_genes.png", title="Genes per feature")
     print("Number of features: {}".format(total_barcodes))
     print("Number of unique molecules present: {}".format(total_transcripts))
     print("Number of unique genes present: {}".format(number_genes))

@@ -383,3 +383,7 @@ Version 1.2.3
 * Added more stats to the dataset output
 * Added scripts to compute stats
 * Added new option for TaggD
+
+Version 1.2.4
+* Fixed small bugs
+* Small improvements in st_qa.py and convertEnsemblToNames.py
