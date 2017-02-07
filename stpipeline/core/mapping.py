@@ -7,24 +7,23 @@ import subprocess
 from subprocess import CalledProcessError
 from stpipeline.common.utils import fileOk
 from stpipeline.common.stats import qa_stats
-import uuid
 import os
 import shutil
 
 def alignReads(reverse_reads, 
                ref_map,
                outputFile,
-               annotation=None,
-               outputFileDiscarded=None,
-               outputFolder=None,
-               trimReverse=0,
-               invTrimReverse=0,
-               cores=4,
-               min_intron_size=20,
-               max_intron_size=1000000,
-               disable_multimap=False,
-               diable_softclipping=False,
-               twopassMode=False):
+               annotation,
+               outputFileDiscarded,
+               outputFolder,
+               trimReverse,
+               invTrimReverse,
+               cores,
+               min_intron_size,
+               max_intron_size,
+               disable_multimap,
+               diable_softclipping,
+               twopassMode):
     """
     This function will perform a sequence alignment using STAR.
     Mapped and unmapped reads are written to the paths given as
@@ -99,9 +98,6 @@ def alignReads(reverse_reads,
              "--outSAMorder", "Paired",    
              "--outSAMprimaryFlag", "OneBestScore", 
              "--outFilterMultimapNmax", multi_map_number,
-             "--sjdbOverhang", 100, # default is 100
-             "--outFilterMismatchNmax", 10, # large number switches it off (default 10)
-             "--outFilterMismatchNoverLmax", 0.3, # default is 0.3
              "--alignIntronMin", min_intron_size,
              "--alignIntronMax", max_intron_size,
              "--readMatesLengthsIn", "NotEqual",
@@ -242,22 +238,23 @@ def barcodeDemultiplexing(reads,
     #  contains a homolopymer of the given length (0 no filter), default 8
     
     if taggd_metric == "Hamming": over_hang = 0 
-    args = ['taggd_demultiplex.py',
-            "--max-edit-distance", mismatches,
+    args = ['taggd_demultiplex.py']
+    
+    if taggd_trim_sequences is not None:
+        args.append("--trim-sequences") 
+        for pos in taggd_trim_sequences:
+            args.append(pos) 
+            
+    args += ["--max-edit-distance", mismatches,
             "--k", kmer,
             "--start-position", start_positon,
             "--homopolymer-filter", 0,
             "--subprocesses", cores,
             "--metric", taggd_metric,
             "--overhang", over_hang]
-    
+            
     if taggd_multiple_hits_keep_one:
-        args.append("--multiple-hits-keep-one")
-        
-    if taggd_trim_sequences is not None:
-        args.append("--trim-sequences") 
-        for pos in taggd_trim_sequences:
-            args.append(pos)   
+        args.append("--multiple-hits-keep-one")  
             
     if not keep_discarded_files:
         args.append("--no-unmatched-output")

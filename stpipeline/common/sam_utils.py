@@ -31,8 +31,9 @@ def parseUniqueEvents(filename):
     for rec in sam_file.fetch(until_eof=True):
         clear_name = rec.query_name
         mapping_quality = rec.mapping_quality
-        start = rec.reference_start
-        end = rec.reference_end
+        # Account for soft-clipped bases when retrieving the stard/end coordinates
+        start = rec.reference_start - rec.query_alignment_start
+        end = rec.reference_end + (rec.query_length - rec.query_alignment_end)
         chrom = sam_file.getrname(rec.reference_id)
         strand = "-" if rec.is_reverse else "+"
         # Get TAGGD tags
@@ -49,7 +50,7 @@ def parseUniqueEvents(filename):
             else:
                 continue
         # Check that all tags are present
-        if any(tag is None for tag in [x,y,gene,umi]):
+        if None in [x,y,gene,umi]:
             logger.warning("Warning parsing annotated reads.\n" \
                            "Missing attributes for record {}\n".format(clear_name))
             continue
@@ -194,4 +195,5 @@ def filterMappedReads(mapped_reads,
                                                   dropped_barcode))
     
     # Update QA object 
-    qa_stats.reads_after_mapping = present - (dropped_secondary + dropped_short)
+    qa_stats.reads_after_mapping = present - \
+    (dropped_secondary + dropped_short + dropped_barcode)

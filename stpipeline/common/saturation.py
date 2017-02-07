@@ -72,7 +72,7 @@ def computeSaturation(nreads,
         flag_write = "wh"
                  
     annotated_sam = pysam.AlignmentFile(annotated_reads, flag_read)   
-    # Generate subsamples and SAM/BAM files for each saturation point
+    # Generate sub-samples and SAM/BAM files for each saturation point
     for spoint in saturation_points:
         # Create a file for the sub sample point
         file_name = "subsample_{}{}".format(spoint, file_ext)
@@ -88,7 +88,7 @@ def computeSaturation(nreads,
         subbed.sort()
         subsampling[spoint] = subbed
                  
-    # Write subsamples (SAM/BAM records) to each saturation point file
+    # Write sub-samples (SAM/BAM records) to each saturation point file
     index = 0
     sub_indexes = defaultdict(int)
     for read in annotated_sam.fetch(until_eof=True):
@@ -109,6 +109,8 @@ def computeSaturation(nreads,
     saturation_points_values_unique_events = list()
     saturation_points_values_reads = list()
     saturation_points_values_genes = list()
+    saturation_points_average_genes = list()
+    saturation_points_average_reads = list()
     for spoint in saturation_points:
         stats = Stats()
         input_file = file_names[spoint]
@@ -131,6 +133,8 @@ def computeSaturation(nreads,
         saturation_points_values_unique_events.append(stats.unique_events)
         saturation_points_values_reads.append(stats.reads_after_duplicates_removal)
         saturation_points_values_genes.append(stats.genes_found)
+        saturation_points_average_genes.append(stats.avergage_gene_feature)
+        saturation_points_average_reads.append(stats.avergage_gene_feature)
        
     # Remove the files
     for file_sam in file_names.itervalues():
@@ -145,4 +149,8 @@ def computeSaturation(nreads,
     logger.info(', '.join(str(a) for a in saturation_points_values_reads))
     logger.info("Unique genes per saturation point")
     logger.info(', '.join(str(a) for a in saturation_points_values_genes))
+    logger.info("Average genes/spot per saturation point")
+    logger.info(', '.join(str(a) for a in saturation_points_average_genes))
+    logger.info("Average reads/spot per saturation point")
+    logger.info(', '.join(str(a) for a in saturation_points_average_reads))
         

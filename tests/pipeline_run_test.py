@@ -100,7 +100,6 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.min_quality_trimming = 20
         self.pipeline.clean = False
         self.pipeline.barcode_start = 0
-        self.pipeline.barcode_length = 18
         self.pipeline.threads = multiprocessing.cpu_count() - 1
         self.pipeline.verbose = True
         self.pipeline.ids = os.path.abspath(self.chipfile)
