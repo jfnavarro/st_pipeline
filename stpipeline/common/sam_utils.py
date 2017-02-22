@@ -31,8 +31,9 @@ def parseUniqueEvents(filename):
     for rec in sam_file.fetch(until_eof=True):
         clear_name = rec.query_name
         mapping_quality = rec.mapping_quality
-        start = rec.reference_start
-        end = rec.reference_end
+        # Account for soft-clipped bases when retrieving the stard/end coordinates
+        start = rec.reference_start - rec.query_alignment_start
+        end = rec.reference_end + (rec.query_length - rec.query_alignment_end)
         chrom = sam_file.getrname(rec.reference_id)
         strand = "-" if rec.is_reverse else "+"
         # Get TAGGD tags
