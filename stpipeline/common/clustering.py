@@ -8,102 +8,164 @@ from scipy.cluster.hierarchy import linkage,fcluster
 from collections import defaultdict
 from stpipeline.common.distance import hamming_distance
 import random
+from collections import Counter
 
-def countMolecularBarcodesClustersHierarchical(molecular_barcodes, 
-                                               allowed_mismatches,
-                                               min_cluster_size, 
-                                               method = "single"):
+def countUMIHierarchical(molecular_barcodes, 
+                         allowed_mismatches, 
+                         method = "single"):
     """
-    Tries to finds clusters of similar UMIs given 
-    a minimum cluster size and a minimum distance (allowed_mismatches). 
-    It returns a list with all the non clustered reads, for clusters of 
-    multiple reads a random read will be chosen. 
-    This will guarantee that the list of reads returned
-    is unique and does not contain duplicates
-    This approach finds clusters using hierarchical clustering
-    :param molecular_barcodes: a list of tuples (UMI, read)
+    Tries to finds clusters of similar UMIs using a hierarchical clustering
+    with a minimum distance (allowed_mismatches). 
+    It returns a list with all the non clustered UMIs, for clusters of 
+    multiple UMIs a random one will be selected.
+    :param molecular_barcodes: a list of UMIs
     :param allowed_mismatches: how much distance we allow between clusters
-    :param min_cluster_size: minimum number of reads for a cluster to be
     :param method: the type of distance algorithm when clustering 
                    (single more restrictive or complete less restrictive)
     :type allowed_mismatches: integer
-    :type min_cluser_size: integer
     :type method: str 
-    :return: a list of unique reads
+    :return: a list of unique UMIs
     :rtype: list
     """
     # linkage will not work for distance matrices of 1x1 or 2x2 so for these rare cases
     # we use the naive clustering
     if len(molecular_barcodes) <= 2:
-        return countMolecularBarcodesClustersNaive(molecular_barcodes, 
-                                                   allowed_mismatches,
-                                                   min_cluster_size)
+        return countUMINaive(molecular_barcodes, allowed_mismatches, min_cluster_size)
     # Distance computation function
     def d(coord):
         i,j = coord
-        return hamming_distance(molecular_barcodes[i][0], molecular_barcodes[j][0])
+        return hamming_distance(molecular_barcodes[i], molecular_barcodes[j])
     # Create hierarchical clustering and obtain flat clusters at the distance given
     indices = np.triu_indices(len(molecular_barcodes), 1)
     distance_matrix = np.apply_along_axis(d, 0, indices)
     linkage_cluster = linkage(distance_matrix, method=method)
     flat_clusters = fcluster(linkage_cluster, allowed_mismatches, criterion='distance')
-    # Retrieve the original reads from the clusters found and filter them
-    clusters = []
+    # Retrieve the unique clustered UMIs
     items = defaultdict(list)
     for i, item in enumerate(flat_clusters):
         items[item].append(i)
-    for item, members in items.iteritems():
-        if len(members) >= min_cluster_size:
-            # Cluster so we get a random read
-            clusters.append(molecular_barcodes[random.choice(members)][1])
-        else:
-            # Single cluster so we add all the reads
-            clusters += [molecular_barcodes[i][1] for i in members]
-    return clusters
-    
-def countMolecularBarcodesClustersNaive(molecular_barcodes, 
-                                        allowed_mismatches, 
-                                        min_cluster_size):
+    return [molecular_barcodes[random.choice(members)] for members in items.itervalues()]
+  
+def countUMINaive(molecular_barcodes, allowed_mismatches):
     """
-    Tries to finds clusters of similar UMIs given 
-    a minimum cluster size and a minimum distance (allowed_mismatches). 
-    It returns a list with all the non clustered reads, for clusters of 
-    multiple reads a random read will be chosen. 
-    This will guarantee that the list of reads returned
-    is unique and does not contain duplicates
-    This approach is a quick naive approach where the molecular barcodes are sorted
-    and then added to clusters until the min distance is above the threshold
-    :param molecular_barcodes: a list of tuples (UMI, read)
+    Tries to finds clusters of similar UMIs using a naive proximity
+    approach where UMIs are sorted and the ones that are consecutive
+    and has hamming distance below the given number of miss-matches will
+    be clustered together.
+    It returns a list with all the non clustered UMIs, for clusters of 
+    multiple UMIs a random one will be selected.
+    :param molecular_barcodes: a list of UMIs
     :param allowed_mismatches: how much distance we allow between clusters
-    :param min_cluster_size: minimum number of reads for a cluster to be
+    :param method: the type of distance algorithm when clustering 
+                   (single more restrictive or complete less restrictive)
     :type allowed_mismatches: integer
-    :type min_cluser_size: integer
-    :return: a list of unique reads
+    :type method: str 
+    :return: a list of unique UMIs
     :rtype: list
     """
     clusters_dict = {}
     nclusters = 0
-    for i, molecular_barcode in enumerate(sorted(molecular_barcodes, key=lambda x: (x[0]))):
+    for i, molecular_barcode in enumerate(sorted(molecular_barcodes)):
         if i == 0:
             clusters_dict[nclusters] = [molecular_barcode]
         else:
             # compare distant of previous molecular barcodes and new one
             # if distance is between threshold we add it to the cluster 
             # otherwise we create a new cluster
-            if hamming_distance(clusters_dict[nclusters][-1][0], 
-                                molecular_barcode[0]) <= allowed_mismatches:
+            if hamming_distance(clusters_dict[nclusters][-1], molecular_barcode) <= allowed_mismatches:
                 clusters_dict[nclusters].append(molecular_barcode)
             else:
                 nclusters += 1
                 clusters_dict[nclusters] = [molecular_barcode]
-    # Filter out computed clusters         
-    clusters = []
-    for _, members in clusters_dict.iteritems():
-        # Check if the cluster is big enough
-        # if so we pick a random read
-        # otherwise we add all the reads
-        if len(members) >= min_cluster_size:
-            clusters.append(random.choice(members)[1])
-        else:
-            clusters += [member[1] for member in members]    
-    return clusters
+    # Return the non clustered UMIs
+    return [random.choice(members) for members in clusters_dict.itervalues()]
+
+def dedup_adj(molecular_barcodes, allowed_mismatches):
+    """ This function has been obtained from 
+    https://github.com/CGATOxford/UMI-tools
+    The logic behind the algorithm to cluster UMIs using
+    an adjacent distance matrix is described in 
+    http://genome.cshlp.org/content/early/2017/01/18/gr.209601.116.abstract
+    """
+    c = Counter(molecular_barcodes)
+        
+    def get_adj_list_adjacency(umis):
+        return {umi: [umi2 for umi2 in umis if edit_dist(umi, umi2) \
+                      >= allowed_mismatches] for umi in umis}
+
+    def get_connected_components_adjacency(graph, Counter):
+        found = list()
+        components = list()
+        for node in sorted(graph, key=lambda x: Counter[x], reverse=True):
+            if node not in found:
+                component = breadth_first_search(node, graph)
+                found.extend(component)
+                components.append(component)
+        return components
+
+    def remove_umis(adj_list, cluster, nodes):
+        '''removes the specified nodes from the cluster and returns
+        the remaining nodes '''
+        # list incomprehension: for x in nodes: for node in adj_list[x]: yield node
+        nodes_to_remove = set([node for x in nodes for node in adj_list[x]] + nodes)
+        return cluster - nodes_to_remove
+
+    def get_best_adjacency(cluster, adj_list, counts):
+        if len(cluster) == 1: return list(cluster)
+        sorted_nodes = sorted(cluster, key=lambda x: counts[x], reverse=True)
+        for i in range(len(sorted_nodes) - 1):
+            if len(remove_umis(adj_list, cluster, sorted_nodes[:i+1])) == 0:
+                return sorted_nodes[:i+1]
+
+    def reduce_clusters_adjacency(adj_list, clusters, counts):
+        # TS - the "adjacency" variant of this function requires an adjacency
+        # list to identify the best umi, whereas the other variants don't
+        # As temporary solution, pass adj_list to all variants
+        n = 0
+        for cluster in clusters:
+            parent_umis = get_best_adjacency(cluster, adj_list, counts)
+            n += len(parent_umis)
+        return n 
+
+    adj_list = get_adj_list_adjacency(c.keys())
+    clusters = get_connected_components_adjacency(adj_list, c)
+    count = reduce_clusters_adjacency(adj_list, clusters, c)
+    return count
+
+def dedup_dir_adj(molecular_barcodes, allowed_mismatches):
+    """ This function has been obtained from
+    https://github.com/CGATOxford/UMI-tools
+    The logic behind the algorithm to cluster UMIs using
+    an adjacent distance matrix is described in
+    http://genome.cshlp.org/content/early/2017/01/18/gr.209601.116.abstract
+    """
+    c = Counter(molecular_barcodes)
+    
+    def get_adj_list_directional_adjacency(umis, counts):
+        return {umi: [umi2 for umi2 in umis if edit_dist(umi, umi2) >= allowed_mismatches and
+                      counts[umi] >= (counts[umi2]*2)-1] for umi in umis}  
+    
+    def get_connected_components_adjacency(graph, Counter):
+        found = list()
+        components = list()
+        for node in sorted(graph, key=lambda x: Counter[x], reverse=True):
+            if node not in found:
+                component = breadth_first_search(node, graph)
+                found.extend(component)
+                components.append(component)
+        return components
+
+    def remove_umis(adj_list, cluster, nodes):
+        '''removes the specified nodes from the cluster and returns
+        the remaining nodes '''
+        # list incomprehension: for x in nodes: for node in adj_list[x]: yield node
+        nodes_to_remove = set([node for x in nodes for node in adj_list[x]] + nodes)
+        return cluster - nodes_to_remove
+       
+    def reduce_clusters_directional_adjacency(adj_list, clusters, counts):
+        return len(clusters)
+    
+    adj_list = get_adj_list_directional_adjacency(c.keys(), c)
+    clusters = get_connected_components_adjacency(adj_list, c)
+    count = reduce_clusters_directional_adjacency(adj_list, clusters, c)
+    return count

@@ -10,7 +10,7 @@ import os
 import numpy as np
 from collections import defaultdict
 import pandas as pd
-from stpipeline.common.clustering import countMolecularBarcodesClustersHierarchical, countMolecularBarcodesClustersNaive
+from stpipeline.common.clustering import *
 from stpipeline.common.sam_utils import parseUniqueEvents
 import logging
 
@@ -29,8 +29,7 @@ def createDataset(input_file,
                   qa_stats,
                   umi_cluster_algorithm="naive",
                   umi_allowed_mismatches=1,
-                  umi_min_cluster_size=2,
-                  umi_counting_offset=50,
+                  umi_counting_offset=150,
                   output_folder=None,
                   output_template=None,
                   verbose=True):
@@ -47,7 +46,6 @@ def createDataset(input_file,
     :param umi_cluster_algorithm: the clustering algorithm to cluster UMIs
     :param umi_allowed_mismatches: the number of miss matches allowed to remove
                                   duplicates by UMIs
-    :param umi_min_cluster_size: the min size of the clusters to remove duplicates by UMIs
     :param umi_counting_offset: the number of bases allowed as offset when counting UMIs
     :param output_folder: path to place the output files
     :param output_template: the name of the dataset
@@ -55,7 +53,6 @@ def createDataset(input_file,
     :type input_file: str
     :type umi_cluster_algorithm: str
     :type umi_allowed_mismatches: boolean
-    :type umi_min_cluster_size: integer
     :type umi_counting_offset: integer
     :type output_folder: str
     :type output_template: str
@@ -82,10 +79,19 @@ def createDataset(input_file,
     
     # Obtain the clustering function
     if umi_cluster_algorithm == "naive":
-        clusters_func = countMolecularBarcodesClustersNaive
+        group_umi_func = countUMINaive
+    elif umi_cluster_algorithm == "hierarchical":
+        group_umi_func = countUMIHierarchical
+    elif umi_cluster_algorithm == "Adjacent":
+        group_umi_func = dedup_adj
+    elif umi_cluster_algorithm == "AdjacentBi":
+        group_umi_func = dedup_dir_adj
     else:
-        clusters_func = countMolecularBarcodesClustersHierarchical
-        
+        error = "Error creating dataset.\n" \
+        "Incorrect clustering algorithm {}".format(umi_cluster_algorithm)
+        logger.error(error)
+        raise RuntimeError(error)
+ 
     # Containers needed to create the data frame
     list_row_values = list()
     list_indexes = list()   
@@ -97,32 +103,35 @@ def createDataset(input_file,
         for (x,y), value in unique_events.iteritems():
             for gene, transcripts in value.iteritems():
                 # Re-compute the read count accounting for duplicates 
-                # (read sequences must contain a molecular barcode)
-                # New list of unique transcripts
-                unique_transcripts = list()
-                # Get the original number of transcripts
-                num_transcripts = len(transcripts)
-                # Group transcripts by start position and strand
-                grouped_transcripts = defaultdict(list)
+                # (read sequences must contain a UMI)
+                # Get the original number of transcripts (reads)
+                gene_count = len(transcripts)
+                # Group transcripts by start position (allowing a certain offset), UMI and strand 
+                grouped_transcripts = defaultdict(lambda : defaultdict(list))
                 for transcript in transcripts:
                     strand = str(transcript[5])
                     start = int(transcript[1]) if strand == "+" else int(transcript[2])
+                    umi = transcript[6]
                     grouped_transcripts[RangeKey(strand, start, 
-                                                 umi_counting_offset)].append((transcript[6],transcript)) 
+                                                 umi_counting_offset)][umi].append(transcript)
+                assert len(grouped_transcripts) > 0
                 # For each group of transcripts
                 # cluster the transcripts based on the UMI
                 # and returns the unique transcripts
+                # The new gene count will be the number of unique transcripts (UMIs)
+                new_gene_count = 0
+                unique_transcripts = list()
                 for umis in grouped_transcripts.values():
-                    unique_transcripts += clusters_func(umis,
-                                                        umi_allowed_mismatches,
-                                                        umi_min_cluster_size)
+                    unique_umis = group_umi_func(umis.keys(), umi_allowed_mismatches)
+                    new_gene_count += len(unique_umis)
+                    # Choose 1 random transcript for the clustered transcripts (by UMI)
+                    unique_transcripts += [random.choice(umis[u_umi]) for u_umi in unique_umis]
+                assert new_gene_count > 0 and new_gene_count <= gene_count   
                 # Update the discarded transcripts count
-                discarded_reads += (num_transcripts - len(unique_transcripts))
-                    
+                discarded_reads += (gene_count - new_gene_count)
                 # Update read counts in the container (replace the list
                 # of transcripts for a number so it can be exported as a data frame)
-                value[gene] = len(unique_transcripts)
-                
+                value[gene] = new_gene_count
                 # Write every unique transcript to the BED output (adding spot coordinate and gene name)
                 for read in unique_transcripts:
                     reads_handler.write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\n".format(read[0],

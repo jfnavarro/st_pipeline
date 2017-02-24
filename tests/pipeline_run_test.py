@@ -91,7 +91,6 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.umi_allowed_mismatches = 1
         self.pipeline.umi_start_position = 18
         self.pipeline.umi_end_position = 27
-        self.pipeline.umi_min_cluster_size = 2
         self.pipeline.keep_discarded_files = True
         self.pipeline.allowed_missed = 2
         self.pipeline.allowed_kmer = 6
@@ -125,6 +124,7 @@ class TestPipeline(unittest.TestCase):
         
     @classmethod
     def tearDownClass(self):
+        return
         print "ST Pipeline Test Remove temporary output {}".format(self.outdir)
         for root, dirs, files in os.walk(self.outdir, topdown=False):
             for name in files:

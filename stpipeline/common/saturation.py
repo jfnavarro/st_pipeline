@@ -17,7 +17,6 @@ def computeSaturation(nreads,
                       annotated_reads,
                       umi_cluster_algorithm,
                       umi_allowed_mismatches,
-                      umi_min_cluster_size,
                       umi_counting_offset,
                       expName,
                       temp_folder=None):
@@ -32,7 +31,6 @@ def computeSaturation(nreads,
     :param umi_cluster_algorithm: the clustering algorithm to cluster UMIs
     :param umi_allowed_mismatches: the number of miss matches allowed to remove
                                   duplicates by UMIs
-    :param umi_min_cluster_size: the min size of the clusters to remove duplicates by UMIs
     :param umi_counting_offset: the number of bases allowed as offset when couting UMIs
     :param expName: the name of the dataset
     :param temp_folder: the path where to put the output files
@@ -40,7 +38,6 @@ def computeSaturation(nreads,
     :type annotated_reads: str
     :type umi_cluster_algorithm: str
     :type umi_allowed_mismatches: boolean
-    :type umi_min_cluster_size: integer
     :type umi_counting_offset: integer
     :type expName: str
     :type temp_folder: str
@@ -119,7 +116,6 @@ def computeSaturation(nreads,
                           stats,
                           umi_cluster_algorithm,
                           umi_allowed_mismatches,
-                          umi_min_cluster_size,
                           umi_counting_offset,
                           temp_folder,
                           expName,
