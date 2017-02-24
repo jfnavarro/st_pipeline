@@ -19,6 +19,7 @@ import matplotlib.mlab as mlab
 
 def histogram(x_points, output, title="Histogram", xlabel="X",
               ylabel="Y", nbins=50, color="blue"):
+
     """ This function generates a simple histogram
     with the points given as input.
     :param x_points: a list of x coordinates
@@ -63,6 +64,7 @@ def main(input_data):
               output="hist_counts.png", title="Transcripts per feature")
     histogram(aggregated_gene_counts, nbins=20, xlabel="#Genes", ylabel="#Features", 
               output="hist_genes.png", title="Genes per feature")
+
     print("Number of features: {}".format(total_barcodes))
     print("Number of unique molecules present: {}".format(total_transcripts))
     print("Number of unique genes present: {}".format(number_genes))
