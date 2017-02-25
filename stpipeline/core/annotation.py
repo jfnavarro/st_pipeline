@@ -1,5 +1,5 @@
 """ 
-This module contains wrappers of htseq-count
+This module contains a modified version of htseq-count
 with slight modifications to perform annotation
 of ST mapped reads against a reference.
 """

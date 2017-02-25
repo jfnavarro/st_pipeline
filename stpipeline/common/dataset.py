@@ -14,7 +14,8 @@ from stpipeline.common.clustering import *
 from stpipeline.common.sam_utils import parseUniqueEvents
 import logging
 
-class RangeKey:
+class RangeKey(object):
+    __slots__ = ("strand", "location", "offset")
     def __init__(self, strand, location, offset):
         self.strand = strand
         self.location = location

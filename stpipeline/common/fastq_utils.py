@@ -432,7 +432,7 @@ def hashDemultiplexedReads(reads,
     
     fastq_file = safeOpenFile(reads, "rU")
     for name, sequence, _ in readfq(fastq_file):
-        # Assumes the header ends like this
+        # Assumes the header is like this
         # @NS500688:111:HNYW7BGXX:1:11101:13291:1099 1:N:0:TGCCCA B0:Z:GTCCCACTGGAACGACTGTCCCGCATC B1:Z:678 B2:Z:678
         header_tokens = name.split()
         # TODO add error checks for X,Y and UMI
