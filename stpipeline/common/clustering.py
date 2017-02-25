@@ -30,7 +30,7 @@ def countUMIHierarchical(molecular_barcodes,
     # linkage will not work for distance matrices of 1x1 or 2x2 so for these rare cases
     # we use the naive clustering
     if len(molecular_barcodes) <= 2:
-        return countUMINaive(molecular_barcodes, allowed_mismatches, min_cluster_size)
+        return countUMINaive(molecular_barcodes, allowed_mismatches)
     # Distance computation function
     def d(coord):
         i,j = coord
