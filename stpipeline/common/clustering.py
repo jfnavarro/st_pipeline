@@ -91,7 +91,7 @@ def dedup_adj(molecular_barcodes, allowed_mismatches):
         
     def get_adj_list_adjacency(umis):
         return {umi: [umi2 for umi2 in umis if edit_dist(umi, umi2) \
-                      >= allowed_mismatches] for umi in umis}
+                      <= allowed_mismatches] for umi in umis}
 
     def get_connected_components_adjacency(graph, Counter):
         found = list()
@@ -142,7 +142,7 @@ def dedup_dir_adj(molecular_barcodes, allowed_mismatches):
     c = Counter(molecular_barcodes)
     
     def get_adj_list_directional_adjacency(umis, counts):
-        return {umi: [umi2 for umi2 in umis if edit_dist(umi, umi2) >= allowed_mismatches and
+        return {umi: [umi2 for umi2 in umis if edit_dist(umi, umi2) <= allowed_mismatches and
                       counts[umi] >= (counts[umi2]*2)-1] for umi in umis}  
     
     def get_connected_components_adjacency(graph, Counter):
