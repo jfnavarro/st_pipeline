@@ -194,7 +194,7 @@ def createDataset(input_file,
         logger.info("Number of discarded reads (possible duplicates): {}".format(discarded_reads))
         
     # Update the QA object
-    qa_stats.reads_after_duplicates_removal = (total_transcripts - discarded_reads)
+    qa_stats.reads_after_duplicates_removal = int(total_transcripts)
     qa_stats.unique_events = total_record
     qa_stats.barcodes_found = total_barcodes
     qa_stats.genes_found = number_genes

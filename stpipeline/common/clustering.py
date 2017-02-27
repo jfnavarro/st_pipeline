@@ -80,6 +80,26 @@ def countUMINaive(molecular_barcodes, allowed_mismatches):
     # Return the non clustered UMIs
     return [random.choice(members) for members in clusters_dict.itervalues()]
 
+def breadth_first_search(node, adj_list):
+    """ This function has been obtained from 
+    https://github.com/CGATOxford/UMI-tools
+    The logic behind the algorithm to cluster UMIs using
+    an adjacent distance matrix is described in 
+    http://genome.cshlp.org/content/early/2017/01/18/gr.209601.116.abstract
+    """
+    searched = set()
+    found = set()
+    queue = set()
+    queue.update((node,))
+    found.update((node,))
+    while len(queue) > 0:
+        node = (list(queue))[0]
+        found.update(adj_list[node])
+        queue.update(adj_list[node])
+        searched.update((node,))
+        queue.difference_update(searched)
+    return found
+
 def dedup_adj(molecular_barcodes, allowed_mismatches):
     """ This function has been obtained from 
     https://github.com/CGATOxford/UMI-tools
@@ -90,7 +110,7 @@ def dedup_adj(molecular_barcodes, allowed_mismatches):
     c = Counter(molecular_barcodes)
         
     def get_adj_list_adjacency(umis):
-        return {umi: [umi2 for umi2 in umis if edit_dist(umi, umi2) \
+        return {umi: [umi2 for umi2 in umis if hamming_distance(umi, umi2) \
                       <= allowed_mismatches] for umi in umis}
 
     def get_connected_components_adjacency(graph, Counter):
@@ -121,16 +141,16 @@ def dedup_adj(molecular_barcodes, allowed_mismatches):
         # TS - the "adjacency" variant of this function requires an adjacency
         # list to identify the best umi, whereas the other variants don't
         # As temporary solution, pass adj_list to all variants
-        n = 0
+        unique_umis = list()
         for cluster in clusters:
             parent_umis = get_best_adjacency(cluster, adj_list, counts)
-            n += len(parent_umis)
-        return n 
+            unique_umis += parent_umis
+        return unique_umis 
 
     adj_list = get_adj_list_adjacency(c.keys())
     clusters = get_connected_components_adjacency(adj_list, c)
-    count = reduce_clusters_adjacency(adj_list, clusters, c)
-    return count
+    unique_umis = reduce_clusters_adjacency(adj_list, clusters, c)
+    return unique_umis
 
 def dedup_dir_adj(molecular_barcodes, allowed_mismatches):
     """ This function has been obtained from
@@ -142,7 +162,7 @@ def dedup_dir_adj(molecular_barcodes, allowed_mismatches):
     c = Counter(molecular_barcodes)
     
     def get_adj_list_directional_adjacency(umis, counts):
-        return {umi: [umi2 for umi2 in umis if edit_dist(umi, umi2) <= allowed_mismatches and
+        return {umi: [umi2 for umi2 in umis if hamming_distance(umi, umi2) <= allowed_mismatches and
                       counts[umi] >= (counts[umi2]*2)-1] for umi in umis}  
     
     def get_connected_components_adjacency(graph, Counter):
@@ -163,9 +183,9 @@ def dedup_dir_adj(molecular_barcodes, allowed_mismatches):
         return cluster - nodes_to_remove
        
     def reduce_clusters_directional_adjacency(adj_list, clusters, counts):
-        return len(clusters)
+        return [cluster.pop() for cluster in clusters]
     
     adj_list = get_adj_list_directional_adjacency(c.keys(), c)
     clusters = get_connected_components_adjacency(adj_list, c)
-    count = reduce_clusters_directional_adjacency(adj_list, clusters, c)
-    return count
+    unique_umis = reduce_clusters_directional_adjacency(adj_list, clusters, c)
+    return unique_umis
