@@ -3,12 +3,15 @@
 [![Build Status](https://travis-ci.org/jfnavarro/st_pipeline.svg?branch=master)](https://travis-ci.org/jfnavarro/st_pipeline)
 
 ST Pipeline contains the tools and scripts needed to process and analyze the raw files generated with the Spatial Transcriptomics method in FASTQ format. 
+The ST pipeline can also be used to process single cell data as long as a file with barcodes identifying each cell is provided.
+
+The ST Pipeline has been optimized for speed, robustness and it is very easy to use with many parameters to adjust all the settings.
 
 The following files/parameters are required :
 - FASTQ files (Read 1 containing the spatial information and the UMI and read 2 containing the genomic sequence) 
 - A genome index generated with STAR 
 - An annotation file in GTF or GFF format
-- The file containing the barcodes and array coordinates (look at the folder "ids" and chose the correct one. 
+- The file containing the barcodes and array coordinates (look at the folder "ids" and chose the correct one). Basically this file contains 3 columns (BARCODE, X and Y), so if you provide this file with barcodes identinfying cells (for example), the ST pipeline can be used for single cell data.
 - A name for the dataset
 
 The ST pipeline has multiple parameters mostly related to trimming, mapping and annotation but generally the default values are good enough. You can see a full description of the parameters typing "st_pipeline_run.py --help" after you have installed the ST pipeline.

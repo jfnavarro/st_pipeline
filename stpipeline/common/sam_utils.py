@@ -66,8 +66,8 @@ def filterMappedReads(mapped_reads,
                       file_output_discarded=None,
                       min_length=30):
     """ 
-    Iterate a SAM/BAM file containing mapped reads 
-    and discards the reads that are secondary or too short.
+    Iterates a SAM/BAM file containing mapped reads 
+    and discard the reads that are secondary or too short.
     It also discards reads that are not demultiplexed with TaggD
     (for that a dictionary with the read name as key and the X,Y and UMI)
     as values must be given.
@@ -110,7 +110,7 @@ def filterMappedReads(mapped_reads,
     for sam_record in infile.fetch(until_eof=True):
         present += 1
         discard_read = False
-        # Add the barcode and coordinates info if present otherwise discard
+        # Add the UMI and X,Y coordinates as extra SAM tags
         try:
             # Using as key the read name as it was used to generate the dictionary
             # In order to save memory we truncate the read
@@ -123,6 +123,8 @@ def filterMappedReads(mapped_reads,
                 sam_record.set_tag(tag_tokens[0], tag_tokens[2], tag_tokens[1])
         except KeyError:
             dropped_barcode += 1
+            if file_output_discarded is not None:
+                outfile_discarded.write(sam_record)
             continue
             
         # Get how many bases were mapped

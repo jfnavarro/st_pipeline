@@ -138,7 +138,7 @@ def quality_trim_index(bases, qualities, cutoff, base=33):
 def trim_quality(sequence,
                  quality,
                  min_qual=20, 
-                 min_length=28, 
+                 min_length=30, 
                  phred=33):    
     """
     Quality trims a fastq read using a BWA approach.
@@ -435,7 +435,9 @@ def hashDemultiplexedReads(reads,
         # Assumes the header is like this
         # @NS500688:111:HNYW7BGXX:1:11101:13291:1099 1:N:0:TGCCCA B0:Z:GTCCCACTGGAACGACTGTCCCGCATC B1:Z:678 B2:Z:678
         header_tokens = name.split()
-        # TODO add error checks for X,Y and UMI
+        assert(len(header_tokens) > 3)
+        assert(len(sequence) >= umi_end)
+        # Get the X and Y tags from the header of the read
         x = header_tokens[-2]
         y = header_tokens[-1]
         # The UMI is retrieved from the sequence

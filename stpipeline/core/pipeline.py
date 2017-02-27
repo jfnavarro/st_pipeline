@@ -98,7 +98,7 @@ class Pipeline():
         self.low_memory = False
         self.two_pass_mode = False
         self.strandness = "yes"
-        self.umi_quality_bases = 6
+        self.umi_quality_bases = 8
         self.umi_counting_offset = 150
         self.taggd_metric = "Subglobal"
         self.taggd_multiple_hits_keep_one = False
@@ -353,10 +353,10 @@ class Pipeline():
         parser.add_argument('--low-memory', default=False, action="store_true",
                             help="Writes temporary records into disk in order to save memory but gaining a speed penalty")
         parser.add_argument('--two-pass-mode', default=False, action="store_true",
-                            help="Activates the 2 pass mode in STAR to also map against splice variants")
+                            help="Activates the 2-pass mode in STAR to also map against splice variants")
         parser.add_argument('--strandness', default="yes", type=str, metavar="[STRING]", choices=["no", "yes", "reverse"],
                             help="What strandness mode to use when annotating with htseq-count [no, yes(default), reverse]")
-        parser.add_argument('--umi-quality-bases', default=6, metavar="[INT]", type=int, choices=range(0, 10),
+        parser.add_argument('--umi-quality-bases', default=8, metavar="[INT]", type=int, choices=range(0, 10),
                             help="Maximum number of low quality bases allowed in an UMI (default: %(default)s)")
         parser.add_argument('--umi-counting-offset', default=150, metavar="[INT]", type=int, choices=range(0, 1000),
                             help="Expression count for each gene-spot combination is expressed " \
