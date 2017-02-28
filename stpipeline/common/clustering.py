@@ -6,7 +6,8 @@ molecular barcodes (UMIs) by hamming distance
 import numpy as np
 from scipy.cluster.hierarchy import linkage,fcluster
 from collections import defaultdict
-from stpipeline.common.distance import hamming_distance
+import pyximport; pyximport.install()
+from stpipeline.common.cdistance import hamming_distance
 import random
 from collections import Counter
 
@@ -100,6 +101,13 @@ def breadth_first_search(node, adj_list):
         queue.difference_update(searched)
     return found
 
+def remove_umis(adj_list, cluster, nodes):
+    """Removes the specified nodes from the cluster and returns
+    the remaining nodes"""
+    # list incomprehension: for x in nodes: for node in adj_list[x]: yield node
+    nodes_to_remove = set([node for x in nodes for node in adj_list[x]] + nodes)
+    return cluster - nodes_to_remove
+    
 def dedup_adj(molecular_barcodes, allowed_mismatches):
     """ This function has been obtained from 
     https://github.com/CGATOxford/UMI-tools
@@ -122,13 +130,6 @@ def dedup_adj(molecular_barcodes, allowed_mismatches):
                 found.extend(component)
                 components.append(component)
         return components
-
-    def remove_umis(adj_list, cluster, nodes):
-        '''removes the specified nodes from the cluster and returns
-        the remaining nodes '''
-        # list incomprehension: for x in nodes: for node in adj_list[x]: yield node
-        nodes_to_remove = set([node for x in nodes for node in adj_list[x]] + nodes)
-        return cluster - nodes_to_remove
 
     def get_best_adjacency(cluster, adj_list, counts):
         if len(cluster) == 1: return list(cluster)
@@ -174,13 +175,6 @@ def dedup_dir_adj(molecular_barcodes, allowed_mismatches):
                 found.extend(component)
                 components.append(component)
         return components
-
-    def remove_umis(adj_list, cluster, nodes):
-        '''removes the specified nodes from the cluster and returns
-        the remaining nodes '''
-        # list incomprehension: for x in nodes: for node in adj_list[x]: yield node
-        nodes_to_remove = set([node for x in nodes for node in adj_list[x]] + nodes)
-        return cluster - nodes_to_remove
        
     def reduce_clusters_directional_adjacency(adj_list, clusters, counts):
         return [cluster.pop() for cluster in clusters]

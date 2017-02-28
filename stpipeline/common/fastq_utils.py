@@ -364,11 +364,14 @@ def filterInputReads(fw,
     fw_file.close()
     rv_file.close()
     out_rv_handle.flush()
+    out_rv_handle.close()
     out_rv_writer.close()
     out_fw_handle.flush()
+    out_rv_writer.close()
     out_fw_writer.close()
     if keep_discarded_files:
         out_rv_handle_discarded.flush()
+        out_rv_handle_discarded.close()
         out_rv_writer_discarded.close()
         
     # Write info to the log

@@ -329,10 +329,10 @@ class Pipeline():
                             "Otherwise the highest scored one will be kept")
         parser.add_argument('--disable-clipping', action="store_true", default=False,
                             help="If activated, disable soft-clipping (local alignment) in the mapping step")
-        parser.add_argument('--umi-cluster-algorithm', default="naive", metavar="[STRING]", 
+        parser.add_argument('--umi-cluster-algorithm', default="hierarchical", metavar="[STRING]", 
                             type=str, choices=["naive", "hierarchical", "Adjacent", "AdjacentBi"],
                             help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n" \
-                            "Options = {naive(default), hierarchical, Adjacent and AdjacentBi}")
+                            "Options = {naive, hierarchical(default), Adjacent and AdjacentBi}")
         parser.add_argument('--min-intron-size', default=20, metavar="[INT]", type=int, choices=range(0, 1000),
                             help="Minimum allowed intron size when searching for splice " \
                             "variants in the mapping step (default: %(default)s)")
@@ -356,7 +356,7 @@ class Pipeline():
                             help="Activates the 2-pass mode in STAR to also map against splice variants")
         parser.add_argument('--strandness', default="yes", type=str, metavar="[STRING]", choices=["no", "yes", "reverse"],
                             help="What strandness mode to use when annotating with htseq-count [no, yes(default), reverse]")
-        parser.add_argument('--umi-quality-bases', default=8, metavar="[INT]", type=int, choices=range(0, 10),
+        parser.add_argument('--umi-quality-bases', default=9, metavar="[INT]", type=int, choices=range(0, 10),
                             help="Maximum number of low quality bases allowed in an UMI (default: %(default)s)")
         parser.add_argument('--umi-counting-offset', default=150, metavar="[INT]", type=int, choices=range(0, 1000),
                             help="Expression count for each gene-spot combination is expressed " \
