@@ -6,15 +6,15 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Examples &#8212; ST Pipeline 1.0.0 documentation</title>
+    <title>Examples &mdash; ST Pipeline 1.3.0 documentation</title>
     
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.0.0',
+        VERSION:     '1.3.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,20 +24,26 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="top" title="ST Pipeline 1.0.0 documentation" href="index.html" />
+    <link rel="top" title="ST Pipeline 1.3.0 documentation" href="index.html" />
     <link rel="next" title="Changes" href="changes.html" />
-    <link rel="prev" title="Manual" href="manual.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="prev" title="Manual" href="manual.html" /> 
   </head>
   <body role="document">
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="changes.html" title="Changes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="manual.html" title="Manual"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.3.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -48,25 +54,16 @@
 <h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
 <p>The following is an example of an SBATCH file to run the ST pipeline. An SBATCH
 file is used with the SLURM job scheduler.
-This example is for version 1.2.0 of the ST pipeline.</p>
+This example is for version 1.3.0 of the ST pipeline.</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
-<span class="c1">#SBATCH -n 8</span>
-<span class="c1">#SBATCH --mem=61440</span>
-<span class="c1">#SBATCH -t 08:00:00</span>
-<span class="c1">#SBATCH -J EXP_NAME</span>
-<span class="c1">#SBATCH --mail-user your.email@example.com</span>
-<span class="c1">#SBATCH --mail-type=ALL</span>
-<span class="c1">#SBATCH -e job-%J.err</span>
-<span class="c1">#SBATCH -o job-%J.out</span>
 
 <span class="c1"># FASTQ reads</span>
 <span class="nv">FW</span><span class="o">=</span>/fastdisk/INBOX/YOUR_RUN/R1.fastq.gz
 <span class="nv">RV</span><span class="o">=</span>/fastdisk/INBOX/YOUR_RUN/R2.fastq.gz
 
-<span class="c1"># References for mapping, annotation and ribo-filtering</span>
-<span class="c1"># For mouse (human genomes are in /fastdisk/human</span>
+<span class="c1"># References for mapping, annotation and nonRNA-filtering</span>
 <span class="nv">MAP</span><span class="o">=</span>/fastdisk/mouse/GRCm38_86v2/StarIndex
-<span class="nv">ANN</span><span class="o">=</span>/fastdisk/mouse/GRCm38_86v2/annotation/gencode.vM11.annotation_noM.gtf
+<span class="nv">ANN</span><span class="o">=</span>/fastdisk/mouse/GRCm38_86v2/annotation/annotation.gtf
 <span class="nv">CONT</span><span class="o">=</span>/fastdisk/mouse/GRCm38_86v2/ncRNA/StarIndex
 
 <span class="c1"># Barcodes settings</span>
@@ -74,11 +71,12 @@ This example is for version 1.2.0 of the ST pipeline.</p>
 
 <span class="c1"># Output folder and experiment name</span>
 <span class="c1"># Do not use / or \ in the experiment name</span>
-<span class="nv">OUTPUT</span><span class="o">=</span>/home/your.name/your_experiment_folder
+<span class="nv">OUTPUT</span><span class="o">=</span>/your_experiment_folder
 <span class="nv">EXP</span><span class="o">=</span>YOUR_EXP_NAME
 
 <span class="c1"># Running the pipeline</span>
-<span class="c1">#Add this if you want to keep the intermediate files  --no-clean-up</span>
+<span class="c1"># Add this if you want to keep the intermediate files  --no-clean-up</span>
+<span class="c1"># Add this if you want to keep discarded files --keep-discarded-files</span>
 st_pipeline_run.py <span class="se">\</span>
   --output-folder <span class="nv">$OUTPUT</span> <span class="se">\</span>
   --ids <span class="nv">$ID</span> <span class="se">\</span>
@@ -94,7 +92,6 @@ st_pipeline_run.py <span class="se">\</span>
   --mapping-threads <span class="m">8</span> <span class="se">\</span>
   --log-file <span class="nv">$OUTPUT</span>/<span class="si">${</span><span class="nv">EXP</span><span class="si">}</span>_log.txt <span class="se">\</span>
   --two-pass-mode <span class="se">\</span>
-  --umi-filter <span class="se">\</span>
   --filter-AT-content <span class="m">90</span> <span class="se">\</span>
   --filter-GC-content <span class="m">90</span> <span class="se">\</span>
   --contaminant-index <span class="nv">$CONT</span> <span class="se">\</span>
@@ -110,15 +107,13 @@ st_pipeline_run.py <span class="se">\</span>
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="manual.html" title="previous chapter">Manual</a></li>
-      <li>Next: <a href="changes.html" title="next chapter">Changes</a></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="manual.html"
+                        title="previous chapter">Manual</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="changes.html"
+                        title="next chapter">Changes</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -129,31 +124,38 @@ st_pipeline_run.py <span class="se">\</span>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2016, Jose Fernandez Navarro.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
-      
-      |
-      <a href="_sources/example.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="changes.html" title="Changes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="manual.html" title="Manual"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.3.0 documentation</a> &raquo;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Jose Fernandez Navarro.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.5.
+    </div>
   </body>
 </html>

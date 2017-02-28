@@ -138,7 +138,7 @@ def quality_trim_index(bases, qualities, cutoff, base=33):
 def trim_quality(sequence,
                  quality,
                  min_qual=20, 
-                 min_length=28, 
+                 min_length=30, 
                  phred=33):    
     """
     Quality trims a fastq read using a BWA approach.
@@ -206,9 +206,9 @@ def filterInputReads(fw,
     """
     This function does few things (all done in one loop for performance reasons)
       - It performs a sanity check (forward and reverse reads same length and order)
-      - It performs a BWA quality trimming discarding very short reads
+      - It performs a BWA-based quality trimming discarding very short reads
       - It removes adaptors from the reads (optional)
-      - It checks for AT and GC content
+      - It checks for AT and GC content (optional)
       - It performs a sanity check on the UMI (optional)
     Reads that do not pass the filters are discarded (both R1 and R2)
     :param fw: the fastq file with the forward reads
@@ -301,7 +301,7 @@ def filterInputReads(fw,
             dropped_umi_template += 1
             discard_read = True
         
-        # Check if the UMI has any low quality base
+        # Check if the UMI has many low quality bases
         if not discard_read and \
         len([b for b in quality_fw[umi_start:umi_end] if (ord(b) - phred) < min_qual]) > umi_quality_bases:
             dropped_umi += 1
@@ -364,11 +364,14 @@ def filterInputReads(fw,
     fw_file.close()
     rv_file.close()
     out_rv_handle.flush()
+    out_rv_handle.close()
     out_rv_writer.close()
     out_fw_handle.flush()
+    out_rv_writer.close()
     out_fw_writer.close()
     if keep_discarded_files:
         out_rv_handle_discarded.flush()
+        out_rv_handle_discarded.close()
         out_rv_writer_discarded.close()
         
     # Write info to the log
@@ -404,10 +407,11 @@ def hashDemultiplexedReads(reads,
                            low_memory):
     """
     This function extracts the read name, the UMI and the x,y coordinates
-    from the reads given as input and returns a hash
-    with the clean read name as key and (x,y,umi). X and Y correspond
-    to the array coordinates of the barcode of the read.
-    :param reads: path to a file with the fastq reads after demultiplexing
+    from the reads given as input (output of TaggD) and returns a dictionary
+    with the clean read name as key and (x,y,umi) as value. X and Y correspond
+    to the array coordinates of the barcode of the read and UMI is extracted from the read
+    sequence.
+    :param reads: path to a file with the fastq reads after demultiplexing (TaggD)
     :param umi_start: the start position of the UMI
     :param umi_end: the end position of the UMI
     :param low_memory: True to use a key-value db instead of dict
@@ -431,17 +435,23 @@ def hashDemultiplexedReads(reads,
     
     fastq_file = safeOpenFile(reads, "rU")
     for name, sequence, _ in readfq(fastq_file):
-        # Assumes the header ends like this B0:Z:GTCCCACTGGAACGACTGTCCCGCATC B1:Z:678 B2:Z:678
+        # Assumes the header is like this
+        # @NS500688:111:HNYW7BGXX:1:11101:13291:1099 1:N:0:TGCCCA B0:Z:GTCCCACTGGAACGACTGTCCCGCATC B1:Z:678 B2:Z:678
         header_tokens = name.split()
-        # TODO add an error check here
+        assert(len(header_tokens) > 3)
+        assert(len(sequence) >= umi_end)
+        # Get the X and Y tags from the header of the read
         x = header_tokens[-2]
         y = header_tokens[-1]
         # The UMI is retrieved from the sequence
         umi = sequence[umi_start:umi_end]
-        # We keep the same naming for the extra attributes
-        tags = [x,y,"B3:Z:{}".format(umi)]
-        # Assumes STAR will only output the first token of the read name
-        hash_reads[header_tokens[0]] = tags
+        # We keep the same naming convention for the UMI attribute
+        tags = (x,y,"B3:Z:{}".format(umi))
+        # In order to save memory we truncate the read
+        # name to only keep the unique part (lane, tile, x_pos, y_pos)
+        # TODO this procedure is specific to only Illumina technology
+        key = "".join(header_tokens[0].split(":")[-4:])
+        hash_reads[key] = tags
         
     if low_memory: hash_reads.commit()
     fastq_file.close()    

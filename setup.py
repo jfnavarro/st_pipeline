@@ -11,6 +11,7 @@ and a BED file with all the transcripts.
 import os
 import io
 import glob
+import sys
 from setuptools import setup, find_packages
 from stpipeline.version import version_number
 
@@ -24,7 +25,12 @@ try:
         install_requires = [x.strip() for x in f.readlines()]
 except IOError:
     install_requires = []
-    
+   
+
+major, minor1, minor2, s, tmp = sys.version_info
+if major != 2 or minor1 < 7:
+    raise SystemExit("ST Pipeline requires Python 2.7.x")
+
 setup(
   name = 'stpipeline',
   version = version_number,
@@ -39,6 +45,7 @@ setup(
   include_package_data = False,
   package_data = {'': ['RELEASE-VERSION']},
   zip_safe = False,
+  setup_requires=['cython'],
   install_requires = install_requires,
   test_suite = 'tests',
   scripts = glob.glob('scripts/*.py'),

@@ -1,7 +1,8 @@
 Manual
 ------
 
-ST Pipeline is a tool to process the Spatial Transcriptomics raw data.
+ST Pipeline is a tool to process the Spatial Transcriptomics raw data
+or single cell data.
 The data is filtered, aligned to a genome, annotated to a reference,
 demultiplexed by array coordinates and then aggregated by counts
 that are not duplicates using the Unique Molecular Indentifiers.
@@ -17,12 +18,12 @@ by typing : st_pipeline_run.py --help
 
 Note that the minimum read length is dependant on the type of kit used, and
 should be adjusted accordingly, i.e. a 150bp kit should have a different
-minimun read length than a 75bp kit.
+minimum read length than a 75bp kit.
 
 Soft clipping is also not recommended when using the 75bp kit, due to the
 shorter length.
 
-The UMI filter can be used for array batches 1000L6 and older. It is
+The UMI filter can be used for array batches 1000L6 and earlier. It is
 unable to be used for array batches 1000L7 and newer as the UMI in
 these arrays is fully randomised.
 
@@ -57,7 +58,6 @@ these arrays is fully randomised.
                           [--umi-allowed-mismatches [INT]]
                           [--umi-start-position [INT]]
                           [--umi-end-position [INT]]
-                          [--umi-min-cluster-size [INT]]
                           [--keep-discarded-files]
                           [--remove-polyA [INT]]
                           [--remove-polyT [INT]]
@@ -80,6 +80,9 @@ these arrays is fully randomised.
                           [--strandness [STRING]]
                           [--umi-quality-bases [INT]]
                           [--umi-counting-offset [INT]]
+                          [--demultiplexing-metric [STRING]]
+                          [--demultiplexing-multiple-hits-keep-one]
+                          [--demultiplexing-trim-sequences [INT]]
                           [--version]
                           fastq_file_fw fastq_file_rv
 
@@ -171,9 +174,6 @@ these arrays is fully randomised.
   --umi-end-position [INT]            Position in R1 (base wise) of the last
                                       base of the UMI (starting by 1)
                                       (default: 27).
-  --umi-min-cluster-size [INT]        Min number of equal UMIs to count as a
-                                      cluster (duplicate) given the allowed
-                                      mismatches (default: 2).
   --keep-discarded-files              Writes down unaligned, un-annotated
                                       and un-demultiplexed reads to files.
   --remove-polyA [INT]                Remove PolyA stretches of the given
@@ -201,7 +201,7 @@ these arrays is fully randomised.
   --umi-cluster-algorithm [STRING]    Type of clustering algorithm to use
                                       when performing UMIs duplicates
                                       removal.
-                                      Modes = {naive(default), hierarchical}.
+                                      Modes = {naive(default), hierarchical, Adjacent and AdjacentBi}.
   --min-intron-size [INT]             Minimum allowed intron size when
                                       searching for splice variants in the
                                       mapping step (default: 20).
@@ -232,7 +232,7 @@ these arrays is fully randomised.
                                       annotating with htseq-count
                                       [no, yes(default), reverse].
   --umi-quality-bases [INT]           Maximum number of low quality bases
-                                      allowed in an UMI (default: 4).
+                                      allowed in an UMI (default: 8).
   --umi-counting-offset [INT]         Expression count for each gene-spot
                                       combination is expressed as the number
                                       of unique UMIs in each strand/start
@@ -241,5 +241,15 @@ these arrays is fully randomised.
                                       to amplification artifacts. This
                                       parameters allows one to define an
                                       offset from where to count unique UMIs
-                                      (default: 50).
+                                      (default: 150).
+  --demultiplexing-metric             Distance metric for TaggD demultiplexing: 
+                                      Subglobal, Levenshtein or Hamming 
+                                      (default: Subglobal)
+  --demultiplexing-multiple-hits-keep-one  When multiple ambiguous hits with same score are 
+                                      found in the demultiplexing, keep one (random)
+  --demultiplexing-trim-sequences     Trims from the barcodes in the input file when doing demultiplexing.
+                            	      The bases given in the list of tuples as START END START END .. where
+                                      START is the integer position of the first base (0 based) and END is the integer
+                                      position of the last base (1 based).
+                                      Trimmng sequences can be given several times.
   --version                           Show program's version number and exit

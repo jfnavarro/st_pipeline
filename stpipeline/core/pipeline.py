@@ -78,7 +78,6 @@ class Pipeline():
         self.umi_allowed_mismatches = 1
         self.umi_start_position = 18
         self.umi_end_position = 27
-        self.umi_min_cluster_size = 2
         self.keep_discarded_files = False
         self.remove_polyA_distance = 15
         self.remove_polyT_distance = 15
@@ -99,8 +98,8 @@ class Pipeline():
         self.low_memory = False
         self.two_pass_mode = False
         self.strandness = "yes"
-        self.umi_quality_bases = 4
-        self.umi_counting_offset = 50
+        self.umi_quality_bases = 8
+        self.umi_counting_offset = 150
         self.taggd_metric = "Subglobal"
         self.taggd_multiple_hits_keep_one = False
         self.taggd_trim_sequences = None
@@ -309,9 +308,6 @@ class Pipeline():
         parser.add_argument('--umi-end-position', default=27, metavar="[INT]", type=int, choices=range(0, 101),
                             help="Position in R1 (base wise) of the last base of the "\
                             "UMI (starting by 1) (default: %(default)s)")
-        parser.add_argument('--umi-min-cluster-size', default=2, metavar="[INT]", type=int, choices=range(1, 11),
-                            help="Min number of equal UMIs to count" \
-                            " as a cluster (duplicate) given the allowed mismatches (default: %(default)s)")
         parser.add_argument('--keep-discarded-files', action="store_true", default=False,
                             help='Writes down unaligned, un-annotated and un-demultiplexed reads to files')
         parser.add_argument('--remove-polyA', default=15, metavar="[INT]", type=int, choices=range(0, 25),
@@ -333,10 +329,10 @@ class Pipeline():
                             "Otherwise the highest scored one will be kept")
         parser.add_argument('--disable-clipping', action="store_true", default=False,
                             help="If activated, disable soft-clipping (local alignment) in the mapping step")
-        parser.add_argument('--umi-cluster-algorithm', default="naive", metavar="[STRING]", 
-                            type=str, choices=["naive", "hierarchical"],
+        parser.add_argument('--umi-cluster-algorithm', default="hierarchical", metavar="[STRING]", 
+                            type=str, choices=["naive", "hierarchical", "Adjacent", "AdjacentBi"],
                             help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n" \
-                            "Modes = {naive(default), hierarchical}")
+                            "Options = {naive, hierarchical(default), Adjacent and AdjacentBi}")
         parser.add_argument('--min-intron-size', default=20, metavar="[INT]", type=int, choices=range(0, 1000),
                             help="Minimum allowed intron size when searching for splice " \
                             "variants in the mapping step (default: %(default)s)")
@@ -357,12 +353,12 @@ class Pipeline():
         parser.add_argument('--low-memory', default=False, action="store_true",
                             help="Writes temporary records into disk in order to save memory but gaining a speed penalty")
         parser.add_argument('--two-pass-mode', default=False, action="store_true",
-                            help="Activates the 2 pass mode in STAR to also map against splice variants")
+                            help="Activates the 2-pass mode in STAR to also map against splice variants")
         parser.add_argument('--strandness', default="yes", type=str, metavar="[STRING]", choices=["no", "yes", "reverse"],
                             help="What strandness mode to use when annotating with htseq-count [no, yes(default), reverse]")
-        parser.add_argument('--umi-quality-bases', default=4, metavar="[INT]", type=int, choices=range(0, 10),
+        parser.add_argument('--umi-quality-bases', default=9, metavar="[INT]", type=int, choices=range(0, 10),
                             help="Maximum number of low quality bases allowed in an UMI (default: %(default)s)")
-        parser.add_argument('--umi-counting-offset', default=50, metavar="[INT]", type=int, choices=range(0, 300),
+        parser.add_argument('--umi-counting-offset', default=150, metavar="[INT]", type=int, choices=range(0, 1000),
                             help="Expression count for each gene-spot combination is expressed " \
                             "as the number of unique UMIs in each strand/start position. However " \
                             "some reads might have slightly different start positions due to " \
@@ -422,7 +418,6 @@ class Pipeline():
         self.umi_allowed_mismatches = options.umi_allowed_mismatches
         self.umi_start_position = options.umi_start_position
         self.umi_end_position = options.umi_end_position
-        self.umi_min_cluster_size = options.umi_min_cluster_size
         self.keep_discarded_files = options.keep_discarded_files
         self.remove_polyA_distance = options.remove_polyA
         self.remove_polyT_distance = options.remove_polyT
@@ -513,7 +508,6 @@ class Pipeline():
             self.logger.info("Including non annotated reads in the output")
         self.logger.info("UMIs start position: {}".format(self.umi_start_position))
         self.logger.info("UMIs end position: {}".format(self.umi_end_position))
-        self.logger.info("UMIs min cluster size: {}".format(self.umi_min_cluster_size))
         self.logger.info("UMIs allowed mismatches: {}".format(self.umi_allowed_mismatches))
         self.logger.info("UMIs clustering algorithm: {}".format(self.umi_cluster_algorithm))
         self.logger.info("Allowing an offset of {} when clustering UMIs " \
@@ -745,7 +739,6 @@ class Pipeline():
                                   FILENAMES["annotated"],
                                   self.umi_cluster_algorithm,
                                   self.umi_allowed_mismatches,
-                                  self.umi_min_cluster_size,
                                   self.umi_counting_offset,
                                   self.expName,
                                   self.temp_folder)
@@ -761,7 +754,6 @@ class Pipeline():
                           qa_stats, # Passed as reference
                           self.umi_cluster_algorithm,
                           self.umi_allowed_mismatches,
-                          self.umi_min_cluster_size,
                           self.umi_counting_offset,
                           self.output_folder,
                           self.expName,

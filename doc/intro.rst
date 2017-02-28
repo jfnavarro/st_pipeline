@@ -3,10 +3,12 @@ Introduction
 
 ST Pipeline contains the tools and scripts needed to process and analyze the raw
 files generated with the Spatial Transcriptomics method in FASTQ format.
+The ST pipeline can also be used to process single cell data as long as
+a file with barcodes identifying each cell is provided.
 
 The following files/parameters are required :
 
-    * FASTQ files (Read 1 containing the spatial information and the UMI and read
+    * FASTQ files (Read 1 containing the BARCODE and the UMI and read
       2 containing the genomic sequence)
     * A genome index generated with STAR
     * An annotation file in GTF or GFF format
@@ -45,5 +47,5 @@ documents workflow.pdf and workflow_extended.pdf
 
 The output will be a data frame file with the counts (genes as columns, spots as
 rows), a BED file containing the transcripts (Read name, coordinate, gene,
-etc..), and a JSON file with usefl stats. The ST pipeline will also output a log
+etc..), and a JSON file with useful stats. The ST pipeline will also output a log
 file with useful information.
