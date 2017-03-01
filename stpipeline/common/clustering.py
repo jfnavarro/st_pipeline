@@ -6,7 +6,6 @@ molecular barcodes (UMIs) by hamming distance
 import numpy as np
 from scipy.cluster.hierarchy import linkage,fcluster
 from collections import defaultdict
-import pyximport; pyximport.install()
 from stpipeline.common.cdistance import hamming_distance
 import random
 from collections import Counter
