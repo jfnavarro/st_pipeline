@@ -20,7 +20,7 @@ before_install:
   - export TMPDIR=$HOME/tmp
 
 install:
-    - conda create -q -n testenv --yes python=2.7 numpy scipy pandas
+    - conda create -q -n testenv --yes python=2.7 numpy scipy pandas cython
     - source activate testenv
     - python setup.py install
    
