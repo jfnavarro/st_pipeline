@@ -711,9 +711,10 @@ class Pipeline():
             raise
         finally:
             if self.low_memory: hash_reads.close()
-            # Enforcing to remove the memory used 
-            hash_reads.clear()
-            del hash_reads
+            else:
+                # Enforcing to remove the memory used 
+                hash_reads.clear()
+                del hash_reads
             gc.collect()   
             
         #=================================================================
