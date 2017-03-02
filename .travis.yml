@@ -22,6 +22,10 @@ before_install:
 install:
     - conda create -q -n testenv --yes python=2.7 numpy scipy pandas cython
     - source activate testenv
+    - conda config --add channels r
+    - conda config --add channels bioconda
+    - conda install pysam
+    - python setup.py build
     - python setup.py install
    
 script:
