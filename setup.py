@@ -14,6 +14,7 @@ import glob
 import sys
 from setuptools import setup, find_packages
 from stpipeline.version import version_number
+from Cython.Build import cythonize
 
 # Get the long description from the relevant file
 here = os.path.abspath(os.path.dirname(__file__))
@@ -41,7 +42,8 @@ setup(
   author_email = 'jose.fernandez.navarro@scilifelab.se',
   license = 'MIT',
   url = 'https://github.com/SpatialTranscriptomicsResearch/st_pipeline',
-  packages = find_packages(exclude=('tests*', 'utils')),
+  packages = find_packages(exclude=('tests*', 'utils', "*.pyx")),
+  ext_modules = cythonize("stpipeline/common/*.pyx"),
   include_package_data = False,
   package_data = {'': ['RELEASE-VERSION']},
   zip_safe = False,

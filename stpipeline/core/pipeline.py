@@ -23,6 +23,7 @@ import gzip
 import bz2
 import tempfile
 import shutil
+import gc
 
 FILENAMES = {"mapped" : "mapped.bam",
              "annotated" : "annotated.bam",
@@ -687,8 +688,8 @@ class Pipeline():
             raise
         
         #=================================================================
-        # STEP: OBTAIN HASH OF DEMULTIPLEXED READS
-        # Hash demultiplexed reads to obtain a hash of read_name => (barcode,x,y,umi) 
+        # STEP: OBTAIN DICT OF DEMULTIPLEXED READS
+        # Iterate demultiplexed FASTQ reads to obtain a dict of read_name => (x,y,umi) 
         #=================================================================
         self.logger.info("Parsing demultiplexed reads {}".format(globaltime.getTimestamp()))
         hash_reads = hashDemultiplexedReads(FILENAMES["demultiplexed_matched"], 
@@ -697,7 +698,7 @@ class Pipeline():
                                             self.low_memory)
         
         #================================================================
-        # STEP: filters mapped reads and add the (Barcode,x,y,umi) as SAM tags
+        # STEP: filters mapped reads and add the (x,y,umi) as extra SAM tags
         #================================================================
         self.logger.info("Starting processing aligned reads {}".format(globaltime.getTimestamp()))
         try:
@@ -709,8 +710,13 @@ class Pipeline():
         except Exception:
             raise
         finally:
-            if self.low_memory: hash_reads.close() 
-                
+            if self.low_memory: hash_reads.close()
+            else:
+                # Enforcing to remove the memory used 
+                hash_reads.clear()
+                del hash_reads
+            gc.collect()   
+            
         #=================================================================
         # STEP: annotate using htseq-count
         #=================================================================
