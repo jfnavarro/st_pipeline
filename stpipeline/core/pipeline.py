@@ -84,6 +84,7 @@ class Pipeline():
         self.remove_polyT_distance = 15
         self.remove_polyG_distance = 15
         self.remove_polyC_distance = 15
+        self.remove_polyN_distance = 15
         self.filter_AT_content = 90
         self.filter_GC_content = 90
         self.disable_clipping = False
@@ -104,7 +105,7 @@ class Pipeline():
         self.taggd_metric = "Subglobal"
         self.taggd_multiple_hits_keep_one = False
         self.taggd_trim_sequences = None
-        self.adaptor_missmatches = 2
+        self.adaptor_missmatches = 0
         
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -313,13 +314,15 @@ class Pipeline():
         parser.add_argument('--keep-discarded-files', action="store_true", default=False,
                             help='Writes down unaligned, un-annotated and un-demultiplexed reads to files')
         parser.add_argument('--remove-polyA', default=15, metavar="[INT]", type=int, choices=range(0, 25),
-                            help="Remove PolyA stretches of the given length from R2 (default: %(default)s)")
+                            help="Remove PolyA stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
         parser.add_argument('--remove-polyT', default=15, metavar="[INT]", type=int, choices=range(0, 25),
-                            help="Remove PolyT stretches of the given length from R2 (default: %(default)s)")
+                            help="Remove PolyT stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
         parser.add_argument('--remove-polyG', default=15, metavar="[INT]", type=int, choices=range(0, 25),
-                            help="Remove PolyG stretches of the given length from R2 (default: %(default)s)")
+                            help="Remove PolyG stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
         parser.add_argument('--remove-polyC', default=15, metavar="[INT]", type=int, choices=range(0, 25),
-                            help="Remove PolyC stretches of the given length from R2 (default: %(default)s)")
+                            help="Remove PolyC stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
+        parser.add_argument('--remove-polyN', default=15, metavar="[INT]", type=int, choices=range(0, 25),
+                            help="Remove PolyN stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
         parser.add_argument('--filter-AT-content', default=90, metavar="[INT%]", type=int, choices=range(0, 100),
                             help="Discards reads whose number of A and T bases in total are more " \
                             "or equal than the number given in percentage (default: %(default)s)")
@@ -376,7 +379,7 @@ class Pipeline():
                             "The bases given in the list of tuples as START END START END .. where\n" \
                             "START is the integer position of the first base (0 based) and END is the integer\n" \
                             "position of the last base (1 based).\nTrimmng sequences can be given several times.")
-        parser.add_argument('--adaptor-missmatches', default=2, metavar="[INT]", type=int, choices=range(0, 6),
+        parser.add_argument('--adaptor-missmatches', default=0, metavar="[INT]", type=int, choices=range(0, 6),
                             help="Number of miss-matches allowed when removing homopolymers (default: %(default)s)")
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
@@ -427,6 +430,7 @@ class Pipeline():
         self.remove_polyT_distance = options.remove_polyT
         self.remove_polyG_distance = options.remove_polyG
         self.remove_polyC_distance = options.remove_polyC
+        self.remove_polyN_distance = options.remove_polyN
         self.filter_AT_content = options.filter_AT_content
         self.filter_GC_content = options.filter_GC_content
         self.disable_multimap = options.disable_multimap
@@ -529,6 +533,8 @@ class Pipeline():
             self.logger.info("Removing polyG sequences of a length of at least: {}".format(self.remove_polyG_distance))
         if self.remove_polyC_distance > 0:
             self.logger.info("Removing polyC sequences of a length of at least: {}".format(self.remove_polyC_distance))
+        if self.remove_polyN_distance > 0:
+            self.logger.info("Removing polyN sequences of a length of at least: {}".format(self.remove_polyN_distance))
         self.logger.info("Allowing {} miss-matches when removing homopolymers".format(self.adaptor_missmatches))
         if self.low_memory:
             self.logger.info("Using a SQL based container to save memory")
@@ -617,6 +623,7 @@ class Pipeline():
                              self.remove_polyT_distance,
                              self.remove_polyG_distance,
                              self.remove_polyC_distance,
+                             self.remove_polyN_distance,
                              self.qual64,
                              self.umi_filter,
                              self.umi_filter_template,

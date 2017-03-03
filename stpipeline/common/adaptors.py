@@ -25,11 +25,12 @@ def removeAdaptor(sequence, quality, adaptor, missmatches=2):
     # the adaptor till the end of the read
     # TODO this is slow, find a faster approach
     if missmatches == 0:
-        pos = squence.find(adaptor)
+        pos = sequence.find(adaptor)
     else:
-        candidates = regex.findall(r'(?:%s){s<=%s}' % (adaptor, missmatches), sequence)
+        candidates = regex.findall(r'(?:%s){s<=%s}' % (adaptor, missmatches), 
+                                   sequence, overlapped=False)
         if len(candidates) > 0:
-            local_seq = candidate[0]
+            local_seq = candidates[0]
             # Miss-matches may happen at the start
             # so we account for it
             local_pos = 0
