@@ -24,18 +24,27 @@ def removeAdaptor(sequence, quality, adaptor, missmatches=2):
     # Find adaptor and trim from the first position of 
     # the adaptor till the end of the read
     # TODO this is slow, find a faster approach
-    candidate = regex.findall(r'(?:%s){s<=%s}' % (adaptor, missmatches), sequence)
-    if len(candidate) > 0:
-        local_seq = candidate[0]
-        # Miss-matches may happen at the start
-        # so we account for it
-        local_pos = local_seq.find(adaptor[0])
-        # We now look for the first base of the matched adaptor
-        pos = sequence.find(local_seq[local_pos:])
-        # Return the sequence/quality with the adaptor and everything after it trimmed
+    if missmatches == 0:
+        pos = squence.find(adaptor)
+    else:
+        candidates = regex.findall(r'(?:%s){s<=%s}' % (adaptor, missmatches), sequence)
+        if len(candidates) > 0:
+            local_seq = candidate[0]
+            # Miss-matches may happen at the start
+            # so we account for it
+            local_pos = 0
+            if adaptor[0] != local_seq[0]:
+                local_pos = local_seq.find(adaptor[0])
+            # We now look for the first base of the matched adaptor
+            pos = sequence.find(local_seq[local_pos:])
+        else:
+            pos = -1
+    # Trim only if pos is correct          
+    if pos != -1:
         return sequence[:pos], quality[:pos]
     else:
-        return sequence, quality
+        return sequence, quality    
+
             
     
     

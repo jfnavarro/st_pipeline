@@ -103,6 +103,7 @@ class Pipeline():
         self.taggd_metric = "Subglobal"
         self.taggd_multiple_hits_keep_one = False
         self.taggd_trim_sequences = None
+        self.adaptor_missmatches = 2
         
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -374,6 +375,8 @@ class Pipeline():
                             "The bases given in the list of tuples as START END START END .. where\n" \
                             "START is the integer position of the first base (0 based) and END is the integer\n" \
                             "position of the last base (1 based).\nTrimmng sequences can be given several times.")
+        parser.add_argument('--adaptor-missmatches', default=2, metavar="[INT]", type=int, choices=range(0, 6),
+                            help="Number of miss-matches allowed when removing homopolymers (default: %(default)s)")
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -443,6 +446,7 @@ class Pipeline():
         self.taggd_metric = options.demultiplexing_metric
         self.taggd_multiple_hits_keep_one = options.demultiplexing_multiple_hits_keep_one
         self.taggd_trim_sequences = options.demultiplexing_trim_sequences
+        self.adaptor_missmatches = options.adaptor_missmatches
         
         # Assign class parameters to the QA stats object
         import inspect
@@ -524,6 +528,7 @@ class Pipeline():
             self.logger.info("Removing polyG sequences of a length of at least: {}".format(self.remove_polyG_distance))
         if self.remove_polyC_distance > 0:
             self.logger.info("Removing polyC sequences of a length of at least: {}".format(self.remove_polyC_distance))
+        self.logger.info("Allowing {} miss-matches when removing homopolymers".format(self.adaptor_missmatches))
         if self.low_memory:
             self.logger.info("Using a SQL based container to save memory")
         if self.two_pass_mode :
@@ -614,7 +619,8 @@ class Pipeline():
                              self.qual64,
                              self.umi_filter,
                              self.umi_filter_template,
-                             self.umi_quality_bases)
+                             self.umi_quality_bases,
+                             self.adaptor_missmatches)
         except Exception:
             raise
           

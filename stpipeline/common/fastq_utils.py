@@ -202,7 +202,8 @@ def filterInputReads(fw,
                      qual64,
                      umi_filter,
                      umi_filter_template,
-                     umi_quality_bases):
+                     umi_quality_bases,
+                     adaptor_missmatches):
     """
     This function does few things (all done in one loop for performance reasons)
       - It performs a sanity check (forward and reverse reads same length and order)
@@ -229,6 +230,7 @@ def filterInputReads(fw,
     :param umi_filter: performs a UMI quality template filter when True
     :param umi_filter_template: the template to use for the UMI filter
     :param umi_quality_bases: the number of low quality bases allowed in an UMI
+    :param adaptor_missmatches: number of miss-matches allowed when removing adaptors
     """
     logger = logging.getLogger("STPipeline")
     
@@ -302,7 +304,7 @@ def filterInputReads(fw,
             discard_read = True
         
         # Check if the UMI has many low quality bases
-        if not discard_read and \
+        if not discard_read and (umi_end - umi_start) <= umi_quality_bases and \
         len([b for b in quality_fw[umi_start:umi_end] if (ord(b) - phred) < min_qual]) > umi_quality_bases:
             dropped_umi += 1
             discard_read = True
@@ -326,19 +328,19 @@ def filterInputReads(fw,
             
         if not discard_read:
             # if indicated we remove the artifacts PolyA from reverse reads
-            if do_adaptorA: 
+            if do_adaptorA and len(sequence_rv) > min_length: 
                 sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
                                                         adaptorA, adaptor_missmatches) 
             # if indicated we remove the artifacts PolyT from reverse reads
-            if do_adaptorT: 
+            if do_adaptorT and len(sequence_rv) > min_length: 
                 sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
                                                         adaptorT, adaptor_missmatches) 
             # if indicated we remove the artifacts PolyG from reverse reads
-            if do_adaptorG: 
+            if do_adaptorG and len(sequence_rv) > min_length: 
                 sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
                                                         adaptorG, adaptor_missmatches) 
             # if indicated we remove the artifacts PolyC from reverse reads
-            if do_adaptorC: 
+            if do_adaptorC and len(sequence_rv) > min_length: 
                 sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
                                                         adaptorC, adaptor_missmatches)
             # Check if the read is smaller than the minimum after removing artifacts   
