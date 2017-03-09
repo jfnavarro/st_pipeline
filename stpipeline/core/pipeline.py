@@ -55,7 +55,7 @@ class Pipeline():
         self.allowed_missed = 2
         self.allowed_kmer = 6
         self.overhang = 2
-        self.min_length_trimming = 30
+        self.min_length_trimming = 20
         self.trimming_rv = 0
         self.min_quality_trimming = 20 
         self.clean = True
@@ -100,7 +100,7 @@ class Pipeline():
         self.low_memory = False
         self.two_pass_mode = False
         self.strandness = "yes"
-        self.umi_quality_bases = 8
+        self.umi_quality_bases = 6
         self.umi_counting_offset = 150
         self.taggd_metric = "Subglobal"
         self.taggd_multiple_hits_keep_one = False
@@ -268,7 +268,7 @@ class Pipeline():
                             help="KMer length when demultiplexing against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0, 7),
                             help="Extra flanking bases added when demultiplexing against the barcodes with TaggD (default: %(default)s)")
-        parser.add_argument('--min-length-qual-trimming', default=30, metavar="[INT]", type=int, choices=range(10, 101),
+        parser.add_argument('--min-length-qual-trimming', default=20, metavar="[INT]", type=int, choices=range(10, 101),
                             help="Minimum length of the reads after trimming, " \
                             "shorter reads will be discarded (default: %(default)s)")
         parser.add_argument('--mapping-rv-trimming', default=0, metavar="[INT]", type=int, choices=range(0, 51),
@@ -361,7 +361,7 @@ class Pipeline():
                             help="Activates the 2-pass mode in STAR to also map against splice variants")
         parser.add_argument('--strandness', default="yes", type=str, metavar="[STRING]", choices=["no", "yes", "reverse"],
                             help="What strandness mode to use when annotating with htseq-count [no, yes(default), reverse]")
-        parser.add_argument('--umi-quality-bases', default=9, metavar="[INT]", type=int, choices=range(0, 10),
+        parser.add_argument('--umi-quality-bases', default=6, metavar="[INT]", type=int, choices=range(0, 10),
                             help="Maximum number of low quality bases allowed in an UMI (default: %(default)s)")
         parser.add_argument('--umi-counting-offset', default=150, metavar="[INT]", type=int, choices=range(0, 1000),
                             help="Expression count for each gene-spot combination is expressed " \

@@ -38,8 +38,7 @@ def histogram(x_points, output, title="Histogram", xlabel="X",
     plt.title(title)
     # Tweak spacing to prevent clipping of ylabel
     plt.subplots_adjust(left=0.15)
-    fig.set_size_inches(16, 16)
-    fig.savefig(output, dpi=300)
+    fig.savefig(output, format='pdf', dpi=300)
 
 def main(input_data):
     # Parse the data
@@ -60,22 +59,22 @@ def main(input_data):
     average_genes_feature = np.mean(aggregated_gene_counts)
     std_reads_feature = np.std(aggregated_spot_counts)
     std_genes_feature = np.std(aggregated_gene_counts)
-    histogram(aggregated_spot_counts, nbins=20, xlabel="#Transcripts", ylabel="#Features",
-              output="hist_counts.png", title="Transcripts per feature")
-    histogram(aggregated_gene_counts, nbins=20, xlabel="#Genes", ylabel="#Features", 
-              output="hist_genes.png", title="Genes per feature")
+    histogram(aggregated_spot_counts, nbins=20, xlabel="#Reads", ylabel="#Spots",
+              output="hist_counts.pdf", title="Reads per spot")
+    histogram(aggregated_gene_counts, nbins=20, xlabel="#Genes", ylabel="#Spots", 
+              output="hist_genes.pdf", title="Genes per spot")
 
     print("Number of features: {}".format(total_barcodes))
     print("Number of unique molecules present: {}".format(total_transcripts))
     print("Number of unique genes present: {}".format(number_genes))
-    print("Max number of genes over all features: {}".format(max_genes_feature))
-    print("Min number of genes over all features: {}".format(min_genes_feature))
-    print("Max number of unique molecules over all features: {}".format(max_reads_feature))
-    print("Min number of unique molecules over all features: {}".format(min_reads_feature))
-    print("Average number genes per feature: {}".format(average_genes_feature))
-    print("Average number unique molecules per feature: {}".format(average_reads_feature))
-    print("Std number genes per feature: {}".format(std_genes_feature))
-    print("Std number unique molecules per feature: {}".format(std_reads_feature))
+    print("Max number of genes over all spots: {}".format(max_genes_feature))
+    print("Min number of genes over all spots: {}".format(min_genes_feature))
+    print("Max number of unique molecules over all spots: {}".format(max_reads_feature))
+    print("Min number of unique molecules over all spots: {}".format(min_reads_feature))
+    print("Average number genes per spots: {}".format(average_genes_feature))
+    print("Average number unique molecules per spot: {}".format(average_reads_feature))
+    print("Std number genes per spot: {}".format(std_genes_feature))
+    print("Std number unique molecules per spot: {}".format(std_reads_feature))
     print("Max number of unique molecules over all unique events: {}".format(max_count))
     print("Min number of unique molecules over all unique events: {}".format(min_count))
         

@@ -410,7 +410,7 @@ def filterInputReads(fw,
     # Adding stats to QA Stats object
     qa_stats.input_reads_forward = total_reads
     qa_stats.input_reads_reverse = total_reads
-    qa_stats.reads_after_trimming_forward = total_reads
+    qa_stats.reads_after_trimming_forward = (total_reads - dropped_rv)
     qa_stats.reads_after_trimming_reverse = (total_reads - dropped_rv)
 
 #TODO this approach uses too much memory
