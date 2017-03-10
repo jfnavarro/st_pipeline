@@ -97,7 +97,7 @@ You can see a more detailed documentation in the folder "doc_out".
 
 You can see a real dataset obtained from the public data from
 the following publication (http://science.sciencemag.org/content/353/6294/78)
-in the folder called "test_data".
+in the folder called "data".
 
 **License**
 

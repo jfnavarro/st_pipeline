@@ -199,10 +199,12 @@ def filterInputReads(fw,
                      polyT_min_distance, 
                      polyG_min_distance, 
                      polyC_min_distance,
+                     polyN_min_distance,
                      qual64,
                      umi_filter,
                      umi_filter_template,
-                     umi_quality_bases):
+                     umi_quality_bases,
+                     adaptor_missmatches):
     """
     This function does few things (all done in one loop for performance reasons)
       - It performs a sanity check (forward and reverse reads same length and order)
@@ -222,13 +224,16 @@ def filterInputReads(fw,
     :param umi_end: the end position of the UMI
     :param min_qual: the min quality value to use in the trimming
     :param min_length: the min valid length for a read after trimming
-    :param polyA_min_distance: if >10 we remove PolyA adaptors from the reads
-    :param polyT_min_distance: if >10 we remove PolyT adaptors from the reads
-    :param polyG_min_distance: if >10 we remove PolyG adaptors from the reads
+    :param polyA_min_distance: if >5 remove PolyA adaptors from the reads
+    :param polyT_min_distance: if >5 remove PolyT adaptors from the reads
+    :param polyG_min_distance: if >5 remove PolyG adaptors from the reads
+    :param polyC_min_distance: if >5 remove PolyC adaptors from the reads
+    :param polyN_min_distance: if >5 remove PolyN adaptors from the reads
     :param qual64: true of qualities are in phred64 format
     :param umi_filter: performs a UMI quality template filter when True
     :param umi_filter_template: the template to use for the UMI filter
     :param umi_quality_bases: the number of low quality bases allowed in an UMI
+    :param adaptor_missmatches: number of miss-matches allowed when removing adaptors
     """
     logger = logging.getLogger("STPipeline")
     
@@ -263,13 +268,16 @@ def filterInputReads(fw,
     adaptorT = "".join("T" for k in xrange(polyT_min_distance))
     adaptorG = "".join("G" for k in xrange(polyG_min_distance))
     adaptorC = "".join("C" for k in xrange(polyC_min_distance))
-    # Not recommended to do adaptor trimming for adaptors smaller than 8
-    do_adaptorA = polyA_min_distance >= 8
-    do_adaptorT = polyT_min_distance >= 8
-    do_adaptorG = polyG_min_distance >= 8
-    do_adaptorC = polyC_min_distance >= 8
-    # Allow for 2 miss-matches when removing adaptors
-    adaptor_missmatches = 2
+    adaptorN = "".join("N" for k in xrange(polyN_min_distance))
+    
+    # Not recommended to do adaptor trimming for adaptors smaller than 5
+    do_adaptorA = polyA_min_distance >= 5
+    do_adaptorT = polyT_min_distance >= 5
+    do_adaptorG = polyG_min_distance >= 5
+    do_adaptorC = polyC_min_distance >= 5
+    do_adaptorN = polyN_min_distance >= 5
+    do_AT_filter = filter_AT_content > 0
+    do_GC_filter = filter_GC_content > 0
     
     # Quality format
     phred = 64 if qual64 else 33
@@ -302,19 +310,19 @@ def filterInputReads(fw,
             discard_read = True
         
         # Check if the UMI has many low quality bases
-        if not discard_read and \
+        if not discard_read and (umi_end - umi_start) >= umi_quality_bases and \
         len([b for b in quality_fw[umi_start:umi_end] if (ord(b) - phred) < min_qual]) > umi_quality_bases:
             dropped_umi += 1
             discard_read = True
 
         # If reverse read has a high AT content discard...
-        if not discard_read and \
+        if not discard_read and do_AT_filter and \
         ((sequence_rv.count("A") + sequence_rv.count("T")) / len(sequence_rv)) * 100 >= filter_AT_content:
             dropped_AT += 1
             discard_read = True
 
         # If reverse read has a high GC content discard...
-        if not discard_read and \
+        if not discard_read and do_GC_filter and \
         ((sequence_rv.count("G") + sequence_rv.count("C")) / len(sequence_rv)) * 100 >= filter_GC_content:
             dropped_GC += 1
             discard_read = True
@@ -326,21 +334,27 @@ def filterInputReads(fw,
             
         if not discard_read:
             # if indicated we remove the artifacts PolyA from reverse reads
-            if do_adaptorA: 
+            if do_adaptorA and len(sequence_rv) > min_length: 
                 sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
                                                         adaptorA, adaptor_missmatches) 
             # if indicated we remove the artifacts PolyT from reverse reads
-            if do_adaptorT: 
+            if do_adaptorT and len(sequence_rv) > min_length: 
                 sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
                                                         adaptorT, adaptor_missmatches) 
             # if indicated we remove the artifacts PolyG from reverse reads
-            if do_adaptorG: 
+            if do_adaptorG and len(sequence_rv) > min_length: 
                 sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
                                                         adaptorG, adaptor_missmatches) 
             # if indicated we remove the artifacts PolyC from reverse reads
-            if do_adaptorC: 
+            if do_adaptorC and len(sequence_rv) > min_length: 
                 sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
                                                         adaptorC, adaptor_missmatches)
+                
+            # if indicated we remove the artifacts PolyC from reverse reads
+            if do_adaptorN and len(sequence_rv) > min_length: 
+                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
+                                                        adaptorN, adaptor_missmatches)
+                
             # Check if the read is smaller than the minimum after removing artifacts   
             if len(sequence_rv) < min_length:
                 dropped_adaptor += 1
@@ -396,7 +410,7 @@ def filterInputReads(fw,
     # Adding stats to QA Stats object
     qa_stats.input_reads_forward = total_reads
     qa_stats.input_reads_reverse = total_reads
-    qa_stats.reads_after_trimming_forward = total_reads
+    qa_stats.reads_after_trimming_forward = (total_reads - dropped_rv)
     qa_stats.reads_after_trimming_reverse = (total_reads - dropped_rv)
 
 #TODO this approach uses too much memory

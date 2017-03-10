@@ -55,7 +55,7 @@ class Pipeline():
         self.allowed_missed = 2
         self.allowed_kmer = 6
         self.overhang = 2
-        self.min_length_trimming = 30
+        self.min_length_trimming = 20
         self.trimming_rv = 0
         self.min_quality_trimming = 20 
         self.clean = True
@@ -84,6 +84,7 @@ class Pipeline():
         self.remove_polyT_distance = 15
         self.remove_polyG_distance = 15
         self.remove_polyC_distance = 15
+        self.remove_polyN_distance = 15
         self.filter_AT_content = 90
         self.filter_GC_content = 90
         self.disable_clipping = False
@@ -99,11 +100,12 @@ class Pipeline():
         self.low_memory = False
         self.two_pass_mode = False
         self.strandness = "yes"
-        self.umi_quality_bases = 8
+        self.umi_quality_bases = 6
         self.umi_counting_offset = 150
         self.taggd_metric = "Subglobal"
         self.taggd_multiple_hits_keep_one = False
         self.taggd_trim_sequences = None
+        self.adaptor_missmatches = 0
         
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -266,7 +268,7 @@ class Pipeline():
                             help="KMer length when demultiplexing against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0, 7),
                             help="Extra flanking bases added when demultiplexing against the barcodes with TaggD (default: %(default)s)")
-        parser.add_argument('--min-length-qual-trimming', default=30, metavar="[INT]", type=int, choices=range(10, 101),
+        parser.add_argument('--min-length-qual-trimming', default=20, metavar="[INT]", type=int, choices=range(10, 101),
                             help="Minimum length of the reads after trimming, " \
                             "shorter reads will be discarded (default: %(default)s)")
         parser.add_argument('--mapping-rv-trimming', default=0, metavar="[INT]", type=int, choices=range(0, 51),
@@ -312,13 +314,15 @@ class Pipeline():
         parser.add_argument('--keep-discarded-files', action="store_true", default=False,
                             help='Writes down unaligned, un-annotated and un-demultiplexed reads to files')
         parser.add_argument('--remove-polyA', default=15, metavar="[INT]", type=int, choices=range(0, 25),
-                            help="Remove PolyA stretches of the given length from R2 (default: %(default)s)")
+                            help="Remove PolyA stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
         parser.add_argument('--remove-polyT', default=15, metavar="[INT]", type=int, choices=range(0, 25),
-                            help="Remove PolyT stretches of the given length from R2 (default: %(default)s)")
+                            help="Remove PolyT stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
         parser.add_argument('--remove-polyG', default=15, metavar="[INT]", type=int, choices=range(0, 25),
-                            help="Remove PolyG stretches of the given length from R2 (default: %(default)s)")
+                            help="Remove PolyG stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
         parser.add_argument('--remove-polyC', default=15, metavar="[INT]", type=int, choices=range(0, 25),
-                            help="Remove PolyC stretches of the given length from R2 (default: %(default)s)")
+                            help="Remove PolyC stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
+        parser.add_argument('--remove-polyN', default=15, metavar="[INT]", type=int, choices=range(0, 25),
+                            help="Remove PolyN stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
         parser.add_argument('--filter-AT-content', default=90, metavar="[INT%]", type=int, choices=range(0, 100),
                             help="Discards reads whose number of A and T bases in total are more " \
                             "or equal than the number given in percentage (default: %(default)s)")
@@ -357,7 +361,7 @@ class Pipeline():
                             help="Activates the 2-pass mode in STAR to also map against splice variants")
         parser.add_argument('--strandness', default="yes", type=str, metavar="[STRING]", choices=["no", "yes", "reverse"],
                             help="What strandness mode to use when annotating with htseq-count [no, yes(default), reverse]")
-        parser.add_argument('--umi-quality-bases', default=9, metavar="[INT]", type=int, choices=range(0, 10),
+        parser.add_argument('--umi-quality-bases', default=6, metavar="[INT]", type=int, choices=range(0, 10),
                             help="Maximum number of low quality bases allowed in an UMI (default: %(default)s)")
         parser.add_argument('--umi-counting-offset', default=150, metavar="[INT]", type=int, choices=range(0, 1000),
                             help="Expression count for each gene-spot combination is expressed " \
@@ -375,6 +379,8 @@ class Pipeline():
                             "The bases given in the list of tuples as START END START END .. where\n" \
                             "START is the integer position of the first base (0 based) and END is the integer\n" \
                             "position of the last base (1 based).\nTrimmng sequences can be given several times.")
+        parser.add_argument('--adaptor-missmatches', default=0, metavar="[INT]", type=int, choices=range(0, 6),
+                            help="Number of miss-matches allowed when removing homopolymers (default: %(default)s)")
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -424,6 +430,7 @@ class Pipeline():
         self.remove_polyT_distance = options.remove_polyT
         self.remove_polyG_distance = options.remove_polyG
         self.remove_polyC_distance = options.remove_polyC
+        self.remove_polyN_distance = options.remove_polyN
         self.filter_AT_content = options.filter_AT_content
         self.filter_GC_content = options.filter_GC_content
         self.disable_multimap = options.disable_multimap
@@ -444,6 +451,7 @@ class Pipeline():
         self.taggd_metric = options.demultiplexing_metric
         self.taggd_multiple_hits_keep_one = options.demultiplexing_multiple_hits_keep_one
         self.taggd_trim_sequences = options.demultiplexing_trim_sequences
+        self.adaptor_missmatches = options.adaptor_missmatches
         
         # Assign class parameters to the QA stats object
         import inspect
@@ -525,6 +533,9 @@ class Pipeline():
             self.logger.info("Removing polyG sequences of a length of at least: {}".format(self.remove_polyG_distance))
         if self.remove_polyC_distance > 0:
             self.logger.info("Removing polyC sequences of a length of at least: {}".format(self.remove_polyC_distance))
+        if self.remove_polyN_distance > 0:
+            self.logger.info("Removing polyN sequences of a length of at least: {}".format(self.remove_polyN_distance))
+        self.logger.info("Allowing {} miss-matches when removing homopolymers".format(self.adaptor_missmatches))
         if self.low_memory:
             self.logger.info("Using a SQL based container to save memory")
         if self.two_pass_mode :
@@ -612,10 +623,12 @@ class Pipeline():
                              self.remove_polyT_distance,
                              self.remove_polyG_distance,
                              self.remove_polyC_distance,
+                             self.remove_polyN_distance,
                              self.qual64,
                              self.umi_filter,
                              self.umi_filter_template,
-                             self.umi_quality_bases)
+                             self.umi_quality_bases,
+                             self.adaptor_missmatches)
         except Exception:
             raise
           
