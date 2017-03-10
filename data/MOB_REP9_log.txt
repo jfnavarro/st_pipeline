@@ -1,0 +1,200 @@
+INFO:STPipeline:ST Pipeline 1.3.0
+INFO:STPipeline:Output directory: /home/jose.fernandez.navarro/MOB_SCIENCE/rep9
+INFO:STPipeline:Temporary directory: /tmp/st_pipeline_tempinu63T
+INFO:STPipeline:Dataset name: MOB_REP9
+INFO:STPipeline:Forward(R1) input file: /home/jose.fernandez.navarro/MOB_SCIENCE/MOB_Rep9_1000L5_R1.fastq.gz
+INFO:STPipeline:Reverse(R2) input file: /home/jose.fernandez.navarro/MOB_SCIENCE/MOB_Rep9_1000L5_R2.fastq.gz
+INFO:STPipeline:Reference mapping STAR index folder: /fastdisk/mouse/GRCm38_86v2/StarIndex
+INFO:STPipeline:Reference annotation file: /fastdisk/mouse/GRCm38_86v2/annotation/gencode.vM11.annotation.gtf
+INFO:STPipeline:Using contamination filter STAR index: /fastdisk/mouse/GRCm38_86v2/ncRNA/StarIndex
+INFO:STPipeline:CPU Nodes: 16
+INFO:STPipeline:Ids(barcodes) file: /fastdisk/ids/160308_1000L5_arrayjet_probes.txt
+INFO:STPipeline:TaggD allowed mismatches: 2
+INFO:STPipeline:TaggD kmer size: 6
+INFO:STPipeline:TaggD overhang: 2
+INFO:STPipeline:TaggD metric: Subglobal
+INFO:STPipeline:Mapping reverse trimming: 0
+INFO:STPipeline:Mapping inverse reverse trimming: 0
+INFO:STPipeline:Mapping tool: STAR
+INFO:STPipeline:Annotation tool: HTSeq
+INFO:STPipeline:Annotation mode: intersection-nonempty
+INFO:STPipeline:Annotation strandness yes
+INFO:STPipeline:Remove reads whose AT content is 90%
+INFO:STPipeline:Remove reads whose GC content is 90%
+INFO:STPipeline:Not allowing soft clipping when mapping with STAR
+INFO:STPipeline:Mapping minimum intron size when mapping: 20
+INFO:STPipeline:Mapping maximum intron size when mapping: 100000
+INFO:STPipeline:UMIs start position: 18
+INFO:STPipeline:UMIs end position: 27
+INFO:STPipeline:UMIs allowed mismatches: 1
+INFO:STPipeline:UMIs clustering algorithm: hierarchical
+INFO:STPipeline:Allowing an offset of 150 when clustering UMIs by strand-start in a gene-spot
+INFO:STPipeline:Allowing 6 low quality bases in an UMI
+INFO:STPipeline:Discarding reads that after trimming are shorter than 30
+INFO:STPipeline:Removing polyA sequences of a length of at least: 10
+INFO:STPipeline:Removing polyT sequences of a length of at least: 10
+INFO:STPipeline:Removing polyG sequences of a length of at least: 10
+INFO:STPipeline:Removing polyC sequences of a length of at least: 10
+INFO:STPipeline:Using the STAR 2-pass mode for the mapping step
+INFO:STPipeline:Starting the pipeline: 2017-03-01 15:50:28.988236
+INFO:STPipeline:Start filtering raw reads 2017-03-01 16:37:03.662685
+INFO:STPipeline:Trimming stats total reads (pair): 155513598
+INFO:STPipeline:Trimming stats 30545932 reads have been dropped!
+INFO:STPipeline:Trimming stats you just lost about 19.64% of your data
+INFO:STPipeline:Trimming stats reads remaining: 124967666
+INFO:STPipeline:Trimming stats dropped pairs due to incorrect UMI: 0
+INFO:STPipeline:Trimming stats dropped pairs due to low quality UMI: 68031
+INFO:STPipeline:Trimming stats dropped pairs due to high AT content: 269941
+INFO:STPipeline:Trimming stats dropped pairs due to high GC content: 2040754
+INFO:STPipeline:Trimming stats dropped pairs due to presence of artifacts: 25779536
+INFO:STPipeline:Starting contaminant filter alignment 2017-03-01 19:53:17.028394
+INFO:STPipeline:Mapping stats: 
+INFO:STPipeline:Mapping stats are computed from all the pair reads present in the raw files
+INFO:STPipeline:                   Uniquely mapped reads number |	23295111
+INFO:STPipeline:                        Uniquely mapped reads % |	18.64%
+INFO:STPipeline:        Number of reads mapped to multiple loci |	1911418
+INFO:STPipeline:             % of reads mapped to multiple loci |	1.53%
+INFO:STPipeline:                 % of reads unmapped: too short |	15.01%
+INFO:STPipeline:Total mapped reads: 25206529
+INFO:STPipeline:Starting genome alignment 2017-03-01 20:30:48.176746
+INFO:STPipeline:Mapping stats: 
+INFO:STPipeline:Mapping stats are computed from all the pair reads present in the raw files
+INFO:STPipeline:                   Uniquely mapped reads number |	77237168
+INFO:STPipeline:                        Uniquely mapped reads % |	77.42%
+INFO:STPipeline:        Number of reads mapped to multiple loci |	14992319
+INFO:STPipeline:             % of reads mapped to multiple loci |	15.03%
+INFO:STPipeline:                 % of reads unmapped: too short |	3.67%
+INFO:STPipeline:Total mapped reads: 92229487
+INFO:STPipeline:Starting barcode demultiplexing 2017-03-01 20:54:34.554124
+INFO:STPipeline:Barcode Mapping stats:
+INFO:STPipeline:# Total reads: 124967666
+INFO:STPipeline:# Total reads written: 123559227
+INFO:STPipeline:# Ambiguous matches: 289   [0.00023125982044%]
+INFO:STPipeline:#   - Non-unique ambiguous matches: 578
+INFO:STPipeline:# Unmatched: 1408150   [1.12681147458%]
+INFO:STPipeline:Parsing demultiplexed reads 2017-03-01 21:13:13.419297
+INFO:STPipeline:Starting processing aligned reads 2017-03-01 21:25:44.390375
+INFO:STPipeline:Finish filtering mapped reads, stats:
+Present: 112300635
+Dropped - secondary alignment: 19896186
+Dropped - too short: 130050
+Dropped - barcode: 1038433
+INFO:STPipeline:Starting annotation 2017-03-01 22:03:01.346958
+INFO:STPipeline:Annotated reads: 68352984
+INFO:STPipeline:Starting creating dataset 2017-03-02 00:41:15.839222
+INFO:STPipeline:Number of unique molecules present: 5228349
+INFO:STPipeline:Number of unique events (gene-feature) present: 2419073
+INFO:STPipeline:Number of unique genes present: 20771
+INFO:STPipeline:Max number of genes over all features: 7940
+INFO:STPipeline:Min number of genes over all features: 1
+INFO:STPipeline:Max number of unique molecules over all features: 36594.0
+INFO:STPipeline:Min number of unique molecules over all features: 1.0
+INFO:STPipeline:Average number genes per feature: 2411.83748754
+INFO:STPipeline:Average number unique molecules per feature: 5212.7108674
+INFO:STPipeline:Std number genes per feature: 1547.14440408
+INFO:STPipeline:Std number unique molecules per feature: 5038.96501089
+INFO:STPipeline:Max number of unique molecules over all unique events: 476.0
+INFO:STPipeline:Min number of unique molecules over all unique events: 0.0
+INFO:STPipeline:Number of discarded reads (possible duplicates): 63124635
+INFO:STPipeline:Total Execution Time: 9:15:35.701281
+INFO:STPipeline:ST Pipeline 1.3.1
+INFO:STPipeline:Output directory: /home/jose.fernandez.navarro/MOB_SCIENCE/rep9
+INFO:STPipeline:Temporary directory: /tmp/st_pipeline_tempXXrsRv
+INFO:STPipeline:Dataset name: MOB_REP9
+INFO:STPipeline:Forward(R1) input file: /home/jose.fernandez.navarro/MOB_SCIENCE/MOB_Rep9_1000L5_R1.fastq.gz
+INFO:STPipeline:Reverse(R2) input file: /home/jose.fernandez.navarro/MOB_SCIENCE/MOB_Rep9_1000L5_R2.fastq.gz
+INFO:STPipeline:Reference mapping STAR index folder: /fastdisk/mouse/GRCm38_86v2/StarIndex
+INFO:STPipeline:Reference annotation file: /fastdisk/mouse/GRCm38_86v2/annotation/gencode.vM11.annotation.gtf
+INFO:STPipeline:Using contamination filter STAR index: /fastdisk/mouse/GRCm38_86v2/ncRNA/StarIndex
+INFO:STPipeline:CPU Nodes: 16
+INFO:STPipeline:Ids(barcodes) file: /fastdisk/ids/160308_1000L5_arrayjet_probes.txt
+INFO:STPipeline:TaggD allowed mismatches: 2
+INFO:STPipeline:TaggD kmer size: 6
+INFO:STPipeline:TaggD overhang: 2
+INFO:STPipeline:TaggD metric: Subglobal
+INFO:STPipeline:Mapping reverse trimming: 0
+INFO:STPipeline:Mapping inverse reverse trimming: 0
+INFO:STPipeline:Mapping tool: STAR
+INFO:STPipeline:Annotation tool: HTSeq
+INFO:STPipeline:Annotation mode: intersection-nonempty
+INFO:STPipeline:Annotation strandness yes
+INFO:STPipeline:Remove reads whose AT content is 90%
+INFO:STPipeline:Remove reads whose GC content is 90%
+INFO:STPipeline:Not allowing soft clipping when mapping with STAR
+INFO:STPipeline:Mapping minimum intron size when mapping: 20
+INFO:STPipeline:Mapping maximum intron size when mapping: 100000
+INFO:STPipeline:UMIs start position: 18
+INFO:STPipeline:UMIs end position: 27
+INFO:STPipeline:UMIs allowed mismatches: 1
+INFO:STPipeline:UMIs clustering algorithm: hierarchical
+INFO:STPipeline:Allowing an offset of 150 when clustering UMIs by strand-start in a gene-spot
+INFO:STPipeline:Allowing 4 low quality bases in an UMI
+INFO:STPipeline:Discarding reads that after trimming are shorter than 30
+INFO:STPipeline:Removing polyA sequences of a length of at least: 10
+INFO:STPipeline:Removing polyT sequences of a length of at least: 10
+INFO:STPipeline:Removing polyG sequences of a length of at least: 10
+INFO:STPipeline:Removing polyC sequences of a length of at least: 10
+INFO:STPipeline:Removing polyN sequences of a length of at least: 10
+INFO:STPipeline:Allowing 0 miss-matches when removing homopolymers
+INFO:STPipeline:Using the STAR 2-pass mode for the mapping step
+INFO:STPipeline:Starting the pipeline: 2017-03-04 00:31:11.154162
+INFO:STPipeline:Start filtering raw reads 2017-03-04 01:21:41.736639
+INFO:STPipeline:Trimming stats total reads (pair): 155513598
+INFO:STPipeline:Trimming stats 12660195 reads have been dropped!
+INFO:STPipeline:Trimming stats you just lost about 8.14% of your data
+INFO:STPipeline:Trimming stats reads remaining: 142853403
+INFO:STPipeline:Trimming stats dropped pairs due to incorrect UMI: 0
+INFO:STPipeline:Trimming stats dropped pairs due to low quality UMI: 426371
+INFO:STPipeline:Trimming stats dropped pairs due to high AT content: 267111
+INFO:STPipeline:Trimming stats dropped pairs due to high GC content: 2038927
+INFO:STPipeline:Trimming stats dropped pairs due to presence of artifacts: 6813542
+INFO:STPipeline:Starting contaminant filter alignment 2017-03-04 02:16:16.147799
+INFO:STPipeline:Mapping stats: 
+INFO:STPipeline:Mapping stats are computed from all the pair reads present in the raw files
+INFO:STPipeline:                   Uniquely mapped reads number |	24793947
+INFO:STPipeline:                        Uniquely mapped reads % |	17.36%
+INFO:STPipeline:        Number of reads mapped to multiple loci |	1886838
+INFO:STPipeline:             % of reads mapped to multiple loci |	1.32%
+INFO:STPipeline:                 % of reads unmapped: too short |	6.85%
+INFO:STPipeline:Total mapped reads: 26680785
+INFO:STPipeline:Starting genome alignment 2017-03-04 03:04:18.843041
+INFO:STPipeline:Mapping stats: 
+INFO:STPipeline:Mapping stats are computed from all the pair reads present in the raw files
+INFO:STPipeline:                   Uniquely mapped reads number |	89541027
+INFO:STPipeline:                        Uniquely mapped reads % |	77.08%
+INFO:STPipeline:        Number of reads mapped to multiple loci |	15987341
+INFO:STPipeline:             % of reads mapped to multiple loci |	13.76%
+INFO:STPipeline:                 % of reads unmapped: too short |	3.78%
+INFO:STPipeline:Total mapped reads: 105528368
+INFO:STPipeline:Starting barcode demultiplexing 2017-03-04 03:31:38.683200
+INFO:STPipeline:Barcode Mapping stats:
+INFO:STPipeline:# Total reads: 142853403
+INFO:STPipeline:# Total reads written: 141209307
+INFO:STPipeline:# Ambiguous matches: 343   [0.000240106285742%]
+INFO:STPipeline:#   - Non-unique ambiguous matches: 686
+INFO:STPipeline:# Unmatched: 1643753   [1.15065722306%]
+INFO:STPipeline:Parsing demultiplexed reads 2017-03-04 03:53:17.985278
+INFO:STPipeline:Starting processing aligned reads 2017-03-04 04:08:10.710804
+INFO:STPipeline:Finish filtering mapped reads, stats:
+Present: 126308419
+Dropped - secondary alignment: 20600104
+Dropped - too short: 32621
+Dropped - barcode: 1164736
+INFO:STPipeline:Starting annotation 2017-03-04 05:23:13.352697
+INFO:STPipeline:Annotated reads: 78161729
+INFO:STPipeline:Starting creating dataset 2017-03-04 08:32:00.971408
+INFO:STPipeline:Number of unique molecules present: 5884287
+INFO:STPipeline:Number of unique events (gene-feature) present: 2619902
+INFO:STPipeline:Number of unique genes present: 21081
+INFO:STPipeline:Max number of genes over all features: 8275
+INFO:STPipeline:Min number of genes over all features: 1
+INFO:STPipeline:Max number of unique molecules over all features: 40932.0
+INFO:STPipeline:Min number of unique molecules over all features: 1.0
+INFO:STPipeline:Average number genes per feature: 2606.86766169
+INFO:STPipeline:Average number unique molecules per feature: 5855.0119403
+INFO:STPipeline:Std number genes per feature: 1624.53912007
+INFO:STPipeline:Std number unique molecules per feature: 5634.24851954
+INFO:STPipeline:Max number of unique molecules over all unique events: 505.0
+INFO:STPipeline:Min number of unique molecules over all unique events: 0.0
+INFO:STPipeline:Number of discarded reads (possible duplicates): 72277442
+INFO:STPipeline:Total Execution Time: 8:29:35.139714
