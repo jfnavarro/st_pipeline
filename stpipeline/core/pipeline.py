@@ -126,7 +126,8 @@ class Pipeline():
                 shutil.rmtree(star_temp1)
             if os.path.isdir(star_temp2):
                 shutil.rmtree(star_temp2)
-            if self.clean and not self.keep_discarded_files:
+            if self.clean and not self.keep_discarded_files \
+            and self.temp_folder != self.output_folder:
                 shutil.rmtree(self.temp_folder)
           
     def sanityCheck(self):
