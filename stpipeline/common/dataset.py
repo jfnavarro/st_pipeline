@@ -35,14 +35,13 @@ def createDataset(input_file,
                   output_template=None,
                   verbose=True):
     """
-    The functions parses the reads in SAM/BAM format
-    that had been annotated and demultiplexed (containing spatial
-    barcode).
-    It then groups them by gene-barcode to count reads. 
+    The functions parses the reads in BAM format
+    that have been annotated and demultiplexed (containing spatial barcode).
+    It then groups them by gene-barcode to count reads accounting for duplicates
+    using the UMIs (clustering them suing the strand and start position). 
     It outputs the records in a matrix of counts in TSV format and BED format and it also 
     writes out some statistics.
-    It will only count unique molecules using the UMI present in each read.
-    :param input_file: the file with the annotated-demultiplexed records
+    :param input_file: the file with the annotated-demultiplexed records in BAM format
     :param qa_stats: the Stats object to add some stats (THIS IS PASSED BY REFERENCE)
     :param umi_cluster_algorithm: the clustering algorithm to cluster UMIs
     :param umi_allowed_mismatches: the number of miss matches allowed to remove

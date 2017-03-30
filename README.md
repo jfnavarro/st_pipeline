@@ -1,8 +1,10 @@
 # Spatial Transcriptomics Pipeline
 
 [![Build Status](https://travis-ci.org/jfnavarro/st_pipeline.svg?branch=master)](https://travis-ci.org/jfnavarro/st_pipeline)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Coverage Status](https://coveralls.io/repos/github/jfnavarro/st_pipeline/badge.svg?branch=master)](https://coveralls.io/github/jfnavarro/st_pipeline?branch=master)
 
-ST Pipeline contains the tools and scripts needed to process and analyze the raw files generated with the Spatial Transcriptomics method in FASTQ format. 
+The ST Pipeline contains the tools and scripts needed to process and analyze the raw files generated with the Spatial Transcriptomics method in FASTQ format to generated datasets for down-stream analysis. 
 The ST pipeline can also be used to process single cell data as long as a file with barcodes identifying each cell is provided.
 
 The ST Pipeline has been optimized for speed, robustness and it is very easy to use with many parameters to adjust all the settings.
@@ -16,29 +18,29 @@ The following files/parameters are required :
 
 The ST pipeline has multiple parameters mostly related to trimming, mapping and annotation but generally the default values are good enough. You can see a full description of the parameters typing "st_pipeline_run.py --help" after you have installed the ST pipeline.
 
-The raw data can be given in gzip format as well. 
+The input FASTQ files can be given in gzip/bzip format as well. 
 
 Basically what the ST pipeline does is :
 - Quality trimming (read 1 and read 2) :
 	- Remove low quality bases
 	- Sanity check (reads same length, reads order, etc..)
 	- Check quality UMI
-	- Remove artifacts (PolyT, PolyA, PolyG and PolyC)
+	- Remove artifacts (PolyT, PolyA, PolyG, PolyN and PolyC) of user defined length
 	- Check for AT and GC content
 	- Discard reads with a minimum number of bases of that failed any of the checks above
 - Contamimant filter e.x. rRNA genome (Optional)
 - Mapping with STAR (only read 2)
-- Demultiplexing with taggd (https://github.com/SpatialTranscriptomicsResearch/taggd) (only read 1)
+- Demultiplexing with [Taggd](https://github.com/SpatialTranscriptomicsResearch/taggd) (only read 1)
 - Keep reads (read 2) that contain a valid barcode and are correctly mapped
-- Annotate the reads with htseq-count
+- Annotate the reads with htseq-count (slightly modified version)
 - Group annotated reads by barcode(spot position) and gene to get a read count
 - In the grouping/counting only unique molecules (UMIs) are kept. 
 
 You can see a graphical more detailed description of the workflow in the documents workflow.pdf and workflow_extended.pdf
 
-The output will be a data frame file with the counts (genes as columns, spots as rows),
+The output will be a matrix of counts (genes as columns, spots as rows),
 a BED file containing the transcripts (Read name, coordinate, gene, etc..), and a JSON
-file with usefl stats.
+file with useful stats.
 The ST pipeline will also output a log file with useful information.
 
 **Installation**
@@ -46,8 +48,17 @@ The ST pipeline will also output a log file with useful information.
 We recommend you install a virtual environment like Pyenv or Anaconda before you install the pipeline. 
 The ST Pipeline works with python 2.7.
 
-First clone the repository or download a tar/zip from the releases section. 
-Access the cloned repository folder or the folder where the tar/zip file has been decompressed. 
+First clone the repository 
+
+    git clone <stpipeline repository> 
+    
+or download a tar/zip from the releases section and unzip it
+
+    unzip stpipeline_release.zip
+    
+Access the cloned ST Pipeline folder or the folder where the tar/zip file has been decompressed. 
+
+    cd stpipeline
 
 To install the pipeline type then
 
@@ -61,6 +72,10 @@ To run a test type (you need internet connection to run the tests)
 To see the different options type 
 
     st_pipeline_run.py --help
+    
+Alternatively, you can install the ST Pipeline using PyPy:
+
+    pip install stpipeline
     
 **Example**
 
@@ -102,6 +117,12 @@ in the folder called "data".
 **License**
 
 The ST pipeline is open source under the MIT license which means that you can use it, change it and re-distribute but you must always refer to our license (see LICENSE and AUTHORS).
+
+**Reference**
+
+If you use the ST Pipeline, please refer to it by including this:
+
+TODO: add reference
 
 **Contact**
 

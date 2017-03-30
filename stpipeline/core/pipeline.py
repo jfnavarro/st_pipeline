@@ -41,7 +41,8 @@ FILENAMES_DISCARDED = {"mapped_discarded" : "mapping_discarded.fastq",
                        "demultiplexed_unmatched" : "demultiplexed_unmatched.fastq",
                        "demultiplexed_results" : "demultiplexed_results.tsv",
                        "mapped_filtered_discarded" : "mapped_filtered_discarded.bam",
-                       "quality_trimmed_discarded" : "R2_quality_trimmed_discarded.fastq"}
+                       "quality_trimmed_discarded" : "R2_quality_trimmed_discarded.fastq",
+                       "annotated_discarded": "annotated_discarded.bam"}
 
 class Pipeline():
     """ This class contains all the ST pipeline
@@ -91,7 +92,7 @@ class Pipeline():
         self.disable_multimap = False
         self.umi_cluster_algorithm = "naive"
         self.min_intron_size = 20
-        self.max_intron_size = 1000000
+        self.max_intron_size = 10000
         self.umi_filter = False
         self.umi_filter_template = "WSNNWSNNV"
         self.compute_saturation = False
@@ -126,7 +127,8 @@ class Pipeline():
                 shutil.rmtree(star_temp1)
             if os.path.isdir(star_temp2):
                 shutil.rmtree(star_temp2)
-            if self.clean and not self.keep_discarded_files:
+            if self.clean and not self.keep_discarded_files \
+            and self.temp_folder != self.output_folder:
                 shutil.rmtree(self.temp_folder)
           
     def sanityCheck(self):
@@ -302,7 +304,7 @@ class Pipeline():
                             help='Path of the output folder')
         parser.add_argument('--temp-folder', metavar="[FOLDER]", action=readable_dir, default=None,
                             help='Path of the location for temporary files')
-        parser.add_argument('--umi-allowed-mismatches', default=1, metavar="[INT]", type=int, choices=range(0, 7),
+        parser.add_argument('--umi-allowed-mismatches', default=1, metavar="[INT]", type=int, choices=range(0, 5),
                             help="Number of allowed mismatches (hamming distance) " \
                             "that UMIs of the same gene-spot must have in order to cluster together (default: %(default)s)")
         parser.add_argument('--umi-start-position', default=18, metavar="[INT]", type=int, choices=range(0, 91),
@@ -339,11 +341,9 @@ class Pipeline():
                             help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n" \
                             "Options = {naive, hierarchical(default), Adjacent and AdjacentBi}")
         parser.add_argument('--min-intron-size', default=20, metavar="[INT]", type=int, choices=range(0, 1000),
-                            help="Minimum allowed intron size when searching for splice " \
-                            "variants in the mapping step (default: %(default)s)")
-        parser.add_argument('--max-intron-size', default=100000, metavar="[INT]", type=int, choices=range(0, 1000000),
-                            help="Maximum allowed intron size when searching for splice " \
-                            "variants in the mapping step (default: %(default)s)")
+                            help="Minimum allowed intron size allowed when mapping with STAR (default: %(default)s)")
+        parser.add_argument('--max-intron-size', default=10000, metavar="[INT]", type=int, choices=range(0, 1000000),
+                            help="Maximum allowed intron size allowed when mapping with STAR (default: %(default)s)")
         parser.add_argument('--umi-filter', action="store_true", default=False,
                             help="Enables the UMI quality filter based on the template given in --umi-filter-template")
         parser.add_argument('--umi-filter-template', default="WSNNWSNNV", type=str, metavar="[STRING]",
@@ -509,8 +509,8 @@ class Pipeline():
             self.logger.info("Not allowing soft clipping when mapping with STAR")
         if self.disable_multimap:
             self.logger.info("Not allowing multiple alignments when mapping with STAR")
-        self.logger.info("Mapping minimum intron size when mapping: {}".format(self.min_intron_size))
-        self.logger.info("Mapping maximum intron size when mapping: {}".format(self.max_intron_size))
+        self.logger.info("Mapping minimum intron size allowed: {}".format(self.min_intron_size))
+        self.logger.info("Mapping maximum intron size allowed: {}".format(self.max_intron_size))
         if self.compute_saturation:
             self.logger.info("Computing saturation curve with several sub-samples...")
         if self.include_non_annotated:
@@ -653,7 +653,8 @@ class Pipeline():
                            self.max_intron_size,
                            False, # Enable multimap in contaminant filter
                            True, # Disable softclipping in contaminant filter
-                           False) # Disable 2-pass mode in contaminant filter
+                           False, # Disable 2-pass mode in contaminant filter
+                           self.min_length_trimming) 
             except Exception:
                 raise
             
@@ -676,7 +677,8 @@ class Pipeline():
                        self.max_intron_size,
                        self.disable_multimap,
                        self.disable_clipping,
-                       self.two_pass_mode)
+                       self.two_pass_mode,
+                       self.min_length_trimming)
         except Exception:
             raise
             
@@ -704,7 +706,7 @@ class Pipeline():
         # STEP: OBTAIN DICT OF DEMULTIPLEXED READS
         # Iterate demultiplexed FASTQ reads to obtain a dict of read_name => (x,y,umi) 
         #=================================================================
-        self.logger.info("Parsing demultiplexed reads {}".format(globaltime.getTimestamp()))
+        self.logger.info("Parsing demultiplexed reads (R1) {}".format(globaltime.getTimestamp()))
         hash_reads = hashDemultiplexedReads(FILENAMES["demultiplexed_matched"], 
                                             self.umi_start_position,
                                             self.umi_end_position,
@@ -713,13 +715,12 @@ class Pipeline():
         #================================================================
         # STEP: filters mapped reads and add the (x,y,umi) as extra SAM tags
         #================================================================
-        self.logger.info("Starting processing aligned reads {}".format(globaltime.getTimestamp()))
+        self.logger.info("Starting processing aligned reads (R2) {}".format(globaltime.getTimestamp()))
         try:
             filterMappedReads(FILENAMES["mapped"],
                               hash_reads,
                               FILENAMES["mapped_filtered"],
-                              FILENAMES_DISCARDED["mapped_filtered_discarded"] if self.keep_discarded_files else None,
-                              self.min_length_trimming)
+                              FILENAMES_DISCARDED["mapped_filtered_discarded"] if self.keep_discarded_files else None)
         except Exception:
             raise
         finally:
@@ -738,6 +739,7 @@ class Pipeline():
             annotateReads(FILENAMES["mapped_filtered"],
                           self.ref_annotation,
                           FILENAMES["annotated"],
+                          FILENAMES_DISCARDED["annotated_discarded"] if self.keep_discarded_files else None,
                           self.htseq_mode,
                           self.strandness,
                           self.htseq_no_ambiguous,
