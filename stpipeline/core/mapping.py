@@ -23,7 +23,8 @@ def alignReads(reverse_reads,
                max_intron_size,
                disable_multimap,
                diable_softclipping,
-               twopassMode):
+               twopassMode,
+               min_length):
     """
     This function will perform a sequence alignment using STAR.
     Mapped and unmapped reads are written to the paths given as
@@ -44,6 +45,7 @@ def alignReads(reverse_reads,
     :param disable_multimap: if True no multiple alignments will be allowed
     :param diable_softclipping: it True no local alignment allowed
     :param twopassMode: True to use the 2-pass mode
+    :param min_length: the min allowed read length (mapped bases)
     :type reverse_reads: str
     :type ref_map: str
     :type outputFile: str
@@ -58,6 +60,7 @@ def alignReads(reverse_reads,
     :type disable_multimap: bool
     :type diable_softclipping: bool
     :type twopassMode: bool
+    :type min_length: str
     :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
     logger = logging.getLogger("STPipeline")
@@ -100,6 +103,8 @@ def alignReads(reverse_reads,
              "--outFilterMultimapNmax", multi_map_number,
              "--alignIntronMin", min_intron_size,
              "--alignIntronMax", max_intron_size,
+             "--outFilterMatchNmin", min_length,
+             "--outSAMmultNmax", 1,
              "--readMatesLengthsIn", "NotEqual",
              "--genomeLoad", "NoSharedMemory"] 
     
@@ -292,14 +297,11 @@ def barcodeDemultiplexing(reads,
            
     # TODO must be a cleaner way to get the stats from the output file
     procOut = stdout.split("\n")
-    logger.info("Barcode Mapping stats:")
+    logger.info("Demultiplexing Mapping stats:")
     for line in procOut: 
         if line.find("Total reads:") != -1:
             logger.info(str(line))
         if line.find("Total reads written:") != -1:
-            # Update the QA stats
-            # TODO find a cleaner way to to this
-            qa_stats.reads_after_demultiplexing = int(line.split()[-1])
             logger.info(str(line))
         if line.find("Perfect Matches:") != -1:
             logger.info(str(line))

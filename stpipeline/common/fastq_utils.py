@@ -466,7 +466,7 @@ def hashDemultiplexedReads(reads,
         # TODO this procedure is specific to only Illumina technology
         key = "".join(header_tokens[0].split(":")[-4:])
         hash_reads[key] = tags
-        
+
     if low_memory: hash_reads.commit()
     fastq_file.close()    
     return hash_reads

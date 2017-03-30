@@ -27,7 +27,7 @@ def computeSaturation(nreads,
     compute the saturation points information that is then added
     to the log file.
     :param nreads: the number of reads present in the annotated_reads file
-    :param annotated_reads: path to a SAM/BAM file with the annotated reads
+    :param annotated_reads: path to a BAM file with the annotated reads
     :param umi_cluster_algorithm: the clustering algorithm to cluster UMIs
     :param umi_allowed_mismatches: the number of miss matches allowed to remove
                                   duplicates by UMIs
