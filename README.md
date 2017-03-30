@@ -4,6 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Coverage Status](https://coveralls.io/repos/github/jfnavarro/st_pipeline/badge.svg?branch=master)](https://coveralls.io/github/jfnavarro/st_pipeline?branch=master)
 [![PyPI version](https://badge.fury.io/py/stpipeline.svg)](https://badge.fury.io/py/stpipeline)
+[![Code Climate](https://codeclimate.com/github/jfnavarro/st_pipeline/badges/gpa.svg)](https://codeclimate.com/github/jfnavarro/st_pipeline)
 
 The ST Pipeline contains the tools and scripts needed to process and analyze the raw files generated with the Spatial Transcriptomics method in FASTQ format to generated datasets for down-stream analysis. 
 The ST pipeline can also be used to process single cell data as long as a file with barcodes identifying each cell is provided.
