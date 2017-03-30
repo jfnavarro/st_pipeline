@@ -63,6 +63,7 @@ these arrays is fully randomised.
                           [--remove-polyT [INT]]
                           [--remove-polyG [INT]]
                           [--remove-polyC [INT]]
+                          [--remove-polyN [INT]]
                           [--filter-AT-content [INT%]]
                           [--filter-GC-content [INT%]]
                           [--disable-multimap]
@@ -177,13 +178,15 @@ these arrays is fully randomised.
   --keep-discarded-files              Writes down unaligned, un-annotated
                                       and un-demultiplexed reads to files.
   --remove-polyA [INT]                Remove PolyA stretches of the given
-                                      length from R2 (default: 0).
+                                      length from R2 (default: 15).
   --remove-polyT [INT]                Remove PolyT stretches of the given
-                                      length from R2 (default: 0).
+                                      length from R2 (default: 15).
   --remove-polyG [INT]                Remove PolyG stretches of the given
-                                      length from R2 (default: 0).
+                                      length from R2 (default: 15).
   --remove-polyC [INT]                Remove PolyC stretches of the given
-                                      length from R2 (default: 0).
+                                      length from R2 (default: 15).
+  --remove-polyN [INT]                Remove PolyN stretches of the given
+                                      length from R2 (default: 15).
   --filter-AT-content [INT%]          Discards reads whose number of A and T
                                       bases in total are more or equal than
                                       the number given in percentage
