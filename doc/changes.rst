@@ -1,6 +1,15 @@
 Changes
 -------
 
+**Version 1.3.2**
+
+* Optimized the mapping and annotation steps
+
+**Version 1.3.1**
+
+* Homopolymer miss-matches is a parameter now
+* Removing now also PolyNs (parameter)
+
 **Version 1.3.0**
 
 * Added more methods to cluster UMIs

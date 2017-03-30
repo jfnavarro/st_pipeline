@@ -52,12 +52,14 @@ setup(
   test_suite = 'tests',
   scripts = glob.glob('scripts/*.py'),
   classifiers = [
-    'Development Status :: 4 - Beta',
+    'Development Status :: 5 - Production/Stable',
     'Intended Audience :: Science/Research',
     'Topic :: Software Development',
     'Topic :: Scientific/Engineering :: Bio-Informatics',
-    'License :: MIT :: Copyright Jose Fernandez Navarro, KTH, KI',
+    'License :: OSI Approved :: MIT License',
     'Programming Language :: Python :: 2.7',
+    'Operating System :: Unix',
+    'Operating System :: MacOS',
     'Environment :: Console',
   ],
 )

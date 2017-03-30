@@ -106,5 +106,9 @@ Install the pipeline
 	``python setup.py build``
 
 	``python setup.py install``
+	
+Alternatively, you can simply install the pipeline using PyPy:
+
+	``pip install stpipeline`
 
 Now the pipeline is installed and ready to be run.
