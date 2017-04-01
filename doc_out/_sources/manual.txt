@@ -84,6 +84,7 @@ these arrays is fully randomised.
                           [--demultiplexing-metric [STRING]]
                           [--demultiplexing-multiple-hits-keep-one]
                           [--demultiplexing-trim-sequences [INT]]
+                          [--homopolymer-mismatches [INT]]]
                           [--version]
                           fastq_file_fw fastq_file_rv
 
@@ -205,12 +206,12 @@ these arrays is fully randomised.
                                       when performing UMIs duplicates
                                       removal.
                                       Modes = {naive(default), hierarchical, Adjacent and AdjacentBi}.
-  --min-intron-size [INT]             Minimum allowed intron size when
-                                      searching for splice variants in the
-                                      mapping step (default: 20).
-  --max-intron-size [INT]             Maximum allowed intron size when
-                                      searching for splice variants in the
-                                      mapping step (default: 100000).
+  --min-intron-size [INT]             Minimum allowed intron size when searching for splice variants with STAR\
+                            		  Splices alignments are disabled by default (=1) but to turn it on set this parameter
+                                      to a bigger number, for example 10 or 20. (defauldt: 1)
+  --max-intron-size [INT]             Maximum allowed intron size when searching for splice variants with STAR
+                            		  Splices alignments are disabled by default (=1) but to turn it on set this parameter
+                            		  to a big number, for example 10000 or 100000. (default: 1).
   --umi-filter                        Enables the UMI quality filter based on
                                       the template given in
                                       --umi-filter-template.
@@ -255,4 +256,5 @@ these arrays is fully randomised.
                                       START is the integer position of the first base (0 based) and END is the integer
                                       position of the last base (1 based).
                                       Trimmng sequences can be given several times.
+  --homopolymer-mismatches			  Number of mismatches allowed when removing homopolymers. (default: 0)
   --version                           Show program's version number and exit
