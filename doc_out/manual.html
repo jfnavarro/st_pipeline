@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Manual &mdash; ST Pipeline 1.3.2 documentation</title>
+    <title>Manual &mdash; ST Pipeline 1.3.3 documentation</title>
     
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.3.2',
+        VERSION:     '1.3.3',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="ST Pipeline 1.3.2 documentation" href="index.html" />
+    <link rel="top" title="ST Pipeline 1.3.3 documentation" href="index.html" />
     <link rel="next" title="Examples" href="example.html" />
     <link rel="prev" title="Installing the Spatial Transcriptomics pipeline" href="installation.html" /> 
   </head>
@@ -41,7 +41,7 @@
         <li class="right" >
           <a href="installation.html" title="Installing the Spatial Transcriptomics pipeline"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.3.2 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.3.3 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -126,6 +126,7 @@ these arrays is fully randomised.</p>
                         <span class="o">[</span>--demultiplexing-metric <span class="o">[</span>STRING<span class="o">]]</span>
                         <span class="o">[</span>--demultiplexing-multiple-hits-keep-one<span class="o">]</span>
                         <span class="o">[</span>--demultiplexing-trim-sequences <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--homopolymer-mismatches <span class="o">[</span>INT<span class="o">]]]</span>
                         <span class="o">[</span>--version<span class="o">]</span>
                         fastq_file_fw fastq_file_rv
 </pre></div>
@@ -240,12 +241,12 @@ fastq_file_rv
                                     when performing UMIs duplicates
                                     removal.
                                     Modes = {naive(default), hierarchical, Adjacent and AdjacentBi}.
---min-intron-size [INT]             Minimum allowed intron size when
-                                    searching for splice variants in the
-                                    mapping step (default: 20).
---max-intron-size [INT]             Maximum allowed intron size when
-                                    searching for splice variants in the
-                                    mapping step (default: 100000).
+--min-intron-size [INT]             Minimum allowed intron size when searching for splice variants with STAR\
+                                        Splices alignments are disabled by default (=1) but to turn it on set this parameter
+                                    to a bigger number, for example 10 or 20. (defauldt: 1)
+--max-intron-size [INT]             Maximum allowed intron size when searching for splice variants with STAR
+                                        Splices alignments are disabled by default (=1) but to turn it on set this parameter
+                                        to a big number, for example 10000 or 100000. (default: 1).
 --umi-filter                        Enables the UMI quality filter based on
                                     the template given in
                                     --umi-filter-template.
@@ -290,6 +291,7 @@ fastq_file_rv
                                     START is the integer position of the first base (0 based) and END is the integer
                                     position of the last base (1 based).
                                     Trimmng sequences can be given several times.
+--homopolymer-mismatches                        Number of mismatches allowed when removing homopolymers. (default: 0)
 --version                           Show program&#39;s version number and exit
 </pre></div>
 </div>
@@ -343,7 +345,7 @@ fastq_file_rv
         <li class="right" >
           <a href="installation.html" title="Installing the Spatial Transcriptomics pipeline"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.3.2 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.3.3 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

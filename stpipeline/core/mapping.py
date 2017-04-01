@@ -88,7 +88,7 @@ def alignReads(reverse_reads,
         log_final = os.path.join(outputFolder, log_final)
         log_progress = os.path.join(outputFolder, log_progress)
     
-    multi_map_number = 1 if disable_multimap else 10
+    multi_map_number = 1 if disable_multimap else 20 # 10 is the STAR default
     alignment_mode = "EndToEnd" if diable_softclipping else "Local"
     
     flags = ["--clip3pNbases", invTrimReverse,
@@ -106,6 +106,7 @@ def alignReads(reverse_reads,
              "--outFilterMatchNmin", min_length,
              "--outSAMmultNmax", 1,
              "--readMatesLengthsIn", "NotEqual",
+             "--outFilterMismatchNoverLmax", 0.1, ## (0.3 default)
              "--genomeLoad", "NoSharedMemory"] 
     
     if twopassMode:

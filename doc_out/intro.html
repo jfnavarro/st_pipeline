@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Introduction &mdash; ST Pipeline 1.3.2 documentation</title>
+    <title>Introduction &mdash; ST Pipeline 1.3.3 documentation</title>
     
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.3.2',
+        VERSION:     '1.3.3',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="ST Pipeline 1.3.2 documentation" href="index.html" />
+    <link rel="top" title="ST Pipeline 1.3.3 documentation" href="index.html" />
     <link rel="next" title="Installing the Spatial Transcriptomics pipeline" href="installation.html" />
     <link rel="prev" title="Welcome to ST Pipeline&#39;s documentation!" href="index.html" /> 
   </head>
@@ -41,7 +41,7 @@
         <li class="right" >
           <a href="index.html" title="Welcome to ST Pipeline&#39;s documentation!"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.3.2 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.3.3 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -59,11 +59,11 @@ The ST pipeline can also be used to process single cell data as
 long as a file with barcodes identifying each cell is provided.</p>
 <p>The ST Pipeline has been optimized for speed, robustness and it is very
 easy to use with many parameters to adjust all the settings.</p>
-<p>The following files/parameters are required :
-- FASTQ files (Read 1 containing the spatial information and the UMI</p>
-<blockquote>
-<div>and read 2 containing the genomic sequence)</div></blockquote>
+<p>The following files/parameters are required:</p>
 <ul>
+<li><p class="first">FASTQ files (Read 1 containing the spatial information and the UMI
+and read 2 containing the genomic sequence)</p>
+</li>
 <li><p class="first">A genome index generated with STAR</p>
 </li>
 <li><p class="first">An annotation file in GTF or GFF format</p>
@@ -85,10 +85,11 @@ mapping and annotation but generally the default values are good enough.
 You can see a full description of the parameters
 typing &quot;st_pipeline_run.py --help&quot; after you have installed the ST pipeline.</p>
 <p>The input FASTQ files can be given in gzip/bzip format as well.</p>
-<p>Basically what the ST pipeline does is :
-- Quality trimming (read 1 and read 2) :</p>
-<blockquote>
-<div><ul class="simple">
+<p>Basically what the ST pipeline does is:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>Quality trimming (read 1 and read 2):</dt>
+<dd><ul class="first last simple">
 <li>Remove low quality bases</li>
 <li>Sanity check (reads same length, reads order, etc..)</li>
 <li>Check quality UMI</li>
@@ -96,15 +97,23 @@ typing &quot;st_pipeline_run.py --help&quot; after you have installed the ST pip
 <li>Check for AT and GC content</li>
 <li>Discard reads with a minimum number of bases of that failed any of the checks above</li>
 </ul>
-</div></blockquote>
-<ul class="simple">
-<li>Contamimant filter e.x. rRNA genome (Optional)</li>
-<li>Mapping with STAR (only read 2)</li>
-<li>Demultiplexing with [Taggd](<a class="reference external" href="https://github.com/SpatialTranscriptomicsResearch/taggd">https://github.com/SpatialTranscriptomicsResearch/taggd</a>) (only read 1)</li>
-<li>Keep reads (read 2) that contain a valid barcode and are correctly mapped</li>
-<li>Annotate the reads with htseq-count (slightly modified version)</li>
-<li>Group annotated reads by barcode(spot position) and gene to get a read count</li>
-<li>In the grouping/counting only unique molecules (UMIs) are kept.</li>
+</dd>
+</dl>
+</li>
+<li><p class="first">Contamimant filter e.x. rRNA genome (Optional)</p>
+</li>
+<li><p class="first">Mapping with STAR (only read 2)</p>
+</li>
+<li><p class="first">Demultiplexing with [Taggd](<a class="reference external" href="https://github.com/SpatialTranscriptomicsResearch/taggd">https://github.com/SpatialTranscriptomicsResearch/taggd</a>) (only read 1)</p>
+</li>
+<li><p class="first">Keep reads (read 2) that contain a valid barcode and are correctly mapped</p>
+</li>
+<li><p class="first">Annotate the reads with htseq-count (slightly modified version)</p>
+</li>
+<li><p class="first">Group annotated reads by barcode(spot position) and gene to get a read count</p>
+</li>
+<li><p class="first">In the grouping/counting only unique molecules (UMIs) are kept.</p>
+</li>
 </ul>
 <p>You can see a graphical more detailed description of the workflow in the documents workflow.pdf and workflow_extended.pdf</p>
 <p>The output will be a matrix of counts (genes as columns, spots as rows),
@@ -161,7 +170,7 @@ The ST pipeline will also output a log file with useful information.</p>
         <li class="right" >
           <a href="index.html" title="Welcome to ST Pipeline&#39;s documentation!"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.3.2 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.3.3 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

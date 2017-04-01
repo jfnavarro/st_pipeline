@@ -18,7 +18,7 @@ from Cython.Build import cythonize
 
 # Get the long description from the relevant file
 here = os.path.abspath(os.path.dirname(__file__))
-with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
+with io.open(os.path.join(here, 'README_SHORT'), encoding='utf-8') as f:
     long_description = f.read()
 
 try:
