@@ -91,8 +91,8 @@ class Pipeline():
         self.disable_clipping = False
         self.disable_multimap = False
         self.umi_cluster_algorithm = "naive"
-        self.min_intron_size = 20
-        self.max_intron_size = 10000
+        self.min_intron_size = 1
+        self.max_intron_size = 1
         self.umi_filter = False
         self.umi_filter_template = "WSNNWSNNV"
         self.compute_saturation = False
@@ -340,10 +340,14 @@ class Pipeline():
                             type=str, choices=["naive", "hierarchical", "Adjacent", "AdjacentBi"],
                             help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n" \
                             "Options = {naive, hierarchical(default), Adjacent and AdjacentBi}")
-        parser.add_argument('--min-intron-size', default=20, metavar="[INT]", type=int, choices=range(0, 1000),
-                            help="Minimum allowed intron size allowed when mapping with STAR (default: %(default)s)")
-        parser.add_argument('--max-intron-size', default=10000, metavar="[INT]", type=int, choices=range(0, 1000000),
-                            help="Maximum allowed intron size allowed when mapping with STAR (default: %(default)s)")
+        parser.add_argument('--min-intron-size', default=1, metavar="[INT]", type=int, choices=range(1, 1000),
+                            help="Minimum allowed intron size when searching for splice variants with STAR\n" \
+                            "Splices alignments are disabled by default (=1) but to turn it on set this parameter\n" \
+                            "to a bigger number, for example 10 or 20. (default: %(default)s)")
+        parser.add_argument('--max-intron-size', default=1, metavar="[INT]", type=int, choices=range(1, 1000000),
+                            help="Maximum allowed intron size when searching for splice variants with STAR\n" \
+                            "Splices alignments are disabled by default (=1) but to turn it on set this parameter\n" \
+                            "to a big number, for example 10000 or 100000. (default: %(default)s)")
         parser.add_argument('--umi-filter', action="store_true", default=False,
                             help="Enables the UMI quality filter based on the template given in --umi-filter-template")
         parser.add_argument('--umi-filter-template', default="WSNNWSNNV", type=str, metavar="[STRING]",
@@ -368,7 +372,7 @@ class Pipeline():
                             "as the number of unique UMIs in each strand/start position. However " \
                             "some reads might have slightly different start positions due to " \
                             "amplification artifacts. This parameters allows to define an " \
-                            "offset from where to count unique UMIs (default: %(default)s)")
+                            "offset window from where to count unique UMIs (default: %(default)s)")
         parser.add_argument('--demultiplexing-metric', default="Subglobal", metavar="[STRING]", type=str,
                             help="Distance metric for TaggD demultiplexing: Subglobal, Levenshtein or Hamming (default: Subglobal)",
                             choices=["Subglobal","Levenshtein","Hamming"])
@@ -379,8 +383,8 @@ class Pipeline():
                             "The bases given in the list of tuples as START END START END .. where\n" \
                             "START is the integer position of the first base (0 based) and END is the integer\n" \
                             "position of the last base (1 based).\nTrimmng sequences can be given several times.")
-        parser.add_argument('--adaptor-missmatches', default=0, metavar="[INT]", type=int, choices=range(0, 6),
-                            help="Number of miss-matches allowed when removing homopolymers (default: %(default)s)")
+        parser.add_argument('--homopolymer-mismatches', default=0, metavar="[INT]", type=int, choices=range(0, 6),
+                            help="Number of mismatches allowed when removing homopolymers (default: %(default)s)")
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -509,8 +513,8 @@ class Pipeline():
             self.logger.info("Not allowing soft clipping when mapping with STAR")
         if self.disable_multimap:
             self.logger.info("Not allowing multiple alignments when mapping with STAR")
-        self.logger.info("Mapping minimum intron size allowed: {}".format(self.min_intron_size))
-        self.logger.info("Mapping maximum intron size allowed: {}".format(self.max_intron_size))
+        self.logger.info("Mapping minimum intron size allowed (splice alignments) with STAR: {}".format(self.min_intron_size))
+        self.logger.info("Mapping maximum intron size allowed (splice alignments) with STAR: {}".format(self.max_intron_size))
         if self.compute_saturation:
             self.logger.info("Computing saturation curve with several sub-samples...")
         if self.include_non_annotated:
@@ -535,7 +539,7 @@ class Pipeline():
             self.logger.info("Removing polyC sequences of a length of at least: {}".format(self.remove_polyC_distance))
         if self.remove_polyN_distance > 0:
             self.logger.info("Removing polyN sequences of a length of at least: {}".format(self.remove_polyN_distance))
-        self.logger.info("Allowing {} miss-matches when removing homopolymers".format(self.adaptor_missmatches))
+        self.logger.info("Allowing {} mismatches when removing homopolymers".format(self.adaptor_missmatches))
         if self.low_memory:
             self.logger.info("Using a SQL based container to save memory")
         if self.two_pass_mode :

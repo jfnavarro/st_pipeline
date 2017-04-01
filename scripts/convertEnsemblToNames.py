@@ -35,7 +35,7 @@ def main(st_data_file, names_map, output_file):
     adjustedList = list()
     for gene in st_data.columns:
         try:
-            gene = genes_map[gene]
+            gene = genes_map[gene.split(".")[0]]
         except KeyError:
             sys.stdout.write("Warning, {} was not found in the MAP file\n".format(gene))
         adjustedList.append(gene)

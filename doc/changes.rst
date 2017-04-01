@@ -1,5 +1,8 @@
 Changes
 -------
+**Version 1.3.3**
+
+* Disabled spliced alignments by default
 
 **Version 1.3.2**
 
