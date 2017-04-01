@@ -455,7 +455,7 @@ class Pipeline():
         self.taggd_metric = options.demultiplexing_metric
         self.taggd_multiple_hits_keep_one = options.demultiplexing_multiple_hits_keep_one
         self.taggd_trim_sequences = options.demultiplexing_trim_sequences
-        self.adaptor_missmatches = options.adaptor_missmatches
+        self.adaptor_missmatches = options.homopolymer_mismatches
         
         # Assign class parameters to the QA stats object
         import inspect
