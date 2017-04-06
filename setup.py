@@ -1,10 +1,11 @@
 #!/usr/bin/python
 """
-ST Pipeline is a tool to process the Spatial Transcriptomics raw data.
+ST Pipeline is a tool to process Spatial Transcriptomics raw data (or 
+any type of single cell data whose raw data has the same configuraiton).
 The data is filtered, aligned to a genome, annotated to a reference,
 demultiplexed by array coordinates and then aggregated by counts
-that are not duplicates using the Unique Molecular Indentifiers. 
-The output contains the counts table, a stats file, a log file
+that are not duplicates using the Unique Molecular Indentifiers (UMIs). 
+The output contains a counts table, a stats file, a log file
 and a BED file with all the transcripts.
 """
 
@@ -14,7 +15,10 @@ import glob
 import sys
 from setuptools import setup, find_packages
 from stpipeline.version import version_number
-from Cython.Build import cythonize
+try:
+    from Cython.Build import cythonize
+except ImportError:
+    raise SystemExit("ST Pipeline requires Cython")
 
 # Get the long description from the relevant file
 here = os.path.abspath(os.path.dirname(__file__))
@@ -27,7 +31,6 @@ try:
 except IOError:
     install_requires = []
    
-
 major, minor1, minor2, s, tmp = sys.version_info
 if major != 2 or minor1 < 7:
     raise SystemExit("ST Pipeline requires Python 2.7.x")
