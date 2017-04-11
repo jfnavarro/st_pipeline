@@ -3,8 +3,7 @@
 [![Build Status](https://travis-ci.org/jfnavarro/st_pipeline.svg?branch=master)](https://travis-ci.org/jfnavarro/st_pipeline)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Coverage Status](https://coveralls.io/repos/github/jfnavarro/st_pipeline/badge.svg?branch=master)](https://coveralls.io/github/jfnavarro/st_pipeline?branch=master)
-[![Python27](https://img.shields.io/badge/python-2.7-blue.svg)]
-(https://badge.fury.io/py/stpipeline)
+[![Python27](https://img.shields.io/badge/python-2.7-blue.svg)](https://badge.fury.io/py/stpipeline)
 [![PyPI version](https://badge.fury.io/py/stpipeline.svg)](https://badge.fury.io/py/stpipeline)
 [![Code Climate](https://codeclimate.com/github/jfnavarro/st_pipeline/badges/gpa.svg)](https://codeclimate.com/github/jfnavarro/st_pipeline)
 
