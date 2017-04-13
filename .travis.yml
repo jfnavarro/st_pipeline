@@ -25,6 +25,7 @@ install:
     - conda config --add channels r
     - conda config --add channels bioconda
     - conda install pysam
+    - conda install -c anaconda setuptools=27.2.0
     - python setup.py build
     - python setup.py install
    
