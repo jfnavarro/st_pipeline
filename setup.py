@@ -49,7 +49,7 @@ setup(
   license = 'MIT',
   url = 'https://github.com/SpatialTranscriptomicsResearch/st_pipeline',
   packages = find_packages(exclude=('tests*', 'utils')),
-  ext_modules=[Extension('stpipeline/common/cdistance', ['stpipeline/common/cdistance.pyx'])],
+  ext_modules=[Extension('stpipeline.common.cdistance', ['stpipeline/common/cdistance.pyx'])],
   include_package_data = False,
   package_data = {'': ['RELEASE-VERSION']},
   zip_safe = False,
