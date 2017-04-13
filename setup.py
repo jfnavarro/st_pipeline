@@ -15,10 +15,11 @@ import glob
 import sys
 from setuptools import setup, find_packages
 from stpipeline.version import version_number
-try:
-    from Cython.Build import cythonize
-except ImportError:
-    raise SystemExit("ST Pipeline requires Cython")
+from distutils.extension import Extension
+#try:
+#    from Cython.Build import cythonize
+#except ImportError:
+#    raise SystemExit("ST Pipeline requires Cython")
 
 # Get the long description from the relevant file
 here = os.path.abspath(os.path.dirname(__file__))
@@ -29,16 +30,22 @@ try:
     with open("requirements.txt", "r") as f:
         install_requires = [x.strip() for x in f.readlines()]
 except IOError:
-    install_requires = []
+    raise SystemExit("Could not find requirements.txt file")
    
 major, minor1, minor2, s, tmp = sys.version_info
 if major != 2 or minor1 < 7:
     raise SystemExit("ST Pipeline requires Python 2.7.x")
 
+# setuptools DWIM monkey-patch madness
+# http://mail.python.org/pipermail/distutils-sig/2007-September/thread.html#8204
+if 'setuptools.extension' in sys.modules:
+    m = sys.modules['setuptools.extension']
+    m.Extension.__dict__ = m._Extension.__dict__
+    
 setup(
   name = 'stpipeline',
   version = version_number,
-  description = __doc__.split("\n", 1)[0],
+  description = "ST Pipeline: An automated pipeline for spatial mapping of unique transcripts",
   long_description = long_description,
   keywords = 'rna-seq analysis spatial transcriptomics toolkit',
   author = 'Jose Fernandez Navarro',
@@ -46,11 +53,12 @@ setup(
   license = 'MIT',
   url = 'https://github.com/SpatialTranscriptomicsResearch/st_pipeline',
   packages = find_packages(exclude=('tests*', 'utils', "*.pyx")),
-  ext_modules = cythonize("stpipeline/common/*.pyx"),
+  #ext_modules = cythonize("stpipeline/common/*.pyx"),
+  ext_modules=[Extension('stpipeline/common/cdistance', ['stpipeline/common/cdistance.pyx']),],
   include_package_data = False,
   package_data = {'': ['RELEASE-VERSION']},
   zip_safe = False,
-  setup_requires=['cython'],
+  setup_requires=['setuptools_cython','cython'],
   install_requires = install_requires,
   test_suite = 'tests',
   scripts = glob.glob('scripts/*.py'),

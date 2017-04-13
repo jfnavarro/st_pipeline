@@ -30,10 +30,14 @@ def parseUniqueEvents(filename):
         clear_name = rec.query_name
         mapping_quality = rec.mapping_quality
         # Account for soft-clipped bases when retrieving the start/end coordinates
-        start = rec.reference_start - rec.query_alignment_start
-        end = rec.reference_end + (rec.query_length - rec.query_alignment_end)
+        start = int(rec.reference_start - rec.query_alignment_start)
+        end = int(rec.reference_end + (rec.query_length - rec.query_alignment_end))
         chrom = sam_file.getrname(rec.reference_id)
-        strand = "-" if rec.is_reverse else "+"
+        strand = "+" 
+        if rec.is_reverse:
+            # We swap start and end if the transcript mapped to the reverse strand
+            strand = "-" 
+            start, end = end, start
         # Get TAGGD tags
         x,y,gene,seq = (None,None,None,None)
         for (k, v) in rec.tags:
