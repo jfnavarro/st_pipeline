@@ -16,10 +16,6 @@ import sys
 from setuptools import setup, find_packages
 from stpipeline.version import version_number
 from distutils.extension import Extension
-#try:
-#    from Cython.Build import cythonize
-#except ImportError:
-#    raise SystemExit("ST Pipeline requires Cython")
 
 # Get the long description from the relevant file
 here = os.path.abspath(os.path.dirname(__file__))
@@ -52,13 +48,12 @@ setup(
   author_email = 'jose.fernandez.navarro@scilifelab.se',
   license = 'MIT',
   url = 'https://github.com/SpatialTranscriptomicsResearch/st_pipeline',
-  packages = find_packages(exclude=('tests*', 'utils', "*.pyx")),
-  #ext_modules = cythonize("stpipeline/common/*.pyx"),
-  ext_modules=[Extension('stpipeline/common/cdistance', ['stpipeline/common/cdistance.pyx']),],
+  packages = find_packages(exclude=('tests*', 'utils')),
+  ext_modules=[Extension('stpipeline/common/cdistance', ['stpipeline/common/cdistance.pyx'])],
   include_package_data = False,
   package_data = {'': ['RELEASE-VERSION']},
   zip_safe = False,
-  setup_requires=['setuptools_cython','cython'],
+  setup_requires=['setuptools_cython'],
   install_requires = install_requires,
   test_suite = 'tests',
   scripts = glob.glob('scripts/*.py'),
