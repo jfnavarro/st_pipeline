@@ -10,4 +10,3 @@ HTSeq>=0.6.0
 pysam>=0.8.2
 setuptools
 cython>=0.19
- 
