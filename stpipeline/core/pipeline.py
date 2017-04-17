@@ -90,7 +90,7 @@ class Pipeline():
         self.filter_GC_content = 90
         self.disable_clipping = False
         self.disable_multimap = False
-        self.umi_cluster_algorithm = "naive"
+        self.umi_cluster_algorithm = "hierarchical"
         self.min_intron_size = 1
         self.max_intron_size = 1
         self.umi_filter = False
@@ -102,7 +102,7 @@ class Pipeline():
         self.two_pass_mode = False
         self.strandness = "yes"
         self.umi_quality_bases = 6
-        self.umi_counting_offset = 150
+        self.umi_counting_offset = 250
         self.taggd_metric = "Subglobal"
         self.taggd_multiple_hits_keep_one = False
         self.taggd_trim_sequences = None
@@ -362,17 +362,18 @@ class Pipeline():
         parser.add_argument('--low-memory', default=False, action="store_true",
                             help="Writes temporary records into disk in order to save memory but gaining a speed penalty")
         parser.add_argument('--two-pass-mode', default=False, action="store_true",
-                            help="Activates the 2-pass mode in STAR to also map against splice variants")
+                            help="Activates the 2-pass mode in STAR to improve mapping accuracy")
         parser.add_argument('--strandness', default="yes", type=str, metavar="[STRING]", choices=["no", "yes", "reverse"],
                             help="What strandness mode to use when annotating with htseq-count [no, yes(default), reverse]")
         parser.add_argument('--umi-quality-bases', default=6, metavar="[INT]", type=int, choices=range(0, 10),
                             help="Maximum number of low quality bases allowed in an UMI (default: %(default)s)")
-        parser.add_argument('--umi-counting-offset', default=150, metavar="[INT]", type=int, choices=range(0, 1000),
+        parser.add_argument('--umi-counting-offset', default=250, metavar="[INT]", type=int, choices=range(0, 1000),
                             help="Expression count for each gene-spot combination is expressed " \
                             "as the number of unique UMIs in each strand/start position. However " \
                             "some reads might have slightly different start positions due to " \
                             "amplification artifacts. This parameters allows to define an " \
-                            "offset window from where to count unique UMIs (default: %(default)s)")
+                            "offset window from where to count unique UMIs. You can set it to a very" \
+                            "high value +9999 to count unique UMIs for the whole gene (default: %(default)s)")
         parser.add_argument('--demultiplexing-metric', default="Subglobal", metavar="[STRING]", type=str,
                             help="Distance metric for TaggD demultiplexing: Subglobal, Levenshtein or Hamming (default: Subglobal)",
                             choices=["Subglobal","Levenshtein","Hamming"])

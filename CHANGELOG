@@ -411,3 +411,6 @@ Version 1.3.3
 
 Version 1.3.4
 * Fixed a typo in one of the parameter that caused the pipeline to not run
+
+Version 1.3.5
+* Optimized the counting of UMIs by strand, start-pos and offset

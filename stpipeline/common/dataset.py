@@ -14,23 +14,11 @@ from stpipeline.common.clustering import *
 from stpipeline.common.sam_utils import parseUniqueEvents
 import logging
 
-class RangeKey(object):
-    __slots__ = ("strand", "location", "offset")
-    def __init__(self, strand, location, offset):
-        self.strand = strand
-        self.location = location
-        self.offset = offset
-    def __hash__(self):
-        return hash((self.strand, self.offset))
-    def __eq__(self, other):
-        return self.strand == other.strand \
-            and abs(self.location - other.location) <= self.offset
-    
 def createDataset(input_file,
                   qa_stats,
-                  umi_cluster_algorithm="naive",
+                  umi_cluster_algorithm="hierarchical",
                   umi_allowed_mismatches=1,
-                  umi_counting_offset=150,
+                  umi_counting_offset=250,
                   output_folder=None,
                   output_template=None,
                   verbose=True):
@@ -46,7 +34,7 @@ def createDataset(input_file,
     :param umi_cluster_algorithm: the clustering algorithm to cluster UMIs
     :param umi_allowed_mismatches: the number of miss matches allowed to remove
                                   duplicates by UMIs
-    :param umi_counting_offset: the number of bases allowed as offset when counting UMIs
+    :param umi_counting_offset: the number of bases allowed as offset (start position) when counting UMIs
     :param output_folder: path to place the output files
     :param output_template: the name of the dataset
     :param verbose: True if we can to collect the stats in the logger
@@ -102,30 +90,40 @@ def createDataset(input_file,
         # Unique events is a dict() [spot][gene] -> list(transcripts)
         for (x,y), value in unique_events.iteritems():
             for gene, transcripts in value.iteritems():
-                # Re-compute the read count accounting for duplicates 
-                # (read sequences must contain a UMI)
+                # Re-compute the read count accounting for duplicates using the UMIs
+                # Transcripts is the list of transcripts (chrom, start, end, clear_name, mapping_quality, strand, UMI)
+                # First
                 # Get the original number of transcripts (reads)
                 gene_count = len(transcripts)
-                # Group transcripts by start position (allowing a certain offset), UMI and strand 
-                grouped_transcripts = defaultdict(lambda : defaultdict(list))
-                for transcript in transcripts:
-                    strand = str(transcript[5])
-                    start = int(transcript[1]) if strand == "+" else int(transcript[2])
-                    umi = transcript[6]
-                    grouped_transcripts[RangeKey(strand, start, 
-                                                 umi_counting_offset)][umi].append(transcript)
-                assert len(grouped_transcripts) > 0
-                # For each group of transcripts
-                # cluster the transcripts based on the UMI
-                # and returns the unique transcripts
-                # The new gene count will be the number of unique transcripts (UMIs)
-                new_gene_count = 0
+                # Sort transcripts by strand and start position
+                sorted_transcripts = sorted(transcripts, key = lambda x: (x[5], x[1]))
+                # Group transcripts by strand and start-position allowing an offset
+                # And then performs the UMI clustering in each group to finally
+                # compute the gene count as the sum of the unique UMIs for each group (strand,start,offset)
+                grouped_transcripts = defaultdict(list)
                 unique_transcripts = list()
-                for umis in grouped_transcripts.values():
-                    unique_umis = group_umi_func(umis.keys(), umi_allowed_mismatches)
-                    new_gene_count += len(unique_umis)
-                    # Choose 1 random transcript for the clustered transcripts (by UMI)
-                    unique_transcripts += [random.choice(umis[u_umi]) for u_umi in unique_umis]
+                # TODO A probably better approach is to get the mean of all the start positions
+                # and then makes mean +- 300bp (user defined) a group to account for the library
+                # size variability and then group the rest of transcripts normally by (strand, start, position).
+                for i in xrange(gene_count-1):
+                    current = sorted_transcripts[i]
+                    nextone = sorted_transcripts[i+1]
+                    grouped_transcripts[current[6]].append(current)
+                    if abs(current[1] - nextone[1]) > umi_counting_offset or current[5] != nextone[5]:
+                        # A new group has been reached (strand, start-pos, offset)
+                        # Compute unique UMIs by hamming distance
+                        unique_umis = group_umi_func(grouped_transcripts.keys(),umi_allowed_mismatches)
+                        # Choose 1 random transcript for the clustered transcripts (by UMI)
+                        unique_transcripts += [random.choice(grouped_transcripts[u_umi]) for u_umi in unique_umis]
+                        # Reset the container
+                        grouped_transcripts = defaultdict(list)
+                # We process the last one and more transcripts if they were not processed
+                lastone = sorted_transcripts[gene_count-1]
+                grouped_transcripts[lastone[6]].append(lastone)
+                unique_umis = group_umi_func(grouped_transcripts.keys(),umi_allowed_mismatches)
+                unique_transcripts += [random.choice(grouped_transcripts[u_umi]) for u_umi in unique_umis]
+                # The new gene count                           
+                new_gene_count = len(unique_transcripts)
                 assert new_gene_count > 0 and new_gene_count <= gene_count   
                 # Update the discarded transcripts count
                 discarded_reads += (gene_count - new_gene_count)

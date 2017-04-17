@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/jfnavarro/st_pipeline.svg?branch=master)](https://travis-ci.org/jfnavarro/st_pipeline)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Coverage Status](https://coveralls.io/repos/github/jfnavarro/st_pipeline/badge.svg?branch=master)](https://coveralls.io/github/jfnavarro/st_pipeline?branch=master)
+[![Python27](https://img.shields.io/badge/python-2.7-blue.svg)](https://badge.fury.io/py/stpipeline)
 [![PyPI version](https://badge.fury.io/py/stpipeline.svg)](https://badge.fury.io/py/stpipeline)
 [![Code Climate](https://codeclimate.com/github/jfnavarro/st_pipeline/badges/gpa.svg)](https://codeclimate.com/github/jfnavarro/st_pipeline)
 
@@ -14,7 +15,7 @@ The ST Pipeline has been optimized for speed, robustness and it is very easy to 
 The following files/parameters are required :
 - FASTQ files (Read 1 containing the spatial information and the UMI and read 2 containing the genomic sequence) 
 - A genome index generated with STAR 
-- An annotation file in GTF or GFF format
+- An annotation file in GTF or GFF3 format
 - The file containing the barcodes and array coordinates (look at the folder "ids" and chose the correct one). Basically this file contains 3 columns (BARCODE, X and Y), so if you provide this file with barcodes identinfying cells (for example), the ST pipeline can be used for single cell data.
 - A name for the dataset
 
@@ -122,9 +123,11 @@ The ST pipeline is open source under the MIT license which means that you can us
 
 **Reference**
 
-If you use the ST Pipeline, please refer to it by including this:
+If you use the ST Pipeline, please refer its publication: 
 
-TODO: add reference
+ST Pipeline: An automated pipeline for spatial mapping of unique transcripts
+Oxford BioInformatics
+10.1093/bioinformatics/btx211
 
 **Contact**
 
