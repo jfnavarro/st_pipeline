@@ -28,6 +28,7 @@ install:
     - conda install -c anaconda setuptools=27.2.0
     - conda install -c conda-forge regex=2017.04.05
     - pip install htseq
+    - pip install taggd
     - python setup.py build
     - python setup.py install
    
