@@ -415,5 +415,5 @@ Version 1.3.4
 Version 1.3.5
 * Optimized the counting of UMIs by strand, start-pos and offset
 
-Version 1.3.6
-* Small update to make the PIP installatio more robust
+Version 1.4.0
+* Small update to make the PIP installation more robust
