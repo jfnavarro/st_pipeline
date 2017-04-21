@@ -7,8 +7,8 @@
 [![PyPI version](https://badge.fury.io/py/stpipeline.svg)](https://badge.fury.io/py/stpipeline)
 [![Code Climate](https://codeclimate.com/github/jfnavarro/st_pipeline/badges/gpa.svg)](https://codeclimate.com/github/jfnavarro/st_pipeline)
 
-The ST Pipeline contains the tools and scripts needed to process and analyze the raw files generated with the Spatial Transcriptomics method in FASTQ format to generated datasets for down-stream analysis. 
-The ST pipeline can also be used to process single cell data as long as a file with barcodes identifying each cell is provided.
+The ST Pipeline contains the tools and scripts needed to process and analyze the raw files generated with the Spatial Transcriptomics technology in FASTQ format to generate datasets for down-stream analysis. 
+The ST pipeline can also be used to process single cell data as long as a file with barcodes identifying each cell is provided (same template as the files in the folder "ids").
 
 The ST Pipeline has been optimized for speed, robustness and it is very easy to use with many parameters to adjust all the settings.
 
@@ -36,7 +36,7 @@ Basically what the ST pipeline does is :
 - Demultiplexing with [Taggd](https://github.com/SpatialTranscriptomicsResearch/taggd) (only read 1)
 - Keep reads (read 2) that contain a valid barcode and are correctly mapped
 - Annotate the reads with htseq-count (slightly modified version)
-- Group annotated reads by barcode(spot position) and gene to get a read count
+- Group annotated reads by barcode(spot position), gene and genomic location (with an offset) to get a read count
 - In the grouping/counting only unique molecules (UMIs) are kept. 
 
 You can see a graphical more detailed description of the workflow in the documents workflow.pdf and workflow_extended.pdf
