@@ -17,13 +17,17 @@ from setuptools import setup, find_packages
 from stpipeline.version import version_number
 from distutils.extension import Extension
 
-# Get the long description from the relevant file
 here = os.path.abspath(os.path.dirname(__file__))
-with io.open(os.path.join(here, 'README_SHORT'), encoding='utf-8') as f:
-    long_description = f.read()
 
+# Get the long description from the relevant file
+try:    
+    with io.open(os.path.join(here, 'README_SHORT'), encoding='utf-8') as f:
+        long_description = f.read()
+except IOError:
+    long_description = ""
+    
 try:
-    with open("requirements.txt", "r") as f:
+    with open(os.path.join(here,"requirements.txt"), "r") as f:
         install_requires = [x.strip() for x in f.readlines()]
 except IOError:
     raise SystemExit("Could not find requirements.txt file")
@@ -50,8 +54,8 @@ setup(
   url = 'https://github.com/SpatialTranscriptomicsResearch/st_pipeline',
   packages = find_packages(exclude=('tests*', 'utils', '*.pyx')),
   ext_modules=[Extension('stpipeline.common.cdistance', ['stpipeline/common/cdistance.pyx'])],
-  include_package_data = False,
-  package_data = {'': ['*.pyx', '*.pxd', '*.h', '*.c'], },
+  include_package_data = True,
+  package_data = {'': ['*.pyx', '*.pxd', '*.h', '*.c', '*.txt'], },
   zip_safe = False,
   setup_requires=['setuptools_cython'],
   install_requires = install_requires,
