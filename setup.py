@@ -55,7 +55,6 @@ setup(
   packages = find_packages(exclude=('tests*', 'utils', '*.pyx')),
   ext_modules=[Extension('stpipeline.common.cdistance', ['stpipeline/common/cdistance.pyx'])],
   include_package_data = True,
-  package_data = {'': ['*.pyx', '*.pxd', '*.h', '*.c', '*.txt'], },
   zip_safe = False,
   setup_requires=['setuptools_cython'],
   install_requires = install_requires,
