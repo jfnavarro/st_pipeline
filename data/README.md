@@ -1,4 +1,4 @@
-These dataset was generated
+These dataset were generated
 from the publicly available raw FASTQ files
 of the Mouse Olfatory Bulb Replicates number 4 and 9
 from the publication http://science.sciencemag.org/content/353/6294/78
@@ -10,7 +10,7 @@ the Mus Musculus Ensembl annotation version 86.
 The annotation file used Mus Musculus GenCode 25 vM11.
 A contaminant genome STAR index was used generated
 from the Ensembl non conding RNA Mus musculus version 86.
-The IDs file used to demultiplex is the 1000L2 and 1000L5.
+The IDs file used to demultiplex were the 1000L2 and 1000L5.
  
 The following settings were used:
 
