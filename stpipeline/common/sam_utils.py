@@ -60,7 +60,7 @@ def parseUniqueEvents(filename):
         # Create a new transcript and add it to the dictionary
         transcript = (chrom, start, end, clear_name, mapping_quality, strand, umi)
         unique_events[(x,y)][gene].append(transcript)
-      
+
     sam_file.close()
     return unique_events
 

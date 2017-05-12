@@ -88,24 +88,49 @@ An example run would be
 
 **Emsembl ids**
 
-If you use an Ensembl annotation file and you would like change
+If you used an Ensembl annotation file and you would like change
 the ouput file so it contains gene Ids/names instead of Ensembl ids. 
 You can use this tool that comes with the ST Pipeline
 
-	convertEnsemblToNames.py --names-map map.txt --output st_data_updated.tsv st_data.tsv
+	convertEnsemblToNames.py --annotation path_to_annotation_file --output st_data_updated.tsv st_data.tsv
 	
-Where map.txt is a tab delimited file with two columns:
+**Merge demultiplexed FASTQ files**
 
-ENSEMBL_ID	GENE_NAME
+If you used different indexes to sequence and need to merge the files
+you can use the script merge_bcl.py
 
-And st_data.tsv is the output from the ST Pipeline.
+	merge_bcl.py --run-path path_to_run_folder --out-path path_to_output --identifiers S1 S2 S3 S4
+	
+Where identifiers will be strings that identify each demultiplexed sample. 
+
+**Filter out genes by gene type**
+
+If you want to remove from the dataset (matrix in TSV) genes corresponding
+to certain gene types (For instance to keep only protein_coding). You can do
+so with the script filter_gene_type_matrix.py
+
+	filter_gene_type_matrix.py --counts-matrix stdata.tsv --outfile new_stdata.tsv --annotation path_to_annotation_file
+	
+You may include the parameter --ensembl-ids if your gene names are represented as gene ids instead.
+
+**Remove spots from dataset**
+
+If you want to remove spots from a dataset (matrix in TSV) for instance
+to keep only spots inside the tissue. You can do so with the script adjust_matrix_coordinates.py
+
+	adjust_matrix_coordinates.py --counts-matrix stadata.tsv --outfile new_stdata.tsv --coordinates-file coordinates.txt
+	
+Where coordinates.txt will be a tab delimited file with 4 columns:
+ORIGINAL_COORDINATE_X ORIGINAL_COORDINATE_Y NEW_COORDINATE_X NEW_COORDINATE_Y
+Only coordinates in the file will be kept and if the new coordiantes are different
+the coordiantes will be updated (useful to adjust coordinates for printing errors).
 
 **Quality stats**
 
 The ST Pipeline generate useful statistical information in the LOG file but if you
 want to obtain more detail information about the quality of the data, you can run the following script:
 
-	st_qa.py --input-data stdata.tsv
+	st_qa.py --input-data stdata.tsv 
 	
 **Documentation**
 

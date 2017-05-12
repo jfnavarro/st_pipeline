@@ -654,10 +654,10 @@ class Pipeline():
                            self.trimming_rv,
                            self.inverse_trimming_rv,
                            self.threads,
-                           self.min_intron_size,
-                           self.max_intron_size,
+                           1, # Disable splice alignments in contaminant filter
+                           1, # Disable splice alignments in contaminant filter
                            False, # Enable multimap in contaminant filter
-                           True, # Disable softclipping in contaminant filter
+                           False, # Enable softclipping in contaminant filter
                            False, # Disable 2-pass mode in contaminant filter
                            self.min_length_trimming) 
             except Exception:

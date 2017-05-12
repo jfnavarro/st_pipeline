@@ -82,7 +82,9 @@ def count_reads_in_features(sam_filename,
     # Function to write to SAM output
     def write_to_samout(read, assignment):
         # Creates the PySAM record
-        sam_record = read.to_pysam_AlignedRead(count_reads_in_features.samoutfile)
+        # to_pysam_AlignedSegment is the new method in HTSeq>=0.7.0 that
+        # uses the latest Pysam API and reports the correct sequences
+        sam_record = read.to_pysam_AlignedSegment(count_reads_in_features.samoutfile)
         sam_record.set_tag("XF", assignment, "Z")
         if read is not None and assignment not in count_reads_in_features.filter_htseq \
         and not (count_reads_in_features.filter_htseq_no_ambiguous and assignment.find("__ambiguous") != -1):
