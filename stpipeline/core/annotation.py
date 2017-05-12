@@ -88,6 +88,8 @@ def count_reads_in_features(sam_filename,
         and not (count_reads_in_features.filter_htseq_no_ambiguous and assignment.find("__ambiguous") != -1):
             count_reads_in_features.samoutfile.write(sam_record)
             count_reads_in_features.annotated += 1
+            if sam_record.is_reverse and not include_non_annotated:
+                print sam_record
         elif outputDiscarded is not None:
             count_reads_in_features.samdiscarded.write(sam_record)
                 

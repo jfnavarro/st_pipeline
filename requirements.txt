@@ -6,7 +6,7 @@ scipy
 numpy
 pandas
 regex
-HTSeq>=0.6.0
-pysam>=0.8.2
+HTSeq>=0.7.0
+pysam>=0.9.0
 setuptools
-cython>=0.19
+cython>=0.25

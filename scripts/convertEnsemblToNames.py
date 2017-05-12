@@ -15,29 +15,28 @@ import argparse
 import sys
 import pandas as pd
 import os
+from stpipeline.common.gff_reader import *
 
-def main(st_data_file, names_map, output_file):
+def main(st_data_file, annotation, output_file):
 
-    if not os.path.isfile(st_data_file) or not os.path.isfile(names_map):
+    if not os.path.isfile(st_data_file) or not os.path.isfile(annotation):
         sys.stderr.write("Error, input file not present or invalid format\n")
         sys.exit(1)
         
     # loads a map with the ensembl -> gene name
-    genes_map = dict()
-    with open(names_map, "r") as map_file:
-        for line in map_file.readlines():
-            tokens = line.split()
-            assert(len(tokens) == 2)
-            genes_map[tokens[0]] = tokens[1]
-            
+    gene_map = dict()
+    for line in gff_lines(annotation):
+        gene_map[line["gene_id"]] = line["gene_name"]
+    assert(len(gene_map) > 0)
+        
     # Iterates the genes IDs to get gene names
     st_data = pd.read_table(st_data_file, sep="\t", header=0, index_col=0)
     adjustedList = list()
     for gene in st_data.columns:
         try:
-            gene = genes_map[gene.split(".")[0]]
+            gene = gene_map[gene]
         except KeyError:
-            sys.stdout.write("Warning, {} was not found in the MAP file\n".format(gene))
+            sys.stdout.write("Warning, {} was not found in the annotation\n".format(gene))
         adjustedList.append(gene)
         
     # Update the table with the gene names
@@ -52,9 +51,8 @@ if __name__ == '__main__':
     parser.add_argument("st_data_file", help="ST data file in TSV format")
     parser.add_argument("--output", default="output.tsv", 
                         help="Name of the output file, default output.tsv")
-    parser.add_argument("--names-map", required=True,
-                        help="File containing the map of ENSEMBL IDs to gene \
-                        names as a two columns tab delimited file")
+    parser.add_argument("--annotation", required=True,
+                        help="Path to the annotation file used to generate the data")
     args = parser.parse_args()
-    main(args.st_data_file, args.names_map, args.output)
+    main(args.st_data_file, args.annotation, args.output)
 
