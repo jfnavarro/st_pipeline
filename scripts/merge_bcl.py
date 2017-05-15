@@ -47,8 +47,8 @@ def main(run_path, indexes, out_path):
        
     # Second merge the BCL files
     for index in indexes:
-        r1_files = glob.glob("*{}*R1*.fastq".format(index))
-        r2_files = glob.glob("*{}*R2*.fastq".format(index))
+        r1_files = sorted(glob.glob("*{}*R1*.fastq".format(index)))
+        r2_files = sorted(glob.glob("*{}*R2*.fastq".format(index)))
         try:
             with open("{}_R1.fastq".format(index), "w") as file1:
                 run_command(["cat"] + r1_files, out=file1)
