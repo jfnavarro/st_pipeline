@@ -120,7 +120,7 @@ def parseUniqueEvents_byCoordinate(filename, gff_filename):
         str(len(genes_buffer))+'\t'+\
         str(round(time.time()-start_time,3))+'\t'+\
         str(round(tmp_counter_0/(time.time()-start_time),2))+'\t'+\
-        str(speed_last_100k)+'\t'+str(chrom)+':'+str(start)+'\n')
+        str(speed_last_100k)+'\t'+str('NA')+':'+str('NA')+'\n')
     for rec in sam_file.fetch(until_eof=True):
         clear_name = rec.query_name
         mapping_quality = rec.mapping_quality
