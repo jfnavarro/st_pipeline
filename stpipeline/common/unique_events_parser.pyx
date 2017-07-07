@@ -1,11 +1,12 @@
 class UniqueEventsParser():
     """ DESC """
     
-    def __init__(self, filename, gff_filename, verbose=False):
+    def __init__(self, filename, gff_filename, verbose=False, max_genes_in_memory=100):
         self.filename = filename
         self.gff_filename = gff_filename
         self.verbose = verbose
         self.aborted = False
+        self.max_genes_in_memory = max_genes_in_memory
     
     def stop(self,):
         """ function for stopping and aborting running procsses"""
@@ -31,7 +32,7 @@ class UniqueEventsParser():
         import re
         
         # create output queue
-        self.q = multiprocessing.Queue(200)
+        self.q = multiprocessing.Queue(self.max_genes_in_memory)
         
         # start worker subprocess
         self.p = multiprocessing.Process(target=self._worker_function)
@@ -155,7 +156,7 @@ class UniqueEventsParser():
         cdef dict processed_genes = dict()
         cdef int tmp_counter_0 = 0
         cdef int tmp_counter_1 = 0
-        cdef int speed_last_100k = 0
+        cdef double speed_last_100k = 0
         cdef double start_time=time.time()
         cdef double time_last_100k = start_time
         cdef object rec
@@ -260,7 +261,7 @@ class UniqueEventsParser():
             # update counter and write info if verbose
             tmp_counter_0 += 1
             if self.verbose and tmp_counter_0%100000==0:
-                speed_last_100k = round(10000/(time.time()-time_last_100k),2)
+                speed_last_100k = round(100000.0/(time.time()-time_last_100k),2)
                 time_last_100k = time.time()
                 self.print_stat_line( (genes_buffer, tmp_counter_0, tmp_counter_1, start_time, speed_last_100k, chrom, start) )
           
