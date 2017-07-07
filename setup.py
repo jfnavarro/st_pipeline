@@ -53,7 +53,10 @@ setup(
   license = 'MIT',
   url = 'https://github.com/SpatialTranscriptomicsResearch/st_pipeline',
   packages = find_packages(exclude=('tests*', 'utils', '*.pyx')),
-  ext_modules=[Extension('stpipeline.common.cdistance', ['stpipeline/common/cdistance.pyx'])],
+  ext_modules=[
+        Extension('stpipeline.common.cdistance', ['stpipeline/common/cdistance.pyx']),
+        Extension('stpipeline.common.unique_events_parser', ['stpipeline/common/unique_events_parser.pyx'])
+    ],
   include_package_data = True,
   zip_safe = False,
   setup_requires=['setuptools_cython'],

@@ -65,6 +65,27 @@ def parseUniqueEvents(filename):
     return unique_events
 
 def parseUniqueEvents_byCoordinate(filename, gff_filename):
+    
+    from stpipeline.common.unique_events_parser import UniqueEventsParser
+    import time
+    import sys
+    
+    uep = UniqueEventsParser(filename, gff_filename, verbose=True)
+    uep.run()
+    
+    while True:
+        data = uep.q.get()
+        #if not isinstance(data,tuple) and data == 'COMPLETED':
+        if uep.check_running != 'COMPLETE' and data == 'COMPLETED':
+            sys.stderr.write('INFO:: got signal '+data+' from uep.\n')
+            while uep.check_running() != 'COMPLETE':
+                sys.stderr.write('INFO:: waiting for uep subprocesses to finish.\n')
+                time.sleep(0.1)
+            break
+        #sys.stderr.write('INFO:: got gene '+data[0]+'\n')
+        yield data
+
+def NOLONGER_parseUniqueEvents_byCoordinate(filename, gff_filename):
     """
     Parses the transcripts present in the filename given as input.
     It expects a coordinate sorted BAM file where the spot coordinates, 
