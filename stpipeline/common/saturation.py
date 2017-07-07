@@ -15,6 +15,7 @@ from stpipeline.common.utils import safeRemove
 
 def computeSaturation(nreads, 
                       annotated_reads,
+                      gff_filename,
                       umi_cluster_algorithm,
                       umi_allowed_mismatches,
                       umi_counting_offset,
@@ -114,6 +115,7 @@ def computeSaturation(nreads,
         try:
             createDataset(input_file,
                           stats,
+                          gff_filename,
                           umi_cluster_algorithm,
                           umi_allowed_mismatches,
                           umi_counting_offset,
