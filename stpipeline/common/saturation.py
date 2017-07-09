@@ -130,7 +130,7 @@ def computeSaturation(nreads,
         saturation_points_values_reads.append(stats.reads_after_duplicates_removal)
         saturation_points_values_genes.append(stats.genes_found)
         saturation_points_average_genes.append(stats.avergage_gene_feature)
-        saturation_points_average_reads.append(stats.avergage_gene_feature)
+        saturation_points_average_reads.append(stats.avergage_reads_feature)
        
     # Remove the files
     for file_sam in file_names.itervalues():

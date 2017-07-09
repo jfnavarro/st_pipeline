@@ -426,3 +426,7 @@ Version 1.4.5
 	- merge_bcl : merge BCL files based in patterns
 	- filter_gene_type_matrix : filter gene in output data based on Ensembl gene types
 * Bumped Pysam and HTSeq 
+
+Version 1.4.6
+* st_qa.py generate expression heatmap plots
+* Fixed a minor bug in the computation of the saturation curves

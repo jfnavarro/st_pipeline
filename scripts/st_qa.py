@@ -10,13 +10,41 @@ some plots in the folder that is run.
 @Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
 """
 import pandas as pd
-import os
-import sys
 import numpy as np
 import argparse
 import matplotlib.pyplot as plt
-import matplotlib.mlab as mlab
 
+def scatter_plot(x_points, y_points, output, colors,
+                 title="Scatter", xlabel="X", ylabel="Y"):
+    """ 
+    This function makes a scatter plot of a set of points (x,y).
+    and a given list of color values for each point.
+    The plot will be written to a file.
+    :param x_points: a list of x coordinates
+    :param y_points: a list of y coordinates
+    :param output: the name/path of the output file
+    :param colors: a color value for each point
+    :param title: the title for the plot
+    :param xlabel: the name of the X label
+    :param ylabel: the name of the Y label
+    :raises: RuntimeError
+    """
+    # Plot spots with the color class in the tissue image
+    fig = plt.figure()
+    plt.scatter(x_points, 
+              y_points,  
+              c=colors, 
+              cmap=plt.get_cmap("YlOrBr"), 
+              edgecolor="none", 
+              s=50)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.colorbar()
+    # Tweak spacing to prevent clipping of ylabel
+    plt.subplots_adjust(left=0.15)
+    fig.savefig(output, format='pdf', dpi=300)
+    
 def histogram(x_points, output, title="Histogram", xlabel="X",
               ylabel="Y", nbins=50, color="blue"):
 
@@ -59,10 +87,26 @@ def main(input_data):
     average_genes_feature = np.mean(aggregated_gene_counts)
     std_reads_feature = np.std(aggregated_spot_counts)
     std_genes_feature = np.std(aggregated_gene_counts)
+    
     histogram(aggregated_spot_counts, nbins=20, xlabel="#Reads", ylabel="#Spots",
               output="hist_counts.pdf", title="Reads per spot")
     histogram(aggregated_gene_counts, nbins=20, xlabel="#Genes", ylabel="#Spots", 
               output="hist_genes.pdf", title="Genes per spot")
+    
+    x_points = list()
+    y_points = list()
+    for spot in counts_table.index:
+        tokens = spot.split("x")
+        assert(len(tokens) == 2)
+        y_points.append(float(tokens[1]))
+        x_points.append(float(tokens[0]))
+        
+    scatter_plot(x_points, y_points, colors=aggregated_spot_counts, 
+                 xlabel="X", ylabel="Y", output="heatmap_counts.pdf", 
+                 title="Heatmap expression")
+    scatter_plot(x_points, y_points, colors=aggregated_gene_counts, 
+                 xlabel="X", ylabel="Y", output="heatmap_genes.pdf", 
+                 title="Heatmap genes")
 
     print("Number of features: {}".format(total_barcodes))
     print("Number of unique molecules present: {}".format(total_transcripts))
