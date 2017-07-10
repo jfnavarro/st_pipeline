@@ -65,14 +65,20 @@ def parseUniqueEvents(filename):
     return unique_events
 
 def parseUniqueEvents_byCoordinate(filename, gff_filename):
+    """
+    A generator function for wrapping the stpipeline.common.unique_events_parser.UniqueEventsParser class
+    and yelding the genes sent back to the parent process.
+    """
     
     from stpipeline.common.unique_events_parser import UniqueEventsParser
     import time
     import sys
     
-    uep = UniqueEventsParser(filename, gff_filename, verbose=True)
+    # Create an instance of the UniqueEventsParser and start the work in the subprocess
+    uep = UniqueEventsParser(filename, gff_filename, verbose=False)
     uep.run()
     
+    # yield genes until the bam file has been parsed and the UniqueEventsParser shuts down
     while True:
         data = uep.q.get()
         #if not isinstance(data,tuple) and data == 'COMPLETED':

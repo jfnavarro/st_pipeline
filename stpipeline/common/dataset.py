@@ -88,10 +88,9 @@ def createDataset(input_file,
     
     import sys
     # Parse unique events to generate the unique counts and the BED file    
-    all_unique_events = parseUniqueEvents_byCoordinate(input_file, gff_filename)
+    all_unique_events = parseUniqueEvents_byCoordinate(input_file, gff_filename) # this now points to the generator wrapping the UniqueEventsParser
     with open(os.path.join(output_folder, filenameReadsBED), "w") as reads_handler:
-        # Unique events is a dict() [spot][gene] -> list(transcripts)
-        for gene, spots in all_unique_events:
+        for gene, spots in all_unique_events: # this is the generator returning a dictionary with spots for each gene
             transcript_counts_by_spot = {}
             for spot_coordinates, reads in spots.iteritems():
                 #sys.stderr.write('INFO:: processing gene '+gene+' spot '+str(spot_coordinates)+'\n')
@@ -150,12 +149,10 @@ def createDataset(input_file,
                                                                                                x,y)) 
                 # keep a counter of the number of unique events (spot - gene) processed
                 total_record += 1
-                #sys.stderr.write('INFO:: completed gene '+gene+' spot '+str(spot_coordinates)+'\n')
                 
             # Add spot and dict [gene] -> count to containers
             list_indexes.append(gene)
             list_row_values.append(transcript_counts_by_spot)
-            #sys.stderr.write('INFO:: completed all spots in gene '+gene+'\n')
             
     if total_record == 0:
         error = "Error creating dataset, input file did not contain any transcript\n"
@@ -165,7 +162,7 @@ def createDataset(input_file,
     # Create the data frame
     counts_table = pd.DataFrame(list_row_values, index=list_indexes)
     counts_table.fillna(0, inplace=True)
-    counts_table=counts_table.T
+    counts_table=counts_table.T # Transpose the dictionary to still get the spots as rows and genes as columns in the final tsv
     
     # Compute some statistics
     total_barcodes = len(counts_table.index)

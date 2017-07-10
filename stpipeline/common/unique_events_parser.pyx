@@ -1,5 +1,22 @@
 class UniqueEventsParser():
-    """ DESC """
+    """
+    The UniqueEventsParser class is a more memory efficient implementations of the stpipeline.comon.sam_utils.parseUniqueEvents-function.
+    The class takes two values as input filename and gff_filename, as well as two keyword arguments verbose and max_genes_in_memory.
+    max_genes_in_memory defines the size of the underlying queue used to send genes from the file parsing function to the main process.
+    The work done by the parser is defined by the self._worker_function function.
+    In this function a annotated coordinate sorted bam file is parsed and genes are returned to the parent process through a multiprocessing.Queue self.q.
+    
+        Parses the transcripts present in the filename given as input.
+        It expects a coordinate sorted BAM file where the spot coordinates, 
+        gene and UMI are present as extra tags.
+        And a gtf file defining the coordinates of the genes in the reference genome.
+        Will yield put a dictionary per gene with a spot coordinate tuple as keys into the self.q multiprocessing.Queue
+        foreach gene put dict: [spot] -> [(chrom, start, end, clear_name, mapping_quality, strand, umi), ... ] 
+    
+    :param filename: the input file containing the annotated BAM records
+    :param gff_filename: the gff file containing the gene coordinates
+    :return: a instance of the UniqueEventsParser
+    """
     
     def __init__(self, filename, gff_filename, verbose=False, max_genes_in_memory=100):
         self.filename = filename
@@ -9,13 +26,20 @@ class UniqueEventsParser():
         self.max_genes_in_memory = max_genes_in_memory
     
     def stop(self,):
-        """ function for stopping and aborting running procsses"""
+        """
+        Function for stopping and aborting a running procsses.
+        Mostly used for debugging and development.
+        """
+
         if self.check_running() == 'RUNNING':
+            
             import sys
-            if self.verbose: sys.stderr.write('KILLING Process='+str(self.p.pid)+'.\n')
             import os
             import signal
+
+            if self.verbose: sys.stderr.write('KILLING Process='+str(self.p.pid)+'.\n')
             os.kill(self.p.pid,signal.SIGTERM)
+            
             # empty the queue and join all processes!!
             self.q.close()
             while not self.q.empty(): self.q.get()
@@ -23,7 +47,9 @@ class UniqueEventsParser():
             self.aborted = True
     
     def run(self, ):
-        """ function that starts the subprocess reading the files"""
+        """
+        Function that starts the subprocess reading the file(s)
+        """
         
         # imports
         import multiprocessing
@@ -42,7 +68,9 @@ class UniqueEventsParser():
         if self.verbose: sys.stderr.write('Process='+str(self.p.pid)+' starting to parse unique events.\n')
         
     def check_running(self, ):
-        """ function that checks if the subprocess is running and return the status as a keyword RUNNING or COMPLETE as a string"""
+        """
+        Function that checks if the subprocess is running and return the status as as a string with value "RUNNING", "ABORTED" or "COMPLETE"
+        """
         
         import sys
         
@@ -60,6 +88,10 @@ class UniqueEventsParser():
                 raise RuntimeError(msg)
 
     def read_gff_file(self, ):
+        """
+        function that reads the end coordinates of genes and returns them as values of a dictionary with the gene ID as key
+        returns: dict: [GENE_id] => gene_end_coordinate
+        """
         import sys
 
         cdef dict gene_end_coordinates
@@ -73,13 +105,17 @@ class UniqueEventsParser():
         cdef list attributes
         cdef str attribute
         
-        # gtf format desc http://www.ensembl.org/info/website/upload/gff.html
         if self.verbose: sys.stderr.write('INFO:: LOADING gtf file...\n')
         gene_end_coordinates = dict()
+        
+        # parse gtf file
         for line in open(self.gff_filename):
+            
+            # remove header
             if line[:4] == 'track' or line[0] == '#': continue
+            
+            # parse the line according to gtf format desc http://www.ensembl.org/info/website/upload/gff.html
             split_line = line.lstrip().rstrip().split('\t')
-            #seqname,source,feature,start,_end,score,strand,frame,attributes = line.lstrip().rstrip().split('\t')
             line_dict = {}
             seqname = split_line[0]
             end = int(split_line[4])
@@ -89,6 +125,8 @@ class UniqueEventsParser():
                 key = attribute.lstrip().split(' ')[0]
                 value = attribute.lstrip().split(' ')[1]
                 line_dict[key]=value 
+            
+            # save gene_id and rigtmost genomic coordinate of each gene to dictionary
             try:
                 gene_id = line_dict['gene_id']
                 if gene_id[0] == '"' and gene_id[-1] == '"': gene_id=gene_id[1:-1]
@@ -100,9 +138,13 @@ class UniqueEventsParser():
             except KeyError:
                 gene_end_coordinates[ gene_id ] = (seqname,int(end))
         
+        # return the dict
         return gene_end_coordinates
     
     def print_stat_line(self, data, header=False):
+        """
+        Function that prints a current status row to stderr
+        """
         
         import sys
         import time
@@ -125,6 +167,8 @@ class UniqueEventsParser():
 
     def _worker_function(self, ):
         """
+        Modified version of the stpipeline.comon.sam_utils.parseUniqueEvents-function:
+        
         Parses the transcripts present in the filename given as input.
         It expects a coordinate sorted BAM file where the spot coordinates, 
         gene and UMI are present as extra tags
@@ -132,9 +176,11 @@ class UniqueEventsParser():
         foreach gene yield: [spot] -> [(chrom, start, end, clear_name, mapping_quality, strand, umi), ... ] 
         :param filename: the input file containing the annotated BAM records
         :param gff_filename: the gff file containing the gene coordinates
-        :return: A generator 
         """
 
+        #
+        # Imports
+        #
         from stpipeline.common.utils import fileOk
         from stpipeline.common.stats import qa_stats
         import os
@@ -146,12 +192,21 @@ class UniqueEventsParser():
 
         if self.verbose: sys.stderr.write('INFO:: ENTERING => parseUniqueEvents_byCoordinate\n')
 
+        #
+        # Get dict with end coordinates for all genes
+        # to be able to tell when a gene is "done"
+        # and thereby ready to be returned to the parent process
+        #
         cdef dict gene_end_coordinates = {}
         gene_end_coordinates = self.read_gff_file()
 
+        # Get conection to log and open the bamfile for reading
         logger = logging.getLogger("STPipeline")
         sam_file = pysam.AlignmentFile(self.filename, "rb")
    
+        #
+        # define variables cython style for more efficient looping and in memory storage
+        #
         cdef dict genes_buffer = dict()
         cdef dict processed_genes = dict()
         cdef int tmp_counter_0 = 0
@@ -180,10 +235,14 @@ class UniqueEventsParser():
         cdef tuple gene_end_coordinate
         
         if self.verbose: sys.stderr.write('INFO:: parsing bamfile ... \n')
-        self.print_stat_line( (genes_buffer, tmp_counter_0, tmp_counter_1, start_time, speed_last_100k, 'chrom', 'start'), header=True )
+        if self.verbose: self.print_stat_line( (genes_buffer, tmp_counter_0, tmp_counter_1, start_time, speed_last_100k, 'chrom', 'start'), header=True )
 
+        # parse the bamfile record by record by  genome coordinate from first chromosome to last
         for rec in sam_file.fetch(until_eof=True):
 
+            #
+            # get the info about the record from bam
+            #
             clear_name = rec.query_name
             mapping_quality = rec.mapping_quality
             # Account for soft-clipped bases when retrieving the start/end coordinates
@@ -196,7 +255,7 @@ class UniqueEventsParser():
                 strand = "-" 
                 start, end = end, start
 
-            # Get TAGGD tags
+            # Get TAGGD tags from bam
             x,y,gene,umi = (-1,-1,'None','None')
             for (k, v) in rec.tags:
                 if k == "B1":
@@ -215,7 +274,7 @@ class UniqueEventsParser():
                                "Missing attributes for record {}\n".format(clear_name))
                 continue
             
-            # Create a new transcript and add it to the dictionary
+            # Create a new transcript and add it to the in memory gene_buffer dictionary
             transcript = (chrom, start, end, clear_name, mapping_quality, strand, umi)
             spot_coordinates = (x,y)
             try:
@@ -238,40 +297,43 @@ class UniqueEventsParser():
                         }
                     genes_buffer[gene] = new_gene_dict
             
-            # check the genebuffer and send completed genes to parent process
-            _tmp = list(genes_buffer.keys())
-            deleted_genes=[]
+            #
+            # check the gene_buffer to see if we passed the end coordinate of any of the genes
+            # if that is the case no more reads will be added to the gene
+            # and we can send the completed genes to the parent process
+            #
+            _tmp = list(genes_buffer.keys()) # to avoid changeing the size of the dict while iterating over it
+            deleted_genes=[] # and to ble able to remove the genes from the dict once we sent them to the parent
             for gene in _tmp:
-                if rec.reference_start > genes_buffer[gene]['gene_end_coordinate'][1] or chrom != genes_buffer[gene]['gene_end_coordinate'][0]:
-                    if self.verbose: self.print_stat_line( (genes_buffer, tmp_counter_0, tmp_counter_1, start_time, speed_last_100k, chrom, start) )
-                    #sys.stderr.write('INFO:: yielding gene '+gene+' ... \n')
-                    #sys.stderr.write('INFO:: refstart='+str(rec.reference_start)+' gene end='+str(genes_buffer[gene]['gene_end_coordinate'][1])+' chroms'+str(chrom)+' '+str(genes_buffer[gene]['gene_end_coordinate'][0])+' \n')
-                    #yield gene, genes_buffer[gene]['spots']
-                    self.q.put( (gene, genes_buffer[gene]['spots']) )
-                    #sys.stderr.write('INFO:: back from gene '+gene+'\n')
+                if rec.reference_start > genes_buffer[gene]['gene_end_coordinate'][1] or chrom != genes_buffer[gene]['gene_end_coordinate'][0]: # true if the current position is past the gene end coordinate
+                    if self.verbose: self.print_stat_line( (genes_buffer, tmp_counter_0, tmp_counter_1, start_time, speed_last_100k, chrom, start) ) # print stats
+                    self.q.put( (gene, genes_buffer[gene]['spots']) ) # HERE we send the gene back to the parent process
                     assert gene not in processed_genes, 'ERROR: the gene '+gene+' cannot be present twice in the genome.\n'
                     processed_genes[gene] = True
                     deleted_genes.append(gene)
-            for gene in deleted_genes:
+            for gene in deleted_genes: # free some memory
                 for read_list in genes_buffer[gene]['spots'].values(): tmp_counter_1 += len(read_list)
                 genes_buffer[gene]['spots'] = None
                 genes_buffer[gene] = {}
                 del genes_buffer[gene]
     
-            # update counter and write info if verbose
+            #
+            # Update counter and write info if verbose
+            #
             tmp_counter_0 += 1
             if self.verbose and tmp_counter_0%100000==0:
                 speed_last_100k = round(100000.0/(time.time()-time_last_100k),2)
                 time_last_100k = time.time()
                 self.print_stat_line( (genes_buffer, tmp_counter_0, tmp_counter_1, start_time, speed_last_100k, chrom, start) )
           
-        # close file ad yield the last entry
+        #
+        # Close the bam file and yield the last gene(s)
+        #
         sam_file.close()
         if self.verbose: self.print_stat_line( (genes_buffer, tmp_counter_0, tmp_counter_1, start_time, speed_last_100k, chrom, start) )
         deleted_genes=[]
         for gene in genes_buffer.keys():
             if self.verbose: sys.stderr.write('INFO:: yielding last gene '+gene+' ... \n')
-            #yield gene, genes_buffer[gene]['spots']
             self.q.put( (gene, genes_buffer[gene]['spots']) )
             assert gene not in processed_genes, 'ERROR: the gene '+gene+' cannot be present twice in the genome.\n'
             processed_genes[gene] = True
@@ -282,9 +344,11 @@ class UniqueEventsParser():
             genes_buffer[gene] = {}
             del genes_buffer[gene]
         if self.verbose: self.print_stat_line( (genes_buffer, tmp_counter_0, tmp_counter_1, start_time, speed_last_100k, chrom, start) )
-        self.q.put( "COMPLETED" )
+        self.q.put( "COMPLETED" ) # send a last keyword to the parent process to define the end of the data
 
+        #
         # cleanup and exit
+        #
         import time
         while not self.q.empty():
             if self.verbose: sys.stderr.write('Process='+str(self.p.pid)+' Done processing input wainting for queue to empty.\n')
