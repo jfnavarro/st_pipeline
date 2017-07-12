@@ -98,7 +98,7 @@ def main(input_data):
     for spot in counts_table.index:
         tokens = spot.split("x")
         assert(len(tokens) == 2)
-        y_points.append(float(tokens[1]))
+        y_points.append(float(tokens[1]) * -1)
         x_points.append(float(tokens[0]))
         
     scatter_plot(x_points, y_points, colors=aggregated_spot_counts, 

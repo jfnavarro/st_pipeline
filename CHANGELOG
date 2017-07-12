@@ -427,6 +427,8 @@ Version 1.4.5
 	- filter_gene_type_matrix : filter gene in output data based on Ensembl gene types
 * Bumped Pysam and HTSeq 
 
-Version 1.4.6
+Version 1.5.0
 * st_qa.py generate expression heatmap plots
 * Fixed a minor bug in the computation of the saturation curves
+* Changed the parsing of annotated transcripts (now it uses constant memory)
+* adjust_matrix_coordinates now does not update the coordinates by default

@@ -9,6 +9,68 @@ import logging
 import pysam
 from collections import defaultdict
 
+def parseUniqueEventsGenes(filename):
+    """
+    Parses the transcripts present in the filename given as input.
+    It expects a BAM file where the spot coordinates, 
+    gene and UMI are present as extra tags
+    The output will be an iterator over genes and a dictionary: 
+    [spot] -> [(chrom, start, end, clear_name, mapping_quality, strand, umi)]
+    :param filename: the input file containing the annotated BAM records
+    :return: An iterator over genes and a dictionary of spots(x,y) to a list of transcripts 
+    (chrom, start, end, clear_name, mapping_quality, strand, umi)
+    As gene, [spot] -> [(chrom, start, end, clear_name, mapping_quality, strand, umi)]
+    """
+    logger = logging.getLogger("STPipeline")
+    sam_file = pysam.AlignmentFile(filename, "rb")
+    prev_gene = None
+    unique_umis = defaultdict(list)
+    no_feature_unique_umis = defaultdict(list)
+    for rec in sam_file.fetch(until_eof=True):
+        clear_name = rec.query_name
+        mapping_quality = rec.mapping_quality
+        # Account for soft-clipped bases when retrieving the start/end coordinates
+        start = int(rec.reference_start - rec.query_alignment_start)
+        end = int(rec.reference_end + (rec.query_length - rec.query_alignment_end))
+        chrom = sam_file.getrname(rec.reference_id)
+        strand = "+" 
+        if rec.is_reverse:
+            # We swap start and end if the transcript mapped to the reverse strand
+            strand = "-" 
+            start, end = end, start
+        # Get TAGGD tags
+        x,y,gene,seq = (None,None,None,None)
+        for (k, v) in rec.tags:
+            if k == "B1":
+                x = int(v) ## The X coordinate
+            elif k == "B2":
+                y = int(v) ## The Y coordinate
+            elif k == "XF":
+                gene = str(v) ## The gene name
+            elif k == "B3":
+                umi = str(v) ## The UMI
+            else:
+                continue
+        # Check that all tags are present
+        if None in [x,y,gene,umi]:
+            logger.warning("Warning parsing annotated reads.\n" \
+                           "Missing attributes for record {}\n".format(clear_name))
+            continue
+        # Update dictionary of transcripts for the given gene
+        transcript = (chrom, start, end, clear_name, mapping_quality, strand, umi)
+        if gene == "__no_feature":
+            no_feature_unique_umis[(x,y)].append(transcript)
+            continue
+        unique_umis[(x,y)].append(transcript)
+        if prev_gene is not None and gene != prev_gene:
+            yield prev_gene, unique_umis
+            unique_umis.clear()
+        prev_gene = gene
+    # The last gene
+    yield prev_gene, unique_umis
+    # The non annotated genes (if user activates this option)
+    yield  "__no_feature", no_feature_unique_umis
+        
 # TODO this function uses too much memory, optimize it. (Maybe Cython or C++)
 def parseUniqueEvents(filename):
     """

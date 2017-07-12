@@ -132,7 +132,15 @@ def count_reads_in_features(sam_filename,
 
     try:
 
-        for r in read_seq:    
+        for r in read_seq:
+            if not r.aligned:
+                write_to_samout(r, "__not_aligned")
+                continue
+            try:
+                if r.optional_field("NH") > 1:
+                    write_to_samout(r, "__alignment_not_unique")
+            except KeyError:
+                pass
             if r.aQual < minaqual:
                 write_to_samout(r, "__too_low_aQual")
                 continue
@@ -164,7 +172,9 @@ def count_reads_in_features(sam_filename,
                 else:
                     raise RuntimeError, "Illegal overlap mode."
                 
-                if fs is None or len(fs) == 0:
+                if fs is None:
+                    continue
+                elif len(fs) == 0:
                     write_to_samout(r, "__no_feature")
                 elif len(fs) > 1:
                     write_to_samout(r, "__ambiguous[" + '+'.join(fs) + "]")

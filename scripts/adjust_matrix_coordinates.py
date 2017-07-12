@@ -8,10 +8,13 @@ are the spot coordinates like:
 XxY
 XxY
 
-An adjust the spot coordinates to a new set coordinates
-given in a tab delimited file :
+And then removes the spots that are not present in 
+a tab delimited coordinates file that has a least 4 columns:
 
 old_x old_y new_x new_y
+
+Optionally, the coordinates of the spots in the matrix
+can be changed to the new coordinates.
 
 
 @Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
@@ -22,7 +25,7 @@ import sys
 import os
 import pandas as pd
 
-def main(counts_matrix, coordinates_file, outfile):
+def main(counts_matrix, coordinates_file, update_coordinates, outfile):
 
     if not os.path.isfile(counts_matrix) or not os.path.isfile(coordinates_file):
         sys.stderr.write("Error, input file not present or invalid format\n")
@@ -53,7 +56,7 @@ def main(counts_matrix, coordinates_file, outfile):
         x = int(tokens[0])
         y = int(tokens[1])
         try:
-            (new_x, new_y) = new_coordinates[(x,y)]
+            (new_x, new_y) = new_coordinates[(x,y)] if update_coordinates else (x,y)
             new_index_values.append("{0}x{1}".format(new_x,new_y))
         except KeyError:
             counts_table.drop(index, inplace=True)
@@ -68,8 +71,11 @@ if __name__ == '__main__':
     parser.add_argument("--counts-matrix", required=True,
                         help="Matrix with gene counts (genes as columns)")
     parser.add_argument("--outfile", help="Name of the output file")
+    parser.add_argument("--update-coordinates", action="store_true", default=False,
+                        help="Updates the spot coordinates in the output matrix with the\n"
+                        "new coordinates present in the coordinates file")
     parser.add_argument("--coordinates-file",  required=True,
                         help="New coordinates in a tab delimited file")
     args = parser.parse_args()
-    main(args.counts_matrix, args.coordinates_file, args.outfile)
+    main(args.counts_matrix, args.coordinates_file, args.update_coordinates, args.outfile)
 
