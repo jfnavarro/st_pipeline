@@ -131,7 +131,7 @@ def count_reads_in_features(sam_filename,
         raise RuntimeError, "Error occurred when reading beginning of SAM/BAM file."
 
     try:
-
+        
         for r in read_seq:
             if not r.aligned:
                 write_to_samout(r, "__not_aligned")

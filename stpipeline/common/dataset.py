@@ -11,7 +11,7 @@ import numpy as np
 from collections import defaultdict
 import pandas as pd
 from stpipeline.common.clustering import *
-from stpipeline.common.sam_utils import parseUniqueEventsGenes
+from stpipeline.common.sam_utils import parseUniqueEvents
 import logging
 
 def computeUniqueUMIs(transcripts, umi_counting_offset, umi_allowed_mismatches, group_umi_func):
@@ -117,13 +117,12 @@ def createDataset(input_file,
     # Containers needed to create the data frame
     list_row_values = list()
     list_indexes = list()   
-    # Parse unique events to generate the matrix of unique counts and the BED file    
+    # Parse unique events to generate the unique counts and the BED file    
+    unique_events = parseUniqueEvents(input_file)  
     with open(os.path.join(output_folder, filenameReadsBED), "w") as reads_handler:
-        # the parseUniqueEventsGenes returns an iterator over genes and a dict of spot->transcripts
-        # for each gene
-        for gene, spot_transcripts in parseUniqueEventsGenes(input_file):
-            row_values = dict()
-            for (x,y), transcripts in spot_transcripts.iteritems():
+        # Unique events is a dict() [spot][gene] -> list(transcripts)
+        for (x,y), value in unique_events.iteritems():
+            for gene, transcripts in value.iteritems():
                 # For each spot:
                 # Re-compute the transcripts count accounting for duplicates using the UMIs
                 # Transcripts is the list of transcripts (chrom, start, end, clear_name, mapping_quality, strand, UMI)
@@ -140,7 +139,7 @@ def createDataset(input_file,
                 discarded_reads += (gene_count - new_gene_count)
                 # Update read counts in the container that is used to build the data frame 
                 # (each gene is a row of spot values)
-                row_values["{0}x{1}".format(x, y)] = new_gene_count
+                value[gene] = new_gene_count
                 # Write every unique transcript to the BED output (adding spot coordinate and gene name)
                 for read in unique_transcripts:
                     reads_handler.write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\n".format(read[0],
@@ -154,9 +153,10 @@ def createDataset(input_file,
                 # keep a counter of the number of unique events (spot - gene) processed
                 total_record += 1
                 
-            # Add spot and dict[spot] -> count to containers
-            list_indexes.append(gene)
-            list_row_values.append(row_values)        
+            # Add spot and dict [gene] -> count to containers
+            list_indexes.append("{0}x{1}".format(x, y))
+            list_row_values.append(value)
+     
     if total_record == 0:
         error = "Error creating dataset, input file did not contain any transcript\n"
         logger.error(error)
