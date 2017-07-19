@@ -15,7 +15,8 @@ import argparse
 import matplotlib.pyplot as plt
 
 def scatter_plot(x_points, y_points, output, colors,
-                 title="Scatter", xlabel="X", ylabel="Y"):
+                 title="Scatter", xlabel="X", ylabel="Y",
+                 xlim=[1,33], ylim=[1,35]):
     """ 
     This function makes a scatter plot of a set of points (x,y).
     and a given list of color values for each point.
@@ -39,6 +40,9 @@ def scatter_plot(x_points, y_points, output, colors,
               s=50)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
+    plt.xlim(xlim)
+    plt.ylim(ylim)
+    plt.gca().invert_yaxis()
     plt.title(title)
     plt.colorbar()
     # Tweak spacing to prevent clipping of ylabel
@@ -98,7 +102,7 @@ def main(input_data):
     for spot in counts_table.index:
         tokens = spot.split("x")
         assert(len(tokens) == 2)
-        y_points.append(float(tokens[1]) * -1)
+        y_points.append(float(tokens[1]))
         x_points.append(float(tokens[0]))
         
     scatter_plot(x_points, y_points, colors=aggregated_spot_counts, 

@@ -39,7 +39,7 @@ def main(counts_matrix, coordinates_file, update_coordinates, outfile):
     with open(coordinates_file, "r") as filehandler:
         for line in filehandler.readlines():
             tokens = line.split()
-            assert(len(tokens) == 4)
+            assert(len(tokens) in [4,6])
             old_x = int(tokens[0])
             old_y = int(tokens[1])
             new_x = float(tokens[2])
@@ -56,7 +56,9 @@ def main(counts_matrix, coordinates_file, update_coordinates, outfile):
         x = int(tokens[0])
         y = int(tokens[1])
         try:
-            (new_x, new_y) = new_coordinates[(x,y)] if update_coordinates else (x,y)
+            new_x, new_y = new_coordinates[(x,y)] 
+            if not update_coordinates:
+                new_x, new_y = x,y
             new_index_values.append("{0}x{1}".format(new_x,new_y))
         except KeyError:
             counts_table.drop(index, inplace=True)
