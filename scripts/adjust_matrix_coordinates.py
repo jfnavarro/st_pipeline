@@ -11,7 +11,7 @@ XxY
 An adjust the spot coordinates to a new set coordinates
 given in a tab delimited file :
 
-old_x old_y new_x new_y
+x y new_x new_y pixel_x pixel_y
 
 
 @Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
@@ -22,7 +22,7 @@ import sys
 import os
 import pandas as pd
 
-def main(counts_matrix, coordinates_file, outfile):
+def main(counts_matrix, coordinates_file, outfile, outformat):
 
     if not os.path.isfile(counts_matrix) or not os.path.isfile(coordinates_file):
         sys.stderr.write("Error, input file not present or invalid format\n")
@@ -36,12 +36,18 @@ def main(counts_matrix, coordinates_file, outfile):
     with open(coordinates_file, "r") as filehandler:
         for line in filehandler.readlines():
             tokens = line.split()
-            assert(len(tokens) == 4)
-            old_x = int(tokens[0])
-            old_y = int(tokens[1])
-            new_x = float(tokens[2])
-            new_y = float(tokens[3])
-            new_coordinates[(old_x, old_y)] = (new_x,new_y)
+            assert(len(tokens) == 6)
+            if tokens[0] != "x":
+                old_x = int(tokens[0])
+                old_y = int(tokens[1])
+                new_x = round(float(tokens[2]),2)
+                new_y = round(float(tokens[3]),2)
+                pixel_x = float(tokens[4])
+                pixel_y = float(tokens[5])
+                if outformat == "array":
+                    new_coordinates[(old_x, old_y)] = (new_x,new_y)
+                else:
+                    new_coordinates[(old_x, old_y)] = (pixel_x, pixel_y)
     
     # Read the data frame (spots as rows)
     counts_table = pd.read_table(counts_matrix, sep="\t", header=0, index_col=0)
@@ -70,6 +76,9 @@ if __name__ == '__main__':
     parser.add_argument("--outfile", help="Name of the output file")
     parser.add_argument("--coordinates-file",  required=True,
                         help="New coordinates in a tab delimited file")
+    parser.add_argument("--outformat", default="array",
+                        help="Output array positions or pixel positions"
+                        " array or pixel")
     args = parser.parse_args()
-    main(args.counts_matrix, args.coordinates_file, args.outfile)
+    main(args.counts_matrix, args.coordinates_file, args.outfile, args.outformat)
 
