@@ -6,15 +6,15 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Manual &#8212; ST Pipeline 1.0.0 documentation</title>
+    <title>Manual &mdash; ST Pipeline 1.3.3 documentation</title>
     
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.0.0',
+        VERSION:     '1.3.3',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,20 +24,26 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="top" title="ST Pipeline 1.0.0 documentation" href="index.html" />
+    <link rel="top" title="ST Pipeline 1.3.3 documentation" href="index.html" />
     <link rel="next" title="Examples" href="example.html" />
-    <link rel="prev" title="Installing the Spatial Transcriptomics pipeline" href="installation.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="prev" title="Installing the Spatial Transcriptomics pipeline" href="installation.html" /> 
   </head>
   <body role="document">
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="example.html" title="Examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installing the Spatial Transcriptomics pipeline"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.3.3 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -46,7 +52,8 @@
             
   <div class="section" id="manual">
 <h1>Manual<a class="headerlink" href="#manual" title="Permalink to this headline">¶</a></h1>
-<p>ST Pipeline is a tool to process the Spatial Transcriptomics raw data.
+<p>ST Pipeline is a tool to process the Spatial Transcriptomics raw data
+or single cell data.
 The data is filtered, aligned to a genome, annotated to a reference,
 demultiplexed by array coordinates and then aggregated by counts
 that are not duplicates using the Unique Molecular Indentifiers.
@@ -59,10 +66,10 @@ format and a dataset name.</p>
 by typing : st_pipeline_run.py --help</p>
 <p>Note that the minimum read length is dependant on the type of kit used, and
 should be adjusted accordingly, i.e. a 150bp kit should have a different
-minimun read length than a 75bp kit.</p>
+minimum read length than a 75bp kit.</p>
 <p>Soft clipping is also not recommended when using the 75bp kit, due to the
 shorter length.</p>
-<p>The UMI filter can be used for array batches 1000L6 and older. It is
+<p>The UMI filter can be used for array batches 1000L6 and earlier. It is
 unable to be used for array batches 1000L7 and newer as the UMI in
 these arrays is fully randomised.</p>
 <p>&#64;Author Jose Fernandez Navarro &lt;<a class="reference external" href="mailto:jose&#46;fernandez&#46;navarro&#37;&#52;&#48;scilifelab&#46;se">jose<span>&#46;</span>fernandez<span>&#46;</span>navarro<span>&#64;</span>scilifelab<span>&#46;</span>se</a>&gt;</p>
@@ -93,12 +100,12 @@ these arrays is fully randomised.</p>
                         <span class="o">[</span>--umi-allowed-mismatches <span class="o">[</span>INT<span class="o">]]</span>
                         <span class="o">[</span>--umi-start-position <span class="o">[</span>INT<span class="o">]]</span>
                         <span class="o">[</span>--umi-end-position <span class="o">[</span>INT<span class="o">]]</span>
-                        <span class="o">[</span>--umi-min-cluster-size <span class="o">[</span>INT<span class="o">]]</span>
                         <span class="o">[</span>--keep-discarded-files<span class="o">]</span>
                         <span class="o">[</span>--remove-polyA <span class="o">[</span>INT<span class="o">]]</span>
                         <span class="o">[</span>--remove-polyT <span class="o">[</span>INT<span class="o">]]</span>
                         <span class="o">[</span>--remove-polyG <span class="o">[</span>INT<span class="o">]]</span>
                         <span class="o">[</span>--remove-polyC <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--remove-polyN <span class="o">[</span>INT<span class="o">]]</span>
                         <span class="o">[</span>--filter-AT-content <span class="o">[</span>INT%<span class="o">]]</span>
                         <span class="o">[</span>--filter-GC-content <span class="o">[</span>INT%<span class="o">]]</span>
                         <span class="o">[</span>--disable-multimap<span class="o">]</span>
@@ -116,6 +123,10 @@ these arrays is fully randomised.</p>
                         <span class="o">[</span>--strandness <span class="o">[</span>STRING<span class="o">]]</span>
                         <span class="o">[</span>--umi-quality-bases <span class="o">[</span>INT<span class="o">]]</span>
                         <span class="o">[</span>--umi-counting-offset <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--demultiplexing-metric <span class="o">[</span>STRING<span class="o">]]</span>
+                        <span class="o">[</span>--demultiplexing-multiple-hits-keep-one<span class="o">]</span>
+                        <span class="o">[</span>--demultiplexing-trim-sequences <span class="o">[</span>INT<span class="o">]]</span>
+                        <span class="o">[</span>--homopolymer-mismatches <span class="o">[</span>INT<span class="o">]]]</span>
                         <span class="o">[</span>--version<span class="o">]</span>
                         fastq_file_fw fastq_file_rv
 </pre></div>
@@ -200,19 +211,18 @@ fastq_file_rv
 --umi-end-position [INT]            Position in R1 (base wise) of the last
                                     base of the UMI (starting by 1)
                                     (default: 27).
---umi-min-cluster-size [INT]        Min number of equal UMIs to count as a
-                                    cluster (duplicate) given the allowed
-                                    mismatches (default: 2).
 --keep-discarded-files              Writes down unaligned, un-annotated
                                     and un-demultiplexed reads to files.
 --remove-polyA [INT]                Remove PolyA stretches of the given
-                                    length from R2 (default: 0).
+                                    length from R2 (default: 15).
 --remove-polyT [INT]                Remove PolyT stretches of the given
-                                    length from R2 (default: 0).
+                                    length from R2 (default: 15).
 --remove-polyG [INT]                Remove PolyG stretches of the given
-                                    length from R2 (default: 0).
+                                    length from R2 (default: 15).
 --remove-polyC [INT]                Remove PolyC stretches of the given
-                                    length from R2 (default: 0).
+                                    length from R2 (default: 15).
+--remove-polyN [INT]                Remove PolyN stretches of the given
+                                    length from R2 (default: 15).
 --filter-AT-content [INT%]          Discards reads whose number of A and T
                                     bases in total are more or equal than
                                     the number given in percentage
@@ -230,13 +240,13 @@ fastq_file_rv
 --umi-cluster-algorithm [STRING]    Type of clustering algorithm to use
                                     when performing UMIs duplicates
                                     removal.
-                                    Modes = {naive(default), hierarchical}.
---min-intron-size [INT]             Minimum allowed intron size when
-                                    searching for splice variants in the
-                                    mapping step (default: 20).
---max-intron-size [INT]             Maximum allowed intron size when
-                                    searching for splice variants in the
-                                    mapping step (default: 100000).
+                                    Modes = {naive(default), hierarchical, Adjacent and AdjacentBi}.
+--min-intron-size [INT]             Minimum allowed intron size when searching for splice variants with STAR\
+                                        Splices alignments are disabled by default (=1) but to turn it on set this parameter
+                                    to a bigger number, for example 10 or 20. (defauldt: 1)
+--max-intron-size [INT]             Maximum allowed intron size when searching for splice variants with STAR
+                                        Splices alignments are disabled by default (=1) but to turn it on set this parameter
+                                        to a big number, for example 10000 or 100000. (default: 1).
 --umi-filter                        Enables the UMI quality filter based on
                                     the template given in
                                     --umi-filter-template.
@@ -261,7 +271,7 @@ fastq_file_rv
                                     annotating with htseq-count
                                     [no, yes(default), reverse].
 --umi-quality-bases [INT]           Maximum number of low quality bases
-                                    allowed in an UMI (default: 4).
+                                    allowed in an UMI (default: 8).
 --umi-counting-offset [INT]         Expression count for each gene-spot
                                     combination is expressed as the number
                                     of unique UMIs in each strand/start
@@ -270,7 +280,18 @@ fastq_file_rv
                                     to amplification artifacts. This
                                     parameters allows one to define an
                                     offset from where to count unique UMIs
-                                    (default: 50).
+                                    (default: 150).
+--demultiplexing-metric             Distance metric for TaggD demultiplexing:
+                                    Subglobal, Levenshtein or Hamming
+                                    (default: Subglobal)
+--demultiplexing-multiple-hits-keep-one  When multiple ambiguous hits with same score are
+                                    found in the demultiplexing, keep one (random)
+--demultiplexing-trim-sequences     Trims from the barcodes in the input file when doing demultiplexing.
+                                    The bases given in the list of tuples as START END START END .. where
+                                    START is the integer position of the first base (0 based) and END is the integer
+                                    position of the last base (1 based).
+                                    Trimmng sequences can be given several times.
+--homopolymer-mismatches                        Number of mismatches allowed when removing homopolymers. (default: 0)
 --version                           Show program&#39;s version number and exit
 </pre></div>
 </div>
@@ -281,15 +302,13 @@ fastq_file_rv
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="installation.html" title="previous chapter">Installing the Spatial Transcriptomics pipeline</a></li>
-      <li>Next: <a href="example.html" title="next chapter">Examples</a></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="previous chapter">Installing the Spatial Transcriptomics pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="example.html"
+                        title="next chapter">Examples</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -300,31 +319,38 @@ fastq_file_rv
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2016, Jose Fernandez Navarro.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
-      
-      |
-      <a href="_sources/manual.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="example.html" title="Examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installing the Spatial Transcriptomics pipeline"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.3.3 documentation</a> &raquo;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2017, Jose Fernandez Navarro.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.5.
+    </div>
   </body>
 </html>

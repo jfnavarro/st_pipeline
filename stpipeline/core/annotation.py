@@ -1,5 +1,5 @@
 """ 
-This module contains wrappers of htseq-count
+This module contains a modified version of htseq-count
 with slight modifications to perform annotation
 of ST mapped reads against a reference.
 """
@@ -35,8 +35,9 @@ def count_reads_in_features(sam_filename,
                             quiet, 
                             minaqual, 
                             samout, 
-                            include_non_annotated=False, 
-                            htseq_no_ambiguous=True):
+                            include_non_annotated, 
+                            htseq_no_ambiguous,
+                            outputDiscarded):
     """
     This is taken from the function count_reads_in_features() from the 
     script htseq-count in the HTSeq package version 0.61.p2 
@@ -66,26 +67,31 @@ def count_reads_in_features(sam_filename,
         count_reads_in_features.filter_htseq.append("__no_feature")
     count_reads_in_features.filter_htseq_no_ambiguous = htseq_no_ambiguous
 
-    # Open SAM output file
+    # Open SAM/BAM output file
     flag_write = "wb" if samtype == "bam" else "wh"
     flag_read = "rb" if samtype == "bam" else "r"
     saminfile = pysam.AlignmentFile(sam_filename, flag_read)
     count_reads_in_features.samoutfile = pysam.AlignmentFile(samout, flag_write, template=saminfile)
+    if outputDiscarded is not None:
+        count_reads_in_features.samdiscarded = pysam.AlignmentFile(outputDiscarded, flag_write, template=saminfile)
     saminfile.close()
+    
     # Counter of annotated records
     count_reads_in_features.annotated = 0
     
     # Function to write to SAM output
-    def write_to_samout(r, assignment):
-        if not pe_mode:
-            r = (r,)
-        for read in r:
-            if read is not None and assignment not in count_reads_in_features.filter_htseq \
-            and not (count_reads_in_features.filter_htseq_no_ambiguous and assignment.find("__ambiguous") != -1):
-                sam_record = read.to_pysam_AlignedRead(count_reads_in_features.samoutfile)
-                sam_record.set_tag("XF", assignment, "Z")
-                count_reads_in_features.samoutfile.write(sam_record)
-                count_reads_in_features.annotated +=1
+    def write_to_samout(read, assignment):
+        # Creates the PySAM record
+        # to_pysam_AlignedSegment is the new method in HTSeq>=0.7.0 that
+        # uses the latest Pysam API and reports the correct sequences
+        sam_record = read.to_pysam_AlignedSegment(count_reads_in_features.samoutfile)
+        sam_record.set_tag("XF", assignment, "Z")
+        if read is not None and assignment not in count_reads_in_features.filter_htseq \
+        and not (count_reads_in_features.filter_htseq_no_ambiguous and assignment.find("__ambiguous") != -1):
+            count_reads_in_features.samoutfile.write(sam_record)
+            count_reads_in_features.annotated += 1
+        elif outputDiscarded is not None:
+            count_reads_in_features.samdiscarded.write(sam_record)
                 
     # Annotation objects
     features = HTSeq.GenomicArrayOfSets("auto", stranded != "no")
@@ -120,100 +126,36 @@ def count_reads_in_features(sam_filename,
         raise ValueError, "Unknown input format %s specified." % samtype
 
     try:
-        read_seq_file = SAM_or_BAM_Reader(sam_filename)
-        read_seq = read_seq_file
-        first_read = iter(read_seq).next()
-        pe_mode = first_read.paired_end
+        read_seq = SAM_or_BAM_Reader(sam_filename)
     except:
         raise RuntimeError, "Error occurred when reading beginning of SAM/BAM file."
 
     try:
-        if pe_mode:
-            if order == "name":
-                read_seq = HTSeq.pair_SAM_alignments(read_seq)
-            elif order == "pos":
-                read_seq = HTSeq.pair_SAM_alignments_with_buffer(read_seq)
-            else:
-                raise ValueError, "Illegal order specified."
 
-        for r in read_seq:
-                
-            if not pe_mode:
-                if not r.aligned:
-                    write_to_samout(r, "__not_aligned")
-                    continue
-                
-                try:
-                    if r.optional_field("NH") > 1:
-                        write_to_samout(r, "__alignment_not_unique")
-                        continue
-                except KeyError:
-                    pass
-                
-                if r.aQual < minaqual:
-                    write_to_samout(r, "__too_low_aQual")
-                    continue
-                
-                if stranded != "reverse":
-                    iv_seq = (co.ref_iv for co in r.cigar if co.type == "M" and co.size > 0)
-                else:
-                    iv_seq = (invert_strand(co.ref_iv) 
-                              for co in r.cigar 
-                              if co.type == "M" and co.size > 0)            
+        for r in read_seq:    
+            if r.aQual < minaqual:
+                write_to_samout(r, "__too_low_aQual")
+                continue
+            if stranded != "reverse":
+                iv_seq = (co.ref_iv for co in r.cigar if co.type == "M" and co.size > 0)
             else:
-                if r[0] is not None and r[0].aligned:
-                    if stranded != "reverse":
-                        iv_seq = (co.ref_iv 
-                                  for co in r[0].cigar 
-                                  if co.type == "M" and co.size > 0)
-                    else:
-                        iv_seq = (invert_strand(co.ref_iv) 
-                                  for co in r[0].cigar 
-                                  if co.type == "M" and co.size > 0)
-                else:
-                    iv_seq = tuple()
-                
-                if r[1] is not None and r[1].aligned:            
-                    if stranded != "reverse":
-                        iv_seq = itertools.chain(iv_seq,
-                                                 (invert_strand(co.ref_iv) 
-                                                  for co in r[1].cigar 
-                                                  if co.type == "M" and co.size > 0))
-                    else:
-                        iv_seq = itertools.chain(iv_seq, 
-                                                 (co.ref_iv 
-                                                  for co in r[1].cigar 
-                                                  if co.type == "M" and co.size > 0))
-                else:
-                    if (r[0] is None) or not (r[0].aligned):
-                        write_to_samout(r, "__not_aligned")
-                        continue         
-                try:
-                    if (r[0] is not None and r[0].optional_field("NH") > 1) \
-                    or (r[1] is not None and r[1].optional_field("NH") > 1):
-                        write_to_samout(r, "__alignment_not_unique")
-                        continue
-                except KeyError:
-                    pass
-                
-                if (r[0] and r[0].aQual < minaqual) or (r[1] and r[1].aQual < minaqual):
-                    write_to_samout(r, "__too_low_aQual")
-                    continue         
-               
+                iv_seq = (invert_strand(co.ref_iv) 
+                          for co in r.cigar 
+                          if co.type == "M" and co.size > 0)
             try:
                 if overlap_mode == "union":
                     fs = set()
                     for iv in iv_seq:
                         if iv.chrom not in features.chrom_vectors:
                             raise UnknownChrom
-                        for iv2, fs2 in features[ iv ].steps():
+                        for iv2, fs2 in features[iv].steps():
                             fs = fs.union(fs2)
                 elif overlap_mode == "intersection-strict" or overlap_mode == "intersection-nonempty":
                     fs = None
                     for iv in iv_seq:
                         if iv.chrom not in features.chrom_vectors:
                             raise UnknownChrom
-                        for iv2, fs2 in features[ iv ].steps():
+                        for iv2, fs2 in features[iv].steps():
                             if len(fs2) > 0 or overlap_mode == "intersection-strict":
                                 if fs is None:
                                     fs = fs2.copy()
@@ -234,23 +176,32 @@ def count_reads_in_features(sam_filename,
 
     except:
         count_reads_in_features.samoutfile.close()
+        if outputDiscarded is not None:
+            count_reads_in_features.samdiscarded.close()
         raise
 
     count_reads_in_features.samoutfile.close()
+    if outputDiscarded is not None:
+        count_reads_in_features.samdiscarded.close()
     return count_reads_in_features.annotated
 
 def annotateReads(mappedReads, 
                   gtfFile,
                   outputFile,
+                  outputDiscarded,
                   mode,
-                  strandness="reverse",
-                  htseq_no_ambiguous=True, 
-                  include_non_annotated=False):
+                  strandness,
+                  htseq_no_ambiguous, 
+                  include_non_annotated):
     """
-    Annotates a file with mapped reads (SAM/BAM) using a modified 
+    Annotates a file with mapped reads (BAM) using a modified 
     version of the htseq-count tool. It writes the annotated records to a file.
-    :param mappedReads: path to a SAM/BAM file with mapped reads sorted by coordinate
+    It assumes the input reads (BAM) are single end and do not contain
+    multiple alignments or un-annotated reads.
+    :param mappedReads: path to a BAM file with mapped reads sorted by coordinate
     :param gtfFile: path to an annotation file in GTF format
+    :param outputFile: where to write the annotated records (BAM)
+    :param outputDiscarded: where to write the non-annotated records (BAM)
     :param mode: htseq-count overlapping mode (see htseq-count documentation)
     :param strandness: the type of strandness to use when annotating (yes, no or reverse)
     :param htseq_no_ambiguous: true if we want to discard ambiguous annotations
@@ -259,11 +210,13 @@ def annotateReads(mappedReads,
     :param outputFile: the name/path to the output file
     :type mappedReads: str
     :type gtfFile: str
+    :type outputFile: str
+    :type outputDiscarded: str
     :type mode: str
     :type strandness: str
     :type htseq_no_ambiguos: boolean
-    :param include_non_annotated: boolean
-    :param outputFile: str
+    :type include_non_annotated: str
+    :type outputFile: str
     :raises: RuntimeError, ValueError
     """
     
@@ -287,7 +240,8 @@ def annotateReads(mappedReads,
                                             0, # Min quality score
                                             outputFile,
                                             include_non_annotated,
-                                            htseq_no_ambiguous)
+                                            htseq_no_ambiguous,
+                                            outputDiscarded)
     except Exception as e:
         error = "Error during annotation. HTSEQ execution failed\n"
         logger.error(error)

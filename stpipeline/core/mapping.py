@@ -7,24 +7,24 @@ import subprocess
 from subprocess import CalledProcessError
 from stpipeline.common.utils import fileOk
 from stpipeline.common.stats import qa_stats
-import uuid
 import os
 import shutil
 
 def alignReads(reverse_reads, 
                ref_map,
                outputFile,
-               annotation=None,
-               outputFileDiscarded=None,
-               outputFolder=None,
-               trimReverse=0,
-               invTrimReverse=0,
-               cores=4,
-               min_intron_size=20,
-               max_intron_size=1000000,
-               disable_multimap=False,
-               diable_softclipping=False,
-               twopassMode=False):
+               annotation,
+               outputFileDiscarded,
+               outputFolder,
+               trimReverse,
+               invTrimReverse,
+               cores,
+               min_intron_size,
+               max_intron_size,
+               disable_multimap,
+               diable_softclipping,
+               twopassMode,
+               min_length):
     """
     This function will perform a sequence alignment using STAR.
     Mapped and unmapped reads are written to the paths given as
@@ -45,6 +45,7 @@ def alignReads(reverse_reads,
     :param disable_multimap: if True no multiple alignments will be allowed
     :param diable_softclipping: it True no local alignment allowed
     :param twopassMode: True to use the 2-pass mode
+    :param min_length: the min allowed read length (mapped bases)
     :type reverse_reads: str
     :type ref_map: str
     :type outputFile: str
@@ -59,6 +60,7 @@ def alignReads(reverse_reads,
     :type disable_multimap: bool
     :type diable_softclipping: bool
     :type twopassMode: bool
+    :type min_length: str
     :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
     logger = logging.getLogger("STPipeline")
@@ -86,7 +88,7 @@ def alignReads(reverse_reads,
         log_final = os.path.join(outputFolder, log_final)
         log_progress = os.path.join(outputFolder, log_progress)
     
-    multi_map_number = 1 if disable_multimap else 10
+    multi_map_number = 1 if disable_multimap else 20 # 10 is the STAR default
     alignment_mode = "EndToEnd" if diable_softclipping else "Local"
     
     flags = ["--clip3pNbases", invTrimReverse,
@@ -99,12 +101,12 @@ def alignReads(reverse_reads,
              "--outSAMorder", "Paired",    
              "--outSAMprimaryFlag", "OneBestScore", 
              "--outFilterMultimapNmax", multi_map_number,
-             "--sjdbOverhang", 100, # default is 100
-             "--outFilterMismatchNmax", 10, # large number switches it off (default 10)
-             "--outFilterMismatchNoverLmax", 0.3, # default is 0.3
              "--alignIntronMin", min_intron_size,
              "--alignIntronMax", max_intron_size,
+             "--outFilterMatchNmin", min_length,
+             "--outSAMmultNmax", 1,
              "--readMatesLengthsIn", "NotEqual",
+             "--outFilterMismatchNoverLmax", 0.1, ## (0.3 default)
              "--genomeLoad", "NoSharedMemory"] 
     
     if twopassMode:
@@ -187,6 +189,9 @@ def barcodeDemultiplexing(reads,
                           kmer, 
                           start_positon,
                           over_hang,
+                          taggd_metric,
+                          taggd_multiple_hits_keep_one,
+                          taggd_trim_sequences,
                           cores,
                           outputFilePrefix,
                           keep_discarded_files=False):
@@ -202,6 +207,9 @@ def barcodeDemultiplexing(reads,
     :param kmer: the kmer length
     :param start_positon: the start position of the barcode
     :param over_hang: the number of bases to allow for overhang
+    :param taggd_metric: the distance metric algorithm (Subglobal, Levensthein or Hamming)
+    :param taggd_multiple_hits_keep_one: when True keep one random hit when multiple candidates
+    :param taggd_trim_sequences: coordinates to trim in the barcode
     :param outputFilePrefix: location and prefix for the output files
     :param keep_discarded_files: if True files with the non demultiplexed reads will be generated
     :type reads: str
@@ -210,6 +218,9 @@ def barcodeDemultiplexing(reads,
     :type kmer: int
     :type start_positon: int
     :type over_hang: int
+    :type taggd_metric: str
+    :type taggd_multiple_hits_keep_one: bool
+    :type taggd_trim_sequences: list
     :type outputFilePrefix: str
     :type keep_discarded_files: bool
     :raises: RuntimeError,ValueError,OSError,CalledProcessError
@@ -225,21 +236,32 @@ def barcodeDemultiplexing(reads,
     #--metric (subglobal (default) , Levenshtein or Hamming)
     #--slider-increment (space between kmer searches, 0 is default = kmer length)
     #--seed
-    #--no-multiprocessing
     #--overhang additional flanking bases around read barcode to allow
     #--estimate-min-edit-distance is set estimate the min edit distance among true barcodes
     #--no-offset-speedup turns off speed up, 
     #  it might yield more hits (exactly as findIndexes)
-    #--homopolymer-filter if set excludes erads where barcode 
+    #--homopolymer-filter if set excludes reads where barcode 
     #  contains a homolopymer of the given length (0 no filter), default 8
-    args = ['taggd_demultiplex.py',
-            "--max-edit-distance", mismatches,
+    
+    if taggd_metric == "Hamming": over_hang = 0 
+    args = ['taggd_demultiplex.py']
+    
+    if taggd_trim_sequences is not None:
+        args.append("--trim-sequences") 
+        for pos in taggd_trim_sequences:
+            args.append(pos) 
+            
+    args += ["--max-edit-distance", mismatches,
             "--k", kmer,
             "--start-position", start_positon,
-            "--homopolymer-filter", 8,
+            "--homopolymer-filter", 0,
             "--subprocesses", cores,
+            "--metric", taggd_metric,
             "--overhang", over_hang]
-    
+            
+    if taggd_multiple_hits_keep_one:
+        args.append("--multiple-hits-keep-one")  
+            
     if not keep_discarded_files:
         args.append("--no-unmatched-output")
         args.append("--no-ambiguous-output")
@@ -276,14 +298,11 @@ def barcodeDemultiplexing(reads,
            
     # TODO must be a cleaner way to get the stats from the output file
     procOut = stdout.split("\n")
-    logger.info("Barcode Mapping stats:")
+    logger.info("Demultiplexing Mapping stats:")
     for line in procOut: 
         if line.find("Total reads:") != -1:
             logger.info(str(line))
         if line.find("Total reads written:") != -1:
-            # Update the QA stats
-            # TODO find a cleaner way to to this
-            qa_stats.reads_after_demultiplexing = int(line.split()[-1])
             logger.info(str(line))
         if line.find("Perfect Matches:") != -1:
             logger.info(str(line))

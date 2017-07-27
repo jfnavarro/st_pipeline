@@ -23,6 +23,7 @@ import gzip
 import bz2
 import tempfile
 import shutil
+import gc
 
 FILENAMES = {"mapped" : "mapped.bam",
              "annotated" : "annotated.bam",
@@ -40,7 +41,8 @@ FILENAMES_DISCARDED = {"mapped_discarded" : "mapping_discarded.fastq",
                        "demultiplexed_unmatched" : "demultiplexed_unmatched.fastq",
                        "demultiplexed_results" : "demultiplexed_results.tsv",
                        "mapped_filtered_discarded" : "mapped_filtered_discarded.bam",
-                       "quality_trimmed_discarded" : "R2_quality_trimmed_discarded.fastq"}
+                       "quality_trimmed_discarded" : "R2_quality_trimmed_discarded.fastq",
+                       "annotated_discarded": "annotated_discarded.bam"}
 
 class Pipeline():
     """ This class contains all the ST pipeline
@@ -54,12 +56,11 @@ class Pipeline():
         self.allowed_missed = 2
         self.allowed_kmer = 6
         self.overhang = 2
-        self.min_length_trimming = 25
+        self.min_length_trimming = 20
         self.trimming_rv = 0
         self.min_quality_trimming = 20 
         self.clean = True
         self.barcode_start = 0
-        self.barcode_length = 18
         self.threads = 8
         self.verbose = False
         self.ids = None
@@ -79,19 +80,19 @@ class Pipeline():
         self.umi_allowed_mismatches = 1
         self.umi_start_position = 18
         self.umi_end_position = 27
-        self.umi_min_cluster_size = 2
         self.keep_discarded_files = False
-        self.remove_polyA_distance = 0
-        self.remove_polyT_distance = 0
-        self.remove_polyG_distance = 0
-        self.remove_polyC_distance = 0
+        self.remove_polyA_distance = 10
+        self.remove_polyT_distance = 10
+        self.remove_polyG_distance = 10
+        self.remove_polyC_distance = 10
+        self.remove_polyN_distance = 10
         self.filter_AT_content = 90
         self.filter_GC_content = 90
         self.disable_clipping = False
         self.disable_multimap = False
-        self.umi_cluster_algorithm = "naive"
-        self.min_intron_size = 20
-        self.max_intron_size = 1000000
+        self.umi_cluster_algorithm = "hierarchical"
+        self.min_intron_size = 1
+        self.max_intron_size = 1
         self.umi_filter = False
         self.umi_filter_template = "WSNNWSNNV"
         self.compute_saturation = False
@@ -100,8 +101,12 @@ class Pipeline():
         self.low_memory = False
         self.two_pass_mode = False
         self.strandness = "yes"
-        self.umi_quality_bases = 4
-        self.umi_counting_offset = 50
+        self.umi_quality_bases = 6
+        self.umi_counting_offset = 250
+        self.taggd_metric = "Subglobal"
+        self.taggd_multiple_hits_keep_one = False
+        self.taggd_trim_sequences = None
+        self.adaptor_missmatches = 0
         
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -122,7 +127,8 @@ class Pipeline():
                 shutil.rmtree(star_temp1)
             if os.path.isdir(star_temp2):
                 shutil.rmtree(star_temp2)
-            if self.clean and not self.keep_discarded_files:
+            if self.clean and not self.keep_discarded_files \
+            and self.temp_folder != self.output_folder:
                 shutil.rmtree(self.temp_folder)
           
     def sanityCheck(self):
@@ -257,20 +263,18 @@ class Pipeline():
                             "(GTF or GFF format is required) to be used to annotated the reads")
         parser.add_argument('--expName', type=str, metavar="[STRING]", required=True,
                             help="Name of the experiment/dataset (The output files will prepend this name)")
-        parser.add_argument('--allowed-missed', default=2, metavar="[INT]", type=int, choices=range(0, 7),
+        parser.add_argument('--allowed-missed', default=2, metavar="[INT]", type=int, choices=range(0, 11),
                             help="Number of allowed mismatches when demultiplexing " \
                             "against the barcodes with TaggD (default: %(default)s)")
-        parser.add_argument('--allowed-kmer', default=6, metavar="[INT]", type=int, choices=range(1, 10),
+        parser.add_argument('--allowed-kmer', default=6, metavar="[INT]", type=int, choices=range(1, 30),
                             help="KMer length when demultiplexing against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0, 7),
-                            help="Extra flanking bases added when demultiplexing against the barcodes")
-        parser.add_argument('--min-length-qual-trimming', default=25, metavar="[INT]", type=int, choices=range(10, 101),
+                            help="Extra flanking bases added when demultiplexing against the barcodes with TaggD (default: %(default)s)")
+        parser.add_argument('--min-length-qual-trimming', default=20, metavar="[INT]", type=int, choices=range(10, 101),
                             help="Minimum length of the reads after trimming, " \
                             "shorter reads will be discarded (default: %(default)s)")
-        parser.add_argument('--mapping-rv-trimming', default=0, metavar="[INT]", type=int, choices=range(0, 101),
+        parser.add_argument('--mapping-rv-trimming', default=0, metavar="[INT]", type=int, choices=range(0, 51),
                             help="Number of bases to trim in the reverse reads for the mapping step (5' end) (default: %(default)s)")
-        parser.add_argument('--length-id', default=18, type=int, metavar="[INT]", choices=[18, 21, 24, 27],
-                            help="Length of IDs (the length of the barcodes) (default: %(default)s)")
         parser.add_argument('--contaminant-index', metavar="[FOLDER]", action=readable_dir, default=None,
                             help="Path to the folder with a STAR index with a contaminant genome. Reads will be filtered "
                             "against the specified genome and mapping reads will be descarded")
@@ -282,15 +286,15 @@ class Pipeline():
                             "Modes = {union,intersection-nonempty(default),intersection-strict}")
         parser.add_argument('--htseq-no-ambiguous', action="store_true", default=False,
                             help="When using htseq discard reads annotating ambiguous genes (default False)")
-        parser.add_argument('--start-id', default=0, metavar="[INT]", type=int, choices=range(0, 27),
+        parser.add_argument('--start-id', default=0, metavar="[INT]", type=int, choices=range(0, 101),
                             help="Start position of the IDs (Barcodes) in the R1 (counting from 0) (default: %(default)s)")
         parser.add_argument('--no-clean-up', action="store_false", default=True,
                             help="Do not remove temporary/intermediary files (useful for debugging)")
         parser.add_argument('--verbose', action="store_true", default=False,
                             help="Show extra information on the log file")
-        parser.add_argument('--mapping-threads', default=4, metavar="[INT]", type=int, choices=range(1, 17),
+        parser.add_argument('--mapping-threads', default=4, metavar="[INT]", type=int, choices=range(1, 33),
                             help="Number of threads to use in the mapping step (default: %(default)s)")
-        parser.add_argument('--min-quality-trimming', default=20, metavar="[INT]", type=int, choices=range(10, 61),
+        parser.add_argument('--min-quality-trimming', default=20, metavar="[INT]", type=int, choices=range(5, 61),
                             help="Minimum phred quality a base must have in the trimming step (default: %(default)s)")
         parser.add_argument('--bin-path', metavar="[FOLDER]", action=readable_dir, default=None,
                             help="Path to folder where binary executables are present (system path by default)")
@@ -303,25 +307,24 @@ class Pipeline():
         parser.add_argument('--umi-allowed-mismatches', default=1, metavar="[INT]", type=int, choices=range(0, 5),
                             help="Number of allowed mismatches (hamming distance) " \
                             "that UMIs of the same gene-spot must have in order to cluster together (default: %(default)s)")
-        parser.add_argument('--umi-start-position', default=18, metavar="[INT]", type=int, choices=range(0, 43),
+        parser.add_argument('--umi-start-position', default=18, metavar="[INT]", type=int, choices=range(0, 91),
                             help="Position in R1 (base wise) of the first base of the " \
                             "UMI (starting by 0) (default: %(default)s)")
-        parser.add_argument('--umi-end-position', default=27, metavar="[INT]", type=int, choices=range(8, 51),
+        parser.add_argument('--umi-end-position', default=27, metavar="[INT]", type=int, choices=range(0, 101),
                             help="Position in R1 (base wise) of the last base of the "\
                             "UMI (starting by 1) (default: %(default)s)")
-        parser.add_argument('--umi-min-cluster-size', default=2, metavar="[INT]", type=int, choices=range(1, 11),
-                            help="Min number of equal UMIs to count" \
-                            " as a cluster (duplicate) given the allowed mismatches (default: %(default)s)")
         parser.add_argument('--keep-discarded-files', action="store_true", default=False,
                             help='Writes down unaligned, un-annotated and un-demultiplexed reads to files')
-        parser.add_argument('--remove-polyA', default=0, metavar="[INT]", type=int, choices=range(0, 50),
-                            help="Remove PolyA stretches of the given length from R2 (default: %(default)s)")
-        parser.add_argument('--remove-polyT', default=0, metavar="[INT]", type=int, choices=range(0, 50),
-                            help="Remove PolyT stretches of the given length from R2 (default: %(default)s)")
-        parser.add_argument('--remove-polyG', default=0, metavar="[INT]", type=int, choices=range(0, 50),
-                            help="Remove PolyG stretches of the given length from R2 (default: %(default)s)")
-        parser.add_argument('--remove-polyC', default=0, metavar="[INT]", type=int, choices=range(0, 50),
-                            help="Remove PolyC stretches of the given length from R2 (default: %(default)s)")
+        parser.add_argument('--remove-polyA', default=10, metavar="[INT]", type=int, choices=range(0, 25),
+                            help="Remove PolyA stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
+        parser.add_argument('--remove-polyT', default=10, metavar="[INT]", type=int, choices=range(0, 25),
+                            help="Remove PolyT stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
+        parser.add_argument('--remove-polyG', default=10, metavar="[INT]", type=int, choices=range(0, 25),
+                            help="Remove PolyG stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
+        parser.add_argument('--remove-polyC', default=10, metavar="[INT]", type=int, choices=range(0, 25),
+                            help="Remove PolyC stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
+        parser.add_argument('--remove-polyN', default=10, metavar="[INT]", type=int, choices=range(0, 25),
+                            help="Remove PolyN stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
         parser.add_argument('--filter-AT-content', default=90, metavar="[INT%]", type=int, choices=range(0, 100),
                             help="Discards reads whose number of A and T bases in total are more " \
                             "or equal than the number given in percentage (default: %(default)s)")
@@ -333,16 +336,18 @@ class Pipeline():
                             "Otherwise the highest scored one will be kept")
         parser.add_argument('--disable-clipping', action="store_true", default=False,
                             help="If activated, disable soft-clipping (local alignment) in the mapping step")
-        parser.add_argument('--umi-cluster-algorithm', default="naive", metavar="[STRING]", 
-                            type=str, choices=["naive", "hierarchical"],
+        parser.add_argument('--umi-cluster-algorithm', default="hierarchical", metavar="[STRING]", 
+                            type=str, choices=["naive", "hierarchical", "Adjacent", "AdjacentBi"],
                             help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n" \
-                            "Modes = {naive(default), hierarchical}")
-        parser.add_argument('--min-intron-size', default=20, metavar="[INT]", type=int, choices=range(0, 1000),
-                            help="Minimum allowed intron size when searching for splice " \
-                            "variants in the mapping step (default: %(default)s)")
-        parser.add_argument('--max-intron-size', default=100000, metavar="[INT]", type=int, choices=range(0, 1000000),
-                            help="Maximum allowed intron size when searching for splice " \
-                            "variants in the mapping step (default: %(default)s)")
+                            "Options = {naive, hierarchical(default), Adjacent and AdjacentBi}")
+        parser.add_argument('--min-intron-size', default=1, metavar="[INT]", type=int, choices=range(1, 1000),
+                            help="Minimum allowed intron size when searching for splice variants with STAR\n" \
+                            "Splices alignments are disabled by default (=1) but to turn it on set this parameter\n" \
+                            "to a bigger number, for example 10 or 20. (default: %(default)s)")
+        parser.add_argument('--max-intron-size', default=1, metavar="[INT]", type=int, choices=range(1, 1000000),
+                            help="Maximum allowed intron size when searching for splice variants with STAR\n" \
+                            "Splices alignments are disabled by default (=1) but to turn it on set this parameter\n" \
+                            "to a big number, for example 10000 or 100000. (default: %(default)s)")
         parser.add_argument('--umi-filter', action="store_true", default=False,
                             help="Enables the UMI quality filter based on the template given in --umi-filter-template")
         parser.add_argument('--umi-filter-template', default="WSNNWSNNV", type=str, metavar="[STRING]",
@@ -352,22 +357,35 @@ class Pipeline():
                             "unique molecules and then a saturation curve (included in the log file)")
         parser.add_argument('--include-non-annotated', action="store_true", default=False,
                             help="Do not discard un-annotated reads (they will be labeled __no_feature)")
-        parser.add_argument('--inverse-mapping-rv-trimming', default=0, type=int, metavar="[INT]", choices=range(0, 100),
+        parser.add_argument('--inverse-mapping-rv-trimming', default=0, type=int, metavar="[INT]", choices=range(0, 50),
                             help="Number of bases to trim in the reverse reads for the mapping step on the 3' end")
         parser.add_argument('--low-memory', default=False, action="store_true",
                             help="Writes temporary records into disk in order to save memory but gaining a speed penalty")
         parser.add_argument('--two-pass-mode', default=False, action="store_true",
-                            help="Activates the 2 pass mode in STAR to also map against splice variants")
+                            help="Activates the 2-pass mode in STAR to improve mapping accuracy")
         parser.add_argument('--strandness', default="yes", type=str, metavar="[STRING]", choices=["no", "yes", "reverse"],
                             help="What strandness mode to use when annotating with htseq-count [no, yes(default), reverse]")
-        parser.add_argument('--umi-quality-bases', default=4, metavar="[INT]", type=int, choices=range(0, 10),
+        parser.add_argument('--umi-quality-bases', default=6, metavar="[INT]", type=int, choices=range(0, 10),
                             help="Maximum number of low quality bases allowed in an UMI (default: %(default)s)")
-        parser.add_argument('--umi-counting-offset', default=50, metavar="[INT]", type=int, choices=range(0, 300),
+        parser.add_argument('--umi-counting-offset', default=250, metavar="[INT]", type=int, choices=range(0, 1000),
                             help="Expression count for each gene-spot combination is expressed " \
                             "as the number of unique UMIs in each strand/start position. However " \
                             "some reads might have slightly different start positions due to " \
                             "amplification artifacts. This parameters allows to define an " \
-                            "offset from where to count unique UMIs (default: %(default)s)") 
+                            "offset window from where to count unique UMIs. You can set it to a very" \
+                            "high value +9999 to count unique UMIs for the whole gene (default: %(default)s)")
+        parser.add_argument('--demultiplexing-metric', default="Subglobal", metavar="[STRING]", type=str,
+                            help="Distance metric for TaggD demultiplexing: Subglobal, Levenshtein or Hamming (default: Subglobal)",
+                            choices=["Subglobal","Levenshtein","Hamming"])
+        parser.add_argument("--demultiplexing-multiple-hits-keep-one", default=False, action="store_true",
+                            help="When multiple ambiguous hits with same score are found in the demultiplexing, keep one (random)." )
+        parser.add_argument('--demultiplexing-trim-sequences', nargs='+', type=int, default=None, 
+                            help="Trims from the barcodes in the input file when doing demultiplexing.\n" \
+                            "The bases given in the list of tuples as START END START END .. where\n" \
+                            "START is the integer position of the first base (0 based) and END is the integer\n" \
+                            "position of the last base (1 based).\nTrimmng sequences can be given several times.")
+        parser.add_argument('--homopolymer-mismatches', default=0, metavar="[INT]", type=int, choices=range(0, 6),
+                            help="Number of mismatches allowed when removing homopolymers (default: %(default)s)")
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -384,7 +402,6 @@ class Pipeline():
         self.min_quality_trimming = options.min_quality_trimming
         self.clean = options.no_clean_up
         self.barcode_start = options.start_id
-        self.barcode_length = options.length_id
         self.threads = options.mapping_threads
         self.verbose = options.verbose
         self.ids = os.path.abspath(options.ids)
@@ -413,12 +430,12 @@ class Pipeline():
         self.umi_allowed_mismatches = options.umi_allowed_mismatches
         self.umi_start_position = options.umi_start_position
         self.umi_end_position = options.umi_end_position
-        self.umi_min_cluster_size = options.umi_min_cluster_size
         self.keep_discarded_files = options.keep_discarded_files
         self.remove_polyA_distance = options.remove_polyA
         self.remove_polyT_distance = options.remove_polyT
         self.remove_polyG_distance = options.remove_polyG
         self.remove_polyC_distance = options.remove_polyC
+        self.remove_polyN_distance = options.remove_polyN
         self.filter_AT_content = options.filter_AT_content
         self.filter_GC_content = options.filter_GC_content
         self.disable_multimap = options.disable_multimap
@@ -436,6 +453,10 @@ class Pipeline():
         self.strandness = options.strandness
         self.umi_quality_bases = options.umi_quality_bases
         self.umi_counting_offset = options.umi_counting_offset
+        self.taggd_metric = options.demultiplexing_metric
+        self.taggd_multiple_hits_keep_one = options.demultiplexing_multiple_hits_keep_one
+        self.taggd_trim_sequences = options.demultiplexing_trim_sequences
+        self.adaptor_missmatches = options.homopolymer_mismatches
         
         # Assign class parameters to the QA stats object
         import inspect
@@ -463,57 +484,63 @@ class Pipeline():
         
         # Some info
         self.logger.info("Output directory: {}".format(self.output_folder))
-        self.logger.info("Temp directory: {}".format(self.temp_folder))
-        self.logger.info("Experiment name: {}".format(self.expName))
-        self.logger.info("Forward input file: {}".format(self.fastq_fw))
-        self.logger.info("Reverse input file: {}".format(self.fastq_rv))
-        self.logger.info("Reference mapping index folder: {}".format(self.ref_map))
+        self.logger.info("Temporary directory: {}".format(self.temp_folder))
+        self.logger.info("Dataset name: {}".format(self.expName))
+        self.logger.info("Forward(R1) input file: {}".format(self.fastq_fw))
+        self.logger.info("Reverse(R2) input file: {}".format(self.fastq_rv))
+        self.logger.info("Reference mapping STAR index folder: {}".format(self.ref_map))
         self.logger.info("Reference annotation file: {}".format(self.ref_annotation))
         if self.contaminant_index is not None:
-            self.logger.info("Using contamination filter: {}".format(self.contaminant_index))
+            self.logger.info("Using contamination filter STAR index: {}".format(self.contaminant_index))
         self.logger.info("CPU Nodes: {}".format(self.threads))
-        self.logger.info("Ids file: {}".format(self.ids))
+        self.logger.info("Ids(barcodes) file: {}".format(self.ids))
         self.logger.info("TaggD allowed mismatches: {}".format(self.allowed_missed))
-        self.logger.info("TaggD barcode length: {}".format(self.barcode_length))
         self.logger.info("TaggD kmer size: {}".format(self.allowed_kmer))
         self.logger.info("TaggD overhang: {}".format(self.overhang))
+        self.logger.info("TaggD metric: {}".format(self.taggd_metric))
+        if self.taggd_multiple_hits_keep_one:
+            self.logger.info("TaggD multiple hits keep one (random) is enabled")
+        if self.taggd_trim_sequences is not None:
+            self.logger.info("TaggD trimming from the barcodes " + '-'.join(str(x) for x in self.taggd_trim_sequences))
         self.logger.info("Mapping reverse trimming: {}".format(self.trimming_rv))
         self.logger.info("Mapping inverse reverse trimming: {}".format(self.inverse_trimming_rv))
         self.logger.info("Mapping tool: STAR")
         self.logger.info("Annotation tool: HTSeq")
         self.logger.info("Annotation mode: {}".format(self.htseq_mode))
         self.logger.info("Annotation strandness {}".format(self.strandness))
-        self.logger.info("Filter of AT content in reads: {}".format(self.filter_AT_content))
-        self.logger.info("Filter of GC content in reads: {}".format(self.filter_GC_content))
+        self.logger.info("Remove reads whose AT content is {}%".format(self.filter_AT_content))
+        self.logger.info("Remove reads whose GC content is {}%".format(self.filter_GC_content))
         if self.disable_clipping:
-            self.logger.info("Not allowing soft clipping when mapping")
+            self.logger.info("Not allowing soft clipping when mapping with STAR")
         if self.disable_multimap:
-            self.logger.info("Not allowing multiple alignments when mapping")
-        self.logger.info("Mapping minimum intron size: {}".format(self.min_intron_size))
-        self.logger.info("Mapping maximum intron size: {}".format(self.max_intron_size))
+            self.logger.info("Not allowing multiple alignments when mapping with STAR")
+        self.logger.info("Mapping minimum intron size allowed (splice alignments) with STAR: {}".format(self.min_intron_size))
+        self.logger.info("Mapping maximum intron size allowed (splice alignments) with STAR: {}".format(self.max_intron_size))
         if self.compute_saturation:
-            self.logger.info("Computing saturation curve")
+            self.logger.info("Computing saturation curve with several sub-samples...")
         if self.include_non_annotated:
-            self.logger.info("Including non annotated reads")
-        self.logger.info("Using UMIs to remove duplicates")
-        self.logger.info("Using UMIs start position: {}".format(self.umi_start_position))
-        self.logger.info("Using UMIs end position: {}".format(self.umi_end_position))
-        self.logger.info("Using UMIs min cluster size: {}".format(self.umi_min_cluster_size))
-        self.logger.info("Using UMIs allowed mismatches: {}".format(self.umi_allowed_mismatches))
-        self.logger.info("Using UMIs clustering algorithm: {}".format(self.umi_cluster_algorithm))
+            self.logger.info("Including non annotated reads in the output")
+        self.logger.info("UMIs start position: {}".format(self.umi_start_position))
+        self.logger.info("UMIs end position: {}".format(self.umi_end_position))
+        self.logger.info("UMIs allowed mismatches: {}".format(self.umi_allowed_mismatches))
+        self.logger.info("UMIs clustering algorithm: {}".format(self.umi_cluster_algorithm))
         self.logger.info("Allowing an offset of {} when clustering UMIs " \
                          "by strand-start in a gene-spot".format(self.umi_counting_offset))
         self.logger.info("Allowing {} low quality bases in an UMI".format(self.umi_quality_bases))
+        self.logger.info("Discarding reads that after trimming are shorter than {}".format(self.min_length_trimming))
         if self.umi_filter:
             self.logger.info("UMIs using filter: {}".format(self.umi_filter_template))    
         if self.remove_polyA_distance > 0:
-            self.logger.info("Removing polyA adaptors of a length of at least: {}".format(self.remove_polyA_distance))                        
+            self.logger.info("Removing polyA sequences of a length of at least: {}".format(self.remove_polyA_distance))                        
         if self.remove_polyT_distance > 0:
-            self.logger.info("Removing polyT adaptors of a length of at least: {}".format(self.remove_polyT_distance))
+            self.logger.info("Removing polyT sequences of a length of at least: {}".format(self.remove_polyT_distance))
         if self.remove_polyG_distance > 0:
-            self.logger.info("Removing polyG adaptors of a length of at least: {}".format(self.remove_polyG_distance))
+            self.logger.info("Removing polyG sequences of a length of at least: {}".format(self.remove_polyG_distance))
         if self.remove_polyC_distance > 0:
-            self.logger.info("Removing polyC adaptors of a length of at least: {}".format(self.remove_polyC_distance))
+            self.logger.info("Removing polyC sequences of a length of at least: {}".format(self.remove_polyC_distance))
+        if self.remove_polyN_distance > 0:
+            self.logger.info("Removing polyN sequences of a length of at least: {}".format(self.remove_polyN_distance))
+        self.logger.info("Allowing {} mismatches when removing homopolymers".format(self.adaptor_missmatches))
         if self.low_memory:
             self.logger.info("Using a SQL based container to save memory")
         if self.two_pass_mode :
@@ -591,8 +618,6 @@ class Pipeline():
                              FILENAMES["quality_trimmed_R1"],
                              FILENAMES["quality_trimmed_R2"],
                              FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
-                             self.barcode_start,
-                             self.barcode_length,
                              self.filter_AT_content,
                              self.filter_GC_content,
                              self.umi_start_position,
@@ -603,10 +628,12 @@ class Pipeline():
                              self.remove_polyT_distance,
                              self.remove_polyG_distance,
                              self.remove_polyC_distance,
+                             self.remove_polyN_distance,
                              self.qual64,
                              self.umi_filter,
                              self.umi_filter_template,
-                             self.umi_quality_bases)
+                             self.umi_quality_bases,
+                             self.adaptor_missmatches)
         except Exception:
             raise
           
@@ -627,11 +654,12 @@ class Pipeline():
                            self.trimming_rv,
                            self.inverse_trimming_rv,
                            self.threads,
-                           self.min_intron_size,
-                           self.max_intron_size,
+                           1, # Disable splice alignments in contaminant filter
+                           1, # Disable splice alignments in contaminant filter
                            False, # Enable multimap in contaminant filter
-                           True, # Disable softclipping in contaminant filter
-                           False) # Disable 2-pass mode in contaminant filter
+                           False, # Enable softclipping in contaminant filter
+                           False, # Disable 2-pass mode in contaminant filter
+                           self.min_length_trimming) 
             except Exception:
                 raise
             
@@ -654,7 +682,8 @@ class Pipeline():
                        self.max_intron_size,
                        self.disable_multimap,
                        self.disable_clipping,
-                       self.two_pass_mode)
+                       self.two_pass_mode,
+                       self.min_length_trimming)
         except Exception:
             raise
             
@@ -669,6 +698,9 @@ class Pipeline():
                                   self.allowed_kmer,
                                   self.barcode_start,
                                   self.overhang,
+                                  self.taggd_metric,
+                                  self.taggd_multiple_hits_keep_one,
+                                  self.taggd_trim_sequences,
                                   self.threads,
                                   FILENAMES["demultiplexed_prefix"], # Prefix for output files
                                   self.keep_discarded_files)
@@ -676,30 +708,34 @@ class Pipeline():
             raise
         
         #=================================================================
-        # STEP: OBTAIN HASH OF DEMULTIPLEXED READS
-        # Hash demultiplexed reads to obtain a hash of read_name => (barcode,x,y,umi) 
+        # STEP: OBTAIN DICT OF DEMULTIPLEXED READS
+        # Iterate demultiplexed FASTQ reads to obtain a dict of read_name => (x,y,umi) 
         #=================================================================
-        self.logger.info("Parsing demultiplexed reads {}".format(globaltime.getTimestamp()))
+        self.logger.info("Parsing demultiplexed reads (R1) {}".format(globaltime.getTimestamp()))
         hash_reads = hashDemultiplexedReads(FILENAMES["demultiplexed_matched"], 
                                             self.umi_start_position,
                                             self.umi_end_position,
                                             self.low_memory)
         
         #================================================================
-        # STEP: filters mapped reads and add the (Barcode,x,y,umi) as SAM tags
+        # STEP: filters mapped reads and add the (x,y,umi) as extra SAM tags
         #================================================================
-        self.logger.info("Starting processing aligned reads {}".format(globaltime.getTimestamp()))
+        self.logger.info("Starting processing aligned reads (R2) {}".format(globaltime.getTimestamp()))
         try:
             filterMappedReads(FILENAMES["mapped"],
                               hash_reads,
                               FILENAMES["mapped_filtered"],
-                              FILENAMES_DISCARDED["mapped_filtered_discarded"] if self.keep_discarded_files else None,
-                              self.min_length_trimming)
+                              FILENAMES_DISCARDED["mapped_filtered_discarded"] if self.keep_discarded_files else None)
         except Exception:
             raise
         finally:
-            if self.low_memory: hash_reads.close() 
-                
+            if self.low_memory: hash_reads.close()
+            else:
+                # Enforcing to remove the memory used 
+                hash_reads.clear()
+                del hash_reads
+            gc.collect()   
+            
         #=================================================================
         # STEP: annotate using htseq-count
         #=================================================================
@@ -708,6 +744,7 @@ class Pipeline():
             annotateReads(FILENAMES["mapped_filtered"],
                           self.ref_annotation,
                           FILENAMES["annotated"],
+                          FILENAMES_DISCARDED["annotated_discarded"] if self.keep_discarded_files else None,
                           self.htseq_mode,
                           self.strandness,
                           self.htseq_no_ambiguous,
@@ -728,7 +765,6 @@ class Pipeline():
                                   FILENAMES["annotated"],
                                   self.umi_cluster_algorithm,
                                   self.umi_allowed_mismatches,
-                                  self.umi_min_cluster_size,
                                   self.umi_counting_offset,
                                   self.expName,
                                   self.temp_folder)
@@ -744,7 +780,6 @@ class Pipeline():
                           qa_stats, # Passed as reference
                           self.umi_cluster_algorithm,
                           self.umi_allowed_mismatches,
-                          self.umi_min_cluster_size,
                           self.umi_counting_offset,
                           self.output_folder,
                           self.expName,

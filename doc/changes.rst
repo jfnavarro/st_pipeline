@@ -1,5 +1,54 @@
 Changes
 -------
+**Version 1.3.3**
+
+* Disabled spliced alignments by default
+
+**Version 1.3.2**
+
+* Optimized the mapping and annotation steps
+
+**Version 1.3.1**
+
+* Homopolymer miss-matches is a parameter now
+* Removing now also PolyNs (parameter)
+
+**Version 1.3.0**
+
+* Added more methods to cluster UMIs
+* Optimized the UMI counting algorithm
+* Optimized the memory use
+
+**Version 1.2.6**
+
+* Take into account soft-clipped bases when computing start/end positions
+
+**Version 1.2.5**
+* Changed the limit range of some parameters
+
+**Version 1.2.4**
+
+* Fixed small bugs
+* Small improvements in st_qa.py and convertEnsemblToNames.py
+
+**Version 1.2.3**
+
+* Bumped TaggD version
+* Added more stats to the dataset output
+* Added scripts to compute stats
+* Added new option for TaggD
+
+**Version 1.2.2**
+
+* Fixed bugs in convertEnsemblToNames
+* Added some parameters for TaggD demultiplexing
+* Bumped version of TaggD
+
+**Version 1.2.1**
+
+* Made homopolymers filters enabled by default
+* Added a test dataset to the docs
+
 
 **Version 1.2.0**
 

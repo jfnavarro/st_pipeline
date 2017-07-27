@@ -91,7 +91,6 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.umi_allowed_mismatches = 1
         self.pipeline.umi_start_position = 18
         self.pipeline.umi_end_position = 27
-        self.pipeline.umi_min_cluster_size = 2
         self.pipeline.keep_discarded_files = True
         self.pipeline.allowed_missed = 2
         self.pipeline.allowed_kmer = 6
@@ -100,7 +99,6 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.min_quality_trimming = 20
         self.pipeline.clean = False
         self.pipeline.barcode_start = 0
-        self.pipeline.barcode_length = 18
         self.pipeline.threads = multiprocessing.cpu_count() - 1
         self.pipeline.verbose = True
         self.pipeline.ids = os.path.abspath(self.chipfile)

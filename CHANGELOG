@@ -368,3 +368,61 @@ Version 1.1.7
 
 Version 1.2.0
 * Fixed a small bug in the deletion of the tmp folder
+
+Version 1.2.1
+* Made homopolymers filters enabled by default
+* Added a test dataset to the docs
+
+Version 1.2.2
+* Fixed bugs in convertEnsemblToNames
+* Added some parameters for TaggD demultiplexing
+* Bumped version of TaggD
+
+Version 1.2.3
+* Bumped TaggD version
+* Added more stats to the dataset output
+* Added scripts to compute stats
+* Added new option for TaggD
+
+Version 1.2.4
+* Fixed small bugs
+* Small improvements in st_qa.py and convertEnsemblToNames.py
+
+Version 1.2.5
+* Changed the limit range of some parameters
+
+Version 1.2.6
+* Take into account soft-clipped bases when computing start/end positions
+
+Version 1.3.0
+* Added more methods to cluster UMIs
+* Optimized the UMI counting algorithm
+* Optimized the memory use
+
+Version 1.3.1
+* Homopolymer miss-matches is a parameter now
+* Removing now also PolyNs (parameter)
+
+Version 1.3.2
+* Optimized the mapping and annotation steps
+
+Version 1.3.3
+* Disabled spliced alignments by default
+
+Version 1.3.4
+* Fixed a typo in one of the parameter that caused the pipeline to not run
+
+Version 1.3.5
+* Optimized the counting of UMIs by strand, start-pos and offset
+
+Version 1.4.0
+* Small update to make the PIP installation more robust
+
+Version 1.4.1
+* Small update to make the PIP installation more robust
+
+Version 1.4.5
+* Added extra scripts:
+	- merge_bcl : merge BCL files based in patterns
+	- filter_gene_type_matrix : filter gene in output data based on Ensembl gene types
+* Bumped Pysam and HTSeq 

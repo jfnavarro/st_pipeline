@@ -138,7 +138,7 @@ def quality_trim_index(bases, qualities, cutoff, base=33):
 def trim_quality(sequence,
                  quality,
                  min_qual=20, 
-                 min_length=28, 
+                 min_length=30, 
                  phred=33):    
     """
     Quality trims a fastq read using a BWA approach.
@@ -188,29 +188,29 @@ def filterInputReads(fw,
                      rv,
                      out_fw,
                      out_rw,
-                     out_rw_discarded=None,
-                     barcode_start=0, 
-                     barcode_length=18,
-                     filter_AT_content=90,
-                     filter_GC_content=90,
-                     umi_start=18, 
-                     umi_end=27,
-                     min_qual=20, 
-                     min_length=28,
-                     polyA_min_distance=0, 
-                     polyT_min_distance=0, 
-                     polyG_min_distance=0, 
-                     polyC_min_distance=0,
-                     qual64=False,
-                     umi_filter=False,
-                     umi_filter_template="WSNNWSNNV",
-                     umi_quality_bases=4):
+                     out_rw_discarded,
+                     filter_AT_content,
+                     filter_GC_content,
+                     umi_start, 
+                     umi_end,
+                     min_qual, 
+                     min_length,
+                     polyA_min_distance, 
+                     polyT_min_distance, 
+                     polyG_min_distance, 
+                     polyC_min_distance,
+                     polyN_min_distance,
+                     qual64,
+                     umi_filter,
+                     umi_filter_template,
+                     umi_quality_bases,
+                     adaptor_missmatches):
     """
     This function does few things (all done in one loop for performance reasons)
       - It performs a sanity check (forward and reverse reads same length and order)
-      - It performs a BWA quality trimming discarding very short reads
+      - It performs a BWA-based quality trimming discarding very short reads
       - It removes adaptors from the reads (optional)
-      - It checks for AT and GC content
+      - It checks for AT and GC content (optional)
       - It performs a sanity check on the UMI (optional)
     Reads that do not pass the filters are discarded (both R1 and R2)
     :param fw: the fastq file with the forward reads
@@ -218,21 +218,22 @@ def filterInputReads(fw,
     :param out_fw: the name of the output file for the forward reads
     :param out_rw: the name of the output file for the reverse reads
     :param out_rw_discarded: the name of the output file for discarded reverse reads
-    :param barcode_start: the base index where the barcode sequence starts
-    :param barcode_length: the number of bases present in the barcodes
     :param filter_AT_content: % of A and T bases a read2 must have to be discarded
     :param filter_GC_content: % of G and C bases a read2 must have to be discarded
     :param umi_start: the start position of the UMI
     :param umi_end: the end position of the UMI
     :param min_qual: the min quality value to use in the trimming
     :param min_length: the min valid length for a read after trimming
-    :param polyA_min_distance: if >10 we remove PolyA adaptors from the reads
-    :param polyT_min_distance: if >10 we remove PolyT adaptors from the reads
-    :param polyG_min_distance: if >10 we remove PolyG adaptors from the reads
+    :param polyA_min_distance: if >5 remove PolyA adaptors from the reads
+    :param polyT_min_distance: if >5 remove PolyT adaptors from the reads
+    :param polyG_min_distance: if >5 remove PolyG adaptors from the reads
+    :param polyC_min_distance: if >5 remove PolyC adaptors from the reads
+    :param polyN_min_distance: if >5 remove PolyN adaptors from the reads
     :param qual64: true of qualities are in phred64 format
     :param umi_filter: performs a UMI quality template filter when True
     :param umi_filter_template: the template to use for the UMI filter
     :param umi_quality_bases: the number of low quality bases allowed in an UMI
+    :param adaptor_missmatches: number of miss-matches allowed when removing adaptors
     """
     logger = logging.getLogger("STPipeline")
     
@@ -267,13 +268,16 @@ def filterInputReads(fw,
     adaptorT = "".join("T" for k in xrange(polyT_min_distance))
     adaptorG = "".join("G" for k in xrange(polyG_min_distance))
     adaptorC = "".join("C" for k in xrange(polyC_min_distance))
-    # Not recommended to do adaptor trimming for adaptors smaller than 8
-    do_adaptorA = polyA_min_distance >= 8
-    do_adaptorT = polyT_min_distance >= 8
-    do_adaptorG = polyG_min_distance >= 8
-    do_adaptorC = polyC_min_distance >= 8
-    # Allow for 2 miss-matches when removing adaptors
-    adaptor_missmatches = 2
+    adaptorN = "".join("N" for k in xrange(polyN_min_distance))
+    
+    # Not recommended to do adaptor trimming for adaptors smaller than 5
+    do_adaptorA = polyA_min_distance >= 5
+    do_adaptorT = polyT_min_distance >= 5
+    do_adaptorG = polyG_min_distance >= 5
+    do_adaptorC = polyC_min_distance >= 5
+    do_adaptorN = polyN_min_distance >= 5
+    do_AT_filter = filter_AT_content > 0
+    do_GC_filter = filter_GC_content > 0
     
     # Quality format
     phred = 64 if qual64 else 33
@@ -305,20 +309,20 @@ def filterInputReads(fw,
             dropped_umi_template += 1
             discard_read = True
         
-        # Check if the UMI has any low quality base
-        if not discard_read and \
+        # Check if the UMI has many low quality bases
+        if not discard_read and (umi_end - umi_start) >= umi_quality_bases and \
         len([b for b in quality_fw[umi_start:umi_end] if (ord(b) - phred) < min_qual]) > umi_quality_bases:
             dropped_umi += 1
             discard_read = True
 
         # If reverse read has a high AT content discard...
-        if not discard_read and \
+        if not discard_read and do_AT_filter and \
         ((sequence_rv.count("A") + sequence_rv.count("T")) / len(sequence_rv)) * 100 >= filter_AT_content:
             dropped_AT += 1
             discard_read = True
 
         # If reverse read has a high GC content discard...
-        if not discard_read and \
+        if not discard_read and do_GC_filter and \
         ((sequence_rv.count("G") + sequence_rv.count("C")) / len(sequence_rv)) * 100 >= filter_GC_content:
             dropped_GC += 1
             discard_read = True
@@ -330,21 +334,27 @@ def filterInputReads(fw,
             
         if not discard_read:
             # if indicated we remove the artifacts PolyA from reverse reads
-            if do_adaptorA: 
+            if do_adaptorA and len(sequence_rv) > min_length: 
                 sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
                                                         adaptorA, adaptor_missmatches) 
             # if indicated we remove the artifacts PolyT from reverse reads
-            if do_adaptorT: 
+            if do_adaptorT and len(sequence_rv) > min_length: 
                 sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
                                                         adaptorT, adaptor_missmatches) 
             # if indicated we remove the artifacts PolyG from reverse reads
-            if do_adaptorG: 
+            if do_adaptorG and len(sequence_rv) > min_length: 
                 sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
                                                         adaptorG, adaptor_missmatches) 
             # if indicated we remove the artifacts PolyC from reverse reads
-            if do_adaptorC: 
+            if do_adaptorC and len(sequence_rv) > min_length: 
                 sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
                                                         adaptorC, adaptor_missmatches)
+                
+            # if indicated we remove the artifacts PolyC from reverse reads
+            if do_adaptorN and len(sequence_rv) > min_length: 
+                sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, 
+                                                        adaptorN, adaptor_missmatches)
+                
             # Check if the read is smaller than the minimum after removing artifacts   
             if len(sequence_rv) < min_length:
                 dropped_adaptor += 1
@@ -368,11 +378,14 @@ def filterInputReads(fw,
     fw_file.close()
     rv_file.close()
     out_rv_handle.flush()
+    out_rv_handle.close()
     out_rv_writer.close()
     out_fw_handle.flush()
+    out_rv_writer.close()
     out_fw_writer.close()
     if keep_discarded_files:
         out_rv_handle_discarded.flush()
+        out_rv_handle_discarded.close()
         out_rv_writer_discarded.close()
         
     # Write info to the log
@@ -397,7 +410,7 @@ def filterInputReads(fw,
     # Adding stats to QA Stats object
     qa_stats.input_reads_forward = total_reads
     qa_stats.input_reads_reverse = total_reads
-    qa_stats.reads_after_trimming_forward = total_reads
+    qa_stats.reads_after_trimming_forward = (total_reads - dropped_rv)
     qa_stats.reads_after_trimming_reverse = (total_reads - dropped_rv)
 
 #TODO this approach uses too much memory
@@ -408,10 +421,11 @@ def hashDemultiplexedReads(reads,
                            low_memory):
     """
     This function extracts the read name, the UMI and the x,y coordinates
-    from the reads given as input and returns a hash
-    with the clean read name as key and (x,y,umi). X and Y correspond
-    to the array coordinates of the barcode of the read.
-    :param reads: path to a file with the fastq reads after demultiplexing
+    from the reads given as input (output of TaggD) and returns a dictionary
+    with the clean read name as key and (x,y,umi) as value. X and Y correspond
+    to the array coordinates of the barcode of the read and UMI is extracted from the read
+    sequence.
+    :param reads: path to a file with the fastq reads after demultiplexing (TaggD)
     :param umi_start: the start position of the UMI
     :param umi_end: the end position of the UMI
     :param low_memory: True to use a key-value db instead of dict
@@ -435,18 +449,24 @@ def hashDemultiplexedReads(reads,
     
     fastq_file = safeOpenFile(reads, "rU")
     for name, sequence, _ in readfq(fastq_file):
-        # Assumes the header ends like this B0:Z:GTCCCACTGGAACGACTGTCCCGCATC B1:Z:678 B2:Z:678
+        # Assumes the header is like this
+        # @NS500688:111:HNYW7BGXX:1:11101:13291:1099 1:N:0:TGCCCA B0:Z:GTCCCACTGGAACGACTGTCCCGCATC B1:Z:678 B2:Z:678
         header_tokens = name.split()
-        # TODO add an error check here
+        assert(len(header_tokens) > 3)
+        assert(len(sequence) >= umi_end)
+        # Get the X and Y tags from the header of the read
         x = header_tokens[-2]
         y = header_tokens[-1]
         # The UMI is retrieved from the sequence
         umi = sequence[umi_start:umi_end]
-        # We keep the same naming for the extra attributes
-        tags = [x,y,"B3:Z:{}".format(umi)]
-        # Assumes STAR will only output the first token of the read name
-        hash_reads[header_tokens[0]] = tags
-        
+        # We keep the same naming convention for the UMI attribute
+        tags = (x,y,"B3:Z:{}".format(umi))
+        # In order to save memory we truncate the read
+        # name to only keep the unique part (lane, tile, x_pos, y_pos)
+        # TODO this procedure is specific to only Illumina technology
+        key = "".join(header_tokens[0].split(":")[-4:])
+        hash_reads[key] = tags
+
     if low_memory: hash_reads.commit()
     fastq_file.close()    
     return hash_reads
