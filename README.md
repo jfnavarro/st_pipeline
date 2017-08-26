@@ -97,9 +97,9 @@ You can use this tool that comes with the ST Pipeline
 **Merge demultiplexed FASTQ files**
 
 If you used different indexes to sequence and need to merge the files
-you can use the script merge_bcl.py
+you can use the script merge_fastq.py
 
-	merge_bcl.py --run-path path_to_run_folder --out-path path_to_output --identifiers S1 S2 S3 S4
+	merge_fastq.py --run-path path_to_run_folder --out-path path_to_output --identifiers S1 S2 S3 S4
 	
 Where identifiers will be strings that identify each demultiplexed sample. 
 

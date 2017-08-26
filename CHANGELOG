@@ -431,3 +431,4 @@ Version 1.5.0
 * st_qa.py generate expression heatmap plots
 * Fixed a minor bug in the computation of the saturation curves
 * adjust_matrix_coordinates now does not update the coordinates by default
+* small updates in the fastq merging script
