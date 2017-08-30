@@ -573,36 +573,27 @@ class Pipeline():
         # TODO it is faster to make a system call with gunzip/bzip
         # TODO reliable way to test if files are compressed (something more robust than just file name endings)
         try:
+            os.mkfifo( os.path.join(self.temp_folder, "R1_TMP_FIFO.fq") )
+            os.mkfifo( os.path.join(self.temp_folder, "R2_TMP_FIFO.fq") )
+            import subprocess
+            
             if self.fastq_fw.endswith(".gz"):
-                temp_fastq_fw = os.path.join(self.temp_folder, "unzipped_fastq_fw.fastq")
-                with gzip.open(self.fastq_fw, "rb") as filehandler_read:
-                    with open(temp_fastq_fw, "w") as filehandler_write:
-                        for line in filehandler_read:
-                            filehandler_write.write(line)
-                self.fastq_fw = temp_fastq_fw
+                r1_command = 'gzip --decompress --stdout '+self.fastq_fw.replace(' ','\ ')+' > '+os.path.join(self.temp_folder, "R1_TMP_FIFO.fq")
             elif self.fastq_fw.endswith(".bz2"):
-                temp_fastq_fw = os.path.join(self.temp_folder, "unzipped_fastq_fw.fastq")
-                with bz2.BZ2File(self.fastq_fw, "rb") as filehandler_read:
-                    with open(temp_fastq_fw, "w") as filehandler_write:
-                        for line in filehandler_read:
-                            filehandler_write.write(line)
-                self.fastq_fw = temp_fastq_fw
+                r1_command = 'bzip2 --decompress --stdout '+self.fastq_fw.replace(' ','\ ')+' > '+os.path.join(self.temp_folder, "R1_TMP_FIFO.fq")
+            else:
+                r1_command = 'cat '+self.fastq_fw.replace(' ','\ ')+' > '+os.path.join(self.temp_folder, "R1_TMP_FIFO.fq")
                 
             if self.fastq_rv.endswith(".gz"):
-                temp_fastq_rv = os.path.join(self.temp_folder, "unzipped_fastq_rv.fastq")
-                with gzip.open(self.fastq_rv, "rb") as filehandler_read:
-                    with open(temp_fastq_rv, "w") as filehandler_write:
-                        for line in filehandler_read:
-                            filehandler_write.write(line)
-                self.fastq_rv = temp_fastq_rv
+                r2_command = 'gzip --decompress --stdout '+self.fastq_rv.replace(' ','\ ')+' > '+os.path.join(self.temp_folder, "R2_TMP_FIFO.fq")
             elif self.fastq_rv.endswith(".bz2"):
-                    temp_fastq_rv = os.path.join(self.temp_folder, "unzipped_fastq_rv.fastq")
-                    with bz2.BZ2File(self.fastq_rv, "rb") as filehandler_read:
-                        with open(temp_fastq_rv, "w") as filehandler_write:
-                            for line in filehandler_read:
-                                filehandler_write.write(line)
-                    self.fastq_rv = temp_fastq_rv
-                    
+                r2_command = 'bzip2 --decompress --stdout '+self.fastq_rv.replace(' ','\ ')+' > '+os.path.join(self.temp_folder, "R2_TMP_FIFO.fq")
+            else:
+                r2_command = 'cat '+self.fastq_rv.replace(' ','\ ')+' > '+os.path.join(self.temp_folder, "R2_TMP_FIFO.fq")
+                
+            subprocess.Popen(r1_command, shell=True, preexec_fn=os.setsid)
+            subprocess.Popen(r2_command, shell=True, preexec_fn=os.setsid)
+
         except Exception as e:
             self.logger.error("Error decompressing GZIP/BZIP2 input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
             raise e
@@ -612,9 +603,9 @@ class Pipeline():
         # Applies different filters : sanity, quality, short, adaptors, UMI...
         #=================================================================
         self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
-        try: 
-            filterInputReads(self.fastq_fw,
-                             self.fastq_rv,
+        try:
+            filterInputReads(os.path.join(self.temp_folder, "R1_TMP_FIFO.fq"),#self.fastq_fw,
+                             os.path.join(self.temp_folder, "R2_TMP_FIFO.fq"),#self.fastq_rv,
                              FILENAMES["quality_trimmed_R1"],
                              FILENAMES["quality_trimmed_R2"],
                              FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
@@ -636,7 +627,10 @@ class Pipeline():
                              self.adaptor_missmatches)
         except Exception:
             raise
-          
+        
+        os.remove( os.path.join(self.temp_folder, "R1_TMP_FIFO.fq") )
+        os.remove( os.path.join(self.temp_folder, "R2_TMP_FIFO.fq") )
+        
         #=================================================================
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. typically bacterial rRNA
         #=================================================================
