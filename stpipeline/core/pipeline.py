@@ -628,8 +628,9 @@ class Pipeline():
         except Exception:
             raise
         
-        os.remove( os.path.join(self.temp_folder, "R1_TMP_FIFO.fq") )
-        os.remove( os.path.join(self.temp_folder, "R2_TMP_FIFO.fq") )
+        # After filtering is completed remove the temporary FIFOs
+        if is_fifo(temp_r1_fifo_name): os.remove( temp_r1_fifo_name )
+        if is_fifo(temp_r2_fifo_name): os.remove( temp_r2_fifo_name )
         
         #=================================================================
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. typically bacterial rRNA

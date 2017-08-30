@@ -3,7 +3,7 @@ This module contains some specific functionalities for
 ST fastq files, mainly quality filtering functions.
 """
 
-from stpipeline.common.utils import safeOpenFile, fileOk
+from stpipeline.common.utils import safeOpenFile, fileOk, is_fifo
 from stpipeline.common.adaptors import removeAdaptor
 from stpipeline.common.stats import qa_stats
 import logging 
@@ -11,7 +11,6 @@ from itertools import izip
 from sqlitedict import SqliteDict
 import os
 import re
-import stat
 
 def coroutine(func):
     """ 
@@ -237,7 +236,7 @@ def filterInputReads(fw,
     :param adaptor_missmatches: number of miss-matches allowed when removing adaptors
     """
     logger = logging.getLogger("STPipeline")
-    if not (os.path.isfile(fw) or stat.S_ISFIFO(os.stat(fw).st_mode)) or not (os.path.isfile(rv) or stat.S_ISFIFO(os.stat(rv).st_mode) ):
+    if not (os.path.isfile(fw) or is_fifo(fw)) or not (os.path.isfile(rv) or is_fifo(rv)):
         error = "Error doing quality trimming, input file/s not present {}\n{}\n".format(fw,rv)
         logger.error(error)
         raise RuntimeError(error)
