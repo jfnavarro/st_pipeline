@@ -24,6 +24,7 @@ import bz2
 import tempfile
 import shutil
 import gc
+import subprocess
 
 FILENAMES = {"mapped" : "mapped.bam",
              "annotated" : "annotated.bam",
@@ -570,32 +571,37 @@ class Pipeline():
         self.logger.info("Starting the pipeline: {}".format(start_exe_time))
 
         # Check if input fastq files are compressed
-        # TODO it is faster to make a system call with gunzip/bzip
         # TODO reliable way to test if files are compressed (something more robust than just file name endings)
         try:
-            os.mkfifo( os.path.join(self.temp_folder, "R1_TMP_FIFO.fq") )
-            os.mkfifo( os.path.join(self.temp_folder, "R2_TMP_FIFO.fq") )
-            import subprocess
+            temp_r1_fifo_name = os.path.join(self.temp_folder, "R1_TMP_FIFO.fq")
+            temp_r2_fifo_name = os.path.join(self.temp_folder, "R2_TMP_FIFO.fq")
             
             if self.fastq_fw.endswith(".gz"):
-                r1_command = 'gzip --decompress --stdout '+self.fastq_fw.replace(' ','\ ')+' > '+os.path.join(self.temp_folder, "R1_TMP_FIFO.fq")
+                r1_decompression_command = 'gzip --decompress --stdout '+self.fastq_fw.replace(' ','\ ')+' > '+temp_r1_fifo_name
             elif self.fastq_fw.endswith(".bz2"):
-                r1_command = 'bzip2 --decompress --stdout '+self.fastq_fw.replace(' ','\ ')+' > '+os.path.join(self.temp_folder, "R1_TMP_FIFO.fq")
+                r1_decompression_command = 'bzip2 --decompress --stdout '+self.fastq_fw.replace(' ','\ ')+' > '+temp_r1_fifo_name
             else:
-                r1_command = 'cat '+self.fastq_fw.replace(' ','\ ')+' > '+os.path.join(self.temp_folder, "R1_TMP_FIFO.fq")
+                r1_decompression_command = None
                 
             if self.fastq_rv.endswith(".gz"):
-                r2_command = 'gzip --decompress --stdout '+self.fastq_rv.replace(' ','\ ')+' > '+os.path.join(self.temp_folder, "R2_TMP_FIFO.fq")
+                r2_decompression_command = 'gzip --decompress --stdout '+self.fastq_rv.replace(' ','\ ')+' > '+temp_r2_fifo_name
             elif self.fastq_rv.endswith(".bz2"):
-                r2_command = 'bzip2 --decompress --stdout '+self.fastq_rv.replace(' ','\ ')+' > '+os.path.join(self.temp_folder, "R2_TMP_FIFO.fq")
+                r2_decompression_command = 'bzip2 --decompress --stdout '+self.fastq_rv.replace(' ','\ ')+' > '+temp_r2_fifo_name
             else:
-                r2_command = 'cat '+self.fastq_rv.replace(' ','\ ')+' > '+os.path.join(self.temp_folder, "R2_TMP_FIFO.fq")
-                
-            subprocess.Popen(r1_command, shell=True, preexec_fn=os.setsid)
-            subprocess.Popen(r2_command, shell=True, preexec_fn=os.setsid)
+                r2_decompression_command = None
+
+            if r1_decompression_command:
+                os.mkfifo( temp_r1_fifo_name )
+                subprocess.Popen(r1_decompression_command, shell=True, preexec_fn=os.setsid)
+                self.fastq_fw = temp_r1_fifo_name
+            
+            if r2_decompression_command:
+                os.mkfifo( temp_r2_fifo_name )
+                subprocess.Popen(r2_decompression_command, shell=True, preexec_fn=os.setsid)
+                self.fastq_rv = temp_r2_fifo_name
 
         except Exception as e:
-            self.logger.error("Error decompressing GZIP/BZIP2 input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
+            self.logger.error("Error while starting the decompression of GZIP/BZIP2 input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
             raise e
 
         #=================================================================
@@ -604,8 +610,8 @@ class Pipeline():
         #=================================================================
         self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
         try:
-            filterInputReads(os.path.join(self.temp_folder, "R1_TMP_FIFO.fq"),#self.fastq_fw,
-                             os.path.join(self.temp_folder, "R2_TMP_FIFO.fq"),#self.fastq_rv,
+            filterInputReads(self.fastq_fw,
+                             self.fastq_rv,
                              FILENAMES["quality_trimmed_R1"],
                              FILENAMES["quality_trimmed_R2"],
                              FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
