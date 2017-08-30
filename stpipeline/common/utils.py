@@ -5,6 +5,7 @@ import threading
 from datetime import datetime
 import os
 import subprocess
+import stat
 
 def which_program(program):
     """ 
@@ -82,7 +83,7 @@ def safeOpenFile(filename, atrib):
     if atrib.find("w") != -1:
         safeRemove(filename)
     elif atrib.find("r") != -1:
-        if not os.path.isfile(filename):
+        if not (os.path.isfile(filename) or stat.S_ISFIFO(os.stat(filename).st_mode)):
             raise IOError("Error, the file does not exist {}\n".format(filename))
     else:
         raise IOError("Error, incorrect attribute {}\n".format(atrib))

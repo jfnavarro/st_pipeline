@@ -11,6 +11,7 @@ from itertools import izip
 from sqlitedict import SqliteDict
 import os
 import re
+import stat
 
 def coroutine(func):
     """ 
@@ -236,8 +237,7 @@ def filterInputReads(fw,
     :param adaptor_missmatches: number of miss-matches allowed when removing adaptors
     """
     logger = logging.getLogger("STPipeline")
-    
-    if not os.path.isfile(fw) or not os.path.isfile(rv):
+    if not (os.path.isfile(fw) or stat.S_ISFIFO(os.stat(fw).st_mode)) or not (os.path.isfile(rv) or stat.S_ISFIFO(os.stat(rv).st_mode) ):
         error = "Error doing quality trimming, input file/s not present {}\n{}\n".format(fw,rv)
         logger.error(error)
         raise RuntimeError(error)
