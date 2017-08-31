@@ -5,6 +5,7 @@ import threading
 from datetime import datetime
 import os
 import subprocess
+import stat
 
 def which_program(program):
     """ 
@@ -82,7 +83,7 @@ def safeOpenFile(filename, atrib):
     if atrib.find("w") != -1:
         safeRemove(filename)
     elif atrib.find("r") != -1:
-        if not os.path.isfile(filename):
+        if not (os.path.isfile(filename) or is_fifo(filename)):
             raise IOError("Error, the file does not exist {}\n".format(filename))
     else:
         raise IOError("Error, incorrect attribute {}\n".format(atrib))
@@ -154,3 +155,11 @@ def getHTSeqCountVersion():
     except Exception:
         version = "Not available"
     return version.rstrip()
+
+def is_fifo(file_name):
+    """
+    Checks if the file name is a FIFO
+    :param file_name: a file name
+    :return: True if the file is a FIFO
+    """
+    return (os.path.exists(file_name) and stat.S_ISFIFO(os.stat(file_name).st_mode))
