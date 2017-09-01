@@ -11,6 +11,7 @@ from itertools import izip
 from sqlitedict import SqliteDict
 import os
 import re
+import pysam
 
 def coroutine(func):
     """ 
@@ -184,9 +185,36 @@ def check_umi_template(umi, template):
     p = re.compile(template)
     return p.match(umi) is not None
 
+def convert_to_AlignedSegment(header, sequence, quality, barcode_sequence, umi_sequence):
+    """
+    This function converts the input variables (header,sequence,quality,barcode_sequence,umi_sequence)
+    to a pysam.AlignedSegment with the umi and barcode informations as the following tags:
+        Tag  Value
+        "B0" barcode_sequence
+        "B3" umi_sequence
+    :param header: string with the header information
+    :param sequence: string with the DNA/RNA sequence
+    :param quality: string with the base calling quality values
+    :param barcode_sequence: string with the barcode sequence
+    :param umi_sequence: string with the unique molecular identifier sequence
+    """
+
+    # create
+    aligned_segment = pysam.AlignedSegment()
+
+    # Set the standard values
+    aligned_segment.query_name = header
+    aligned_segment.query_sequence = sequence
+    aligned_segment.query_qualities = quality
+
+    # Set the tags
+    aligned_segment.set_tag('B0',barcode_sequence)
+    aligned_segment.set_tag('B3',umi_sequence)
+
+    return aligned_segment
+
 def filterInputReads(fw, 
                      rv,
-                     out_fw,
                      out_rv,
                      out_rv_discarded,
                      idFile,
@@ -215,8 +243,7 @@ def filterInputReads(fw,
       - It checks for AT and GC content (optional)
       - It performs a sanity check on the UMI (optional)
     Reads that do not pass the filters are discarded (both R1 and R2)
-    :param fw: the fastq file with the forward reads
-    :param rv: the fastq file with the reverse reads
+    :param rv: the bam file with the reverse reads
     :param out_fw: the name of the output file for the forward reads
     :param out_rv: the name of the output file for the reverse reads
     :param out_rv_discarded: the name of the output file for discarded reverse reads
@@ -249,10 +276,8 @@ def filterInputReads(fw,
     keep_discarded_files = out_rv_discarded is not None
     
     # Create output file writers
-    out_rv_handle = safeOpenFile(out_rv, 'w')
-    out_rv_writer = writefq(out_rv_handle)
-    out_fw_handle = safeOpenFile(out_fw, 'w')
-    out_fw_writer = writefq(out_fw_handle)
+    bam_header = { 'HD': {'VN': '1', 'SO':'unsorted'} }
+    bam_file = pysam.AlignmentFile(out_rv, "wb", header=bam_header)
     if keep_discarded_files:
         out_rv_handle_discarded = safeOpenFile(out_rv_discarded, 'w')
         out_rv_writer_discarded = writefq(out_rv_handle_discarded)
@@ -380,21 +405,17 @@ def filterInputReads(fw,
             
         # Write reverse read to output
         if not discard_read:
-            out_rv_writer.send((header_rv, sequence_rv, quality_rv))
-            out_fw_writer.send((header_fw, sequence_fw, quality_fw))
+            aligned_segment = convert_to_AlignedSegment(header_rv,sequence_rv,quality_rv,barcode,umi_seq)
+            bam_file.write( aligned_segment )
         else:
             dropped_rv += 1  
             if keep_discarded_files:
                 out_rv_writer_discarded.send((header_rv, orig_sequence_rv, orig_quality_rv))
     
+    # Close files
     fw_file.close()
     rv_file.close()
-    out_rv_handle.flush()
-    out_rv_handle.close()
-    out_rv_writer.close()
-    out_fw_handle.flush()
-    out_fw_handle.close()
-    out_fw_writer.close()
+    bam_file.close()
     if keep_discarded_files:
         out_rv_handle_discarded.flush()
         out_rv_handle_discarded.close()
