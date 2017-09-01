@@ -217,7 +217,7 @@ def filterInputReads(fw,
                      rv,
                      out_rv,
                      out_rv_discarded,
-                     idFile,
+                     barcode_length,
                      start_position,
                      filter_AT_content,
                      filter_GC_content,
@@ -247,7 +247,7 @@ def filterInputReads(fw,
     :param out_fw: the name of the output file for the forward reads
     :param out_rv: the name of the output file for the reverse reads
     :param out_rv_discarded: the name of the output file for discarded reverse reads
-    :param idFile: a tab delimited file (BARCODE - X - Y) containing all the barcodes
+    :param barcode_length: length of the barcode sequence (integer)
     :param start_position: the start position of the barcode
     :param filter_AT_content: % of A and T bases a read2 must have to be discarded
     :param filter_GC_content: % of G and C bases a read2 must have to be discarded
@@ -309,10 +309,6 @@ def filterInputReads(fw,
     
     # Quality format
     phred = 64 if qual64 else 33
-    
-    # get the barcode length
-    from taggd.io.barcode_utils import read_barcode_file
-    barcode_length = len( read_barcode_file(idFile).values()[0].sequence )
     
     # Open fastq files with the fastq parser
     fw_file = safeOpenFile(fw, "rU")

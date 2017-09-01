@@ -14,6 +14,7 @@ from stpipeline.common.stats import qa_stats
 from stpipeline.common.dataset import createDataset
 from stpipeline.common.saturation import computeSaturation
 from stpipeline.version import version_number
+from taggd.io.barcode_utils import read_barcode_file
 import logging
 import argparse
 import sys
@@ -607,13 +608,18 @@ class Pipeline():
         # STEP: FILTERING 
         # Applies different filters : sanity, quality, short, adaptors, UMI...
         #=================================================================
+
+        # Get the barcode length
+        barcode_length = len( read_barcode_file(self.ids).values()[0].sequence )
+    
+        # Start the filterInputReads function
         self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
         try:
             filterInputReads(self.fastq_fw,
                              self.fastq_rv,
                              FILENAMES["quality_trimmed_R2"],
                              FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
-                             self.ids,
+                             barcode_length,
                              self.barcode_start,
                              self.filter_AT_content,
                              self.filter_GC_content,
