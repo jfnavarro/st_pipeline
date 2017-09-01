@@ -303,14 +303,16 @@ def filterInputReads(fw,
         
         # If we want to check for UMI quality and the UMI is incorrect
         # then we discard the reads
+        umi_seq = sequence_fw[umi_start:umi_end]
         if umi_filter \
-        and not check_umi_template(sequence_fw[umi_start:umi_end], umi_filter_template):
+        and not check_umi_template(umi_seq, umi_filter_template):
             dropped_umi_template += 1
             discard_read = True
         
         # Check if the UMI has many low quality bases
+        umi_qual = quality_fw[umi_start:umi_end]
         if not discard_read and (umi_end - umi_start) >= umi_quality_bases and \
-        len([b for b in quality_fw[umi_start:umi_end] if (ord(b) - phred) < min_qual]) > umi_quality_bases:
+        len([b for b in umi_qual if (ord(b) - phred) < min_qual]) > umi_quality_bases:
             dropped_umi += 1
             discard_read = True
 
