@@ -187,8 +187,8 @@ def check_umi_template(umi, template):
 def filterInputReads(fw, 
                      rv,
                      out_fw,
-                     out_rw,
-                     out_rw_discarded,
+                     out_rv,
+                     out_rv_discarded,
                      filter_AT_content,
                      filter_GC_content,
                      umi_start, 
@@ -216,8 +216,8 @@ def filterInputReads(fw,
     :param fw: the fastq file with the forward reads
     :param rv: the fastq file with the reverse reads
     :param out_fw: the name of the output file for the forward reads
-    :param out_rw: the name of the output file for the reverse reads
-    :param out_rw_discarded: the name of the output file for discarded reverse reads
+    :param out_rv: the name of the output file for the reverse reads
+    :param out_rv_discarded: the name of the output file for discarded reverse reads
     :param filter_AT_content: % of A and T bases a read2 must have to be discarded
     :param filter_GC_content: % of G and C bases a read2 must have to be discarded
     :param umi_start: the start position of the UMI
@@ -242,15 +242,15 @@ def filterInputReads(fw,
         raise RuntimeError(error)
     
     # Check if discarded files must be written out 
-    keep_discarded_files = out_rw_discarded is not None
+    keep_discarded_files = out_rv_discarded is not None
     
     # Create output file writers
-    out_rv_handle = safeOpenFile(out_rw, 'w')
+    out_rv_handle = safeOpenFile(out_rv, 'w')
     out_rv_writer = writefq(out_rv_handle)
     out_fw_handle = safeOpenFile(out_fw, 'w')
     out_fw_writer = writefq(out_fw_handle)
     if keep_discarded_files:
-        out_rv_handle_discarded = safeOpenFile(out_rw_discarded, 'w')
+        out_rv_handle_discarded = safeOpenFile(out_rv_discarded, 'w')
         out_rv_writer_discarded = writefq(out_rv_handle_discarded)
     
     # Some counters
@@ -400,9 +400,9 @@ def filterInputReads(fw,
     logger.info("Trimming stats dropped pairs due to presence of artifacts: {}".format(dropped_adaptor))
     
     # Check that output file was written ok
-    if not fileOk(out_rw):
+    if not fileOk(out_rv):
         error = "Error doing quality trimming checks of raw reads." \
-        "\nOutput file not present {}\n".format(out_rw)
+        "\nOutput file not present {}\n".format(out_rv)
         logger.error(error)
         raise RuntimeError(error)
     
