@@ -380,7 +380,7 @@ def filterInputReads(fw,
     out_rv_handle.close()
     out_rv_writer.close()
     out_fw_handle.flush()
-    out_rv_writer.close()
+    out_fw_handle.close()
     out_fw_writer.close()
     if keep_discarded_files:
         out_rv_handle_discarded.flush()
