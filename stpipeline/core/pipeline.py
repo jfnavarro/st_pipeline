@@ -615,6 +615,8 @@ class Pipeline():
                              FILENAMES["quality_trimmed_R1"],
                              FILENAMES["quality_trimmed_R2"],
                              FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
+                             self.ids,
+                             self.barcode_start,
                              self.filter_AT_content,
                              self.filter_GC_content,
                              self.umi_start_position,
