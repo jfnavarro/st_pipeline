@@ -13,10 +13,10 @@ before_install:
   - conda update -q conda
   - wget https://raw.githubusercontent.com/alexdobin/STAR/master/bin/Linux_x86_64/STAR
   - chmod +x STAR
-  - mkdir $HOME/bin
+  - mkdir -p $HOME/bin
   - cp STAR $HOME/bin
   - export PATH="$HOME/bin:$PATH"
-  - mkdir $HOME/tmp
+  - mkdir -p $HOME/tmp
   - export TMPDIR=$HOME/tmp
 
 install:
