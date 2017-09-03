@@ -11,10 +11,10 @@ XxY
 And then removes the spots that are not present in 
 a tab delimited coordinates file that has a least 4 columns:
 
-old_x old_y new_x new_y
+x y new_x new_y pixel_x pixel_y
 
 Optionally, the coordinates of the spots in the matrix
-can be changed to the new coordinates.
+can be changed to the new coordinates (pixel or array).
 
 
 @Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
@@ -25,7 +25,7 @@ import sys
 import os
 import pandas as pd
 
-def main(counts_matrix, coordinates_file, update_coordinates, outfile):
+def main(counts_matrix, coordinates_file, update_coordinates, outfile, outformat):
 
     if not os.path.isfile(counts_matrix) or not os.path.isfile(coordinates_file):
         sys.stderr.write("Error, input file not present or invalid format\n")
@@ -39,13 +39,18 @@ def main(counts_matrix, coordinates_file, update_coordinates, outfile):
     with open(coordinates_file, "r") as filehandler:
         for line in filehandler.readlines():
             tokens = line.split()
-            assert(len(tokens) in [4,6])
-            old_x = int(tokens[0])
-            old_y = int(tokens[1])
-            new_x = float(tokens[2])
-            new_y = float(tokens[3])
-            new_coordinates[(old_x, old_y)] = (new_x,new_y)
-    
+            assert(len(tokens) == 6)
+            if tokens[0] != "x":
+                old_x = int(tokens[0])
+                old_y = int(tokens[1])
+                new_x = round(float(tokens[2]),2)
+                new_y = round(float(tokens[3]),2)
+                pixel_x = float(tokens[4])
+                pixel_y = float(tokens[5])
+                if outformat == "array":
+                    new_coordinates[(old_x, old_y)] = (new_x,new_y)
+                else:
+                    new_coordinates[(old_x, old_y)] = (pixel_x, pixel_y)    
     # Read the data frame (spots as rows)
     counts_table = pd.read_table(counts_matrix, sep="\t", header=0, index_col=0)
     new_index_values = list()
@@ -78,6 +83,11 @@ if __name__ == '__main__':
                         "new coordinates present in the coordinates file")
     parser.add_argument("--coordinates-file",  required=True,
                         help="New coordinates in a tab delimited file")
+    parser.add_argument("--outformat", default="array",
+                        help="Output array positions or pixel positions"
+                        " array or pixel", choices=["array", "pixel"])
     args = parser.parse_args()
-    main(args.counts_matrix, args.coordinates_file, args.update_coordinates, args.outfile)
+
+    main(args.counts_matrix, args.coordinates_file, args.update_coordinates, args.outfile, args.outformat)
+
 
