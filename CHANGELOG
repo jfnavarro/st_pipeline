@@ -431,4 +431,8 @@ Version 1.5.0
 * st_qa.py generate expression heatmap plots
 * Fixed a minor bug in the computation of the saturation curves
 * adjust_matrix_coordinates now does not update the coordinates by default
+* adjust_matrix_coordiantes works with the latest ST Spot detector format
 * small updates in the fastq merging script
+* bump taggd version
+* --low-memory option now only affects the UMI counting step
+* improvements to make the trimming and demultiplexing faster and with constant memory use
