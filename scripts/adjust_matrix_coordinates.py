@@ -39,18 +39,22 @@ def main(counts_matrix, coordinates_file, update_coordinates, outfile, outformat
     with open(coordinates_file, "r") as filehandler:
         for line in filehandler.readlines():
             tokens = line.split()
-            assert(len(tokens) == 6)
+            assert(len(tokens) == 6 or len(tokens) == 4)
             if tokens[0] != "x":
                 old_x = int(tokens[0])
                 old_y = int(tokens[1])
                 new_x = round(float(tokens[2]),2)
                 new_y = round(float(tokens[3]),2)
-                pixel_x = float(tokens[4])
-                pixel_y = float(tokens[5])
                 if outformat == "array":
                     new_coordinates[(old_x, old_y)] = (new_x,new_y)
+                elif len(tokens) == 6:
+                    pixel_x = float(tokens[4])
+                    pixel_y = float(tokens[5])
+                    new_coordinates[(old_x, old_y)] = (pixel_x, pixel_y)
                 else:
-                    new_coordinates[(old_x, old_y)] = (pixel_x, pixel_y)    
+                    sys.stderr.write("Error, output format is pixel coordinates but\n "
+                                     "the coordinates file only contains 4 columns\n")
+                    sys.exit(1)                    
     # Read the data frame (spots as rows)
     counts_table = pd.read_table(counts_matrix, sep="\t", header=0, index_col=0)
     new_index_values = list()
