@@ -168,11 +168,6 @@ def createDataset(input_file,
     # Transpose to be spots as rows and genes as columns
     counts_table = counts_table.transpose()
     
-    print len(counts_table.columns)
-    print len(set(counts_table.columns))
-    print len(counts_table.index)
-    print len(set(counts_table.index))
-    
     # Compute some statistics
     total_barcodes = len(counts_table.index)
     total_transcripts = np.sum(counts_table.values, dtype=np.int32)
