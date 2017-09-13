@@ -434,3 +434,6 @@ Version 1.5.0
 * adjust_matrix_coordiantes works with the latest ST Spot detector format
 * small updates in the fastq merging script
 * relaxed a bit the restriction checks for some parameters
+
+Version 1.5.1
+* Fixed a bug that will output the matrix of counts inverted

@@ -171,8 +171,6 @@ def createDataset(input_file,
     counts_table = pd.DataFrame(list_row_values, index=list_indexes)
     counts_table.fillna(0, inplace=True)
     counts_table=counts_table.T # Transpose the dictionary to still get the spots as rows and genes as columns in the final tsv
-    # Transpose to be spots as rows and genes as columns ### STRANGE that this is still here for the latest pipe version should have been reverted? I should check this with Jose
-    # counts_table = counts_table.transpose()
     
     # Compute some statistics
     total_barcodes = len(counts_table.index)
