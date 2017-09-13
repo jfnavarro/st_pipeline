@@ -426,3 +426,11 @@ Version 1.4.5
 	- merge_bcl : merge BCL files based in patterns
 	- filter_gene_type_matrix : filter gene in output data based on Ensembl gene types
 * Bumped Pysam and HTSeq 
+
+Version 1.5.0
+* st_qa.py generate expression heatmap plots
+* Fixed a minor bug in the computation of the saturation curves
+* adjust_matrix_coordinates now does not update the coordinates by default
+* adjust_matrix_coordiantes works with the latest ST Spot detector format
+* small updates in the fastq merging script
+* relaxed a bit the restriction checks for some parameters

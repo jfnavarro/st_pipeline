@@ -8,7 +8,7 @@ import os
 import logging 
 import pysam
 from collections import defaultdict
-
+        
 # TODO this function uses too much memory, optimize it. (Maybe Cython or C++)
 def parseUniqueEvents(filename):
     """
@@ -22,7 +22,6 @@ def parseUniqueEvents(filename):
     (chrom, start, end, clear_name, mapping_quality, strand, umi)
     As map[(x,y)][gene]->list((chrom, start, end, clear_name, mapping_quality, strand, UMI))
     """
-    
     logger = logging.getLogger("STPipeline")
     unique_events = defaultdict(lambda : defaultdict(list))
     sam_file = pysam.AlignmentFile(filename, "rb")
@@ -39,7 +38,7 @@ def parseUniqueEvents(filename):
             strand = "-" 
             start, end = end, start
         # Get TAGGD tags
-        x,y,gene,seq = (None,None,None,None)
+        x,y,gene,umi = (None,None,None,None)
         for (k, v) in rec.tags:
             if k == "B1":
                 x = int(v) ## The X coordinate
@@ -56,11 +55,9 @@ def parseUniqueEvents(filename):
             logger.warning("Warning parsing annotated reads.\n" \
                            "Missing attributes for record {}\n".format(clear_name))
             continue
-        
         # Create a new transcript and add it to the dictionary
         transcript = (chrom, start, end, clear_name, mapping_quality, strand, umi)
         unique_events[(x,y)][gene].append(transcript)
-
     sam_file.close()
     return unique_events
 

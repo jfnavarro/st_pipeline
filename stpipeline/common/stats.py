@@ -35,7 +35,7 @@ class Stats():
         self.min_reads_feature = 0
         self.max_reads_unique_event = 0
         self.min_reads_unique_event = 0
-        self.avergage_gene_feature = 0
+        self.average_gene_feature = 0
         self.average_reads_feature = 0
     
     def __str__(self):
@@ -62,7 +62,7 @@ class Stats():
         "\nmin_reads_feature: " + str(self.min_reads_feature) + \
         "\nmax_reads_unique_event: " + str(self.max_reads_unique_event) + \
         "\nmin_reads_unique_event: " + str(self.min_reads_unique_event) + \
-        "\navergage_gene_feature: " + str(self.avergage_gene_feature) + \
+        "\navergage_gene_feature: " + str(self.average_gene_feature) + \
         "\naverage_reads_feature: " + str(self.average_reads_feature)
         
     def writeJSON(self, filename):
@@ -89,7 +89,7 @@ class Stats():
                          "min_reads_feature" : self.min_reads_feature,
                          "max_reads_unique_event" : self.max_reads_unique_event,
                          "min_reads_unique_event" : self.min_reads_unique_event,
-                         "avergage_gene_feature" : self.avergage_gene_feature,
+                         "avergage_gene_feature" : self.average_gene_feature,
                          "average_reads_feature" : self.average_reads_feature}
                          
                          

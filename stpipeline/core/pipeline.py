@@ -24,6 +24,7 @@ import bz2
 import tempfile
 import shutil
 import gc
+import subprocess
 
 FILENAMES = {"mapped" : "mapped.bam",
              "annotated" : "annotated.bam",
@@ -221,8 +222,33 @@ class Pipeline():
                     temp_reg_exp += "[ACT]"
             self.umi_filter_template = temp_reg_exp
                          
-        # TODO add checks for trimming parameters, demultiplex parameters and UMI parameters
-                
+        # Add checks for trimming parameters, demultiplex parameters and UMI parameters
+        if self.allowed_missed >= self.allowed_kmer:
+            error = "Error starting the pipeline.\n" \
+            "Taggd allowed mismatches is bigger or equal than the Taggd k-mer size"
+            self.logger.error(error)
+            raise RuntimeError(error)
+        
+        if self.barcode_start > self.umi_start_position \
+        and self.barcode_start < self.umi_end_position:
+            error = "Error starting the pipeline.\n" \
+            "The start position of the barcodes is between the UMIs start-end position"
+            self.logger.error(error)
+            raise RuntimeError(error)
+        
+        if self.barcode_start == self.umi_start_position \
+        or self.barcode_start == self.umi_end_position:
+            error = "Error starting the pipeline.\n" \
+            "The start position of the barcodes is equal the UMIs start or end position"
+            self.logger.error(error)
+            raise RuntimeError(error)  
+        
+        if self.umi_allowed_mismatches >= (self.umi_end_position - self.umi_start_position):
+            error = "Error starting the pipeline.\n" \
+            "The allowed UMI mismatches is bigger than the UMI size"
+            self.logger.error(error)
+            raise RuntimeError(error)              
+                     
         # Test the presence of the scripts 
         required_scripts = set(['STAR'])
         unavailable_scripts = set()
@@ -263,12 +289,12 @@ class Pipeline():
                             "(GTF or GFF format is required) to be used to annotated the reads")
         parser.add_argument('--expName', type=str, metavar="[STRING]", required=True,
                             help="Name of the experiment/dataset (The output files will prepend this name)")
-        parser.add_argument('--allowed-missed', default=2, metavar="[INT]", type=int, choices=range(0, 11),
+        parser.add_argument('--allowed-missed', default=2, metavar="[INT]", type=int, choices=range(0, 31),
                             help="Number of allowed mismatches when demultiplexing " \
                             "against the barcodes with TaggD (default: %(default)s)")
-        parser.add_argument('--allowed-kmer', default=6, metavar="[INT]", type=int, choices=range(1, 30),
+        parser.add_argument('--allowed-kmer', default=6, metavar="[INT]", type=int, choices=range(1, 51),
                             help="KMer length when demultiplexing against the barcodes with TaggD (default: %(default)s)")
-        parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0, 7),
+        parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0, 11),
                             help="Extra flanking bases added when demultiplexing against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--min-length-qual-trimming', default=20, metavar="[INT]", type=int, choices=range(10, 101),
                             help="Minimum length of the reads after trimming, " \
@@ -286,7 +312,7 @@ class Pipeline():
                             "Modes = {union,intersection-nonempty(default),intersection-strict}")
         parser.add_argument('--htseq-no-ambiguous', action="store_true", default=False,
                             help="When using htseq discard reads annotating ambiguous genes (default False)")
-        parser.add_argument('--start-id', default=0, metavar="[INT]", type=int, choices=range(0, 101),
+        parser.add_argument('--start-id', default=0, metavar="[INT]", type=int,
                             help="Start position of the IDs (Barcodes) in the R1 (counting from 0) (default: %(default)s)")
         parser.add_argument('--no-clean-up', action="store_false", default=True,
                             help="Do not remove temporary/intermediary files (useful for debugging)")
@@ -294,7 +320,7 @@ class Pipeline():
                             help="Show extra information on the log file")
         parser.add_argument('--mapping-threads', default=4, metavar="[INT]", type=int, choices=range(1, 33),
                             help="Number of threads to use in the mapping step (default: %(default)s)")
-        parser.add_argument('--min-quality-trimming', default=20, metavar="[INT]", type=int, choices=range(5, 61),
+        parser.add_argument('--min-quality-trimming', default=20, metavar="[INT]", type=int, choices=range(1, 61),
                             help="Minimum phred quality a base must have in the trimming step (default: %(default)s)")
         parser.add_argument('--bin-path', metavar="[FOLDER]", action=readable_dir, default=None,
                             help="Path to folder where binary executables are present (system path by default)")
@@ -304,26 +330,26 @@ class Pipeline():
                             help='Path of the output folder')
         parser.add_argument('--temp-folder', metavar="[FOLDER]", action=readable_dir, default=None,
                             help='Path of the location for temporary files')
-        parser.add_argument('--umi-allowed-mismatches', default=1, metavar="[INT]", type=int, choices=range(0, 5),
+        parser.add_argument('--umi-allowed-mismatches', default=1, metavar="[INT]", type=int, choices=range(0, 9),
                             help="Number of allowed mismatches (hamming distance) " \
                             "that UMIs of the same gene-spot must have in order to cluster together (default: %(default)s)")
-        parser.add_argument('--umi-start-position', default=18, metavar="[INT]", type=int, choices=range(0, 91),
+        parser.add_argument('--umi-start-position', default=18, metavar="[INT]", type=int,
                             help="Position in R1 (base wise) of the first base of the " \
                             "UMI (starting by 0) (default: %(default)s)")
-        parser.add_argument('--umi-end-position', default=27, metavar="[INT]", type=int, choices=range(0, 101),
+        parser.add_argument('--umi-end-position', default=27, metavar="[INT]", type=int,
                             help="Position in R1 (base wise) of the last base of the "\
                             "UMI (starting by 1) (default: %(default)s)")
         parser.add_argument('--keep-discarded-files', action="store_true", default=False,
                             help='Writes down unaligned, un-annotated and un-demultiplexed reads to files')
-        parser.add_argument('--remove-polyA', default=10, metavar="[INT]", type=int, choices=range(0, 25),
+        parser.add_argument('--remove-polyA', default=10, metavar="[INT]", type=int, choices=range(0, 35),
                             help="Remove PolyA stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
-        parser.add_argument('--remove-polyT', default=10, metavar="[INT]", type=int, choices=range(0, 25),
+        parser.add_argument('--remove-polyT', default=10, metavar="[INT]", type=int, choices=range(0, 35),
                             help="Remove PolyT stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
-        parser.add_argument('--remove-polyG', default=10, metavar="[INT]", type=int, choices=range(0, 25),
+        parser.add_argument('--remove-polyG', default=10, metavar="[INT]", type=int, choices=range(0, 35),
                             help="Remove PolyG stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
-        parser.add_argument('--remove-polyC', default=10, metavar="[INT]", type=int, choices=range(0, 25),
+        parser.add_argument('--remove-polyC', default=10, metavar="[INT]", type=int, choices=range(0, 35),
                             help="Remove PolyC stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
-        parser.add_argument('--remove-polyN', default=10, metavar="[INT]", type=int, choices=range(0, 25),
+        parser.add_argument('--remove-polyN', default=10, metavar="[INT]", type=int, choices=range(0, 35),
                             help="Remove PolyN stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)")
         parser.add_argument('--filter-AT-content', default=90, metavar="[INT%]", type=int, choices=range(0, 100),
                             help="Discards reads whose number of A and T bases in total are more " \
@@ -384,7 +410,7 @@ class Pipeline():
                             "The bases given in the list of tuples as START END START END .. where\n" \
                             "START is the integer position of the first base (0 based) and END is the integer\n" \
                             "position of the last base (1 based).\nTrimmng sequences can be given several times.")
-        parser.add_argument('--homopolymer-mismatches', default=0, metavar="[INT]", type=int, choices=range(0, 6),
+        parser.add_argument('--homopolymer-mismatches', default=0, metavar="[INT]", type=int, choices=range(0, 9),
                             help="Number of mismatches allowed when removing homopolymers (default: %(default)s)")
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
@@ -570,41 +596,37 @@ class Pipeline():
         self.logger.info("Starting the pipeline: {}".format(start_exe_time))
         
         # Check if input fastq files are compressed
-        # TODO it is faster to make a system call with gunzip/bzip
         # TODO reliable way to test if files are compressed (something more robust than just file name endings)
         try:
+            temp_r1_fifo_name = os.path.join(self.temp_folder, "R1_TMP_FIFO.fq")
+            temp_r2_fifo_name = os.path.join(self.temp_folder, "R2_TMP_FIFO.fq")
+            
             if self.fastq_fw.endswith(".gz"):
-                temp_fastq_fw = os.path.join(self.temp_folder, "unzipped_fastq_fw.fastq")
-                with gzip.open(self.fastq_fw, "rb") as filehandler_read:
-                    with open(temp_fastq_fw, "w") as filehandler_write:
-                        for line in filehandler_read:
-                            filehandler_write.write(line)
-                self.fastq_fw = temp_fastq_fw
+                r1_decompression_command = 'gzip --decompress --stdout '+self.fastq_fw.replace(' ','\ ')+' > '+temp_r1_fifo_name
             elif self.fastq_fw.endswith(".bz2"):
-                temp_fastq_fw = os.path.join(self.temp_folder, "unzipped_fastq_fw.fastq")
-                with bz2.BZ2File(self.fastq_fw, "rb") as filehandler_read:
-                    with open(temp_fastq_fw, "w") as filehandler_write:
-                        for line in filehandler_read:
-                            filehandler_write.write(line)
-                self.fastq_fw = temp_fastq_fw
+                r1_decompression_command = 'bzip2 --decompress --stdout '+self.fastq_fw.replace(' ','\ ')+' > '+temp_r1_fifo_name
+            else:
+                r1_decompression_command = None
                 
             if self.fastq_rv.endswith(".gz"):
-                temp_fastq_rv = os.path.join(self.temp_folder, "unzipped_fastq_rv.fastq")
-                with gzip.open(self.fastq_rv, "rb") as filehandler_read:
-                    with open(temp_fastq_rv, "w") as filehandler_write:
-                        for line in filehandler_read:
-                            filehandler_write.write(line)
-                self.fastq_rv = temp_fastq_rv
+                r2_decompression_command = 'gzip --decompress --stdout '+self.fastq_rv.replace(' ','\ ')+' > '+temp_r2_fifo_name
             elif self.fastq_rv.endswith(".bz2"):
-                    temp_fastq_rv = os.path.join(self.temp_folder, "unzipped_fastq_rv.fastq")
-                    with bz2.BZ2File(self.fastq_rv, "rb") as filehandler_read:
-                        with open(temp_fastq_rv, "w") as filehandler_write:
-                            for line in filehandler_read:
-                                filehandler_write.write(line)
-                    self.fastq_rv = temp_fastq_rv
-                    
+                r2_decompression_command = 'bzip2 --decompress --stdout '+self.fastq_rv.replace(' ','\ ')+' > '+temp_r2_fifo_name
+            else:
+                r2_decompression_command = None
+
+            if r1_decompression_command:
+                os.mkfifo( temp_r1_fifo_name )
+                subprocess.Popen(r1_decompression_command, shell=True, preexec_fn=os.setsid)
+                self.fastq_fw = temp_r1_fifo_name
+            
+            if r2_decompression_command:
+                os.mkfifo( temp_r2_fifo_name )
+                subprocess.Popen(r2_decompression_command, shell=True, preexec_fn=os.setsid)
+                self.fastq_rv = temp_r2_fifo_name
+
         except Exception as e:
-            self.logger.error("Error decompressing GZIP/BZIP2 input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
+            self.logger.error("Error while starting the decompression of GZIP/BZIP2 input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
             raise e
         
         #=================================================================
@@ -612,7 +634,7 @@ class Pipeline():
         # Applies different filters : sanity, quality, short, adaptors, UMI...
         #=================================================================
         self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
-        try: 
+        try:
             filterInputReads(self.fastq_fw,
                              self.fastq_rv,
                              FILENAMES["quality_trimmed_R1"],
@@ -636,7 +658,11 @@ class Pipeline():
                              self.adaptor_missmatches)
         except Exception:
             raise
-          
+        
+        # After filtering is completed remove the temporary FIFOs
+        if is_fifo(temp_r1_fifo_name): os.remove( temp_r1_fifo_name )
+        if is_fifo(temp_r2_fifo_name): os.remove( temp_r2_fifo_name )
+        
         #=================================================================
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. typically bacterial rRNA
         #=================================================================
