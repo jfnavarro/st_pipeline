@@ -165,8 +165,6 @@ def createDataset(input_file,
     # Create the data frame
     counts_table = pd.DataFrame(list_row_values, index=list_indexes)
     counts_table.fillna(0, inplace=True)
-    # Transpose to be spots as rows and genes as columns
-    counts_table = counts_table.transpose()
     
     # Compute some statistics
     total_barcodes = len(counts_table.index)
