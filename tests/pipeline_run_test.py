@@ -7,6 +7,8 @@ import unittest
 import urllib
 import tempfile
 import multiprocessing
+import pandas as pd
+import numpy as np
 from subprocess import check_call
 from stpipeline.core.pipeline import Pipeline
 import os
@@ -163,15 +165,26 @@ class TestPipeline(unittest.TestCase):
         # Verify existence of output files and temp files
         self.assertNotEqual(os.listdir(self.outdir), [], "Output folder is not empty")
         self.assertNotEqual(os.listdir(self.tmpdir), [], "Tmp folder is not empty")
-        barcodesfile = os.path.join(self.outdir, str(self.pipeline.expName) + "_stdata.tsv")
+        datafile = os.path.join(self.outdir, str(self.pipeline.expName) + "_stdata.tsv")
         readsfile = os.path.join(self.outdir, str(self.pipeline.expName) + "_reads.bed")
         statsfile = os.path.join(self.outdir, str(self.pipeline.expName) + "_qa_stats.json")
-        self.assertTrue(os.path.exists(barcodesfile), "ST Data file exists")
-        self.assertTrue(os.path.getsize(barcodesfile) > 1024, "ST Data file is not empty")
+        self.assertTrue(os.path.exists(datafile), "ST Data file exists")
+        self.assertTrue(os.path.getsize(datafile) > 1024, "ST Data file is not empty")
         self.assertTrue(os.path.exists(readsfile), "ST Data BED file exists")
         self.assertTrue(os.path.getsize(readsfile) > 1024, "ST Data BED file is not empty")
         self.assertTrue(os.path.exists(statsfile), "Stats JSON file exists")
-         
+        
+        # Verify that the stats are correct
+        counts_table = pd.read_table(datafile, sep="\t", header=0, index_col=0)
+        self.assertTrue(np.sum(counts_table.values, dtype=np.int32) == 5829, "ST data incorrect stats")
+        self.assertTrue(len(counts_table.columns) == 640, "ST data incorrect stats")
+        aggregated_spot_counts = counts_table.sum(axis=1).values
+        aggregated_gene_counts = (counts_table != 0).sum(axis=1).values
+        self.assertTrue(aggregated_gene_counts.max() == 78, "ST data incorrect stats")
+        self.assertTrue(aggregated_gene_counts.min() == 1, "ST data incorrect stats")
+        self.assertTrue(aggregated_spot_counts.max() == 162, "ST data incorrect stats")
+        self.assertTrue(aggregated_spot_counts.min() == 1, "ST data incorrect stats")
+        
     def test_normal_run(self):
         """
         Tests st_pipeline on a mouse data subset with normal fastq files
