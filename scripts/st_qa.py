@@ -4,7 +4,7 @@
 Scripts that perform a basic Quality Control analysis 
 of a ST dataset (matrix in TSV) format.
 
-The scripts outfile.writes stats to the standard output and generate
+The scripts writes stats and generates
 some plots in the folder that is run. 
 
 @Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
