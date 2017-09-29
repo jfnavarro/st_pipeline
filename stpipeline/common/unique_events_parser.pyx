@@ -1,3 +1,16 @@
+import os
+import sys
+import time
+import re
+import signal
+import multiprocessing
+import logging
+import pysam
+from collections import defaultdict
+from pympler.asizeof import asizeof
+from stpipeline.common.utils import fileOk
+from stpipeline.common.stats import qa_stats
+        
 class UniqueEventsParser():
     """
     The UniqueEventsParser class is a more memory efficient implementations of the stpipeline.comon.sam_utils.parseUniqueEvents-function.
@@ -33,10 +46,6 @@ class UniqueEventsParser():
 
         if self.check_running() == 'RUNNING':
             
-            import sys
-            import os
-            import signal
-
             if self.verbose: sys.stderr.write('KILLING Process='+str(self.p.pid)+'.\n')
             os.kill(self.p.pid,signal.SIGTERM)
             
@@ -50,12 +59,6 @@ class UniqueEventsParser():
         """
         Function that starts the subprocess reading the file(s)
         """
-        
-        # imports
-        import multiprocessing
-        import sys
-        import time
-        import re
         
         # create output queue
         self.q = multiprocessing.Queue(self.max_genes_in_memory)
@@ -71,8 +74,6 @@ class UniqueEventsParser():
         """
         Function that checks if the subprocess is running and return the status as as a string with value "RUNNING", "ABORTED" or "COMPLETE"
         """
-        
-        import sys
         
         # check for completion of worker process
         if self.p.is_alive(): return 'RUNNING'
@@ -92,7 +93,6 @@ class UniqueEventsParser():
         function that reads the end coordinates of genes and returns them as values of a dictionary with the gene ID as key
         returns: dict: [GENE_id] => gene_end_coordinate
         """
-        import sys
 
         cdef dict gene_end_coordinates
         cdef dict line_dict
@@ -145,11 +145,7 @@ class UniqueEventsParser():
         """
         Function that prints a current status row to stderr
         """
-        
-        import sys
-        import time
-        from pympler.asizeof import asizeof
-        
+                
         genes_buffer, tmp_counter_0, tmp_counter_1, start_time, speed_last_100k, chrom, start = data
         
         if header: sys.stderr.write('SIZE (MB)\tTOTREADS\tREADSINBUF\tGENESINBUF\tTIME (s)\tAV_SPEED (reads/s)\tCU_SPEED (reads/s)\tPOSITION\n')
@@ -177,18 +173,6 @@ class UniqueEventsParser():
         :param filename: the input file containing the annotated BAM records
         :param gff_filename: the gff file containing the gene coordinates
         """
-
-        #
-        # Imports
-        #
-        from stpipeline.common.utils import fileOk
-        from stpipeline.common.stats import qa_stats
-        import os
-        import logging 
-        import pysam
-        from collections import defaultdict
-        import sys
-        import time
 
         if self.verbose: sys.stderr.write('INFO:: ENTERING => parseUniqueEvents_byCoordinate\n')
 
@@ -360,7 +344,6 @@ class UniqueEventsParser():
         #
         # cleanup and exit
         #
-        import time
         while not self.q.empty():
             if self.verbose: sys.stderr.write('Process='+str(self.p.pid)+' Done processing input wainting for queue to empty.\n')
             time.sleep(1)
