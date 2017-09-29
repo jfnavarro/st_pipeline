@@ -18,7 +18,7 @@ class UniqueEventsParser():
     :return: a instance of the UniqueEventsParser
     """
     
-    def __init__(self, filename, gff_filename, verbose=False, max_genes_in_memory=100):
+    def __init__(self, filename, gff_filename, verbose=False, max_genes_in_memory=50):
         self.filename = filename
         self.gff_filename = gff_filename
         self.verbose = verbose
