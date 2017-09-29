@@ -28,6 +28,8 @@ class UniqueEventsParser():
     
     :param filename: the input file containing the annotated BAM records
     :param gff_filename: the gff file containing the gene coordinates
+    :param verbose: boolean used to determine if info should be written to stderr (default False)
+    :param max_genes_in_memory: integer number of genes to keep in the in memory buffer, ie the size of the multiprocessing.Queue
     :return: a instance of the UniqueEventsParser
     """
     
@@ -143,7 +145,7 @@ class UniqueEventsParser():
     
     def print_stat_line(self, data, header=False):
         """
-        Function that prints a current status row to stderr
+        Function that prints a "current status" row to stderr
         """
                 
         genes_buffer, tmp_counter_0, tmp_counter_1, start_time, speed_last_100k, chrom, start = data
@@ -163,7 +165,7 @@ class UniqueEventsParser():
 
     def _worker_function(self, ):
         """
-        Modified version of the stpipeline.comon.sam_utils.parseUniqueEvents-function:
+        This function is a modified version of the stpipeline.comon.sam_utils.parseUniqueEvents-function:
         
         Parses the transcripts present in the filename given as input.
         It expects a coordinate sorted BAM file where the spot coordinates, 
@@ -184,7 +186,7 @@ class UniqueEventsParser():
         cdef dict gene_end_coordinates = {}
         gene_end_coordinates = self.read_gff_file()
 
-        # Get conection to log and open the bamfile for reading
+        # Open the log file and open the bamfile for reading
         logger = logging.getLogger("STPipeline")
         sam_file = pysam.AlignmentFile(self.filename, "rb")
    
@@ -218,14 +220,15 @@ class UniqueEventsParser():
         cdef tuple spot_coordinates
         cdef tuple gene_end_coordinate
         
+        # print some information to stderr
         if self.verbose: sys.stderr.write('INFO:: parsing bamfile ... \n')
         if self.verbose: self.print_stat_line( (genes_buffer, tmp_counter_0, tmp_counter_1, start_time, speed_last_100k, 'chrom', 'start'), header=True )
 
-        # parse the bamfile record by record by  genome coordinate from first chromosome to last
+        # Parse the coordinate sorted bamfile record by record i.e. by genome coordinate from first chromosome to last
         for rec in sam_file.fetch(until_eof=True):
 
             #
-            # get the info about the record from bam
+            # get the info about the record from the bam file
             #
             clear_name = rec.query_name
             mapping_quality = rec.mapping_quality
@@ -239,7 +242,7 @@ class UniqueEventsParser():
                 strand = "-" 
                 start, end = end, start
 
-            # Get TAGGD tags from bam
+            # Get TAGGD tags from the bam file
             x,y,gene,umi = (-1,-1,'None','None')
             for (k, v) in rec.tags:
                 if k == "B1":
@@ -259,32 +262,40 @@ class UniqueEventsParser():
                 continue
             
             # Skip reads that don't get a gene from HtSeq This should probably be handled in a nicer way later on!!
-            # if gene[0:2] == '__': continue
-            if gene == '__no_feature': continue
+            if gene in ["__too_low_aQual", "__not_aligned", "__alignment_not_unique", "__no_feature"]: continue
             
             # Create a new transcript and add it to the in memory gene_buffer dictionary
             transcript = (chrom, start, end, clear_name, mapping_quality, strand, umi)
             spot_coordinates = (x,y)
-            try:
+            
+            # first try to add the "transcript" to the existing buffer for the specific gene at the defined spot coordinates
+            try: 
                 genes_buffer[gene]['spots'][spot_coordinates].append(transcript)
-            except KeyError:
+            
+            # in case the spot coordinates are not found make a new reads list add the "transcript" to it and add the spotcordinates to the specified gene
+            except KeyError: 
                 new_reads_list = [transcript]
                 try:
                     genes_buffer[gene]['spots'][spot_coordinates] = new_reads_list
                 except KeyError:
                     
+                    # In case the gene is not in the buffer make a new gene dictionary with spot coordinates and read lists and add it to the gene buffer dictionary
+                    # first try to fetch the genomic right most coordinate of the gene from the dictionary with information from the gtf file (the rightmost coordinate is the "end" coordinate of the gene when parsing the bamfile by genome coordinate)
                     try:
                         gene_end_coordinate = gene_end_coordinates[gene]
+
+                    # if the gene annotation is not found in the gtf file it can either be an amgiuous annotation from htseq or we should raise a error
+                    # try to get the end coordinate for HTSeq ambiguous annotatios
                     except KeyError:
-                        if gene[0:len('__ambiguous[')] == '__ambiguous[':#'ENSG00000127540+ENSG00000267059]'
-                            try:
+                        # trying to handle HTSeq ambigiuos gene annotations correctly, they will have an annotation with the following style __ambiguous[GENE1+GENE2]
+                        if gene[0:len('__ambiguous[')] == '__ambiguous[':#'GENE1+GENE2]'
+                            try: #to get the right most right most coordinate ;)
                                 ambiguous_genes = gene[len('__ambiguous['):-1].split('+')
                                 gene_end_coordinate = max( [ gene_end_coordinates[amb_gene] for amb_gene in ambiguous_genes ] )
-                            except KeyError:
-                                raise ValueError('ERROR:: gene with id '+gene+' is not found in gtf file\n'+'\n'.join(gene_end_coordinates.keys()))
-                        else:
-                            raise ValueError('ERROR:: gene with id '+gene+' is not found in gtf file\n'+'\n'.join(gene_end_coordinates.keys()))
+                            except KeyError: raise ValueError('ERROR:: gene with id '+gene+' is not found in gtf file\n'+'\n'.join(gene_end_coordinates.keys()))
+                        else: raise ValueError('ERROR:: gene with id '+gene+' is not found in gtf file\n'+'\n'.join(gene_end_coordinates.keys()))
                     
+                    # create the new gene entry and add it to the buffer
                     new_spot_dict = {spot_coordinates:new_reads_list}
                     new_gene_dict = {
                             'spots':new_spot_dict,
@@ -293,33 +304,48 @@ class UniqueEventsParser():
                     genes_buffer[gene] = new_gene_dict
             
             #
-            # check the gene_buffer to see if we passed the end coordinate of any of the genes
+            # check the gene_buffer to see if we passed the end coordinate of any of the genes in the genes_buffer
             # if that is the case no more reads will be added to the gene
-            # and we can send the completed genes to the parent process
+            # and we can send the completed genes to the parent process by puting it in the multiprocessing.Queue
             #
-            _tmp = list(genes_buffer.keys()) # to avoid changeing the size of the dict while iterating over it
-            deleted_genes=[] # and to ble able to remove the genes from the dict once we sent them to the parent
+            _tmp = list(genes_buffer.keys()) # temporary list used to avoid changeing the size of the dict while iterating over it
+            deleted_genes=[] # and another list used to be able to remove the genes from the dict once we sent them to the parent process
+            
+            # for each gene in the buffer
             for gene in _tmp:
-                if rec.reference_start > genes_buffer[gene]['gene_end_coordinate'][1] or chrom != genes_buffer[gene]['gene_end_coordinate'][0]: # true if the current position is past the gene end coordinate
+                # check if the current position is past the gene end coordinate
+                if rec.reference_start > genes_buffer[gene]['gene_end_coordinate'][1] or chrom != genes_buffer[gene]['gene_end_coordinate'][0]: 
                     if self.verbose: self.print_stat_line( (genes_buffer, tmp_counter_0, tmp_counter_1, start_time, speed_last_100k, chrom, start) ) # print stats
-                    self.q.put( (gene, genes_buffer[gene]['spots']) ) # HERE we send the gene back to the parent process
+                    
+                    # HERE we send the gene back to the parent process by putting the spot dictionary in the multiprocessing.Queue
+                    self.q.put( (gene, genes_buffer[gene]['spots']) ) 
+                    
+                    # check that the gene has not beeen processed be fore just to be sure nothing funky is going on
                     assert gene not in processed_genes, 'ERROR: the gene '+gene+' cannot be present twice in the genome.\n'
                     processed_genes[gene] = True
+                    
+                    # mark the gene for deletion from the buffer
                     deleted_genes.append(gene)
-            for gene in deleted_genes: # free some memory
+            
+            # free some memory bu deleting genes from the genes_buffer that were just sent to the parent process 
+            for gene in deleted_genes: 
                 for read_list in genes_buffer[gene]['spots'].values(): tmp_counter_1 += len(read_list)
                 genes_buffer[gene]['spots'] = None
                 genes_buffer[gene] = {}
                 del genes_buffer[gene]
     
             #
-            # Update counter and write info if verbose
+            # Lastly update the record counter and write info if verbose is true
             #
             tmp_counter_0 += 1
             if self.verbose and tmp_counter_0%100000==0:
                 speed_last_100k = round(100000.0/(time.time()-time_last_100k),2)
                 time_last_100k = time.time()
                 self.print_stat_line( (genes_buffer, tmp_counter_0, tmp_counter_1, start_time, speed_last_100k, chrom, start) )
+                
+            # go to next record
+
+        # End of for each record in bam loop
           
         #
         # Close the bam file and yield the last gene(s)
