@@ -37,25 +37,7 @@ class UniqueEventsParser():
         self.filename = filename
         self.gff_filename = gff_filename
         self.verbose = verbose
-        self.aborted = False
         self.max_genes_in_memory = max_genes_in_memory
-    
-    def stop(self,):
-        """
-        Function for stopping and aborting a running procsses.
-        Mostly used for debugging and development.
-        """
-
-        if self.check_running() == 'RUNNING':
-            
-            if self.verbose: sys.stderr.write('KILLING Process='+str(self.p.pid)+'.\n')
-            os.kill(self.p.pid,signal.SIGTERM)
-            
-            # empty the queue and join all processes!!
-            self.q.close()
-            while not self.q.empty(): self.q.get()
-            self.q.join_thread()
-            self.aborted = True
     
     def run(self, ):
         """
@@ -67,20 +49,18 @@ class UniqueEventsParser():
         
         # start worker subprocess
         self.p = multiprocessing.Process(target=self._worker_function)
-        self.aborted = False
         self.p.start()
         
         if self.verbose: sys.stderr.write('Process='+str(self.p.pid)+' starting to parse unique events.\n')
         
     def check_running(self, ):
         """
-        Function that checks if the subprocess is running and return the status as as a string with value "RUNNING", "ABORTED" or "COMPLETE"
+        Function that checks if the subprocess is running and return the status as as a string with value "RUNNING" or "COMPLETE"
         """
         
         # check for completion of worker process
         if self.p.is_alive(): return 'RUNNING'
         else:
-            if self.aborted: return 'ABORTED'
             if self.p.exitcode == 0:
                 self.p.join()
                 if self.verbose: sys.stderr.write('Process='+str(self.p.pid)+' finished parsing unique events.\n')
