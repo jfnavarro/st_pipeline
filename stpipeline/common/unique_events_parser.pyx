@@ -10,6 +10,7 @@ from collections import defaultdict
 from pympler.asizeof import asizeof
 from stpipeline.common.utils import fileOk
 from stpipeline.common.stats import qa_stats
+from stpipeline.common.gff_reader import gff_lines
         
 class UniqueEventsParser():
     """
@@ -77,43 +78,26 @@ class UniqueEventsParser():
         """
 
         cdef dict gene_end_coordinates
-        cdef dict line_dict
-        cdef str line
-        cdef str key
+        cdef dict line
         cdef str gene_id
-        cdef list split_line
         cdef str seqname
         cdef int end
-        cdef list attributes
-        cdef str attribute
         
         if self.verbose: sys.stderr.write('INFO:: LOADING gtf file...\n')
         gene_end_coordinates = dict()
         
         # parse gtf file
-        for line in open(self.gff_filename):
+        for line in gff_lines(self.gff_filename):
             
-            # remove header
-            if line[:4] == 'track' or line[0] == '#': continue
-            
-            # parse the line according to gtf format desc http://www.ensembl.org/info/website/upload/gff.html
-            split_line = line.lstrip().rstrip().split('\t')
-            line_dict = {}
-            seqname = split_line[0]
-            end = int(split_line[4])
-            attributes = split_line[-1].rstrip().split(';')
-            for attribute in attributes:
-                if not attribute.lstrip().rstrip(): continue
-                key = attribute.lstrip().split(' ')[0]
-                value = attribute.lstrip().split(' ')[1]
-                line_dict[key]=value 
+            seqname = line['seqname']
+            end = int(line['end'])
+            gene_id = line['gene_id']
             
             # save gene_id and rigtmost genomic coordinate of each gene to dictionary
             try:
-                gene_id = line_dict['gene_id']
                 if gene_id[0] == '"' and gene_id[-1] == '"': gene_id=gene_id[1:-1]
             except KeyError:
-                raise ValueError('The gene_id attribute is missing in the annotation file ('+ self.gff_filename+')\nORIGINAL gff line: '+line+'\n')
+                raise ValueError('The gene_id attribute is missing in the annotation file ('+ self.gff_filename+')\n')
             try:
                 if int(end) > gene_end_coordinates[ gene_id ][1]:
                     gene_end_coordinates[ gene_id ] = (seqname,int(end))
