@@ -14,9 +14,14 @@ from stpipeline.common.gff_reader import gff_lines
 
 class uniqueEventsParser():
     """
-    The UniqueEventsParser class is a more memory efficient implementations of the stpipeline.comon.sam_utils.parseUniqueEvents-function.
-    The class takes two values as input filename and gff_filename, as well as two keyword arguments verbose and max_genes_in_memory.
-    max_genes_in_memory defines the size of the underlying queue used to send genes from the file parsing function to the main process.
+    The UniqueEventsParser class is a more memory efficient implementations
+    of the stpipeline.comon.sam_utils.parseUniqueEvents-function.
+    The class takes two values as input filename and gff_filename,
+    as well as two keyword arguments verbose and max_genes_in_memory.
+
+    The max_genes_in_memory variable defines the size of the underlying queue
+    used to send genes from the file parsing function to the main process.
+    
     The work done by the parser is defined by the self._worker_function function.
     In this function a annotated coordinate sorted bam file is parsed
     and genes are returned to the parent process through a multiprocessing.Queue self.q.
@@ -31,7 +36,7 @@ class uniqueEventsParser():
     :param filename: the input file containing the annotated BAM records
     :param gff_filename: the gff file containing the gene coordinates
     :param verbose: boolean used to determine if info should be written to stdout (default False)
-    :param max_genes_in_memory: integer number of genes to keep in the in memory buffer, ie the size of the multiprocessing.Queue
+    :param max_genes_in_memory: integer number of genes to keep in memory, i.e. the size of the multiprocessing.Queue
     :return: a instance of the UniqueEventsParser
     """
 
@@ -53,11 +58,12 @@ class uniqueEventsParser():
         self.p = multiprocessing.Process(target=self._worker_function)
         self.p.start()
 
-        if self.verbose: sys.stdout.write('Process='+str(self.p.pid)+' starting to parse unique events.\n')
+        if self.verbose: sys.stdout.write('Process={0} starting to parse unique events.\n'.format(str(self.p.pid)))
 
     def check_running(self, ):
         """
-        Function that checks if the subprocess is running and return the status as as a string with value "RUNNING" or "COMPLETE"
+        Function that checks if the subprocess is running
+        and return the status as as a string with value "RUNNING" or "COMPLETE"
         """
 
         # check for completion of worker process
@@ -65,10 +71,12 @@ class uniqueEventsParser():
         else:
             if self.p.exitcode == 0:
                 self.p.join()
-                if self.verbose: sys.stdout.write('Process='+str(self.p.pid)+' finished parsing unique events.\n')
+                if self.verbose: sys.stdout.write(
+                    'Process={0} finished parsing unique events.\n'.format(str(self.p.pid))
+                    )
                 return 'COMPLETE'
             else:
-                msg = 'ERROR:: Process='+str(self.p.pid)+' FAILED to parse unique events!!!.\n'
+                msg = 'ERROR:: Process={0} FAILED to parse unique events!!!.\n'.format(str(self.p.pid))
                 if self.verbose: sys.stdout.write(msg)
                 raise RuntimeError(msg)
 
@@ -160,11 +168,14 @@ class uniqueEventsParser():
 
         # cleanup and exit
         while not self.q.empty():
-            if self.verbose: sys.stdout.write('Process='+str(self.p.pid)+' Done processing input wainting for queue to empty.\n')
+            if self.verbose:
+                sys.stdout.write(
+                    'Process={0} Done processing input wainting for queue to empty.\n'.format(str(self.p.pid))
+                    )
             time.sleep(1)
         self.q.close()
         self.q.join_thread()
-        if self.verbose: sys.stdout.write('Process='+str(self.p.pid)+' returning.\n')
+        if self.verbose: sys.stdout.write('Process={0} returning.\n'.format(str(self.p.pid)))
 
     def all_unique_events(self,):
         """
@@ -179,12 +190,12 @@ class uniqueEventsParser():
         while True:
             data = self.q.get()
             if self.check_running != 'COMPLETE' and data == 'COMPLETED':
-                if self.verbose: sys.stdout.write('INFO:: got signal '+data+' from uep.\n')
+                if self.verbose: sys.stdout.write('INFO:: got signal {0} from uep.\n'.format(data))
                 while self.check_running() != 'COMPLETE':
                     if self.verbose: sys.stdout.write('INFO:: waiting for uep subprocesses to finish.\n')
                     time.sleep(0.1)
                 break
-            if self.verbose: sys.stdout.write('INFO:: got gene '+data[0]+' from child process.\n')
+            if self.verbose: sys.stdout.write('INFO:: got gene {0} from child process.\n'.format(data[0]))
             yield data
 
 class geneBuffer():
@@ -261,7 +272,9 @@ class geneBuffer():
             try:
                 if gene_id[0] == '"' and gene_id[-1] == '"': gene_id=gene_id[1:-1]
             except KeyError:
-                raise ValueError('The gene_id attribute is missing in the annotation file ('+ self.gff_filename+')\n')
+                raise ValueError(
+                    'The gene_id attribute is missing in the annotation file ({0})\n'.format(self.gff_filename)
+                    )
             try:
                 if int(end) > gene_end_coordinates[ gene_id ][1]:
                     gene_end_coordinates[ gene_id ] = (seqname,int(end))
@@ -276,8 +289,10 @@ class geneBuffer():
         Parameters:
         :param _gene: the name of the gene
         :param _spot_coordinates: the spot cordinates as a (x,y) tuple
-        :param _transcript: the transcript information as a (chrom, start, end, clear_name, mapping_quality, strand, umi) tuple
-        :param _leftmost_transcript_position: the leftmost coordinate of the pysam record (i.e. AlignedSegment.reference_start)
+        :param _transcript: the transcript information
+            as a (chrom, start, end, clear_name, mapping_quality, strand, umi) tuple
+        :param _leftmost_transcript_position: the leftmost coordinate of the  original pysam record
+            (i.e. AlignedSegment.reference_start)
         """
 
         cdef str gene = _gene
@@ -294,7 +309,7 @@ class geneBuffer():
         cdef tuple gene_end_coordinate
         cdef list ambiguous_genes
 
-        # First try to add the "transcript" to the existing buffer for the specific gene at the defined spot coordinates
+        # First try to add the "transcript" to the existing buffer
         try:
             self.buffer[gene]['spots'][spot_coordinates].append(transcript)
 
@@ -308,8 +323,10 @@ class geneBuffer():
 
                 # In case the gene is not in the buffer make a new gene dictionary with spot coordinates
                 # and read lists and add it to the gene buffer dictionary
-                # first try to fetch the genomic right most coordinate of the gene from the dictionary with information from the gtf file
-                # (the rightmost coordinate is the "end" coordinate of the gene when parsing the bamfile by genome coordinate)
+                # first try to fetch the genomic right most coordinate of the gene
+                # from the dictionary with information from the gtf file
+                # (the rightmost coordinate is the "end" coordinate of the gene
+                # when parsing the bamfile by genome coordinate)
                 try:
                     gene_end_coordinate = self.gene_end_coordinates[gene]
 
@@ -320,13 +337,15 @@ class geneBuffer():
                     # trying to handle HTSeq ambigiuos gene annotations correctly,
                     # they will have an annotation with the following style __ambiguous[GENE1+GENE2]
                     if gene[0:len('__ambiguous[')] == '__ambiguous[':#'GENE1+GENE2]'
-                        try: #to get the right most right most coordinate ;)
+                        try: # to get the right most right most coordinate ;)
                             ambiguous_genes = gene[len('__ambiguous['):-1].split('+')
-                            gene_end_coordinate = max( [ self.gene_end_coordinates[amb_gene] for amb_gene in ambiguous_genes ] )
+                            gene_end_coordinate = max(
+                                [ self.gene_end_coordinates[amb_gene] for amb_gene in ambiguous_genes ]
+                                )
                         except KeyError:
-                            raise ValueError('ERROR:: gene with id '+gene+' is not found in gtf file\n')
+                            raise ValueError('ERROR:: gene with id {0} is not found in gtf file\n'.format(gene))
                     else:
-                        raise ValueError('ERROR:: gene with id '+gene+' is not found in gtf file\n')
+                        raise ValueError('ERROR:: gene with id {0} is not found in gtf file\n'.format(gene))
 
                 # Create the new gene entry and add it to the buffer
                 new_spot_dict = {spot_coordinates:new_reads_list}
@@ -359,8 +378,8 @@ class geneBuffer():
         # and we can send the completed genes to the parent process by puting it in the multiprocessing.Queue
 
         cdef list _tmp
-        _tmp = list(self.buffer.keys()) # temporary list used to avoid changeing the size of the dict while iterating over it
-        cdef list deleted_genes = [] # and another list used to be able to remove the genes from the dict once we sent them to the parent process
+        _tmp = list(self.buffer.keys()) # temporary list used to avoid changeing the size of the dict during iteration
+        cdef list deleted_genes = [] #list used to mark genes for removal from the dict once sent to the parent process
 
         # For each gene in the buffer
         if empty and self.verbose: self.print_stats()
@@ -373,13 +392,14 @@ class geneBuffer():
 
                 # print stats
                 if self.verbose: self.print_stats( )
-                if empty and self.verbose: sys.stdout.write('INFO:: yielding last gene(s) '+gene+' ... \n')
+                if empty and self.verbose: sys.stdout.write('INFO:: yielding last gene(s) {0} ... \n'.format(gene))
 
-                # HERE we send the gene back to the parent process by putting the spot dictionary in the multiprocessing.Queue
+                # HERE we send the gene back to the parent process
+                # by putting the spot dictionary and gene name in the multiprocessing.Queue
                 queue.put( (gene, self.buffer[gene]['spots']) )
 
                 # Check that the gene has not beeen processed be fore just to be sure nothing funky is going on
-                assert gene not in self.processed_genes, 'ERROR: the gene '+gene+' cannot be present twice in the genome.\n'
+                assert gene not in self.processed_genes, 'ERROR: the gene {0} cannot be present twice in the genome.\n'.format(gene)
                 self.processed_genes[gene] = True
 
                 # Mark the gene for deletion from the buffer
@@ -398,15 +418,27 @@ class geneBuffer():
         Function that prints a "current status" row to stdout
         """
 
-        if header: sys.stdout.write('SIZE (MB)\tTOTREADS\tREADSINBUF\tGENESINBUF\tTIME (s)\tAV_SPEED (reads/s)\tCU_SPEED (reads/s)\tPOSITION\n')
+        if header:
+            header_str = '\t'.join( [
+                'SIZE (MB)',
+                'TOTREADS',
+                'READSINBUF',
+                'GENESINBUF',
+                'TIME (s)',
+                'AV_SPEED (reads/s)',
+                'CU_SPEED (reads/s)',
+                'POSITION'
+            ])
+            header_str+='\n'
+            sys.stdout.write(header_str)
 
-        sys.stdout.write(
-                str(round(asizeof(self)/(1000.0*1000.0),2))+'\t'+\
-                str(self.total_transcript_counter)+'\t'+\
-                str(self.total_transcript_counter-self.transcripts_sent_counter)+'\t'+\
-                str(len(self.buffer))+'\t'+\
-                str(round(time.time()-self.start_time,3))+'\t'+\
-                str(round(self.total_transcript_counter/(time.time()-self.start_time),2))+'\t'+\
-                str(self.speed_of_last_100k_transcripts)+'\t'+\
-                str(self.current_chromosome)+':'+str(self.current_position)+'\n'
-            )
+        sys.stdout.write('\t'.join([
+                str(round(asizeof(self)/(1000.0*1000.0),2)),
+                str(self.total_transcript_counter),
+                str(self.total_transcript_counter-self.transcripts_sent_counter),
+                str(len(self.buffer)),
+                str(round(time.time()-self.start_time,3)),
+                str(round(self.total_transcript_counter/(time.time()-self.start_time),2)),
+                str(self.speed_of_last_100k_transcripts),
+                '{0}:{1}\n'.format(str(self.current_chromosome),str(self.current_position))
+            ]))
