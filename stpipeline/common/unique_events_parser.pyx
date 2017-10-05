@@ -30,7 +30,7 @@ class UniqueEventsParser():
     
     :param filename: the input file containing the annotated BAM records
     :param gff_filename: the gff file containing the gene coordinates
-    :param verbose: boolean used to determine if info should be written to stderr (default False)
+    :param verbose: boolean used to determine if info should be written to stdout (default False)
     :param max_genes_in_memory: integer number of genes to keep in the in memory buffer, ie the size of the multiprocessing.Queue
     :return: a instance of the UniqueEventsParser
     """
@@ -53,7 +53,7 @@ class UniqueEventsParser():
         self.p = multiprocessing.Process(target=self._worker_function)
         self.p.start()
         
-        if self.verbose: sys.stderr.write('Process='+str(self.p.pid)+' starting to parse unique events.\n')
+        if self.verbose: sys.stdout.write('Process='+str(self.p.pid)+' starting to parse unique events.\n')
         
     def check_running(self, ):
         """
@@ -65,11 +65,11 @@ class UniqueEventsParser():
         else:
             if self.p.exitcode == 0:
                 self.p.join()
-                if self.verbose: sys.stderr.write('Process='+str(self.p.pid)+' finished parsing unique events.\n')
+                if self.verbose: sys.stdout.write('Process='+str(self.p.pid)+' finished parsing unique events.\n')
                 return 'COMPLETE'
             else:
                 msg = 'ERROR:: Process='+str(self.p.pid)+' FAILED to parse unique events!!!.\n'
-                if self.verbose: sys.stderr.write(msg)
+                if self.verbose: sys.stdout.write(msg)
                 raise RuntimeError(msg)
 
     def _worker_function(self, ):
@@ -85,7 +85,7 @@ class UniqueEventsParser():
         :param gff_filename: the gff file containing the gene coordinates
         """
 
-        if self.verbose: sys.stderr.write('INFO:: ENTERING => parseUniqueEvents_byCoordinate\n')
+        if self.verbose: sys.stdout.write('INFO:: ENTERING => parseUniqueEvents_byCoordinate\n')
 
         # Open the log file and open the bamfile for reading
         logger = logging.getLogger("STPipeline")
@@ -167,11 +167,11 @@ class UniqueEventsParser():
         # cleanup and exit
         #
         while not self.q.empty():
-            if self.verbose: sys.stderr.write('Process='+str(self.p.pid)+' Done processing input wainting for queue to empty.\n')
+            if self.verbose: sys.stdout.write('Process='+str(self.p.pid)+' Done processing input wainting for queue to empty.\n')
             time.sleep(1)
         self.q.close()
         self.q.join_thread()
-        if self.verbose: sys.stderr.write('Process='+str(self.p.pid)+' returning.\n')
+        if self.verbose: sys.stdout.write('Process='+str(self.p.pid)+' returning.\n')
 
 class GeneBuffer():
     """
@@ -225,7 +225,7 @@ class GeneBuffer():
         cdef str seqname
         cdef int end
         
-        if self.verbose: sys.stderr.write('INFO:: LOADING gtf file...\n')
+        if self.verbose: sys.stdout.write('INFO:: LOADING gtf file...\n')
         gene_end_coordinates = dict()
         
         # parse gtf file
@@ -334,7 +334,7 @@ class GeneBuffer():
                 or self.current_position > self.buffer[gene]['gene_end_coordinate'][1] \
                 or self.current_chromosome != self.buffer[gene]['gene_end_coordinate'][0]: 
                     if self.verbose: self.print_stats( ) # print stats
-                    if empty and self.verbose: sys.stderr.write('INFO:: yielding last gene(s) '+gene+' ... \n')
+                    if empty and self.verbose: sys.stdout.write('INFO:: yielding last gene(s) '+gene+' ... \n')
                     
                     # HERE we send the gene back to the parent process by putting the spot dictionary in the multiprocessing.Queue
                     queue.put( (gene, self.buffer[gene]['spots']) ) 
@@ -356,14 +356,14 @@ class GeneBuffer():
     
     def print_stats(self, header=False):
         """
-        Function that prints a "current status" row to stderr
+        Function that prints a "current status" row to stdout
         """
 
         #genes_buffer, tmp_counter_0, tmp_counter_1, start_time, speed_last_100k, chrom, start = data
         
-        if header: sys.stderr.write('SIZE (MB)\tTOTREADS\tREADSINBUF\tGENESINBUF\tTIME (s)\tAV_SPEED (reads/s)\tCU_SPEED (reads/s)\tPOSITION\n')
+        if header: sys.stdout.write('SIZE (MB)\tTOTREADS\tREADSINBUF\tGENESINBUF\tTIME (s)\tAV_SPEED (reads/s)\tCU_SPEED (reads/s)\tPOSITION\n')
         
-        sys.stderr.write(
+        sys.stdout.write(
                 str(round(asizeof(self)/(1000.0*1000.0),2))+'\t'+\
                 str(self.total_transcript_counter)+'\t'+\
                 str(self.total_transcript_counter-self.transcripts_sent_counter)+'\t'+\
