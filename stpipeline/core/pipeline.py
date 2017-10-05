@@ -594,7 +594,7 @@ class Pipeline():
         #=================================================================
         start_exe_time = globaltime.getTimestamp()
         self.logger.info("Starting the pipeline: {}".format(start_exe_time))
-        
+
         # Check if input fastq files are compressed
         # TODO reliable way to test if files are compressed (something more robust than just file name endings)
         try:
@@ -628,7 +628,7 @@ class Pipeline():
         except Exception as e:
             self.logger.error("Error while starting the decompression of GZIP/BZIP2 input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
             raise e
-        
+
         #=================================================================
         # STEP: FILTERING 
         # Applies different filters : sanity, quality, short, adaptors, UMI...
