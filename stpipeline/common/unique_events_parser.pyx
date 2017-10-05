@@ -11,8 +11,8 @@ from pympler.asizeof import asizeof
 from stpipeline.common.utils import fileOk
 from stpipeline.common.stats import qa_stats
 from stpipeline.common.gff_reader import gff_lines
-        
-class UniqueEventsParser():
+
+class uniqueEventsParser():
     """
     The UniqueEventsParser class is a more memory efficient implementations of the stpipeline.comon.sam_utils.parseUniqueEvents-function.
     The class takes two values as input filename and gff_filename, as well as two keyword arguments verbose and max_genes_in_memory.
@@ -173,7 +173,28 @@ class UniqueEventsParser():
         self.q.join_thread()
         if self.verbose: sys.stdout.write('Process='+str(self.p.pid)+' returning.\n')
 
-class GeneBuffer():
+    def all_unique_events(self,):
+        """
+        A generator function living in the parent process fetching genes from the queue
+        and yelding the genes sent back.
+        """
+        
+        # start the worker if not already done
+        if self.check_running != 'RUNNING': self.run()
+        
+        # yield genes until the bam file has been parsed and the uniqueEventsParser shuts down
+        while True:
+            data = self.q.get()
+            if self.check_running != 'COMPLETE' and data == 'COMPLETED':
+                if self.verbose: sys.stdout.write('INFO:: got signal '+data+' from uep.\n')
+                while self.check_running() != 'COMPLETE':
+                    if self.verbose: sys.stdout.write('INFO:: waiting for uep subprocesses to finish.\n')
+                    time.sleep(0.1)
+                break
+            if self.verbose: sys.stdout.write('INFO:: got gene '+data[0]+' from child process.\n')
+            yield data
+
+class geneBuffer():
     """
     This object defines a buffer holding a dictionary of spots coordinates for each gene
     """

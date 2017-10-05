@@ -61,32 +61,6 @@ def parseUniqueEvents(filename):
     sam_file.close()
     return unique_events
 
-def parseUniqueEvents_byCoordinate(filename, gff_filename, verbose=False):
-    """
-    A generator function for wrapping the stpipeline.common.unique_events_parser.UniqueEventsParser class
-    and yelding the genes sent back to the parent process.
-    """
-    
-    from stpipeline.common.unique_events_parser import UniqueEventsParser
-    import time
-    import sys
-    
-    # Create an instance of the UniqueEventsParser and start the work in the subprocess
-    uep = UniqueEventsParser(filename, gff_filename, verbose=verbose)
-    uep.run()
-    
-    # yield genes until the bam file has been parsed and the UniqueEventsParser shuts down
-    while True:
-        data = uep.q.get()
-        if uep.check_running != 'COMPLETE' and data == 'COMPLETED':
-            if verbose: sys.stderr.write('INFO:: got signal '+data+' from uep.\n')
-            while uep.check_running() != 'COMPLETE':
-                if verbose: sys.stderr.write('INFO:: waiting for uep subprocesses to finish.\n')
-                time.sleep(0.1)
-            break
-        if verbose: sys.stderr.write('INFO:: got gene '+data[0]+' from child process.\n')
-        yield data
-
 def filterMappedReads(mapped_reads,
                       hash_reads,
                       file_output,
