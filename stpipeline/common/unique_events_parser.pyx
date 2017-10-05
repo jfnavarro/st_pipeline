@@ -153,7 +153,7 @@ class uniqueEventsParser():
                 continue
 
             # Skip reads that don't get a gene from HtSeq This should probably be handled in a nicer way later on!!
-            if gene in ["__too_low_aQual", "__not_aligned", "__alignment_not_unique", "__no_feature"]: continue
+            if gene == "__no_feature": continue
 
             # Create a new transcript and add it to the in memory gene_buffer dictionary
             transcript = (chrom, start, end, clear_name, mapping_quality, strand, umi)
