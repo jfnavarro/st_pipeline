@@ -789,6 +789,7 @@ class Pipeline():
             try:
                 computeSaturation(annotated_reads,
                                   FILENAMES["annotated"],
+                                  self.ref_annotation,
                                   self.umi_cluster_algorithm,
                                   self.umi_allowed_mismatches,
                                   self.umi_counting_offset,
@@ -804,6 +805,7 @@ class Pipeline():
         try:
             createDataset(FILENAMES["annotated"],
                           qa_stats, # Passed as reference
+                          self.ref_annotation,
                           self.umi_cluster_algorithm,
                           self.umi_allowed_mismatches,
                           self.umi_counting_offset,
