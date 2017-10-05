@@ -144,6 +144,10 @@ def count_reads_in_features(sam_filename,
             try:
                 if r.optional_field("NH") > 1:
                     write_to_samout(r, "__alignment_not_unique")
+                    # Should these reads potentially be printed twice?
+                    # should there not be a continue statement here?
+                    # otherwise the read will move on through the if statemets
+                    # until it gets a gene id annotation and will be printed again?
             except KeyError:
                 pass
             if r.aQual < minaqual:
