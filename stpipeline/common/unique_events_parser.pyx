@@ -152,9 +152,6 @@ class uniqueEventsParser():
                                "Missing attributes for record {}\n".format(clear_name))
                 continue
 
-            # Skip reads that don't get a gene from HtSeq This should probably be handled in a nicer way later on!!
-            if gene == "__no_feature": continue
-
             # Create a new transcript and add it to the in memory gene_buffer dictionary
             transcript = (chrom, start, end, clear_name, mapping_quality, strand, umi)
             spot_coordinates = (x,y)
@@ -384,6 +381,9 @@ class geneBuffer():
         # For each gene in the buffer
         if empty and self.verbose: self.print_stats()
         for gene in _tmp:
+            
+            # fix to include any "__no_feature" annotations
+            if gene == '__no_feature' and not empty: continue
 
             # check if the current position is past the gene end coordinate
             if empty \
