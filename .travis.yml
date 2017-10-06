@@ -18,6 +18,7 @@ before_install:
   - mkdir -p $HOME/bin
   - cp STAR $HOME/bin
   - cd ..
+  - cd ..
   - export PATH="$HOME/bin:$PATH"
   - mkdir -p $HOME/tmp
   - export TMPDIR=$HOME/tmp
