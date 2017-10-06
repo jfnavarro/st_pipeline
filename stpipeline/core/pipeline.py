@@ -31,8 +31,7 @@ FILENAMES = {"mapped" : "mapped.bam",
              "annotated" : "annotated.bam",
              "contaminated_clean" : "contaminated_clean.fastq",
              "demultiplexed_prefix" : "demultiplexed",
-             "demultiplexed_matched" : "demultiplexed_matched.fastq",
-             "mapped_filtered" : "mapped_filtered.bam",
+             "demultiplexed_matched" : "demultiplexed_matched.bam",
              "quality_trimmed_R2" : "R2_quality_trimmed.bam",
              "two_pass_splices" : "SJ.out.tab"}
 
@@ -99,7 +98,6 @@ class Pipeline():
         self.compute_saturation = False
         self.include_non_annotated = False
         self.inverse_trimming_rv = 0
-        self.low_memory = False
         self.two_pass_mode = False
         self.strandness = "yes"
         self.umi_quality_bases = 6
@@ -385,8 +383,6 @@ class Pipeline():
                             help="Do not discard un-annotated reads (they will be labeled __no_feature)")
         parser.add_argument('--inverse-mapping-rv-trimming', default=0, type=int, metavar="[INT]", choices=range(0, 50),
                             help="Number of bases to trim in the reverse reads for the mapping step on the 3' end")
-        parser.add_argument('--low-memory', default=False, action="store_true",
-                            help="Writes temporary records into disk in order to save memory but gaining a speed penalty")
         parser.add_argument('--two-pass-mode', default=False, action="store_true",
                             help="Activates the 2-pass mode in STAR to improve mapping accuracy")
         parser.add_argument('--strandness', default="yes", type=str, metavar="[STRING]", choices=["no", "yes", "reverse"],
@@ -474,7 +470,6 @@ class Pipeline():
         self.compute_saturation = options.compute_saturation
         self.include_non_annotated = options.include_non_annotated
         self.inverse_trimming_rv = options.inverse_mapping_rv_trimming
-        self.low_memory = options.low_memory
         self.two_pass_mode = options.two_pass_mode
         self.strandness = options.strandness
         self.umi_quality_bases = options.umi_quality_bases
@@ -567,8 +562,6 @@ class Pipeline():
         if self.remove_polyN_distance > 0:
             self.logger.info("Removing polyN sequences of a length of at least: {}".format(self.remove_polyN_distance))
         self.logger.info("Allowing {} mismatches when removing homopolymers".format(self.adaptor_missmatches))
-        if self.low_memory:
-            self.logger.info("Using a SQL based container to save memory")
         if self.two_pass_mode :
             self.logger.info("Using the STAR 2-pass mode for the mapping step")
         
@@ -724,7 +717,7 @@ class Pipeline():
         #=================================================================
         self.logger.info("Starting barcode demultiplexing {}".format(globaltime.getTimestamp()))
         try:
-            barcodeDemultiplexing(FILENAMES["quality_trimmed_R1"],
+            barcodeDemultiplexing(FILENAMES["quality_trimmed_R2"],
                                   self.ids,
                                   self.allowed_missed,
                                   self.allowed_kmer,
@@ -737,43 +730,14 @@ class Pipeline():
                                   FILENAMES["demultiplexed_prefix"], # Prefix for output files
                                   self.keep_discarded_files)
         except Exception:
-            raise
-        
-        #=================================================================
-        # STEP: OBTAIN DICT OF DEMULTIPLEXED READS
-        # Iterate demultiplexed FASTQ reads to obtain a dict of read_name => (x,y,umi) 
-        #=================================================================
-        self.logger.info("Parsing demultiplexed reads (R1) {}".format(globaltime.getTimestamp()))
-        hash_reads = hashDemultiplexedReads(FILENAMES["demultiplexed_matched"], 
-                                            self.umi_start_position,
-                                            self.umi_end_position,
-                                            self.low_memory)
-        
-        #================================================================
-        # STEP: filters mapped reads and add the (x,y,umi) as extra SAM tags
-        #================================================================
-        self.logger.info("Starting processing aligned reads (R2) {}".format(globaltime.getTimestamp()))
-        try:
-            filterMappedReads(FILENAMES["mapped"],
-                              hash_reads,
-                              FILENAMES["mapped_filtered"],
-                              FILENAMES_DISCARDED["mapped_filtered_discarded"] if self.keep_discarded_files else None)
-        except Exception:
-            raise
-        finally:
-            if self.low_memory: hash_reads.close()
-            else:
-                # Enforcing to remove the memory used 
-                hash_reads.clear()
-                del hash_reads
-            gc.collect()   
+            raise 
             
         #=================================================================
         # STEP: annotate using htseq-count
         #=================================================================
         self.logger.info("Starting annotation {}".format(globaltime.getTimestamp()))
         try:
-            annotateReads(FILENAMES["mapped_filtered"],
+            annotateReads(FILENAMES["demultiplexed_matched"],
                           self.ref_annotation,
                           FILENAMES["annotated"],
                           FILENAMES_DISCARDED["annotated_discarded"] if self.keep_discarded_files else None,
