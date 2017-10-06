@@ -31,7 +31,7 @@ def alignReads(reverse_reads,
     parameters. It needs the path of the STAR genome index.
     It allows to perform the 2-Pass mode.
     It needs the annotation file to use the on-the-fly mode.
-    :param reverse_reads: file containing reverse reads in fastq format (Illumina pair end)
+    :param reverse_reads: file containing reverse reads in BAM format
     :param ref_map: a path to the genome/transcriptome STAR index
     :param outputFile: the name of the SAM/BAM output file to write the alignments to
     :param annotation: the annotation file in GTF
@@ -107,7 +107,9 @@ def alignReads(reverse_reads,
              "--outSAMmultNmax", 1,
              "--readMatesLengthsIn", "NotEqual",
              "--outFilterMismatchNoverLmax", 0.1, ## (0.3 default)
-             "--genomeLoad", "NoSharedMemory"] 
+             "--genomeLoad", "NoSharedMemory"
+             "--readFilesType", "SAM SE", # Input in BAM format
+             "--readFilesCommand", "samtools view -h"] 
     
     if twopassMode:
         flags += ["--twopassMode", "Basic"]
@@ -253,7 +255,7 @@ def barcodeDemultiplexing(reads,
             
     args += ["--max-edit-distance", mismatches,
             "--k", kmer,
-            #"--barcode-tag", "B0", # if input if BAM we tell taggd what tag contains the barcode
+            "--barcode-tag", "B0", # if input if BAM we tell taggd what tag contains the barcode
             "--start-position", start_positon,
             "--homopolymer-filter", 0,
             "--subprocesses", cores,
