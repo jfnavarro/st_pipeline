@@ -1,5 +1,48 @@
 Changes
 -------
+**Version 1.6.0**
+
+* Made the parsing of unique UMIs gene by gene and parallel 
+* Made the trimming function output the trimmed R2 in BAM format with the barcode and UMI
+* Made the mapping function works with a BAM file (latest STAR release)
+* Improvements in speed and memory (constant memory use)
+
+**Version 1.5.1**
+
+* Fixed a bug that will output the matrix of counts inverted
+
+**Version 1.5.0**
+
+* st_qa.py generate expression heatmap plots
+* Fixed a minor bug in the computation of the saturation curves
+* adjust_matrix_coordinates now does not update the coordinates by default
+* adjust_matrix_coordiantes works with the latest ST Spot detector format
+* small updates in the fastq merging script
+* relaxed a bit the restriction checks for some parameters
+
+**Version 1.4.5**
+
+* Added extra scripts:
+	- merge_bcl : merge BCL files based in patterns
+	- filter_gene_type_matrix : filter gene in output data based on Ensembl gene types
+* Bumped Pysam and HTSeq 
+
+**Version 1.4.1**
+
+* Small update to make the PIP installation more robust
+
+**Version 1.4.0**
+
+* Small update to make the PIP installation more robust
+
+**Version 1.3.5**
+
+* Optimized the counting of UMIs by strand, start-pos and offset
+
+**Version 1.3.4**
+
+* Fixed a typo in one of the parameter that caused the pipeline to not run
+
 **Version 1.3.3**
 
 * Disabled spliced alignments by default

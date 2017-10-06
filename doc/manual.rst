@@ -76,7 +76,6 @@ these arrays is fully randomised.
                           [--compute-saturation]
                           [--include-non-annotated]
                           [--inverse-mapping-rv-trimming [INT]]
-                          [--low-memory]
                           [--two-pass-mode]
                           [--strandness [STRING]]
                           [--umi-quality-bases [INT]]
@@ -87,9 +86,6 @@ these arrays is fully randomised.
                           [--homopolymer-mismatches [INT]]]
                           [--version]
                           fastq_file_fw fastq_file_rv
-
-
-
 
 **positional arguments**
 
@@ -227,9 +223,6 @@ these arrays is fully randomised.
   --inverse-mapping-rv-trimming [INT] Number of bases to trim in the reverse
                                       reads for the mapping step on the
                                       3' end.
-  --low-memory                        Writes temporary records into disk in
-                                      order to save memory but gaining a
-                                      speed penalty.
   --two-pass-mode                     Activates the 2 pass mode in STAR to
                                       also map against splice variants.
   --strandness [STRING]               What strandness mode to use when
