@@ -201,7 +201,7 @@ def barcodeDemultiplexing(reads,
     that is matched in the barcodes files will be kept.
     Information about the barcode and the array coordinates will be added
     to the output file. 
-    :param reads: a file in SAM/BAM/FASTQ format containing reads with barcodes
+    :param reads: a file in FASTQ/BAM format containing reads with barcodes
     :param idFile: a tab delimited file (BARCODE - X - Y) containing all the barcodes
     :param mismatches: the number of allowed mismatches
     :param kmer: the kmer length
@@ -253,6 +253,7 @@ def barcodeDemultiplexing(reads,
             
     args += ["--max-edit-distance", mismatches,
             "--k", kmer,
+            #"--barcode-tag", "B0", # if input if BAM we tell taggd what tag contains the barcode
             "--start-position", start_positon,
             "--homopolymer-filter", 0,
             "--subprocesses", cores,

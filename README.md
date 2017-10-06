@@ -97,9 +97,9 @@ You can use this tool that comes with the ST Pipeline
 **Merge demultiplexed FASTQ files**
 
 If you used different indexes to sequence and need to merge the files
-you can use the script merge_bcl.py
+you can use the script merge_fastq.py
 
-	merge_bcl.py --run-path path_to_run_folder --out-path path_to_output --identifiers S1 S2 S3 S4
+	merge_fastq.py --run-path path_to_run_folder --out-path path_to_output --identifiers S1 S2 S3 S4
 	
 Where identifiers will be strings that identify each demultiplexed sample. 
 
@@ -120,10 +120,12 @@ to keep only spots inside the tissue. You can do so with the script adjust_matri
 
 	adjust_matrix_coordinates.py --counts-matrix stadata.tsv --outfile new_stdata.tsv --coordinates-file coordinates.txt
 	
-Where coordinates.txt will be a tab delimited file with 4 columns:
-ORIGINAL_COORDINATE_X ORIGINAL_COORDINATE_Y NEW_COORDINATE_X NEW_COORDINATE_Y
-Only coordinates in the file will be kept and if the new coordiantes are different
-the coordiantes will be updated (useful to adjust coordinates for printing errors).
+Where coordinates.txt will be a tab delimited file with 6 columns:
+
+orig_x orig_y new_x new_y new_pixel_x new_pixel_y
+
+Only spots whose coordinates in the file will be kept and then optionally you
+can update the coordinates in the matrix choosing for the new array or pixel coordinates.
 
 **Quality stats**
 
@@ -171,9 +173,5 @@ The ST Pipeline requires to have installed
 in the system the aligner STAR (minimum version 2.5.0) :
 https://github.com/alexdobin/STAR
 
-The ST Pipeline requieres between
-32GB and 64GB of RAM depending
-on the size of the data. 
-It is recommended to run it
-in a system with at least 8 cpu cores. 
+The ST Pipeline is recommended to be run on a computer with at least 32GB of RAM and 8 cpu cores. 
 

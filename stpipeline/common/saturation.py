@@ -15,6 +15,7 @@ from stpipeline.common.utils import safeRemove
 
 def computeSaturation(nreads, 
                       annotated_reads,
+                      gff_filename,
                       umi_cluster_algorithm,
                       umi_allowed_mismatches,
                       umi_counting_offset,
@@ -114,6 +115,7 @@ def computeSaturation(nreads,
         try:
             createDataset(input_file,
                           stats,
+                          gff_filename,
                           umi_cluster_algorithm,
                           umi_allowed_mismatches,
                           umi_counting_offset,
@@ -129,8 +131,8 @@ def computeSaturation(nreads,
         saturation_points_values_unique_events.append(stats.unique_events)
         saturation_points_values_reads.append(stats.reads_after_duplicates_removal)
         saturation_points_values_genes.append(stats.genes_found)
-        saturation_points_average_genes.append(stats.avergage_gene_feature)
-        saturation_points_average_reads.append(stats.avergage_gene_feature)
+        saturation_points_average_genes.append(stats.average_gene_feature)
+        saturation_points_average_reads.append(stats.average_reads_feature)
        
     # Remove the files
     for file_sam in file_names.itervalues():
