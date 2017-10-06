@@ -17,6 +17,7 @@ before_install:
   - chmod +x STAR
   - mkdir -p $HOME/bin
   - cp STAR $HOME/bin
+  - cd ..
   - export PATH="$HOME/bin:$PATH"
   - mkdir -p $HOME/tmp
   - export TMPDIR=$HOME/tmp
@@ -31,7 +32,6 @@ install:
     - conda install -c conda-forge regex=2017.04.05
     - pip install htseq
     - pip install taggd
-    - cd st_pipeline
     - python setup.py build
     - python setup.py install
    
