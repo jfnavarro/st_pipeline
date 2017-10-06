@@ -8,7 +8,6 @@ do sanity check and ultimately run the pipeline.
 from stpipeline.common.utils import *
 from stpipeline.core.mapping import alignReads, barcodeDemultiplexing
 from stpipeline.core.annotation import annotateReads
-from stpipeline.common.fastq_utils import filterInputReads, hashDemultiplexedReads
 from stpipeline.common.sam_utils import filterMappedReads
 from stpipeline.common.stats import qa_stats
 from stpipeline.common.dataset import createDataset
@@ -595,21 +594,29 @@ class Pipeline():
             temp_r2_fifo_name = os.path.join(self.temp_folder, "R2_TMP_FIFO.fq")
             
             if self.fastq_fw.endswith(".gz"):
-                r1_decompression_command = 'gzip --decompress --stdout '+self.fastq_fw.replace(' ','\ ')+' > '+temp_r1_fifo_name
+                r1_decompression_command = "gzip --decompress --stdout {} > {}".format(
+                                                                                       self.fastq_fw.replace(' ','\ '),
+                                                                                       temp_r1_fifo_name)
             elif self.fastq_fw.endswith(".bz2"):
-                r1_decompression_command = 'bzip2 --decompress --stdout '+self.fastq_fw.replace(' ','\ ')+' > '+temp_r1_fifo_name
+                r1_decompression_command = "bzip2 --decompress --stdout {} > {}".format(
+                                                                                        self.fastq_fw.replace(' ','\ '),
+                                                                                        temp_r1_fifo_name)
             else:
                 r1_decompression_command = None
                 
             if self.fastq_rv.endswith(".gz"):
-                r2_decompression_command = 'gzip --decompress --stdout '+self.fastq_rv.replace(' ','\ ')+' > '+temp_r2_fifo_name
+                r2_decompression_command = "gzip --decompress --stdout {} > {}".format(
+                                                                                       self.fastq_rv.replace(' ','\ '),
+                                                                                       temp_r2_fifo_name)
             elif self.fastq_rv.endswith(".bz2"):
-                r2_decompression_command = 'bzip2 --decompress --stdout '+self.fastq_rv.replace(' ','\ ')+' > '+temp_r2_fifo_name
+                r2_decompression_command = "bzip2 --decompress --stdout {} > {}".format(
+                                                                                        self.fastq_rv.replace(' ','\ '),
+                                                                                        temp_r2_fifo_name)
             else:
                 r2_decompression_command = None
 
             if r1_decompression_command:
-                os.mkfifo( temp_r1_fifo_name )
+                os.mkfifo(temp_r1_fifo_name)
                 subprocess.Popen(r1_decompression_command, shell=True, preexec_fn=os.setsid)
                 self.fastq_fw = temp_r1_fifo_name
             
@@ -619,7 +626,8 @@ class Pipeline():
                 self.fastq_rv = temp_r2_fifo_name
 
         except Exception as e:
-            self.logger.error("Error while starting the decompression of GZIP/BZIP2 input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
+            self.logger.error("Error while starting the decompression of "
+            "GZIP/BZIP2 input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
             raise e
 
         #=================================================================
@@ -659,8 +667,8 @@ class Pipeline():
             raise
         
         # After filtering is completed remove the temporary FIFOs
-        if is_fifo(temp_r1_fifo_name): os.remove( temp_r1_fifo_name )
-        if is_fifo(temp_r2_fifo_name): os.remove( temp_r2_fifo_name )
+        if is_fifo(temp_r1_fifo_name): os.remove(temp_r1_fifo_name)
+        if is_fifo(temp_r2_fifo_name): os.remove(temp_r2_fifo_name)
         
         #=================================================================
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. typically bacterial rRNA
@@ -717,7 +725,7 @@ class Pipeline():
         #=================================================================
         self.logger.info("Starting barcode demultiplexing {}".format(globaltime.getTimestamp()))
         try:
-            barcodeDemultiplexing(FILENAMES["quality_trimmed_R2"],
+            barcodeDemultiplexing(FILENAMES["mapped"],
                                   self.ids,
                                   self.allowed_missed,
                                   self.allowed_kmer,
