@@ -2,7 +2,7 @@ Examples
 --------
 
 The following is an example of an BASH file to run the ST pipeline. 
-This example is for version 1.3.3 of the ST pipeline.
+This example is for version 1.6.0 of the ST pipeline.
 
 .. code-block:: bash
 
