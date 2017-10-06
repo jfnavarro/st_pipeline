@@ -14,6 +14,7 @@ from stpipeline.common.stats import qa_stats
 from stpipeline.common.dataset import createDataset
 from stpipeline.common.saturation import computeSaturation
 from stpipeline.version import version_number
+from taggd.io.barcode_utils import read_barcode_file
 import logging
 import argparse
 import sys
@@ -32,8 +33,7 @@ FILENAMES = {"mapped" : "mapped.bam",
              "demultiplexed_prefix" : "demultiplexed",
              "demultiplexed_matched" : "demultiplexed_matched.fastq",
              "mapped_filtered" : "mapped_filtered.bam",
-             "quality_trimmed_R1" : "R1_quality_trimmed.fastq",
-             "quality_trimmed_R2" : "R2_quality_trimmed.fastq",
+             "quality_trimmed_R2" : "R2_quality_trimmed.bam",
              "two_pass_splices" : "SJ.out.tab"}
 
 FILENAMES_DISCARDED = {"mapped_discarded" : "mapping_discarded.fastq",
@@ -633,13 +633,19 @@ class Pipeline():
         # STEP: FILTERING 
         # Applies different filters : sanity, quality, short, adaptors, UMI...
         #=================================================================
+
+        # Get the barcode length
+        barcode_length = len( read_barcode_file(self.ids).values()[0].sequence )
+    
+        # Start the filterInputReads function
         self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
         try:
             filterInputReads(self.fastq_fw,
                              self.fastq_rv,
-                             FILENAMES["quality_trimmed_R1"],
                              FILENAMES["quality_trimmed_R2"],
                              FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
+                             barcode_length,
+                             self.barcode_start,
                              self.filter_AT_content,
                              self.filter_GC_content,
                              self.umi_start_position,
