@@ -709,6 +709,7 @@ class Pipeline():
             out_map.close()
             out_unmap.close()
             shutil.move(temp_name, FILENAMES_DISCARDED["contaminated_discarded"])
+            
         #=================================================================
         # STEP: Maps against the genome using STAR
         #=================================================================

@@ -109,7 +109,7 @@ def alignReads(reverse_reads,
              "--outSAMmultNmax", 1,
              "--readMatesLengthsIn", "NotEqual",
              "--outFilterMismatchNoverLmax", 0.1, ## (0.3 default)
-             "--genomeLoad", "NoSharedMemory"
+             "--genomeLoad", "NoSharedMemory",
              "--readFilesType", "SAM SE", # Input in BAM format
              "--readFilesCommand", "samtools view -h"] 
     
