@@ -24,7 +24,8 @@ def alignReads(reverse_reads,
                disable_multimap,
                diable_softclipping,
                twopassMode,
-               min_length):
+               min_length,
+               include_non_mapped):
     """
     This function will perform a sequence alignment using STAR.
     Mapped and unmapped reads are written to the paths given as
@@ -46,6 +47,7 @@ def alignReads(reverse_reads,
     :param diable_softclipping: it True no local alignment allowed
     :param twopassMode: True to use the 2-pass mode
     :param min_length: the min allowed read length (mapped bases)
+    :param include_non_mapped: True to include un-aligned reads in the output
     :type reverse_reads: str
     :type ref_map: str
     :type outputFile: str
@@ -61,6 +63,7 @@ def alignReads(reverse_reads,
     :type diable_softclipping: bool
     :type twopassMode: bool
     :type min_length: str
+    :type include_non_mapped: bool
     :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
     logger = logging.getLogger("STPipeline")
@@ -96,8 +99,7 @@ def alignReads(reverse_reads,
              "--runThreadN", str(max(cores, 1)),
              "--outFilterType", "Normal", 
              "--outSAMtype", "BAM", "SortedByCoordinate",
-             "--alignEndsType", alignment_mode, 
-             "--outSAMunmapped", "None", # unmapped reads not included in main output
+             "--alignEndsType", alignment_mode,
              "--outSAMorder", "Paired",    
              "--outSAMprimaryFlag", "OneBestScore", 
              "--outFilterMultimapNmax", multi_map_number,
@@ -116,12 +118,16 @@ def alignReads(reverse_reads,
 
     if annotation is not None:
         flags += ["--sjdbGTFfile", annotation]
+       
+    if include_non_mapped:
+        flags += ["--outSAMunmapped", "Within"]
+    else:
+        flags += ["--outSAMunmapped", "None"]
         
     args = ["STAR",
             "--genomeDir", ref_map,
             "--readFilesIn", reverse_reads,
-            "--outFileNamePrefix", outputFolder + os.sep, # MUST ENSURE AT LEAST ONE SLASH
-            "--outReadsUnmapped", "Fastx"]  
+            "--outFileNamePrefix", outputFolder + os.sep]  
     args += flags
     
     try:
