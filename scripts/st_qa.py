@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Scripts that perform a basic Quality Control analysis 
+Script that performs a basic Quality Control analysis 
 of a ST dataset (matrix in TSV) format.
 
 The scripts writes stats and generates
@@ -76,7 +76,7 @@ def histogram(x_points, output, title="Histogram", xlabel="X",
 def main(input_data):
     # Parse the data
     counts_table = pd.read_table(input_data, sep="\t", header=0, index_col=0)
-    #input_name = input_data.split("/")[-1].split(".")[0]
+    # Get the basename
     input_name = os.path.basename(input_data)
     # Compute some statistics
     total_barcodes = len(counts_table.index)
@@ -94,12 +94,12 @@ def main(input_data):
     average_genes_feature = np.mean(aggregated_gene_counts)
     std_reads_feature = np.std(aggregated_spot_counts)
     std_genes_feature = np.std(aggregated_gene_counts)
-    
+    # Generate heatmap plots
     histogram(aggregated_spot_counts, nbins=20, xlabel="#Reads", ylabel="#Spots",
-              output=input_name+"_hist_counts.pdf", title="Reads per spot")
+              output=input_name + "_hist_counts.pdf", title="Reads per spot")
     histogram(aggregated_gene_counts, nbins=20, xlabel="#Genes", ylabel="#Spots", 
-              output=input_name+"_hist_genes.pdf", title="Genes per spot")
-    
+              output=input_name + "_hist_genes.pdf", title="Genes per spot")
+    # Get the spot coordinates
     x_points = list()
     y_points = list()
     for spot in counts_table.index:
@@ -107,12 +107,12 @@ def main(input_data):
         assert(len(tokens) == 2)
         y_points.append(float(tokens[1]))
         x_points.append(float(tokens[0]))
-        
+    # Generate scater plots
     scatter_plot(x_points, y_points, colors=aggregated_spot_counts, 
-                 xlabel="X", ylabel="Y", output=input_name+"_heatmap_counts.pdf", 
+                 xlabel="X", ylabel="Y", output=input_name + "_heatmap_counts.pdf", 
                  title="Heatmap expression")
     scatter_plot(x_points, y_points, colors=aggregated_gene_counts, 
-                 xlabel="X", ylabel="Y", output=input_name+"_heatmap_genes.pdf", 
+                 xlabel="X", ylabel="Y", output=input_name + "_heatmap_genes.pdf", 
                  title="Heatmap genes")
 
     qa_stats = [
@@ -130,9 +130,8 @@ def main(input_data):
     ("Max number of unique molecules over all unique events: {}".format(max_count)+"\n"),
     ("Min number of unique molecules over all unique events: {}".format(min_count)+"\n")
     ]
-
+    # Print stats to stdout and a file
     print("".join(qa_stats))
-
     with open("{}_qa_stats.txt".format(input_name), "a") as outfile:
         outfile.write("".join(qa_stats))
         
