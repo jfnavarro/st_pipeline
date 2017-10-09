@@ -11,6 +11,7 @@ some plots in the folder that is run.
 """
 import pandas as pd
 import numpy as np
+import os.path
 import argparse
 import matplotlib.pyplot as plt
 
@@ -75,7 +76,8 @@ def histogram(x_points, output, title="Histogram", xlabel="X",
 def main(input_data):
     # Parse the data
     counts_table = pd.read_table(input_data, sep="\t", header=0, index_col=0)
-    input_name = input_data.split("/")[-1].split(".")[0]
+    #input_name = input_data.split("/")[-1].split(".")[0]
+    input_name = os.path.basename(input_data)
     # Compute some statistics
     total_barcodes = len(counts_table.index)
     total_transcripts = np.sum(counts_table.values, dtype=np.int32)
@@ -113,21 +115,26 @@ def main(input_data):
                  xlabel="X", ylabel="Y", output=input_name+"_heatmap_genes.pdf", 
                  title="Heatmap genes")
 
-    outfile = open(input_name+"_qa_stats.txt", "a")
-    outfile.write("Number of features: {}".format(total_barcodes)+"\n")
-    outfile.write("Number of unique molecules present: {}".format(total_transcripts)+"\n")
-    outfile.write("Number of unique genes present: {}".format(number_genes)+"\n")
-    outfile.write("Max number of genes over all spots: {}".format(max_genes_feature)+"\n")
-    outfile.write("Min number of genes over all spots: {}".format(min_genes_feature)+"\n")
-    outfile.write("Max number of unique molecules over all spots: {}".format(max_reads_feature)+"\n")
-    outfile.write("Min number of unique molecules over all spots: {}".format(min_reads_feature)+"\n")
-    outfile.write("Average number genes per spots: {}".format(average_genes_feature)+"\n")
-    outfile.write("Average number unique molecules per spot: {}".format(average_reads_feature)+"\n")
-    outfile.write("Std number genes per spot: {}".format(std_genes_feature)+"\n")
-    outfile.write("Std number unique molecules per spot: {}".format(std_reads_feature)+"\n")
-    outfile.write("Max number of unique molecules over all unique events: {}".format(max_count)+"\n")
-    outfile.write("Min number of unique molecules over all unique events: {}".format(min_count)+"\n")
-    outfile.close()
+    qa_stats = [
+    ("Number of features: {}".format(total_barcodes)+"\n"),
+    ("Number of unique molecules present: {}".format(total_transcripts)+"\n"),
+    ("Number of unique genes present: {}".format(number_genes)+"\n"),
+    ("Max number of genes over all spots: {}".format(max_genes_feature)+"\n"),
+    ("Min number of genes over all spots: {}".format(min_genes_feature)+"\n"),
+    ("Max number of unique molecules over all spots: {}".format(max_reads_feature)+"\n"),
+    ("Min number of unique molecules over all spots: {}".format(min_reads_feature)+"\n"),
+    ("Average number genes per spots: {}".format(average_genes_feature)+"\n"),
+    ("Average number unique molecules per spot: {}".format(average_reads_feature)+"\n"),
+    ("Std number genes per spot: {}".format(std_genes_feature)+"\n"),
+    ("Std number unique molecules per spot: {}".format(std_reads_feature)+"\n"),
+    ("Max number of unique molecules over all unique events: {}".format(max_count)+"\n"),
+    ("Min number of unique molecules over all unique events: {}".format(min_count)+"\n")
+    ]
+
+    print("".join(qa_stats))
+
+    with open("{}_qa_stats.txt".format(input_name), "a") as outfile:
+        outfile.write("".join(qa_stats))
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
