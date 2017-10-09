@@ -8,7 +8,7 @@ do sanity check and ultimately run the pipeline.
 from stpipeline.common.utils import *
 from stpipeline.core.mapping import alignReads, barcodeDemultiplexing
 from stpipeline.core.annotation import annotateReads
-from stpipeline.common.sam_utils import filterMappedReads
+from stpipeline.common.fastq_utils import filterInputReads
 from stpipeline.common.stats import qa_stats
 from stpipeline.common.dataset import createDataset
 from stpipeline.common.saturation import computeSaturation
@@ -19,16 +19,15 @@ import argparse
 import sys
 import shutil
 import os
-import gzip
-import bz2
 import tempfile
-import shutil
-import gc
 import subprocess
+import pysam
+import inspect
 
 FILENAMES = {"mapped" : "mapped.bam",
              "annotated" : "annotated.bam",
              "contaminated_clean" : "contaminated_clean.fastq",
+             "contaminated_clean_BAM" : "contaminated_clean.bam", 
              "demultiplexed_prefix" : "demultiplexed",
              "demultiplexed_matched" : "demultiplexed_matched.bam",
              "quality_trimmed_R2" : "R2_quality_trimmed.bam",
@@ -479,7 +478,6 @@ class Pipeline():
         self.adaptor_missmatches = options.homopolymer_mismatches
         
         # Assign class parameters to the QA stats object
-        import inspect
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
         attributes_filtered = [a for a in attributes if not(a[0].startswith('__') and a[0].endswith('__'))]
         # Assign general parameters to the qa_stats object
@@ -621,7 +619,7 @@ class Pipeline():
                 self.fastq_fw = temp_r1_fifo_name
             
             if r2_decompression_command:
-                os.mkfifo( temp_r2_fifo_name )
+                os.mkfifo(temp_r2_fifo_name)
                 subprocess.Popen(r2_decompression_command, shell=True, preexec_fn=os.setsid)
                 self.fastq_rv = temp_r2_fifo_name
 
@@ -636,7 +634,7 @@ class Pipeline():
         #=================================================================
 
         # Get the barcode length
-        barcode_length = len( read_barcode_file(self.ids).values()[0].sequence )
+        barcode_length = len(read_barcode_file(self.ids).values()[0].sequence)
     
         # Start the filterInputReads function
         self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
@@ -692,15 +690,31 @@ class Pipeline():
                            False, # Enable multimap in contaminant filter
                            False, # Enable softclipping in contaminant filter
                            False, # Disable 2-pass mode in contaminant filter
-                           self.min_length_trimming) 
+                           self.min_length_trimming,
+                           True) #Include un-aligned reads in the output 
             except Exception:
                 raise
+            
+            # Extract the contaminant free reads from the output of STAR
+            infile = pysam.AlignmentFile(FILENAMES_DISCARDED["contaminated_discarded"], "rb")
+            temp_name = os.path.join(self.temp_folde, next(tempfile._get_candidate_names()))
+            out_unmap = pysam.AlignmentFile(FILENAMES["contaminated_clean_BAM"], "wb", template=infile)
+            out_map = pysam.AlignmentFile(temp_name, "wb", template=infile)
+            for sam_record in infile.fetch(until_eof=True):
+                if sam_record.is_unmapped:
+                    out_unmap.write(sam_record)
+                else:
+                    out_map.write(sam_record)
+            infile.close()
+            out_map.close()
+            out_unmap.close()
+            shutil.move(temp_name, FILENAMES_DISCARDED["contaminated_discarded"])
             
         #=================================================================
         # STEP: Maps against the genome using STAR
         #=================================================================
         self.logger.info("Starting genome alignment {}".format(globaltime.getTimestamp()))
-        input_reads = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
+        input_reads = FILENAMES["contaminated_clean_BAM"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
         try:
             alignReads(input_reads,
                        self.ref_map,
@@ -716,7 +730,8 @@ class Pipeline():
                        self.disable_multimap,
                        self.disable_clipping,
                        self.two_pass_mode,
-                       self.min_length_trimming)
+                       self.min_length_trimming,
+                       False) # Do not Include un-aligned reads in the output 
         except Exception:
             raise
             
