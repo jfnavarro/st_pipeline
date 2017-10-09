@@ -327,7 +327,9 @@ def split_bam(input_bamfile_name):
 
     # if the number of contigs exceeds the number of cores save each contig to a file
     # this is faster than splitting based on read count
-    if len(index_stats) > number_of_output_parts:
+    if len(index_stats) > number_of_output_parts and False:
+        # added "and False" to the if-statement to always split based on equal read counts
+        # this due to that the mitochondria sometimes seem to get a lot of reads
 
         # place the contigs to parts ordered by read count to get an as even distribution of reads as possible
         for contig, contig_read_count in \
