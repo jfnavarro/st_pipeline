@@ -322,42 +322,17 @@ def split_bam(input_bamfile_name):
         for part, file_name in output_file_names.iteritems()
         }
 
-    # check the number of contigs
-    index_stats = input_bamfile.get_index_statistics()
+    total_read_count = input_bamfile.mapped + input_bamfile.unmapped
+    reads_per_part = math.ceil(float(total_read_count)/number_of_output_parts)
 
-    # if the number of contigs exceeds the number of cores save each contig to a file
-    # this is faster than splitting based on read count
-    if len(index_stats) > number_of_output_parts and False:
-        # added "and False" to the if-statement to always split based on equal read counts
-        # this due to that the mitochondria sometimes seem to get a lot of reads
-
-        # place the contigs to parts ordered by read count to get an as even distribution of reads as possible
-        for contig, contig_read_count in \
-        sorted([ (stat[0],stat[3]) for stat in index_stats], key=operator.itemgetter(1), reverse=True):
-            part, part_read_count = sorted(
-                [ (part,part_read_counts[part]) for part in parts], key=operator.itemgetter(1)
-                )[0]
-            parts[part].append( contig )
-            part_read_counts[part] += contig_read_count
-
-        for part, contigs in parts.iteritems():
-            print parts, part_read_counts[part]
-            for contig in contigs:
-                for record in input_bamfile.fetch(contig=contig): output_bamfiles[part].write( record )
-
-    # if number of contigs are less than cores split on equal read count instead
-    else:
-        total_read_count = input_bamfile.mapped + input_bamfile.unmapped
-        reads_per_part = math.ceil(float(total_read_count)/number_of_output_parts)
-
-        _tmp_read_counter = 0
-        part = 0
-        for record in input_bamfile.fetch(until_eof=True):
-            output_bamfiles[part].write(record)
-            _tmp_read_counter += 1
-            if _tmp_read_counter == reads_per_part:
-                part += 1
-                _tmp_read_counter = 0
+    _tmp_read_counter = 0
+    part = 0
+    for record in input_bamfile.fetch(until_eof=True):
+        output_bamfiles[part].write(record)
+        _tmp_read_counter += 1
+        if _tmp_read_counter == reads_per_part:
+            part += 1
+            _tmp_read_counter = 0
 
     return output_file_names
 
