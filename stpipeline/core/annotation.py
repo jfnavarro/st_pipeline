@@ -304,6 +304,14 @@ def annotateReads(mappedReads,
     qa_stats.reads_after_annotation = annotated
 
 def split_bam(input_bamfile_name):
+    """
+    Splits a bam file in to parts with equal read counts.
+    The number of parts to split the bamfile into equls tha umber of cores on the machine.
+    :param input_bamfile_name: path to the bamfile to be splitted
+    :retuns: a dictionary
+        keys are an integer corresponding to the number of a partial bam file (0 to number of files -1)
+        values are the filenames of the corresponding partial bamfile created
+    """
 
     # set the number of output parts to equal the number of cores on the machine
     number_of_output_parts = multiprocessing.cpu_count()
