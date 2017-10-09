@@ -345,6 +345,13 @@ def split_bam(input_bamfile_name):
     return output_file_names
 
 def merge_bam(merged_file_name, files_to_merge):
+    """
+    Function for merging partial bam files after annotation.
+    also counts the number of reads for different types of annotations (the XF tags of the reads)
+    and returns these counts as a dict: anotation=>count
+    :param merged_file_name: name of the merged output bamfile
+    :param files_to_merge: list with names of the partial bamfiles to merge
+    """
 
     annotations = {}
 
