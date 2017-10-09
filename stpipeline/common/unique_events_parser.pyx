@@ -278,6 +278,9 @@ class geneBuffer():
             except KeyError:
                 gene_end_coordinates[ gene_id ] = (seqname,int(end))
 
+        # fix to include any "__no_feature" annotations
+        gene_end_coordinates[ '__no_feature' ] = (None,-1)
+
         self.gene_end_coordinates = gene_end_coordinates
 
     def add_transcript(self,_gene,_spot_coordinates,_transcript,_leftmost_transcript_position ):
