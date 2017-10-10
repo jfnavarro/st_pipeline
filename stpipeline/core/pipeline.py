@@ -697,7 +697,7 @@ class Pipeline():
             
             # Extract the contaminant free reads from the output of STAR
             infile = pysam.AlignmentFile(FILENAMES_DISCARDED["contaminated_discarded"], "rb")
-            temp_name = os.path.join(self.temp_folde, next(tempfile._get_candidate_names()))
+            temp_name = os.path.join(self.temp_folder, next(tempfile._get_candidate_names()))
             out_unmap = pysam.AlignmentFile(FILENAMES["contaminated_clean_BAM"], "wb", template=infile)
             out_map = pysam.AlignmentFile(temp_name, "wb", template=infile)
             for sam_record in infile.fetch(until_eof=True):
