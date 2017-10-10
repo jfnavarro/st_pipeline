@@ -10,6 +10,11 @@ from stpipeline.common.utils import fileOk
 from stpipeline.common.stats import qa_stats
 import itertools
 import HTSeq
+import multiprocessing
+import operator
+import math
+import time
+
 
 class UnknownChrom( Exception ):
     pass
@@ -139,6 +144,10 @@ def count_reads_in_features(sam_filename,
             try:
                 if r.optional_field("NH") > 1:
                     write_to_samout(r, "__alignment_not_unique")
+                    # Should these reads potentially be printed twice?
+                    # should there not be a continue statement here?
+                    # otherwise the read will move on through the if statemets
+                    # until it gets a gene id annotation and will be printed again?
             except KeyError:
                 pass
             if r.aQual < minaqual:
@@ -238,29 +247,124 @@ def annotateReads(mappedReads,
         raise RuntimeError(error)
     
     try:
-        annotated = count_reads_in_features(mappedReads,
-                                            gtfFile,
-                                            "bam", # Type BAM for files
-                                            "pos", # Order pos or name
-                                            strandness, # Strand yes/no/reverse
-                                            mode, # intersection_nonempty, union, intersection_strict
-                                            "exon", # feature type in GFF
-                                            "gene_id", # gene_id or gene_name
-                                            True, # Quiet mode
-                                            0, # Min quality score
-                                            outputFile,
-                                            include_non_annotated,
-                                            htseq_no_ambiguous,
-                                            outputDiscarded)
+
+        # split bam file
+        partial_bam_files = split_bam(mappedReads)
+
+        # create an annotation subprocess for each partial bam
+        annotated = 0
+        subprocesses = [ multiprocessing.Process(
+            target=count_reads_in_features,
+            args=(
+                bamfile_name,
+                gtfFile,
+                "bam", # Type BAM for files
+                "pos", # Order pos or name
+                strandness, # Strand yes/no/reverse
+                mode, # intersection_nonempty, union, intersection_strict
+                "exon", # feature type in GFF
+                "gene_id", # gene_id or gene_name
+                True, # Quiet mode
+                0, # Min quality score
+                "{0}.part_{1}.bam".format(outputFile,part),
+                include_non_annotated,
+                htseq_no_ambiguous,
+                "{0}.part_{1}.bam".format(outputDiscarded,part) if outputDiscarded else outputDiscarded
+            )) for part, bamfile_name in partial_bam_files.iteritems() ]
+
+        # start work in child processes
+        for p in subprocesses: p.start()
+
+        # wait for all processes to finish
+        while True in [p.is_alive() for p in subprocesses]: time.sleep(0.1)
+
+        # join the children
+        for p in subprocesses:
+            assert p.exitcode == 0, "ERROR:: subprocess error during annotation."
+            p.join()
+
+        # merge the annotated bam files and summmarize the stats
+        annotations=merge_bam( outputFile, ["{0}.part_{1}.bam".format(outputFile,part) for part in partial_bam_files] )
+        if outputDiscarded:
+            discarded_annotations=merge_bam( outputDiscarded, ["{0}.part_{1}.bam".format(outputDiscarded,part) for part in partial_bam_files] )
+
+        annotated = sum(annotations.values())
+
     except Exception as e:
         error = "Error during annotation. HTSEQ execution failed\n"
         logger.error(error)
         raise e
-    
+
     if not fileOk(outputFile):
         error = "Error during annotation. Output file not present {}\n".format(outputFile)
         logger.error(error)
         raise RuntimeError(error)
-    
+
     logger.info("Annotated reads: {}".format(annotated))
     qa_stats.reads_after_annotation = annotated
+
+def split_bam(input_bamfile_name):
+    """
+    Splits a bam file in to parts with equal read counts.
+    The number of parts to split the bamfile into equls tha umber of cores on the machine.
+    :param input_bamfile_name: path to the bamfile to be splitted
+    :retuns: a dictionary
+        keys are an integer corresponding to the number of a partial bam file (0 to number of files -1)
+        values are the filenames of the corresponding partial bamfile created
+    """
+
+    # set the number of output parts to equal the number of cores on the machine
+    number_of_output_parts = multiprocessing.cpu_count()
+    parts = { part:[] for part in range(number_of_output_parts) }
+    part_read_counts = { part:0 for part in parts }
+    output_file_names = {part:"{0}.part_{1}.bam".format(input_bamfile_name,part) for part in parts}
+
+    # index and open the input_bamfile
+    pysam.index(input_bamfile_name,'{0}.bai'.format(input_bamfile_name))
+    input_bamfile = pysam.AlignmentFile( input_bamfile_name, mode='rb' )
+    assert input_bamfile.check_index()
+
+    # open the output bam files
+    output_bamfiles = {
+        part:pysam.AlignmentFile(file_name, mode="wbu", template=input_bamfile) \
+        for part, file_name in output_file_names.iteritems()
+        }
+
+    total_read_count = input_bamfile.mapped + input_bamfile.unmapped
+    reads_per_part = math.ceil(float(total_read_count)/number_of_output_parts)
+
+    _tmp_read_counter = 0
+    part = 0
+    for record in input_bamfile.fetch(until_eof=True):
+        output_bamfiles[part].write(record)
+        _tmp_read_counter += 1
+        if _tmp_read_counter == reads_per_part:
+            part += 1
+            _tmp_read_counter = 0
+
+    return output_file_names
+
+def merge_bam(merged_file_name, files_to_merge):
+    """
+    Function for merging partial bam files after annotation.
+    also counts the number of reads for different types of annotations (the XF tags of the reads)
+    and returns these counts as a dict: anotation=>count
+    :param merged_file_name: name of the merged output bamfile
+    :param files_to_merge: list with names of the partial bamfiles to merge
+    """
+
+    annotations = {}
+
+    with pysam.AlignmentFile( files_to_merge[0], mode='rb' ) as input_bamfile:
+        merged_file = pysam.AlignmentFile(merged_file_name, mode="wb", template=input_bamfile)
+
+    for file_name in files_to_merge:
+        input_bamfile = pysam.AlignmentFile( file_name, mode='rb' )
+        for record in input_bamfile.fetch(until_eof=True):
+            merged_file.write(record)
+            try:
+                annotations[record.get_tag("XF")] += 1
+            except KeyError:
+                annotations[record.get_tag("XF")] = 1
+
+    return annotations

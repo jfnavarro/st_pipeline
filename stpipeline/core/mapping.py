@@ -24,14 +24,15 @@ def alignReads(reverse_reads,
                disable_multimap,
                diable_softclipping,
                twopassMode,
-               min_length):
+               min_length,
+               include_non_mapped):
     """
     This function will perform a sequence alignment using STAR.
     Mapped and unmapped reads are written to the paths given as
     parameters. It needs the path of the STAR genome index.
     It allows to perform the 2-Pass mode.
     It needs the annotation file to use the on-the-fly mode.
-    :param reverse_reads: file containing reverse reads in fastq format (Illumina pair end)
+    :param reverse_reads: file containing reverse reads in BAM format
     :param ref_map: a path to the genome/transcriptome STAR index
     :param outputFile: the name of the SAM/BAM output file to write the alignments to
     :param annotation: the annotation file in GTF
@@ -46,6 +47,7 @@ def alignReads(reverse_reads,
     :param diable_softclipping: it True no local alignment allowed
     :param twopassMode: True to use the 2-pass mode
     :param min_length: the min allowed read length (mapped bases)
+    :param include_non_mapped: True to include un-aligned reads in the output
     :type reverse_reads: str
     :type ref_map: str
     :type outputFile: str
@@ -61,6 +63,7 @@ def alignReads(reverse_reads,
     :type diable_softclipping: bool
     :type twopassMode: bool
     :type min_length: str
+    :type include_non_mapped: bool
     :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
     logger = logging.getLogger("STPipeline")
@@ -96,8 +99,7 @@ def alignReads(reverse_reads,
              "--runThreadN", str(max(cores, 1)),
              "--outFilterType", "Normal", 
              "--outSAMtype", "BAM", "SortedByCoordinate",
-             "--alignEndsType", alignment_mode, 
-             "--outSAMunmapped", "None", # unmapped reads not included in main output
+             "--alignEndsType", alignment_mode,
              "--outSAMorder", "Paired",    
              "--outSAMprimaryFlag", "OneBestScore", 
              "--outFilterMultimapNmax", multi_map_number,
@@ -107,19 +109,25 @@ def alignReads(reverse_reads,
              "--outSAMmultNmax", 1,
              "--readMatesLengthsIn", "NotEqual",
              "--outFilterMismatchNoverLmax", 0.1, ## (0.3 default)
-             "--genomeLoad", "NoSharedMemory"] 
+             "--genomeLoad", "NoSharedMemory",
+             "--readFilesType", "SAM SE", # Input in BAM format
+             "--readFilesCommand", "samtools view -h"] 
     
     if twopassMode:
         flags += ["--twopassMode", "Basic"]
 
     if annotation is not None:
         flags += ["--sjdbGTFfile", annotation]
+       
+    if include_non_mapped:
+        flags += ["--outSAMunmapped", "Within"]
+    else:
+        flags += ["--outSAMunmapped", "None"]
         
     args = ["STAR",
             "--genomeDir", ref_map,
             "--readFilesIn", reverse_reads,
-            "--outFileNamePrefix", outputFolder + os.sep, # MUST ENSURE AT LEAST ONE SLASH
-            "--outReadsUnmapped", "Fastx"]  
+            "--outFileNamePrefix", outputFolder + os.sep]  
     args += flags
     
     try:
@@ -253,7 +261,7 @@ def barcodeDemultiplexing(reads,
             
     args += ["--max-edit-distance", mismatches,
             "--k", kmer,
-            #"--barcode-tag", "B0", # if input if BAM we tell taggd what tag contains the barcode
+            "--barcode-tag", "B0", # if input if BAM we tell taggd what tag contains the barcode
             "--start-position", start_positon,
             "--homopolymer-filter", 0,
             "--subprocesses", cores,

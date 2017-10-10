@@ -5,6 +5,7 @@ ST fastq files, mainly quality filtering functions.
 
 from stpipeline.common.utils import safeOpenFile, fileOk, is_fifo
 from stpipeline.common.adaptors import removeAdaptor
+from stpipeline.common.sam_utils import convert_to_AlignedSegment
 from stpipeline.common.stats import qa_stats
 import logging 
 from itertools import izip
@@ -184,34 +185,6 @@ def check_umi_template(umi, template):
     """
     p = re.compile(template)
     return p.match(umi) is not None
-
-def convert_to_AlignedSegment(header, sequence, quality, barcode_sequence, umi_sequence):
-    """
-    This function converts the input variables (header,sequence,quality,barcode_sequence,umi_sequence)
-    to a pysam.AlignedSegment with the umi and barcode informations as the following tags:
-        Tag  Value
-        "B0" barcode_sequence
-        "B3" umi_sequence
-    :param header: string with the header information
-    :param sequence: string with the DNA/RNA sequence
-    :param quality: string with the base calling quality values
-    :param barcode_sequence: string with the barcode sequence
-    :param umi_sequence: string with the unique molecular identifier sequence
-    """
-
-    # create
-    aligned_segment = pysam.AlignedSegment()
-
-    # Set the standard values
-    aligned_segment.query_name = header
-    aligned_segment.query_sequence = sequence
-    aligned_segment.query_qualities = quality
-
-    # Set the tags
-    aligned_segment.set_tag('B0',barcode_sequence)
-    aligned_segment.set_tag('B3',umi_sequence)
-
-    return aligned_segment
 
 def filterInputReads(fw, 
                      rv,
@@ -441,61 +414,3 @@ def filterInputReads(fw,
     qa_stats.input_reads_reverse = total_reads
     qa_stats.reads_after_trimming_forward = (total_reads - dropped_rv)
     qa_stats.reads_after_trimming_reverse = (total_reads - dropped_rv)
-
-#TODO this approach uses too much memory
-#     find a better solution (maybe Cython or C++)
-def hashDemultiplexedReads(reads,
-                           umi_start,
-                           umi_end,
-                           low_memory):
-    """
-    This function extracts the read name, the UMI and the x,y coordinates
-    from the reads given as input (output of TaggD) and returns a dictionary
-    with the clean read name as key and (x,y,umi) as value. X and Y correspond
-    to the array coordinates of the barcode of the read and UMI is extracted from the read
-    sequence.
-    :param reads: path to a file with the fastq reads after demultiplexing (TaggD)
-    :param umi_start: the start position of the UMI
-    :param umi_end: the end position of the UMI
-    :param low_memory: True to use a key-value db instead of dict
-    :type reads: str
-    :type umi_start: integer
-    :type umi_end: integer
-    :type low_memory: boolean
-    :return: a dictionary of read_name -> (x,y,umi) tags where umi is optional
-    """
-    logger = logging.getLogger("STPipeline")
-    
-    if not os.path.isfile(reads):
-        error = "Error parsing TaggD output, input file not present {}\n".format(reads)
-        logger.error(error)
-        raise RuntimeError(error)
-    
-    if low_memory:
-        hash_reads = SqliteDict(autocommit=False, flag='c', journal_mode='OFF')
-    else:
-        hash_reads = dict()
-    
-    fastq_file = safeOpenFile(reads, "rU")
-    for name, sequence, _ in readfq(fastq_file):
-        # Assumes the header is like this
-        # @NS500688:111:HNYW7BGXX:1:11101:13291:1099 1:N:0:TGCCCA B0:Z:GTCCCACTGGAACGACTGTCCCGCATC B1:Z:678 B2:Z:678
-        header_tokens = name.split()
-        assert(len(header_tokens) > 3)
-        assert(len(sequence) >= umi_end)
-        # Get the X and Y tags from the header of the read
-        x = header_tokens[-2]
-        y = header_tokens[-1]
-        # The UMI is retrieved from the sequence
-        umi = sequence[umi_start:umi_end]
-        # We keep the same naming convention for the UMI attribute
-        tags = (x,y,"B3:Z:{}".format(umi))
-        # In order to save memory we truncate the read
-        # name to only keep the unique part (lane, tile, x_pos, y_pos)
-        # TODO this procedure is specific to only Illumina technology
-        key = "".join(header_tokens[0].split(":")[-4:])
-        hash_reads[key] = tags
-
-    if low_memory: hash_reads.commit()
-    fastq_file.close()    
-    return hash_reads

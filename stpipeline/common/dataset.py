@@ -5,13 +5,11 @@ will contain several files with the ST data in different
 formats
 """
 import sys
-import pysam
 import os
 import numpy as np
 from collections import defaultdict
 import pandas as pd
 from stpipeline.common.clustering import *
-from stpipeline.common.sam_utils import parseUniqueEvents
 from stpipeline.common.unique_events_parser import uniqueEventsParser
 import logging
 import sys
