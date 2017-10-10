@@ -156,7 +156,7 @@ def alignReads(reverse_reads,
         
     # Rename output files.
     shutil.move(tmpOutputFile, outputFile)
-    shutil.move(tmpOutputFileDiscarded, outputFileDiscarded)
+    #shutil.move(tmpOutputFileDiscarded, outputFileDiscarded)
         
     # Remove temp files from STAR
     if os.path.isfile(log_std): os.remove(log_std)
