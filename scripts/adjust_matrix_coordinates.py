@@ -9,13 +9,16 @@ XxY
 XxY
 
 And then removes the spots that are not present in 
-a tab delimited coordinates file that has a least 4 columns:
+a tab delimited coordinates file that has either 4
+
+x y new_x new_y 
+
+or 6 columns
 
 x y new_x new_y pixel_x pixel_y
 
 Optionally, the coordinates of the spots in the matrix
 can be changed to the new coordinates (pixel or array).
-
 
 @Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
 """
@@ -65,15 +68,20 @@ def main(counts_matrix, coordinates_file, update_coordinates, outfile, outformat
         x = int(tokens[0])
         y = int(tokens[1])
         try:
-            new_x, new_y = new_coordinates[(x,y)] 
+            new_x, new_y = new_coordinates[(x,y)]
             if not update_coordinates:
                 new_x, new_y = x,y
             new_index_values.append("{0}x{1}".format(new_x,new_y))
         except KeyError:
             counts_table.drop(index, inplace=True)
 
-    # Write table again
+    # Assign the new indexes 
     counts_table.index = new_index_values
+    
+    # Remove genes that have now a total count of zero
+    counts_table = counts_table.transpose()[new_counts.sum(axis=0) > 0].transpose()
+    
+    # Write table again
     counts_table.to_csv(outfile, sep='\t')
                
 if __name__ == '__main__':

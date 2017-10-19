@@ -15,7 +15,6 @@ import operator
 import math
 import time
 
-
 class UnknownChrom( Exception ):
     pass
 
@@ -284,9 +283,13 @@ def annotateReads(mappedReads,
             p.join()
 
         # merge the annotated bam files and summmarize the stats
-        annotations=merge_bam( outputFile, ["{0}.part_{1}.bam".format(outputFile,part) for part in partial_bam_files] )
+        annotations = merge_bam(outputFile, 
+                                ["{0}.part_{1}.bam".format(outputFile,part) 
+                                 for part in partial_bam_files])
         if outputDiscarded:
-            discarded_annotations=merge_bam( outputDiscarded, ["{0}.part_{1}.bam".format(outputDiscarded,part) for part in partial_bam_files] )
+            discarded_annotations = merge_bam(outputDiscarded, 
+                                              ["{0}.part_{1}.bam".format(outputDiscarded,part) 
+                                               for part in partial_bam_files] )
 
         annotated = sum(annotations.values())
 
