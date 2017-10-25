@@ -38,13 +38,16 @@ class TestPipeline(unittest.TestCase):
         self.genomedir = os.path.join(self.tmpdir, 'config/genomes/mouse_grcm38')
         os.makedirs(self.genomedir)
    
-        # STAR contam dir
+        # STAR contaminant dir
         self.contamdir = os.path.join(self.tmpdir, 'config/contaminant_genomes/R45S5_R5S1')
         os.makedirs(self.contamdir)
    
         genomefasta = os.path.join(self.genomedir, "human_grcm38_chromosome19.fasta")
         genomefastagz = os.path.join(self.genomedir, "human_grcm38_chromosome19.fasta.gz")
-            
+          
+        # Change dir to the temp folder
+        os.chdir(self.tmpdir)
+          
         # Download and unpack fasta files
         try:
             print "ST Pipeline Test Downloading genome files..."

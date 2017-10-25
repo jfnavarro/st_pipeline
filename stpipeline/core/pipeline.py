@@ -26,19 +26,16 @@ import inspect
 
 FILENAMES = {"mapped" : "mapped.bam",
              "annotated" : "annotated.bam",
-             "contaminated_clean" : "contaminated_clean.fastq",
-             "contaminated_clean_BAM" : "contaminated_clean.bam", 
+             "contaminated_clean" : "contaminated_clean.bam",
              "demultiplexed_prefix" : "demultiplexed",
              "demultiplexed_matched" : "demultiplexed_matched.bam",
-             "quality_trimmed_R2" : "R2_quality_trimmed.bam",
-             "two_pass_splices" : "SJ.out.tab"}
+             "quality_trimmed_R2" : "R2_quality_trimmed.bam"}
 
-FILENAMES_DISCARDED = {"mapped_discarded" : "mapping_discarded.fastq",
+FILENAMES_DISCARDED = {"mapped_discarded" : "mapping_discarded.bam",
                        "contaminated_discarded" : "contaminated.bam",
-                       "demultiplexed_ambiguos" : "demultiplexed_ambiguos.fastq",
-                       "demultiplexed_unmatched" : "demultiplexed_unmatched.fastq",
+                       "demultiplexed_ambiguos" : "demultiplexed_ambiguos.bam",
+                       "demultiplexed_unmatched" : "demultiplexed_unmatched.bam",
                        "demultiplexed_results" : "demultiplexed_results.tsv",
-                       "mapped_filtered_discarded" : "mapped_filtered_discarded.bam",
                        "quality_trimmed_discarded" : "R2_quality_trimmed_discarded.fastq",
                        "annotated_discarded": "annotated_discarded.bam"}
 
@@ -676,11 +673,11 @@ class Pipeline():
             # and keep the un-mapped reads
             self.logger.info("Starting contaminant filter alignment {}".format(globaltime.getTimestamp()))
             try:
+                # Make the contaminant filter call
                 alignReads(FILENAMES["quality_trimmed_R2"],
                            self.contaminant_index,
                            FILENAMES_DISCARDED["contaminated_discarded"],
                            None, # Do not pass the annotation file in contaminant filter
-                           FILENAMES["contaminated_clean"],
                            self.temp_folder,
                            self.trimming_rv,
                            self.inverse_trimming_rv,
@@ -691,36 +688,31 @@ class Pipeline():
                            False, # Enable softclipping in contaminant filter
                            False, # Disable 2-pass mode in contaminant filter
                            self.min_length_trimming,
-                           True) #Include un-aligned reads in the output 
+                           True) # Include un-aligned reads in the output       
+                # Extract the contaminant free reads (not aligned) from the output of STAR
+                # NOTE: this will not be needed when STAR allows to chose the discarded
+                # reads format (BAM)
+                temp_name = os.path.join(self.temp_folder, next(tempfile._get_candidate_names()))
+                command = "samtools view -1 -b -h -f 4 -@ {} -o {} -U {} {}".format(self.threads,
+                                                                                    FILENAMES["contaminated_clean"],
+                                                                                    temp_name,
+                                                                                    FILENAMES_DISCARDED["contaminated_discarded"])
+                subprocess.check_call(command, shell=True) 
+                os.rename(temp_name, FILENAMES_DISCARDED["contaminated_discarded"])
             except Exception:
                 raise
-            
-            # Extract the contaminant free reads from the output of STAR
-            infile = pysam.AlignmentFile(FILENAMES_DISCARDED["contaminated_discarded"], "rb")
-            temp_name = os.path.join(self.temp_folder, next(tempfile._get_candidate_names()))
-            out_unmap = pysam.AlignmentFile(FILENAMES["contaminated_clean_BAM"], "wb", template=infile)
-            out_map = pysam.AlignmentFile(temp_name, "wb", template=infile)
-            for sam_record in infile.fetch(until_eof=True):
-                if sam_record.is_unmapped:
-                    out_unmap.write(sam_record)
-                else:
-                    out_map.write(sam_record)
-            infile.close()
-            out_map.close()
-            out_unmap.close()
-            shutil.move(temp_name, FILENAMES_DISCARDED["contaminated_discarded"])
-            
+             
         #=================================================================
         # STEP: Maps against the genome using STAR
         #=================================================================
         self.logger.info("Starting genome alignment {}".format(globaltime.getTimestamp()))
-        input_reads = FILENAMES["contaminated_clean_BAM"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
+        input_reads = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
         try:
+            # Make the alignment call
             alignReads(input_reads,
                        self.ref_map,
                        FILENAMES["mapped"],
                        self.ref_annotation,
-                       FILENAMES_DISCARDED["mapped_discarded"],
                        self.temp_folder,
                        self.trimming_rv,
                        self.inverse_trimming_rv,
@@ -731,10 +723,22 @@ class Pipeline():
                        self.disable_clipping,
                        self.two_pass_mode,
                        self.min_length_trimming,
-                       False) # Do not Include un-aligned reads in the output 
+                       self.keep_discarded_files)        
+            # Remove secondary alignments and un-mapped
+            # NOTE: this will not be needed when STAR allows to chose the discarded
+            # reads format (BAM)
+            if self.keep_discarded_files:
+                temp_name = os.path.join(self.temp_folder, next(tempfile._get_candidate_names()))
+                # Note use 260 to also discard multiple-alignments
+                command = "samtools view -b -h -F 4 -@ {} -o {} -U {} {}".format(self.threads,
+                                                                                 temp_name,
+                                                                                 FILENAMES_DISCARDED["mapped_discarded"],
+                                                                                 FILENAMES["mapped"])
+                subprocess.check_call(command, shell=True)
+                os.rename(temp_name, FILENAMES["mapped"])                
         except Exception:
             raise
-            
+                      
         #=================================================================
         # STEP: DEMULTIPLEX READS Map against the barcodes
         #=================================================================
@@ -752,9 +756,14 @@ class Pipeline():
                                   self.threads,
                                   FILENAMES["demultiplexed_prefix"], # Prefix for output files
                                   self.keep_discarded_files)
+            # TaggD does not output the BAM file sorted
+            command = "samtools sort -T sort_bam -@ {} -o {} {}".format(self.threads,
+                                                                        FILENAMES["demultiplexed_matched"],
+                                                                        FILENAMES["demultiplexed_matched"])
+            subprocess.check_call(command, shell=True) 
         except Exception:
             raise 
-            
+        
         #=================================================================
         # STEP: annotate using htseq-count
         #=================================================================
@@ -767,7 +776,9 @@ class Pipeline():
                           self.htseq_mode,
                           self.strandness,
                           self.htseq_no_ambiguous,
-                          self.include_non_annotated)
+                          self.include_non_annotated,
+                          self.temp_folder,
+                          self.threads)
         except Exception:
             raise
 
