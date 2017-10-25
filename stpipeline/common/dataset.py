@@ -122,10 +122,10 @@ def createDataset(input_file,
     # Parse unique events to generate the unique counts and the BED file    
     unique_events_parser = uniqueEventsParser(input_file, gff_filename)
     with open(os.path.join(output_folder, filenameReadsBED), "w") as reads_handler:
-        for gene, spots in unique_events_parser.all_unique_events(): # this is the generator returning a dictionary with spots for each gene
+        # this is the generator returning a dictionary with spots for each gene
+        for gene, spots in unique_events_parser.all_unique_events(): 
             transcript_counts_by_spot = {}
             for spot_coordinates, reads in spots.iteritems():
-                #sys.stderr.write('INFO:: processing gene '+gene+' spot '+str(spot_coordinates)+'\n')
                 (x,y) = spot_coordinates
                 # Re-compute the read count accounting for duplicates using the UMIs
                 # Transcripts is the list of transcripts (chrom, start, end, clear_name, mapping_quality, strand, UMI)

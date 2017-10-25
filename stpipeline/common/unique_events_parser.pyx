@@ -30,8 +30,10 @@ class uniqueEventsParser():
         It expects a coordinate sorted BAM file where the spot coordinates,
         gene and UMI are present as extra tags.
         And a gtf file defining the coordinates of the genes in the reference genome.
-        Will yield put a dictionary per gene with a spot coordinate tuple as keys into the self.q multiprocessing.Queue
-        foreach gene put dict: [spot] -> [(chrom, start, end, clear_name, mapping_quality, strand, umi), ... ]
+        Will yield put a dictionary per gene with a spot coordinate tuple 
+        as keys into the self.q multiprocessing.Queue
+        foreach gene put dict: 
+        [spot] -> [(chrom, start, end, clear_name, mapping_quality, strand, umi), ... ]
 
     :param filename: the input file containing the annotated BAM records
     :param gff_filename: the gff file containing the gene coordinates
@@ -46,11 +48,10 @@ class uniqueEventsParser():
         self.verbose = verbose
         self.max_genes_in_memory = max_genes_in_memory
 
-    def run(self, ):
+    def run(self):
         """
         Function that starts the subprocess reading the file(s)
         """
-
         # create output queue
         self.q = multiprocessing.Queue(self.max_genes_in_memory)
 
@@ -58,9 +59,10 @@ class uniqueEventsParser():
         self.p = multiprocessing.Process(target=self._worker_function)
         self.p.start()
 
-        if self.verbose: sys.stdout.write('Process={0} starting to parse unique events.\n'.format(str(self.p.pid)))
+        if self.verbose: 
+            print('Process={0} starting to parse unique events.\n'.format(str(self.p.pid)))
 
-    def check_running(self, ):
+    def check_running(self):
         """
         Function that checks if the subprocess is running
         and return the status as as a string with value "RUNNING" or "COMPLETE"
@@ -71,18 +73,20 @@ class uniqueEventsParser():
         else:
             if self.p.exitcode == 0:
                 self.p.join()
-                if self.verbose: sys.stdout.write(
+                if self.verbose: print(
                     'Process={0} finished parsing unique events.\n'.format(str(self.p.pid))
                     )
                 return 'COMPLETE'
             else:
                 msg = 'ERROR:: Process={0} FAILED to parse unique events!!!.\n'.format(str(self.p.pid))
-                if self.verbose: sys.stdout.write(msg)
+                if self.verbose: 
+                    print(msg)
                 raise RuntimeError(msg)
 
-    def _worker_function(self, ):
+    def _worker_function(self):
         """
-        This function is a modified version of the stpipeline.comon.sam_utils.parseUniqueEvents-function:
+        This function is a modified version of the 
+        stpipeline.comon.sam_utils.parseUniqueEvents-function:
 
         Parses the transcripts present in the filename given as input.
         It expects a coordinate sorted BAM file where the spot coordinates,
@@ -93,7 +97,8 @@ class uniqueEventsParser():
         :param gff_filename: the gff file containing the gene coordinates
         """
 
-        if self.verbose: sys.stdout.write('INFO:: ENTERING => parseUniqueEvents_byCoordinate\n')
+        if self.verbose: 
+            print('INFO:: ENTERING => parseUniqueEvents_byCoordinate\n')
 
         # Open the log file and open the bamfile for reading
         logger = logging.getLogger("STPipeline")
@@ -116,7 +121,8 @@ class uniqueEventsParser():
 
         genes_buffer.get_gene_end_coordinates(self.gff_filename)
 
-        # Parse the coordinate sorted bamfile record by record i.e. by genome coordinate from first chromosome to last
+        # Parse the coordinate sorted bamfile record by record i.e. by genome 
+        # coordinate from first chromosome to last
         for rec in sam_file.fetch(until_eof=True):
 
             # get the info about the record from the bam file
@@ -166,13 +172,14 @@ class uniqueEventsParser():
         # cleanup and exit
         while not self.q.empty():
             if self.verbose:
-                sys.stdout.write(
+                print(
                     'Process={0} Done processing input wainting for queue to empty.\n'.format(str(self.p.pid))
                     )
             time.sleep(1)
         self.q.close()
         self.q.join_thread()
-        if self.verbose: sys.stdout.write('Process={0} returning.\n'.format(str(self.p.pid)))
+        if self.verbose: 
+            print('Process={0} returning.\n'.format(str(self.p.pid)))
 
     def all_unique_events(self,):
         """
@@ -187,24 +194,30 @@ class uniqueEventsParser():
         while True:
             data = self.q.get()
             if self.check_running != 'COMPLETE' and data == 'COMPLETED':
-                if self.verbose: sys.stdout.write('INFO:: got signal {0} from uep.\n'.format(data))
+                if self.verbose: 
+                    print('INFO:: got signal {0} from uep.\n'.format(data))
                 while self.check_running() != 'COMPLETE':
-                    if self.verbose: sys.stdout.write('INFO:: waiting for uep subprocesses to finish.\n')
+                    if self.verbose: 
+                        print('INFO:: waiting for uep subprocesses to finish.\n')
                     time.sleep(0.1)
                 break
-            if self.verbose: sys.stdout.write('INFO:: got gene {0} from child process.\n'.format(data[0]))
+            if self.verbose: 
+                print('INFO:: got gene {0} from child process.\n'.format(data[0]))
             yield data
 
 class geneBuffer():
     """
-    This object defines a buffer by holding a dictionary of genes,spots coordinates and transcripts
+    This object defines a buffer by holding a dictionary 
+    of genes,spots coordinates and transcripts
     it assumes the transcripts to be added in a coordinate ordered fashion
 
     Basic usage:
       First create a insatance of the GeneBuffer
-      Then get the end coordinates for each gene using the instance.get_gene_end_coordinates function and a gff file
+      Then get the end coordinates for each gene using 
+      the instance.get_gene_end_coordinates function and a gff file
       Then add transcript(s) using the instance.add_transcript function
-      To send "finished" genes to a queue-object use the instance.put_finished_genes_in_queue function
+      To send "finished" genes to a queue-object use the 
+      instance.put_finished_genes_in_queue function
     """
 
     def __init__(self, verbose=True):
@@ -243,19 +256,17 @@ class geneBuffer():
         and save them as values of a dictionary with the gene ID as key
         dict: [GENE_id] => gene_end_coordinate
         """
-
         # Get dict with end coordinates for all genes
         # to be able to tell when a gene is "done"
         # and thereby ready to be returned to the parent process
-
-
         cdef dict gene_end_coordinates
         cdef dict line
         cdef str gene_id
         cdef str seqname
         cdef int end
 
-        if self.verbose: sys.stdout.write('INFO:: LOADING gtf file...\n')
+        if self.verbose: 
+            print('INFO:: LOADING gtf file...\n')
         gene_end_coordinates = dict()
 
         # parse gtf file
@@ -280,10 +291,9 @@ class geneBuffer():
 
         # fix to include any "__no_feature" annotations
         gene_end_coordinates[ '__no_feature' ] = (None,-1)
-
         self.gene_end_coordinates = gene_end_coordinates
 
-    def add_transcript(self,_gene,_spot_coordinates,_transcript,_leftmost_transcript_position ):
+    def add_transcript(self,_gene,_spot_coordinates, _transcript, _leftmost_transcript_position):
         """
         Adds a transcript to the gene buffer
         Parameters:
@@ -357,8 +367,9 @@ class geneBuffer():
 
         # Lastly update the record counter and write info if verbose is true
         self.total_transcript_counter += 1
-        if self.verbose and self.total_transcript_counter%100000==0:
-            self.speed_of_last_100k_transcripts = round(100000.0/(time.time()-self.time_for_last_100k_print),2)
+        if self.verbose and self.total_transcript_counter % 100000 == 0:
+            self.speed_of_last_100k_transcripts = round(100000.0 / 
+                                                        (time.time() - self.time_for_last_100k_print) ,2)
             self.time_for_last_100k_print = time.time()
             self.print_stats()
 
@@ -373,13 +384,17 @@ class geneBuffer():
         :param empty: flag for sending all genes presently in buffer (default False)
         """
 
-        # check the gene buffer to see if we passed the end coordinate of any of the genes in the buffer
+        # check the gene buffer to see if we passed the end coordinate 
+        # of any of the genes in the buffer
         # if that is the case no more reads will be added to the gene
-        # and we can send the completed genes to the parent process by puting it in the multiprocessing.Queue
+        # and we can send the completed genes to the parent process 
+        # by puting it in the multiprocessing.Queue
 
         cdef list _tmp
-        _tmp = list(self.buffer.keys()) # temporary list used to avoid changeing the size of the dict during iteration
-        cdef list deleted_genes = [] #list used to mark genes for removal from the dict once sent to the parent process
+        # temporary list used to avoid changeing the size of the dict during iteration
+        _tmp = list(self.buffer.keys()) 
+        #list used to mark genes for removal from the dict once sent to the parent process
+        cdef list deleted_genes = [] 
 
         # For each gene in the buffer
         if empty and self.verbose: self.print_stats()
@@ -395,14 +410,15 @@ class geneBuffer():
 
                 # print stats
                 if self.verbose: self.print_stats( )
-                if empty and self.verbose: sys.stdout.write('INFO:: yielding last gene(s) {0} ... \n'.format(gene))
+                if empty and self.verbose: 
+                    print('INFO:: yielding last gene(s) {0} ... \n'.format(gene))
 
                 # HERE we send the gene back to the parent process
                 # by putting the spot dictionary and gene name in the multiprocessing.Queue
                 queue.put( (gene, self.buffer[gene]['spots']) )
 
-                # Check that the gene has not beeen processed be fore just to be sure nothing funky is going on
-                assert gene not in self.processed_genes, 'ERROR: the gene {0} cannot be present twice in the genome.\n'.format(gene)
+                # Check that the gene has not been processed before just to be sure nothing weird is going on
+                assert gene not in self.processed_genes
                 self.processed_genes[gene] = True
 
                 # Mark the gene for deletion from the buffer
@@ -414,13 +430,13 @@ class geneBuffer():
             self.buffer[gene]['spots'] = None
             self.buffer[gene] = {}
             del self.buffer[gene]
-        if empty and self.verbose: self.print_stats()
+        if empty and self.verbose: 
+            self.print_stats()
 
     def print_stats(self, header=False):
         """
         Function that prints a "current status" row to stdout
         """
-
         if header:
             header_str = '\t'.join( [
                 'SIZE (MB)',
@@ -432,16 +448,16 @@ class geneBuffer():
                 'CU_SPEED (reads/s)',
                 'POSITION'
             ])
-            header_str+='\n'
-            sys.stdout.write(header_str)
+            header_str += '\n'
+            print(header_str)
 
-        sys.stdout.write('\t'.join([
-                str(round(asizeof(self)/(1000.0*1000.0),2)),
-                str(self.total_transcript_counter),
-                str(self.total_transcript_counter-self.transcripts_sent_counter),
-                str(len(self.buffer)),
-                str(round(time.time()-self.start_time,3)),
-                str(round(self.total_transcript_counter/(time.time()-self.start_time),2)),
-                str(self.speed_of_last_100k_transcripts),
-                '{0}:{1}\n'.format(str(self.current_chromosome),str(self.current_position))
+        print('\t'.join([
+            str(round(asizeof(self) / (1000.0 * 1000.0), 2)),
+            str(self.total_transcript_counter),
+            str(self.total_transcript_counter-self.transcripts_sent_counter),
+            str(len(self.buffer)),
+            str(round(time.time()-self.start_time,3)),
+            str(round(self.total_transcript_counter/(time.time()-self.start_time),2)),
+            str(self.speed_of_last_100k_transcripts),
+            '{0}:{1}\n'.format(str(self.current_chromosome),str(self.current_position))
             ]))

@@ -25,12 +25,13 @@ def convert_to_AlignedSegment(header, sequence, quality,
     aligned_segment = pysam.AlignedSegment()
 
     # Set the standard values
-    aligned_segment.query_name = header
+    # Header must not contain empty spaces
+    aligned_segment.query_name = header.split()[0]
     aligned_segment.query_sequence = sequence
     aligned_segment.query_qualities = quality
 
     # Set the tags
-    aligned_segment.set_tag('B0',barcode_sequence)
-    aligned_segment.set_tag('B3',umi_sequence)
+    aligned_segment.set_tag('B0', barcode_sequence)
+    aligned_segment.set_tag('B3', umi_sequence)
 
     return aligned_segment

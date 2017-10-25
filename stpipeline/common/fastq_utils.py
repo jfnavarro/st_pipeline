@@ -216,6 +216,7 @@ def filterInputReads(fw,
       - It checks for AT and GC content (optional)
       - It performs a sanity check on the UMI (optional)
     Reads that do not pass the filters are discarded (both R1 and R2)
+    Reads that pass the filter are written as BAM (R2)
     :param rv: the bam file with the reverse reads
     :param out_fw: the name of the output file for the forward reads
     :param out_rv: the name of the output file for the reverse reads
@@ -374,8 +375,9 @@ def filterInputReads(fw,
             
         # Write reverse read to output
         if not discard_read:
-            aligned_segment = convert_to_AlignedSegment(header_rv,sequence_rv,quality_rv,barcode,umi_seq)
-            bam_file.write( aligned_segment )
+            aligned_segment = convert_to_AlignedSegment(header_rv, sequence_rv, 
+                                                        quality_rv, barcode,umi_seq)
+            bam_file.write(aligned_segment)
         else:
             dropped_rv += 1  
             if keep_discarded_files:

@@ -441,5 +441,6 @@ Version 1.5.1
 Version 1.6.0
 * Made the parsing of unique UMIs gene by gene and parallel 
 * Made the trimming function output the trimmed R2 in BAM format with the barcode and UMI
-* Made the mapping function works with a BAM file (latest STAR release)
+* Made the mapping function works with a BAM file as input (latest STAR release)
+* Made the annotation function parallel
 * Improvements in speed and memory (constant memory use)

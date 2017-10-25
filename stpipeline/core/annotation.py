@@ -14,7 +14,7 @@ import multiprocessing
 import operator
 import math
 import time
-
+from itertools import izip
 
 class UnknownChrom( Exception ):
     pass
@@ -150,6 +150,8 @@ def count_reads_in_features(sam_filename,
                     # until it gets a gene id annotation and will be printed again?
             except KeyError:
                 pass
+            except Exception as e:
+                raise e
             if r.aQual < minaqual:
                 write_to_samout(r, "__too_low_aQual")
                 continue
@@ -211,7 +213,9 @@ def annotateReads(mappedReads,
                   mode,
                   strandness,
                   htseq_no_ambiguous, 
-                  include_non_annotated):
+                  include_non_annotated,
+                  temp_dir,
+                  threads):
     """
     Annotates a file with mapped reads (BAM) using a modified 
     version of the htseq-count tool. It writes the annotated records to a file.
@@ -227,6 +231,8 @@ def annotateReads(mappedReads,
     :param include_non_annotated: true if we want to include 
     non annotated reads as __no_feature in the output
     :param outputFile: the name/path to the output file
+    :param temp_dir: path to the folder where to put the created files
+    :param threads: the number of CPU cores to use
     :type mappedReads: str
     :type gtfFile: str
     :type outputFile: str
@@ -236,6 +242,8 @@ def annotateReads(mappedReads,
     :type htseq_no_ambiguos: boolean
     :type include_non_annotated: str
     :type outputFile: str
+    :type temp_dir: str
+    :type threads: int
     :raises: RuntimeError, ValueError
     """
     
@@ -246,17 +254,30 @@ def annotateReads(mappedReads,
         logger.error(error)
         raise RuntimeError(error)
     
+    # split bam file (returns a dictionary PART -> FILENAME
+    partial_bam_files = split_bam(mappedReads, temp_dir, threads)
+    
+    # the splitted input files
+    sub_input_files = [bamfile_name for _, bamfile_name in partial_bam_files.iteritems()]
+    
+    # the name of the splitted output files
+    sub_out_files = [os.path.join(temp_dir, "tmp_annotated_part_{}.bam".format(part)) 
+                     for part in partial_bam_files.keys()]
+    
+    # the name of the splitted output discarded files
+    sub_out_discarded_files = [os.path.join(temp_dir, 
+                                            "tmp_annotated_discarded_part_{}.bam".format(part))
+                               if outputDiscarded else None 
+                               for part in partial_bam_files.keys()]
+    # counter of annotated reads
+    annotated = 0
+    discarded_annotations = 0
     try:
-
-        # split bam file
-        partial_bam_files = split_bam(mappedReads)
-
         # create an annotation subprocess for each partial bam
-        annotated = 0
         subprocesses = [ multiprocessing.Process(
             target=count_reads_in_features,
             args=(
-                bamfile_name,
+                input,
                 gtfFile,
                 "bam", # Type BAM for files
                 "pos", # Order pos or name
@@ -266,11 +287,13 @@ def annotateReads(mappedReads,
                 "gene_id", # gene_id or gene_name
                 True, # Quiet mode
                 0, # Min quality score
-                "{0}.part_{1}.bam".format(outputFile,part),
+                output,
                 include_non_annotated,
                 htseq_no_ambiguous,
-                "{0}.part_{1}.bam".format(outputDiscarded,part) if outputDiscarded else outputDiscarded
-            )) for part, bamfile_name in partial_bam_files.iteritems() ]
+                discarded
+            )) for input, output, discarded in izip(sub_input_files, 
+                                                    sub_out_files, 
+                                                    sub_out_discarded_files)]
 
         # start work in child processes
         for p in subprocesses: p.start()
@@ -280,22 +303,31 @@ def annotateReads(mappedReads,
 
         # join the children
         for p in subprocesses:
-            assert p.exitcode == 0, "ERROR:: subprocess error during annotation."
+            assert p.exitcode == 0, "Error during annotation: subprocess error."
             p.join()
 
         # merge the annotated bam files and summmarize the stats
-        annotations=merge_bam( outputFile, ["{0}.part_{1}.bam".format(outputFile,part) for part in partial_bam_files] )
+        annotated = merge_bam(outputFile, sub_out_files)
         if outputDiscarded:
-            discarded_annotations=merge_bam( outputDiscarded, ["{0}.part_{1}.bam".format(outputDiscarded,part) for part in partial_bam_files] )
-
-        annotated = sum(annotations.values())
-
+            discarded_annotations = merge_bam(outputDiscarded, sub_out_discarded_files)
+        
     except Exception as e:
         error = "Error during annotation. HTSEQ execution failed\n"
         logger.error(error)
         raise e
-
-    if not fileOk(outputFile):
+    finally:
+        # remove the sub-files
+        for input, output, discarded in izip(sub_input_files,
+                                             sub_out_files,
+                                             sub_out_discarded_files):
+            if os.path.isfile(input):
+                os.remove(input)
+            if os.path.isfile(output):
+                os.remove(output)
+            if discarded and os.path.isfile(discarded):
+                os.remove(discarded)                    
+               
+    if not fileOk(outputFile) or annotated == 0:
         error = "Error during annotation. Output file not present {}\n".format(outputFile)
         logger.error(error)
         raise RuntimeError(error)
@@ -303,36 +335,41 @@ def annotateReads(mappedReads,
     logger.info("Annotated reads: {}".format(annotated))
     qa_stats.reads_after_annotation = annotated
 
-def split_bam(input_bamfile_name):
+def split_bam(input_bamfile_name, temp_dir, threads):
     """
     Splits a bam file in to parts with equal read counts.
-    The number of parts to split the bamfile into equls tha umber of cores on the machine.
+    The number of parts to split the bamfile into equals the 
+    number of cores on the machine.
     :param input_bamfile_name: path to the bamfile to be splitted
+    :param temp_dir: path to the folder where to put the created files
+    :param threads: the number of CPU cores to use
     :retuns: a dictionary
-        keys are an integer corresponding to the number of a partial bam file (0 to number of files -1)
+        keys are an integer corresponding to the number 
+        of a partial bam file (0 to number of files -1)
         values are the filenames of the corresponding partial bamfile created
     """
 
-    # set the number of output parts to equal the number of cores on the machine
-    number_of_output_parts = multiprocessing.cpu_count()
-    parts = { part:[] for part in range(number_of_output_parts) }
-    part_read_counts = { part:0 for part in parts }
-    output_file_names = {part:"{0}.part_{1}.bam".format(input_bamfile_name,part) for part in parts}
+    # Create the splitted BAM files names (one for each cpu core)
+    parts = {part:[] for part in range(threads)}
+    output_file_names = {part:os.path.join(temp_dir,
+                                           "{0}.part_{1}.bam".format(input_bamfile_name,part)) 
+                         for part in parts}
 
-    # index and open the input_bamfile
-    pysam.index(input_bamfile_name,'{0}.bai'.format(input_bamfile_name))
-    input_bamfile = pysam.AlignmentFile( input_bamfile_name, mode='rb' )
+    # Index and open the input_bamfile
+    pysam.index(input_bamfile_name, 
+                os.path.join(temp_dir,'{0}.bai'.format(input_bamfile_name)))
+    input_bamfile = pysam.AlignmentFile(input_bamfile_name, mode='rb')
     assert input_bamfile.check_index()
 
-    # open the output bam files
+    # Open the output bam files
     output_bamfiles = {
         part:pysam.AlignmentFile(file_name, mode="wbu", template=input_bamfile) \
         for part, file_name in output_file_names.iteritems()
         }
 
+    # Split the bam file
     total_read_count = input_bamfile.mapped + input_bamfile.unmapped
-    reads_per_part = math.ceil(float(total_read_count)/number_of_output_parts)
-
+    reads_per_part = math.ceil(float(total_read_count) / threads)
     _tmp_read_counter = 0
     part = 0
     for record in input_bamfile.fetch(until_eof=True):
@@ -341,7 +378,7 @@ def split_bam(input_bamfile_name):
         if _tmp_read_counter == reads_per_part:
             part += 1
             _tmp_read_counter = 0
-
+    # Return a dictionary PART_NUMBER -> FILENAME
     return output_file_names
 
 def merge_bam(merged_file_name, files_to_merge):
@@ -351,13 +388,13 @@ def merge_bam(merged_file_name, files_to_merge):
     and returns these counts as a dict: anotation=>count
     :param merged_file_name: name of the merged output bamfile
     :param files_to_merge: list with names of the partial bamfiles to merge
+    :returns: the number of annotated records
     """
-
     annotations = {}
-
-    with pysam.AlignmentFile( files_to_merge[0], mode='rb' ) as input_bamfile:
-        merged_file = pysam.AlignmentFile(merged_file_name, mode="wb", template=input_bamfile)
-
+    with pysam.AlignmentFile(files_to_merge[0], mode='rb') as input_bamfile:
+        merged_file = pysam.AlignmentFile(merged_file_name, 
+                                          mode="wb", template=input_bamfile)
+    # Simply merges the BAM files and creates a counter of annotated records
     for file_name in files_to_merge:
         input_bamfile = pysam.AlignmentFile( file_name, mode='rb' )
         for record in input_bamfile.fetch(until_eof=True):
@@ -366,5 +403,4 @@ def merge_bam(merged_file_name, files_to_merge):
                 annotations[record.get_tag("XF")] += 1
             except KeyError:
                 annotations[record.get_tag("XF")] = 1
-
-    return annotations
+    return sum(annotations.values())

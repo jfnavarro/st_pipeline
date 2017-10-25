@@ -14,7 +14,6 @@ def alignReads(reverse_reads,
                ref_map,
                outputFile,
                annotation,
-               outputFileDiscarded,
                outputFolder,
                trimReverse,
                invTrimReverse,
@@ -36,7 +35,6 @@ def alignReads(reverse_reads,
     :param ref_map: a path to the genome/transcriptome STAR index
     :param outputFile: the name of the SAM/BAM output file to write the alignments to
     :param annotation: the annotation file in GTF
-    :param outputFileDiscarded: the name of the SAM/BAM output file to write discarded alignments
     :param outputFolder: the path of the output folder
     :param trimReverse: the number of bases to trim in the reverse reads (from 5')
     :param invTrimReverse: number of bases to trim from the 3'
@@ -52,7 +50,6 @@ def alignReads(reverse_reads,
     :type ref_map: str
     :type outputFile: str
     :type annotation: str
-    :type outputFileDiscarded: str
     :type outputFolder: str
     :type trimReverse: int
     :type invTrimReverse: int
@@ -111,7 +108,7 @@ def alignReads(reverse_reads,
              "--outFilterMismatchNoverLmax", 0.1, ## (0.3 default)
              "--genomeLoad", "NoSharedMemory",
              "--readFilesType", "SAM","SE", # Input in BAM format
-             "--readFilesCommand", "samtools view -h"] 
+             "--readFilesCommand", "samtools", "view", "-h"] 
     
     if twopassMode:
         flags += ["--twopassMode", "Basic"]
@@ -156,7 +153,6 @@ def alignReads(reverse_reads,
         
     # Rename output files.
     shutil.move(tmpOutputFile, outputFile)
-    #shutil.move(tmpOutputFileDiscarded, outputFileDiscarded)
         
     # Remove temp files from STAR
     if os.path.isfile(log_std): os.remove(log_std)
