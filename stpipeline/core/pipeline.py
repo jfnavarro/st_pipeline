@@ -101,6 +101,7 @@ class Pipeline():
         self.taggd_multiple_hits_keep_one = False
         self.taggd_trim_sequences = None
         self.adaptor_missmatches = 0
+        self.star_genome_loading = "NoSharedMemory"
         
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -403,6 +404,11 @@ class Pipeline():
                             "position of the last base (1 based).\nTrimmng sequences can be given several times.")
         parser.add_argument('--homopolymer-mismatches', default=0, metavar="[INT]", type=int, choices=range(0, 9),
                             help="Number of mismatches allowed when removing homopolymers (default: %(default)s)")
+        parser.add_argument('--star-genome-loading', default="NoSharedMemory", metavar="[STRING]", type=str,
+                            help="Similar to the STAR option --genomeLoad. It allows to load the genome index\n"
+                            " into memory so it can easily be shared by other jobs and to save loading time.\n"
+                            " Read the STAR manual for more info on this. (default: NoSharedMemory)",
+                            choices=["NoSharedMemory","LoadAndKeep","LoadAndRemove", "LoadAndExit"])
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -473,6 +479,7 @@ class Pipeline():
         self.taggd_multiple_hits_keep_one = options.demultiplexing_multiple_hits_keep_one
         self.taggd_trim_sequences = options.demultiplexing_trim_sequences
         self.adaptor_missmatches = options.homopolymer_mismatches
+        self.star_genome_loading = options.star_genome_loading
         
         # Assign class parameters to the QA stats object
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
@@ -531,6 +538,7 @@ class Pipeline():
             self.logger.info("Not allowing multiple alignments when mapping with STAR")
         self.logger.info("Mapping minimum intron size allowed (splice alignments) with STAR: {}".format(self.min_intron_size))
         self.logger.info("Mapping maximum intron size allowed (splice alignments) with STAR: {}".format(self.max_intron_size))
+        self.logger.info("STAR genome loading strategy {}".format(self.star_genome_loading))
         if self.compute_saturation:
             self.logger.info("Computing saturation curve with several sub-samples...")
         if self.include_non_annotated:
@@ -688,7 +696,8 @@ class Pipeline():
                            False, # Enable softclipping in contaminant filter
                            False, # Disable 2-pass mode in contaminant filter
                            self.min_length_trimming,
-                           True) # Include un-aligned reads in the output       
+                           True, # Include un-aligned reads in the output     
+                           self.star_genome_loading)   
                 # Extract the contaminant free reads (not aligned) from the output of STAR
                 # NOTE: this will not be needed when STAR allows to chose the discarded
                 # reads format (BAM)
@@ -723,7 +732,8 @@ class Pipeline():
                        self.disable_clipping,
                        self.two_pass_mode,
                        self.min_length_trimming,
-                       self.keep_discarded_files)        
+                       self.keep_discarded_files,
+                       self.star_genome_loading)        
             # Remove secondary alignments and un-mapped
             # NOTE: this will not be needed when STAR allows to chose the discarded
             # reads format (BAM)
