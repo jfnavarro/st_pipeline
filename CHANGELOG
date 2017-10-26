@@ -444,3 +444,4 @@ Version 1.6.0
 * Made the mapping function works with a BAM file as input (latest STAR release)
 * Made the annotation function parallel
 * Improvements in speed and memory (constant memory use)
+* The STAR genome loading strategy can be now set
