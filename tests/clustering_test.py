@@ -125,6 +125,28 @@ class TestClustering(unittest.TestCase):
         self.assertTrue(len(clusters) == 2)
         clusters = dedup_dir_adj(self.molecular_barcodes3, 3)
         self.assertTrue(len(clusters) == 1)
+        
+    def test_affinity(self):
+        clusters = affinity_umi_removal(self.molecular_barcodes1, 0)
+        self.assertTrue(len(clusters) == 2)
+        clusters = affinity_umi_removal(self.molecular_barcodes1, 1)
+        self.assertTrue(len(clusters) == 2)
+        clusters = affinity_umi_removal(self.molecular_barcodes1, 2)
+        self.assertTrue(len(clusters) == 1)
+        
+        clusters = affinity_umi_removal(self.molecular_barcodes2, 0)
+        self.assertTrue(len(clusters) == 6)
+        clusters = affinity_umi_removal(self.molecular_barcodes2, 1)
+        self.assertTrue(len(clusters) == 6)
+        clusters = affinity_umi_removal(self.molecular_barcodes2, 2)
+        self.assertTrue(len(clusters) == 4)
+        
+        clusters = affinity_umi_removal(self.molecular_barcodes3, 0)
+        self.assertTrue(len(clusters) == 8)
+        clusters = affinity_umi_removal(self.molecular_barcodes3, 1)
+        self.assertTrue(len(clusters) == 2)
+        clusters = affinity_umi_removal(self.molecular_barcodes3, 3)
+        self.assertTrue(len(clusters) == 1)
            
 if __name__ == '__main__':
     unittest.main()        

@@ -357,9 +357,10 @@ class Pipeline():
         parser.add_argument('--disable-clipping', action="store_true", default=False,
                             help="If activated, disable soft-clipping (local alignment) in the mapping step")
         parser.add_argument('--umi-cluster-algorithm', default="hierarchical", metavar="[STRING]", 
-                            type=str, choices=["naive", "hierarchical", "Adjacent", "AdjacentBi"],
+                            type=str, choices=["naive", "hierarchical", "Adjacent", "AdjacentBi", "Affinity"],
                             help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n" \
-                            "Options = {naive, hierarchical(default), Adjacent and AdjacentBi}")
+                            "Options = {naive, hierarchical(default), Affinity, Adjacent and AdjacentBi}\n"
+                            "Note that for the affinity method the umi allowed mismatches parameter will be ignored.")
         parser.add_argument('--min-intron-size', default=1, metavar="[INT]", type=int, choices=range(1, 1000),
                             help="Minimum allowed intron size when searching for splice variants with STAR\n" \
                             "Splices alignments are disabled by default (=1) but to turn it on set this parameter\n" \
