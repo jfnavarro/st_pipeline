@@ -77,7 +77,7 @@ def main(input_data):
     # Parse the data
     counts_table = pd.read_table(input_data, sep="\t", header=0, index_col=0)
     # Get the basename
-    input_name = os.path.basename(input_data)
+    input_name = os.path.basename(input_data).split(".")[0]
     # Compute some statistics
     total_barcodes = len(counts_table.index)
     total_transcripts = np.sum(counts_table.values, dtype=np.int32)
