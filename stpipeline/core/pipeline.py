@@ -698,17 +698,34 @@ class Pipeline():
                            False, # Disable 2-pass mode in contaminant filter
                            self.min_length_trimming,
                            True, # Include un-aligned reads in the output     
-                           self.star_genome_loading)   
+                           self.star_genome_loading) 
                 # Extract the contaminant free reads (not aligned) from the output of STAR
                 # NOTE: this will not be needed when STAR allows to chose the discarded
                 # reads format (BAM)
+                # We also need to set the NH tag to Null so to be able to run STAR again
+                infile = pysam.AlignmentFile(FILENAMES_DISCARDED["contaminated_discarded"], "rb")
+                out_unmap = pysam.AlignmentFile(FILENAMES["contaminated_clean"], "wb", template=infile)
                 temp_name = os.path.join(self.temp_folder, next(tempfile._get_candidate_names()))
-                command = "samtools view -1 -b -h -f 4 -@ {} -o {} -U {} {}".format(self.threads,
-                                                                                    FILENAMES["contaminated_clean"],
-                                                                                    temp_name,
-                                                                                    FILENAMES_DISCARDED["contaminated_discarded"])
-                subprocess.check_call(command, shell=True) 
-                os.rename(temp_name, FILENAMES_DISCARDED["contaminated_discarded"])
+                out_map = pysam.AlignmentFile(temp_name, "wb", template=infile)
+                for sam_record in infile.fetch(until_eof=True):
+                    try:
+                        sam_record.set_tag("NH", None)
+                        sam_record.set_tag("HI", None)
+                        sam_record.set_tag("AS", None)
+                        sam_record.set_tag("nM", None)
+                        # Do we need to remove more tags?
+                        # Should we also reset the CIGAR string?
+                    except KeyError:
+                        # do nothing
+                        pass
+                    if sam_record.is_unmapped:
+                        out_unmap.write(sam_record)
+                    else:
+                        out_map.write(sam_record)
+                infile.close()
+                out_map.close()
+                out_unmap.close()
+                shutil.move(temp_name, FILENAMES_DISCARDED["contaminated_discarded"])
             except Exception:
                 raise
              

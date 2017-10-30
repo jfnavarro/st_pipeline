@@ -111,8 +111,7 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.ref_annotation = os.path.abspath(self.annotfile)
         self.pipeline.htseq_mode = "intersection-nonempty"
         self.pipeline.htseq_no_ambiguous = False
-        # TODO disable for now as the latest STAR version is unstable
-        #self.pipeline.contaminant_index= os.path.abspath(self.contamdir)  
+        self.pipeline.contaminant_index= os.path.abspath(self.contamdir)  
         self.pipeline.output_folder = os.path.abspath(self.outdir)
         self.pipeline.temp_folder = os.path.abspath(self.tmpdir)
         self.pipeline.logfile = self.logFile
@@ -179,16 +178,15 @@ class TestPipeline(unittest.TestCase):
         self.assertTrue(os.path.exists(statsfile), "Stats JSON file exists")
         
         # Verify that the stats are correct
-        # TODO disable for now as the latest STAR version is unstable
-        #counts_table = pd.read_table(datafile, sep="\t", header=0, index_col=0)
-        #self.assertTrue(np.sum(counts_table.values, dtype=np.int32) == 5829, "ST data incorrect stats")
-        #self.assertTrue(len(counts_table.columns) == 640, "ST data incorrect stats")
-        #aggregated_spot_counts = counts_table.sum(axis=1).values
-        #aggregated_gene_counts = (counts_table != 0).sum(axis=1).values
-        #self.assertTrue(aggregated_gene_counts.max() == 78, "ST data incorrect stats")
-        #self.assertTrue(aggregated_gene_counts.min() == 1, "ST data incorrect stats")
-        #self.assertTrue(aggregated_spot_counts.max() == 162, "ST data incorrect stats")
-        #self.assertTrue(aggregated_spot_counts.min() == 1, "ST data incorrect stats")
+        counts_table = pd.read_table(datafile, sep="\t", header=0, index_col=0)
+        self.assertTrue(np.sum(counts_table.values, dtype=np.int32) == 5829, "ST data incorrect stats")
+        self.assertTrue(len(counts_table.columns) == 640, "ST data incorrect stats")
+        aggregated_spot_counts = counts_table.sum(axis=1).values
+        aggregated_gene_counts = (counts_table != 0).sum(axis=1).values
+        self.assertTrue(aggregated_gene_counts.max() == 78, "ST data incorrect stats")
+        self.assertTrue(aggregated_gene_counts.min() == 1, "ST data incorrect stats")
+        self.assertTrue(aggregated_spot_counts.max() == 162, "ST data incorrect stats")
+        self.assertTrue(aggregated_spot_counts.min() == 1, "ST data incorrect stats")
         
     def test_normal_run(self):
         """
