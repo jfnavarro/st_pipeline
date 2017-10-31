@@ -4,6 +4,7 @@ cython>=0.19
 numpy
 pandas
 scipy
+sklearn
 sqlitedict
 regex
 taggd>=0.3.1
