@@ -5,6 +5,7 @@ molecular barcodes (UMIs) by hamming distance
 
 import numpy as np
 from scipy.cluster.hierarchy import linkage,fcluster
+from sklearn.cluster import AffinityPropagation
 from collections import defaultdict
 from stpipeline.common.cdistance import hamming_distance
 import random
@@ -182,3 +183,25 @@ def dedup_dir_adj(molecular_barcodes, allowed_mismatches):
     clusters = get_connected_components_adjacency(adj_list, c)
     unique_umis = reduce_clusters_directional_adjacency(adj_list, clusters, c)
     return unique_umis
+
+def affinity_umi_removal(molecular_barcodes, _):
+    """
+    Tries to finds clusters of similar UMIs using an affinity based approach. 
+    It returns a list with all the non clustered UMIs, for clusters of 
+    multiple UMIs a random one will be selected.
+    :param molecular_barcodes: a list of UMIs
+    :return: a list of unique UMIs
+    :rtype: list
+    """
+    if len(molecular_barcodes) <= 2:
+        return countUMINaive(molecular_barcodes, allowed_mismatches)
+    words = np.asarray(molecular_barcodes)
+    lev_similarity = -1 * np.array([[hamming_distance(w1,w2) for w1 in words] for w2 in words])
+    affprop = AffinityPropagation(affinity="precomputed", damping=0.5)
+    affprop.fit(lev_similarity)
+    unique_clusters = list()
+    for cluster_id in np.unique(affprop.labels_):
+        exemplar = words[affprop.cluster_centers_indices_[cluster_id]]
+        cluster = np.unique(words[np.nonzero(affprop.labels_==cluster_id)])
+        unique_clusters.append(random.choice(cluster))
+    return unique_clusters

@@ -125,6 +125,10 @@ class TestClustering(unittest.TestCase):
         self.assertTrue(len(clusters) == 2)
         clusters = dedup_dir_adj(self.molecular_barcodes3, 3)
         self.assertTrue(len(clusters) == 1)
+        
+    def test_affinity(self):
+        # TODO must create test cases
+        self.assertTrue(True)
            
 if __name__ == '__main__':
     unittest.main()        

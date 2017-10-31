@@ -79,7 +79,7 @@ def main(counts_matrix, coordinates_file, update_coordinates, outfile, outformat
     counts_table.index = new_index_values
     
     # Remove genes that have now a total count of zero
-    counts_table = counts_table.transpose()[new_counts.sum(axis=0) > 0].transpose()
+    counts_table = counts_table.transpose()[counts_table.sum(axis=0) > 0].transpose()
     
     # Write table again
     counts_table.to_csv(outfile, sep='\t')
