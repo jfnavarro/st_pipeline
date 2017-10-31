@@ -28,7 +28,7 @@ def convert_to_AlignedSegment(header, sequence, quality,
     # Header must not contain empty spaces
     aligned_segment.query_name = header.split()[0]
     aligned_segment.query_sequence = sequence
-    aligned_segment.query_qualities = quality
+    aligned_segment.query_qualities = pysam.qualitystring_to_array(quality)
 
     # setting the flag to un_mapped
     aligned_segment.flag |= pysam.FUNMAP
