@@ -29,6 +29,7 @@ install:
     - conda config --add channels r
     - conda config --add channels bioconda
     - conda install pysam
+    - conda install sklearn
     - conda install -c anaconda setuptools=27.2.0
     - conda install -c conda-forge regex=2017.04.05
     - pip install htseq
