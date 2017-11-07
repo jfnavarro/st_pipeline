@@ -356,7 +356,7 @@ class Pipeline():
                             "Otherwise the highest scored one will be kept")
         parser.add_argument('--disable-clipping', action="store_true", default=False,
                             help="If activated, disable soft-clipping (local alignment) in the mapping step")
-        parser.add_argument('--umi-cluster-algorithm', default="hierarchical", metavar="[STRING]", 
+        parser.add_argument('--umi-cluster-algorithm', default="AdjacentBi", metavar="[STRING]", 
                             type=str, choices=["naive", "hierarchical", "Adjacent", "AdjacentBi", "Affinity"],
                             help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n" \
                             "Options = {naive, hierarchical(default), Affinity, Adjacent and AdjacentBi}\n"
@@ -693,8 +693,8 @@ class Pipeline():
                            self.threads,
                            1, # Disable splice alignments in contaminant filter
                            1, # Disable splice alignments in contaminant filter
-                           False, # Enable multimap in contaminant filter
-                           False, # Enable softclipping in contaminant filter
+                           False, # Disable multimap in contaminant filter
+                           False, # Disable softclipping in contaminant filter
                            False, # Disable 2-pass mode in contaminant filter
                            self.min_length_trimming,
                            True, # Include un-aligned reads in the output     
