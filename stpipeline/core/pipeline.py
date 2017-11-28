@@ -102,6 +102,7 @@ class Pipeline():
         self.taggd_trim_sequences = None
         self.adaptor_missmatches = 0
         self.star_genome_loading = "NoSharedMemory"
+        self.star_sort_mem_limit = 0
         
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -407,9 +408,12 @@ class Pipeline():
                             help="Number of mismatches allowed when removing homopolymers (default: %(default)s)")
         parser.add_argument('--star-genome-loading', default="NoSharedMemory", metavar="[STRING]", type=str,
                             help="Similar to the STAR option --genomeLoad. It allows to load the genome index\n"
-                            " into memory so it can easily be shared by other jobs and to save loading time.\n"
+                            " into memory so it can easily be shared by other jobs so to save loading time.\n"
                             " Read the STAR manual for more info on this. (default: NoSharedMemory)",
                             choices=["NoSharedMemory","LoadAndKeep","LoadAndRemove", "LoadAndExit"])
+        parser.add_argument('--star-sort-mem-limit', default=0, type=int,
+                            help="The maximum available RAM for sorting BAM during mapping. Default is 0\n" \
+                            "which means that it will be set to the genome index size")
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -481,6 +485,7 @@ class Pipeline():
         self.taggd_trim_sequences = options.demultiplexing_trim_sequences
         self.adaptor_missmatches = options.homopolymer_mismatches
         self.star_genome_loading = options.star_genome_loading
+        self.star_sort_mem_limit = star_sort_mem_limit
         
         # Assign class parameters to the QA stats object
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
@@ -698,7 +703,8 @@ class Pipeline():
                            False, # Disable 2-pass mode in contaminant filter
                            self.min_length_trimming,
                            True, # Include un-aligned reads in the output     
-                           self.star_genome_loading) 
+                           self.star_genome_loading,
+                           self.star_sort_mem_limit) 
                 # Extract the contaminant free reads (not aligned) from the output of STAR
                 # NOTE: this will not be needed when STAR allows to chose the discarded
                 # reads format (BAM)
@@ -751,7 +757,8 @@ class Pipeline():
                        self.two_pass_mode,
                        self.min_length_trimming,
                        self.keep_discarded_files,
-                       self.star_genome_loading)        
+                       self.star_genome_loading,
+                       self.star_sort_mem_limit)        
             # Remove secondary alignments and un-mapped
             # NOTE: this will not be needed when STAR allows to chose the discarded
             # reads format (BAM)

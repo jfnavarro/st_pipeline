@@ -447,3 +447,4 @@ Version 1.6.0
 * Improvements in speed and memory (constant memory use)
 * The STAR genome loading strategy can be now set
 * Added an affinity based method to cluster UMIs
+* Added option to set the STAR BAM sort memory limit
