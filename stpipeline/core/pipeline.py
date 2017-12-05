@@ -485,7 +485,7 @@ class Pipeline():
         self.taggd_trim_sequences = options.demultiplexing_trim_sequences
         self.adaptor_missmatches = options.homopolymer_mismatches
         self.star_genome_loading = options.star_genome_loading
-        self.star_sort_mem_limit = star_sort_mem_limit
+        self.star_sort_mem_limit = options.star_sort_mem_limit
         
         # Assign class parameters to the QA stats object
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
