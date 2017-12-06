@@ -11,14 +11,10 @@ before_install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  - git clone https://github.com/alexdobin/STAR.git
-  - cd STAR/source
-  - make STAR
-  - chmod +x STAR
   - mkdir -p $HOME/bin
-  - cp STAR $HOME/bin
-  - cd ..
-  - cd ..
+  - git clone https://github.com/alexdobin/STAR.git
+  - chmod +x STAR/bin/Linux_x86_64/STAR
+  - cp STAR/bin/Linux_x86_64 $HOME/bin
   - export PATH="$HOME/bin:$PATH"
   - mkdir -p $HOME/tmp
   - export TMPDIR=$HOME/tmp
