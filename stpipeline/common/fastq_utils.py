@@ -250,7 +250,10 @@ def filterInputReads(fw,
     keep_discarded_files = out_rv_discarded is not None
     
     # Create output file writers
-    bam_header = { 'HD': {'VN': '1', 'SO':'unsorted'} }
+    bam_header = {
+            'HD': {'VN': '1.5', 'SO':'unsorted'},
+            'RG': [{'ID': '0', 'SM' : 'unknown_sample', 'PL' : 'ILLUMINA' }]
+        }
     bam_file = pysam.AlignmentFile(out_rv, "wb", header=bam_header)
     if keep_discarded_files:
         out_rv_handle_discarded = safeOpenFile(out_rv_discarded, 'w')

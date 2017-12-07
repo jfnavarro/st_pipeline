@@ -9,7 +9,7 @@ def convert_to_AlignedSegment(header, sequence, quality,
     """
     This function converts the input variables 
     (header,sequence,quality,barcode_sequence,umi_sequence)
-    to a pysam.AlignedSegment with the umi and barcode 
+    to a unaligned pysam.AlignedSegment with the umi and barcode 
     informations as the following tags:
         Tag  Value
         "B0" barcode_sequence
@@ -28,10 +28,14 @@ def convert_to_AlignedSegment(header, sequence, quality,
     # Header must not contain empty spaces
     aligned_segment.query_name = header.split()[0]
     aligned_segment.query_sequence = sequence
-    aligned_segment.query_qualities = quality
+    aligned_segment.query_qualities = pysam.qualitystring_to_array(quality)
+
+    # setting the flag to un_mapped
+    aligned_segment.flag |= pysam.FUNMAP
 
     # Set the tags
     aligned_segment.set_tag('B0', barcode_sequence)
     aligned_segment.set_tag('B3', umi_sequence)
+    aligned_segment.set_tag('RG', '0')
 
     return aligned_segment

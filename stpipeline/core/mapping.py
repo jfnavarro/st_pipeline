@@ -24,7 +24,9 @@ def alignReads(reverse_reads,
                diable_softclipping,
                twopassMode,
                min_length,
-               include_non_mapped):
+               include_non_mapped,
+               star_genome_loading,
+               star_sort_mem_limit):
     """
     This function will perform a sequence alignment using STAR.
     Mapped and unmapped reads are written to the paths given as
@@ -46,6 +48,8 @@ def alignReads(reverse_reads,
     :param twopassMode: True to use the 2-pass mode
     :param min_length: the min allowed read length (mapped bases)
     :param include_non_mapped: True to include un-aligned reads in the output
+    :param star_genome_loading: The type of genome sharing for STAR
+    :param star_sort_mem_limit: The BAM sort memory limit for STAR
     :type reverse_reads: str
     :type ref_map: str
     :type outputFile: str
@@ -61,6 +65,8 @@ def alignReads(reverse_reads,
     :type twopassMode: bool
     :type min_length: str
     :type include_non_mapped: bool
+    :type star_genome_loading: str
+    :type star_sort_mem_limit: int
     :raises: RuntimeError,ValueError,OSError,CalledProcessError
     """
     logger = logging.getLogger("STPipeline")
@@ -106,7 +112,8 @@ def alignReads(reverse_reads,
              "--outSAMmultNmax", 1,
              "--readMatesLengthsIn", "NotEqual",
              "--outFilterMismatchNoverLmax", 0.1, ## (0.3 default)
-             "--genomeLoad", "NoSharedMemory",
+             "--genomeLoad", star_genome_loading,
+             "--limitBAMsortRAM", star_sort_mem_limit,
              "--readFilesType", "SAM","SE", # Input in BAM format
              "--readFilesCommand", "samtools", "view", "-h"] 
     

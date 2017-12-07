@@ -101,6 +101,8 @@ class Pipeline():
         self.taggd_multiple_hits_keep_one = False
         self.taggd_trim_sequences = None
         self.adaptor_missmatches = 0
+        self.star_genome_loading = "NoSharedMemory"
+        self.star_sort_mem_limit = 0
         
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -355,10 +357,11 @@ class Pipeline():
                             "Otherwise the highest scored one will be kept")
         parser.add_argument('--disable-clipping', action="store_true", default=False,
                             help="If activated, disable soft-clipping (local alignment) in the mapping step")
-        parser.add_argument('--umi-cluster-algorithm', default="hierarchical", metavar="[STRING]", 
-                            type=str, choices=["naive", "hierarchical", "Adjacent", "AdjacentBi"],
+        parser.add_argument('--umi-cluster-algorithm', default="AdjacentBi", metavar="[STRING]", 
+                            type=str, choices=["naive", "hierarchical", "Adjacent", "AdjacentBi", "Affinity"],
                             help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n" \
-                            "Options = {naive, hierarchical(default), Adjacent and AdjacentBi}")
+                            "Options = {naive, hierarchical(default), Affinity, Adjacent and AdjacentBi}\n"
+                            "Note that for the affinity method the umi allowed mismatches parameter will be ignored.")
         parser.add_argument('--min-intron-size', default=1, metavar="[INT]", type=int, choices=range(1, 1000),
                             help="Minimum allowed intron size when searching for splice variants with STAR\n" \
                             "Splices alignments are disabled by default (=1) but to turn it on set this parameter\n" \
@@ -403,6 +406,14 @@ class Pipeline():
                             "position of the last base (1 based).\nTrimmng sequences can be given several times.")
         parser.add_argument('--homopolymer-mismatches', default=0, metavar="[INT]", type=int, choices=range(0, 9),
                             help="Number of mismatches allowed when removing homopolymers (default: %(default)s)")
+        parser.add_argument('--star-genome-loading', default="NoSharedMemory", metavar="[STRING]", type=str,
+                            help="Similar to the STAR option --genomeLoad. It allows to load the genome index\n"
+                            " into memory so it can easily be shared by other jobs so to save loading time.\n"
+                            " Read the STAR manual for more info on this. (default: NoSharedMemory)",
+                            choices=["NoSharedMemory","LoadAndKeep","LoadAndRemove", "LoadAndExit"])
+        parser.add_argument('--star-sort-mem-limit', default=0, type=int,
+                            help="The maximum available RAM for sorting BAM during mapping. Default is 0\n" \
+                            "which means that it will be set to the genome index size")
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -473,6 +484,8 @@ class Pipeline():
         self.taggd_multiple_hits_keep_one = options.demultiplexing_multiple_hits_keep_one
         self.taggd_trim_sequences = options.demultiplexing_trim_sequences
         self.adaptor_missmatches = options.homopolymer_mismatches
+        self.star_genome_loading = options.star_genome_loading
+        self.star_sort_mem_limit = options.star_sort_mem_limit
         
         # Assign class parameters to the QA stats object
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
@@ -531,6 +544,7 @@ class Pipeline():
             self.logger.info("Not allowing multiple alignments when mapping with STAR")
         self.logger.info("Mapping minimum intron size allowed (splice alignments) with STAR: {}".format(self.min_intron_size))
         self.logger.info("Mapping maximum intron size allowed (splice alignments) with STAR: {}".format(self.max_intron_size))
+        self.logger.info("STAR genome loading strategy {}".format(self.star_genome_loading))
         if self.compute_saturation:
             self.logger.info("Computing saturation curve with several sub-samples...")
         if self.include_non_annotated:
@@ -684,21 +698,40 @@ class Pipeline():
                            self.threads,
                            1, # Disable splice alignments in contaminant filter
                            1, # Disable splice alignments in contaminant filter
-                           False, # Enable multimap in contaminant filter
-                           False, # Enable softclipping in contaminant filter
+                           False, # Disable multimap in contaminant filter
+                           False, # Disable softclipping in contaminant filter
                            False, # Disable 2-pass mode in contaminant filter
                            self.min_length_trimming,
-                           True) # Include un-aligned reads in the output       
+                           True, # Include un-aligned reads in the output     
+                           self.star_genome_loading,
+                           self.star_sort_mem_limit) 
                 # Extract the contaminant free reads (not aligned) from the output of STAR
                 # NOTE: this will not be needed when STAR allows to chose the discarded
                 # reads format (BAM)
+                # We also need to set the NH tag to Null so to be able to run STAR again
+                infile = pysam.AlignmentFile(FILENAMES_DISCARDED["contaminated_discarded"], "rb")
+                out_unmap = pysam.AlignmentFile(FILENAMES["contaminated_clean"], "wb", template=infile)
                 temp_name = os.path.join(self.temp_folder, next(tempfile._get_candidate_names()))
-                command = "samtools view -1 -b -h -f 4 -@ {} -o {} -U {} {}".format(self.threads,
-                                                                                    FILENAMES["contaminated_clean"],
-                                                                                    temp_name,
-                                                                                    FILENAMES_DISCARDED["contaminated_discarded"])
-                subprocess.check_call(command, shell=True) 
-                os.rename(temp_name, FILENAMES_DISCARDED["contaminated_discarded"])
+                out_map = pysam.AlignmentFile(temp_name, "wb", template=infile)
+                for sam_record in infile.fetch(until_eof=True):
+                    try:
+                        sam_record.set_tag("NH", None)
+                        sam_record.set_tag("HI", None)
+                        sam_record.set_tag("AS", None)
+                        sam_record.set_tag("nM", None)
+                        # Do we need to remove more tags?
+                        # Should we also reset the CIGAR string?
+                    except KeyError:
+                        # do nothing
+                        pass
+                    if sam_record.is_unmapped:
+                        out_unmap.write(sam_record)
+                    else:
+                        out_map.write(sam_record)
+                infile.close()
+                out_map.close()
+                out_unmap.close()
+                shutil.move(temp_name, FILENAMES_DISCARDED["contaminated_discarded"])
             except Exception:
                 raise
              
@@ -723,7 +756,9 @@ class Pipeline():
                        self.disable_clipping,
                        self.two_pass_mode,
                        self.min_length_trimming,
-                       self.keep_discarded_files)        
+                       self.keep_discarded_files,
+                       self.star_genome_loading,
+                       self.star_sort_mem_limit)        
             # Remove secondary alignments and un-mapped
             # NOTE: this will not be needed when STAR allows to chose the discarded
             # reads format (BAM)

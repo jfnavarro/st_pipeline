@@ -109,7 +109,7 @@ If you want to remove from the dataset (matrix in TSV) genes corresponding
 to certain gene types (For instance to keep only protein_coding). You can do
 so with the script filter_gene_type_matrix.py
 
-	filter_gene_type_matrix.py --counts-matrix stdata.tsv --outfile new_stdata.tsv --annotation path_to_annotation_file
+	filter_gene_type_matrix.py --counts-matrix stdata.tsv --gene-types-keep protein-coding --outfile new_stdata.tsv --annotation path_to_annotation_file
 	
 You may include the parameter --ensembl-ids if your gene names are represented as gene ids instead.
 

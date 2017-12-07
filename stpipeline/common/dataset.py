@@ -109,6 +109,8 @@ def createDataset(input_file,
         group_umi_func = dedup_adj
     elif umi_cluster_algorithm == "AdjacentBi":
         group_umi_func = dedup_dir_adj
+    elif umi_cluster_algorithm == "Affinity":
+        group_umi_func = affinity_umi_removal
     else:
         error = "Error creating dataset.\n" \
         "Incorrect clustering algorithm {}".format(umi_cluster_algorithm)
