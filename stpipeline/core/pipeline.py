@@ -650,7 +650,10 @@ class Pipeline():
         # Start the filterInputReads function
         self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
         try:
-            filterInputReads(self.fastq_fw,
+            from stpipeline.common.filterInputReads import InputReadsFilter
+            inputfilter = InputReadsFilter()
+            inputfilter.input_arguments(
+                             self.fastq_fw,
                              self.fastq_rv,
                              FILENAMES["quality_trimmed_R2"],
                              FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
@@ -672,6 +675,7 @@ class Pipeline():
                              self.umi_filter_template,
                              self.umi_quality_bases,
                              self.adaptor_missmatches)
+            inputfilter.run()
         except Exception:
             raise
         

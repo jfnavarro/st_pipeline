@@ -55,7 +55,8 @@ setup(
   packages = find_packages(exclude=('tests*', 'utils', '*.pyx')),
   ext_modules=[
         Extension('stpipeline.common.cdistance', ['stpipeline/common/cdistance.pyx']),
-        Extension('stpipeline.common.unique_events_parser', ['stpipeline/common/unique_events_parser.pyx'])
+        Extension('stpipeline.common.unique_events_parser', ['stpipeline/common/unique_events_parser.pyx'],
+        Extension('stpipeline.common.filterInputReads', ['stpipeline/common/filterInputReads.pyx']))
     ],
   include_package_data = True,
   zip_safe = False,
