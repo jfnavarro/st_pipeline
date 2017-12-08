@@ -51,7 +51,8 @@ class InputReadsFilter():
                     umi_filter,
                     umi_filter_template,
                     umi_quality_bases,
-                    adaptor_missmatches):
+                    adaptor_missmatches,
+                    threads):
 
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: Getting input arguments.\n')
 
@@ -95,6 +96,7 @@ class InputReadsFilter():
         self.min_qual = min_qual
         self.barcode_length = barcode_length
         self.start_position = start_position
+        self.threads = threads
 
         self.fw = fw
         self.rv = rv
@@ -128,7 +130,7 @@ class InputReadsFilter():
 
         # start worker pool
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Starting pool.\n')
-        self.worker_pool = [multiprocessing.Process(target=self.parallel_worker_function) for i in range(multiprocessing.cpu_count()-2)]
+        self.worker_pool = [multiprocessing.Process(target=self.parallel_worker_function) for i in range(self.threads-1)]
         for process in self.worker_pool: process.start()
         worker_process_ids = [process.pid for process in self.worker_pool]
 
@@ -152,7 +154,7 @@ class InputReadsFilter():
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - merging bam files produced by workers.\n')
         worker_bams = [ self.out_rv.rstrip('.bam')+'.WORKER_{}.bam'.format(process_id) for process_id in worker_process_ids ]
         command = 'samtools merge -@ {} {} {}'.format(
-            multiprocessing.cpu_count()-2,
+            self.threads,
             self.out_rv,
             ' '.join(worker_bams)
             )
