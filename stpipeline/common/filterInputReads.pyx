@@ -341,75 +341,64 @@ class InputReadsFilter():
                 out_chunk = []
                 for (header_fw, sequence_fw, quality_fw), (header_rv, sequence_rv, quality_rv) in in_chunk:
 
-                    read_pair = {
-                        'header_fw':header_fw,
-                        'sequence_fw':sequence_fw,
-                        'quality_fw':quality_fw,
-                        'header_rv':header_rv,
-                        'sequence_rv':sequence_rv,
-                        'quality_rv':quality_rv,
-                        'orig_sequence_rv':sequence_rv,
-                        'orig_quality_rv':quality_rv,
-                        'discard_reason':None
-                    }
+                    discard_reason = None
+                    orig_sequence_rv, orig_quality_rv = sequence_rv, quality_rv
 
-                    if not read_pair['sequence_fw'] or not read_pair['sequence_rv']:
+                    if not sequence_fw or not sequence_rv:
                         error = "Error doing quality trimming, Checks of raw reads.\n" \
                         "The input files are not of the same length"
                         #"The input files {},{} are not of the same length".format(fw,rv)
                         self.logger.error(error)
 
-                    if read_pair['header_fw'].split()[0] != read_pair['header_rv'].split()[0]:
+                    if header_fw.split()[0] != header_rv.split()[0]:
                         self.logger.warning("Pair reads found with different " \
-                                       "names {} and {}".format(read_pair['header_fw'],read_pair['header_rv']))
+                                       "names {} and {}".format(header_fw,header_rv))
 
                     # get the barcode sequence
                     # should add overhang here as well ...
-                    read_pair['barcode'] = read_pair['sequence_fw'][self.start_position:(self.start_position+self.barcode_length)]
+                    barcode = sequence_fw[self.start_position:(self.start_position+self.barcode_length)]
 
                     # If we want to check for UMI quality and the UMI is incorrect
                     # then we discard the reads
-                    read_pair['umi_seq'] = read_pair['sequence_fw'][self.umi_start:self.umi_end]
+                    umi_seq = sequence_fw[self.umi_start:self.umi_end]
                     if self.umi_filter \
-                    and not check_umi_template(read_pair['umi_seq'], self.umi_filter_template):
-                        read_pair['discard_reason'] = 'dropped_umi_template'
+                    and not check_umi_template(umi_seq, self.umi_filter_template):
+                        discard_reason = 'dropped_umi_template'
 
                     # Check if the UMI has many low quality bases
-                    read_pair['umi_qual']=read_pair['quality_fw'][self.umi_start:self.umi_end]
-                    if not read_pair['discard_reason'] and (self.umi_end - self.umi_start) >= self.umi_quality_bases and \
-                    len([b for b in read_pair['umi_qual'] if (ord(b) - self.phred) < self.min_qual]) > self.umi_quality_bases:
-                        read_pair['discard_reason'] = 'dropped_umi'
+                    umi_qual=quality_fw[self.umi_start:self.umi_end]
+                    if not discard_reason and (self.umi_end - self.umi_start) >= self.umi_quality_bases and \
+                    len([b for b in umi_qual if (ord(b) - self.phred) < self.min_qual]) > self.umi_quality_bases:
+                        discard_reason = 'dropped_umi'
 
                     # If reverse read has a high AT content discard...
-                    if not read_pair['discard_reason'] and self.do_AT_filter and \
-                    ((read_pair['sequence_rv'].count("A") + read_pair['sequence_rv'].count("T")) / len(read_pair['sequence_rv'])) * 100 >= self.filter_AT_content:
-                        read_pair['discard_reason'] = 'dropped_AT'
+                    if not discard_reason and self.do_AT_filter and \
+                    ((sequence_rv.count("A") + sequence_rv.count("T")) / len(sequence_rv)) * 100 >= self.filter_AT_content:
+                        discard_reason = 'dropped_AT'
 
                     # If reverse read has a high GC content discard...
-                    if not read_pair['discard_reason'] and self.do_GC_filter and \
-                    ((read_pair['sequence_rv'].count("G") + read_pair['sequence_rv'].count("C")) / len(read_pair['sequence_rv'])) * 100 >= self.filter_GC_content:
-                        read_pair['discard_reason'] = 'dropped_GC'
+                    if not discard_reason and self.do_GC_filter and \
+                    ((sequence_rv.count("G") + sequence_rv.count("C")) / len(sequence_rv)) * 100 >= self.filter_GC_content:
+                        discard_reason = 'dropped_GC'
 
-                    if not read_pair['discard_reason']:
+                    if not discard_reason:
 
-                        if self.do_adaptorA and len(read_pair['sequence_rv']) > self.min_length: read_pair['sequence_rv'], read_pair['quality_rv'] = removeAdaptor(read_pair['sequence_rv'], read_pair['quality_rv'], self.adaptorA, self.adaptor_missmatches)
-                        if self.do_adaptorT and len(read_pair['sequence_rv']) > self.min_length: read_pair['sequence_rv'], read_pair['quality_rv'] = removeAdaptor(read_pair['sequence_rv'], read_pair['quality_rv'], self.adaptorT, self.adaptor_missmatches)
-                        if self.do_adaptorG and len(read_pair['sequence_rv']) > self.min_length: read_pair['sequence_rv'], read_pair['quality_rv'] = removeAdaptor(read_pair['sequence_rv'], read_pair['quality_rv'], self.adaptorG, self.adaptor_missmatches)
-                        if self.do_adaptorC and len(read_pair['sequence_rv']) > self.min_length: read_pair['sequence_rv'], read_pair['quality_rv'] = removeAdaptor(read_pair['sequence_rv'], read_pair['quality_rv'], self.adaptorC, self.adaptor_missmatches)
-                        if self.do_adaptorN and len(read_pair['sequence_rv']) > self.min_length: read_pair['sequence_rv'], read_pair['quality_rv'] = removeAdaptor(read_pair['sequence_rv'], read_pair['quality_rv'], self.adaptorN, self.adaptor_missmatches)
+                        if self.do_adaptorA and len(sequence_rv) > self.min_length: sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, self.adaptorA, self.adaptor_missmatches)
+                        if self.do_adaptorT and len(sequence_rv) > self.min_length: sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, self.adaptorT, self.adaptor_missmatches)
+                        if self.do_adaptorG and len(sequence_rv) > self.min_length: sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, self.adaptorG, self.adaptor_missmatches)
+                        if self.do_adaptorC and len(sequence_rv) > self.min_length: sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, self.adaptorC, self.adaptor_missmatches)
+                        if self.do_adaptorN and len(sequence_rv) > self.min_length: sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, self.adaptorN, self.adaptor_missmatches)
 
                         # Check if the read is smaller than the minimum after removing artifacts
-                        if len(read_pair['sequence_rv']) < self.min_length:
-                            read_pair['discard_reason'] = 'dropped_adaptor'
+                        if len(sequence_rv) < self.min_length:
+                            discard_reason = 'dropped_adaptor'
                         else:
                             # Trim reverse read (will return None if length of trimmed sequence is less than min_length)
-                            read_pair['sequence_rv'], read_pair['quality_rv'] = trim_quality(read_pair['sequence_rv'], read_pair['quality_rv'], self.min_qual, self.min_length, self.phred)
-                            if not read_pair['sequence_rv'] or not read_pair['quality_rv']:
-                                read_pair['discard_reason'] = 'to_short_after_trimming'
+                            sequence_rv, quality_rv = trim_quality(sequence_rv, quality_rv, self.min_qual, self.min_length, self.phred)
+                            if not sequence_rv or not quality_rv:
+                                discard_reason = 'to_short_after_trimming'
 
-                    #self.output_read_queue.put( read_pair )
-                    #out_chunk.append( read_pair )
-                    out_chunk.append( (read_pair['discard_reason'], read_pair['header_rv'], read_pair['sequence_rv'], read_pair['quality_rv'], read_pair['barcode'], read_pair['umi_seq'], read_pair['header_rv'], read_pair['orig_sequence_rv'], read_pair['orig_quality_rv']) )
+                    out_chunk.append( (discard_reason, header_rv, sequence_rv, quality_rv, barcode, umi_seq, header_rv, orig_sequence_rv, orig_quality_rv) )
 
                     count += 1
                     if self.verbose and count % self.stat_line_interwall == 0:
