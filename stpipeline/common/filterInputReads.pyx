@@ -3,7 +3,7 @@ import sys
 import time
 from stpipeline.common.utils import safeOpenFile, fileOk, is_fifo
 from stpipeline.common.fastq_utils import *
-from stpipeline.common.sam_utils import convert_to_AlignedSegment
+from stpipeline.common.sam_utils import convert_to_AlignedSegment, merge_bam
 from stpipeline.common.adaptors import removeAdaptor
 from stpipeline.common.stats import qa_stats
 import logging
@@ -129,6 +129,7 @@ class InputReadsFilter():
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Starting pool.\n')
         self.worker_pool = [multiprocessing.Process(target=self.parallel_worker_function) for i in range(multiprocessing.cpu_count()-2)]
         for process in self.worker_pool: process.start()
+        worker_process_ids = [process.pid for process in self.worker_pool]
 
         # start writer subprocess
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Creating writer.\n')
@@ -169,6 +170,13 @@ class InputReadsFilter():
         self.logger.info("Trimming stats dropped pairs due to high GC content: {}".format(read_pair_counters['dropped_GC']))
         self.logger.info("Trimming stats dropped pairs due to presence of artifacts: {}".format(read_pair_counters['dropped_adaptor']))
         self.logger.info("Trimming stats dropped pairs due to length after trimming: {}".format(read_pair_counters['to_short_after_trimming']))
+
+        # merge bam files
+        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - merging bam files produced by workers.\n')
+        worker_bams = [ self.out_rv.rstrip('.bam')+'.WORKER_{}.bam'.format(process_id) for process_id in worker_process_ids ]
+        merge_bam(self.out_rv, worker_bams, ubam=True )
+        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - removing bam files produced by workers.\n')
+        for bam in worker_bams: os.remove(bam)
 
         # Check that output file was written ok
         if not fileOk(self.out_rv):
@@ -244,11 +252,6 @@ class InputReadsFilter():
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: Starting output files writer pid='+str(os.getpid())+'.\n')
 
         # Create output file writers
-        bam_header = {
-                'HD': {'VN': '1.5', 'SO':'unsorted'},
-                'RG': [{'ID': '0', 'SM' : 'unknown_sample', 'PL' : 'ILLUMINA' }]
-            }
-        bam_file = pysam.AlignmentFile(self.out_rv, "wb", header=bam_header)
         if self.keep_discarded_files:
             out_rv_handle_discarded = safeOpenFile(self.out_rv_discarded, 'w')
             out_rv_writer_discarded = writefq(out_rv_handle_discarded)
@@ -273,23 +276,13 @@ class InputReadsFilter():
             while not self.output_read_queue.empty():
 
                 chunk = self.output_read_queue.get()
-                for (discard_reason, header_rv, sequence_rv, quality_rv, barcode, umi_seq, header_rv, orig_sequence_rv, orig_quality_rv) in chunk:
+                for (discard_reason, header_rv, orig_sequence_rv, orig_quality_rv) in chunk:
 
                     read_pair_counters['total_reads'] += 1
                     if discard_reason: read_pair_counters[ discard_reason ] += 1
 
                     # Write reverse read to output
-                    if not discard_reason:
-                        bam_file.write(
-                            convert_to_AlignedSegment(
-                                header_rv,
-                                sequence_rv,
-                                quality_rv,
-                                barcode,
-                                umi_seq
-                                )
-                            )
-                    else:
+                    if discard_reason:
                         read_pair_counters['dropped_rv'] += 1
                         if self.keep_discarded_files:
                             out_rv_writer_discarded.send((header_rv, orig_sequence_rv, orig_quality_rv))
@@ -312,7 +305,6 @@ class InputReadsFilter():
         self.counter_connection_send_end.send(read_pair_counters)
 
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: output files writer - closing outfiles.\n')
-        bam_file.close()
         if self.keep_discarded_files:
             out_rv_handle_discarded.flush()
             out_rv_handle_discarded.close()
@@ -331,6 +323,12 @@ class InputReadsFilter():
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: Starting parallel worker process pid='+str(os.getpid())+'.\n')
 
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: parallel worker process pid='+str(os.getpid())+' - starting to parse reads.\n')
+        bam_header = {
+                'HD': {'VN': '1.5', 'SO':'unsorted'},
+                'RG': [{'ID': '0', 'SM' : 'unknown_sample', 'PL' : 'ILLUMINA' }]
+            }
+        bam_file = pysam.AlignmentFile(self.out_rv.rstrip('.bam')+'.{}.bam'.format(identity), "wbu", header=bam_header)
+        
         while self.reader_running.value or not self.input_read_queue.empty():
 
             while not self.input_read_queue.empty():
@@ -398,7 +396,19 @@ class InputReadsFilter():
                             if not sequence_rv or not quality_rv:
                                 discard_reason = 'to_short_after_trimming'
 
-                    out_chunk.append( (discard_reason, header_rv, sequence_rv, quality_rv, barcode, umi_seq, header_rv, orig_sequence_rv, orig_quality_rv) )
+                    if not discard_reason:
+                        bam_file.write(
+                            convert_to_AlignedSegment(
+                                header_rv,
+                                sequence_rv,
+                                quality_rv,
+                                barcode,
+                                umi_seq
+                                )
+                            )
+                        out_chunk.append( (discard_reason, None, None, None) )
+                    else:
+                        out_chunk.append( (discard_reason, header_rv, orig_sequence_rv, orig_quality_rv) )
 
                     count += 1
                     if self.verbose and count % self.stat_line_interwall == 0:
@@ -413,7 +423,7 @@ class InputReadsFilter():
             self.print_stat_line(start_time, last_time, count, last_count, identity)
             last_time = time.time()
             last_count = count
-
+        bam_file.close()
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: parallel worker process pid='+str(os.getpid())+' - completed.\n')
 
     def print_stat_line(self, start_time, last_time, count, last_count, identity, header=False):
