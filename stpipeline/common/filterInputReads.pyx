@@ -57,7 +57,7 @@ class InputReadsFilter():
         self.logger = logging.getLogger("STPipeline")
         if not (os.path.isfile(fw) or is_fifo(fw)) or not (os.path.isfile(rv) or is_fifo(rv)):
             error = "Error doing quality trimming, input file/s not present {}\n{}\n".format(fw,rv)
-            logger.error(error)
+            self.logger.error(error)
             raise RuntimeError(error)
 
         # Check if discarded files must be written out
@@ -174,7 +174,7 @@ class InputReadsFilter():
         if not fileOk(self.out_rv):
             error = "Error doing quality trimming checks of raw reads." \
             "\nOutput file not present {}\n".format(self.out_rv)
-            logger.error(error)
+            self.logger.error(error)
             raise RuntimeError(error)
 
         # Adding stats to QA Stats object
