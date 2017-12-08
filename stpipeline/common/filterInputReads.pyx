@@ -24,7 +24,7 @@ class InputReadsFilter():
         self.aborted = False
         self.stat_line_interwall = stat_line_interwall
         self.chunk_size = chunk_size
-        self.max_chunks_in_queue = min(32767,max_reads_in_memory/self.chunk_size*2)
+        self.max_chunks_in_queue = min(32767,max_reads_in_memory/(self.chunk_size*2))
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: initiation completed.\n')
 
     def input_arguments(
@@ -110,9 +110,9 @@ class InputReadsFilter():
         # create queues and connections
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Creating queues and connections.\n')
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Creating input reads queue.\n')
-        self.input_read_queue = multiprocessing.Queue()
+        self.input_read_queue = multiprocessing.Queue(self.max_chunks_in_queue)
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Creating output reads queue.\n')
-        self.output_read_queue = multiprocessing.Queue()
+        self.output_read_queue = multiprocessing.Queue(self.max_chunks_in_queue)
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Creating counter pipe.\n')
         self.counter_connection_send_end, counter_connection_recv_end = multiprocessing.Pipe()
 
