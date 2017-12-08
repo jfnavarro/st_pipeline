@@ -3,9 +3,10 @@ import sys
 import time
 from stpipeline.common.utils import safeOpenFile, fileOk, is_fifo
 from stpipeline.common.fastq_utils import *
-from stpipeline.common.sam_utils import convert_to_AlignedSegment, merge_bam
+from stpipeline.common.sam_utils import convert_to_AlignedSegment
 from stpipeline.common.adaptors import removeAdaptor
 from stpipeline.common.stats import qa_stats
+import subprocess
 import logging
 from itertools import izip
 from sqlitedict import SqliteDict
@@ -147,6 +148,18 @@ class InputReadsFilter():
         for process in self.worker_pool: process.join()
         self.workers_running.value = False
 
+        # merge bam files
+        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - merging bam files produced by workers.\n')
+        worker_bams = [ self.out_rv.rstrip('.bam')+'.WORKER_{}.bam'.format(process_id) for process_id in worker_process_ids ]
+        command = 'samtools merge -@ {} {} {}'.format(
+            multiprocessing.cpu_count()-2,
+            self.out_rv,
+            ' '.join(worker_bams)
+            )
+        subprocess.check_call(command, shell=True)
+        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - removing bam files produced by workers.\n')
+        for bam in worker_bams: os.remove(bam)
+
         # wait for writer to complete
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - waiting for writer.\n')
         self.writer.join()
@@ -170,13 +183,6 @@ class InputReadsFilter():
         self.logger.info("Trimming stats dropped pairs due to high GC content: {}".format(read_pair_counters['dropped_GC']))
         self.logger.info("Trimming stats dropped pairs due to presence of artifacts: {}".format(read_pair_counters['dropped_adaptor']))
         self.logger.info("Trimming stats dropped pairs due to length after trimming: {}".format(read_pair_counters['to_short_after_trimming']))
-
-        # merge bam files
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - merging bam files produced by workers.\n')
-        worker_bams = [ self.out_rv.rstrip('.bam')+'.WORKER_{}.bam'.format(process_id) for process_id in worker_process_ids ]
-        merge_bam(self.out_rv, worker_bams, ubam=True )
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - removing bam files produced by workers.\n')
-        for bam in worker_bams: os.remove(bam)
 
         # Check that output file was written ok
         if not fileOk(self.out_rv):
