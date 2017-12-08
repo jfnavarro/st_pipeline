@@ -273,30 +273,26 @@ class InputReadsFilter():
             while not self.output_read_queue.empty():
 
                 chunk = self.output_read_queue.get()
-                for read_pair in chunk:
+                for (discard_reson, header_rv, sequence_rv, quality_rv, barcode, umi_seq, header_rv, orig_sequence_rv, orig_quality_rv) in chunk:
 
                     read_pair_counters['total_reads'] += 1
-                    if read_pair['discard_reson'] == 'dropped_umi_template': read_pair_counters['dropped_umi_template'] += 1
-                    if read_pair['discard_reson'] == 'dropped_umi':          read_pair_counters['dropped_umi'] += 1
-                    if read_pair['discard_reson'] == 'dropped_AT':           read_pair_counters['dropped_AT'] += 1
-                    if read_pair['discard_reson'] == 'dropped_GC':           read_pair_counters['dropped_GC'] += 1
-                    if read_pair['discard_reson'] == 'dropped_adaptor':      read_pair_counters['dropped_adaptor'] += 1
-                    if read_pair['discard_reson'] == 'to_short_after_trimming': read_pair_counters['to_short_after_trimming'] += 1
+                    if discard_reson: read_pair_counters[ discard_reson ] += 1
 
                     # Write reverse read to output
-                    if not read_pair['discard_reson']:
-                        read_pair['aligned_segment'] = convert_to_AlignedSegment(
-                            read_pair['header_rv'],
-                            read_pair['sequence_rv'],
-                            read_pair['quality_rv'],
-                            read_pair['barcode'],
-                            read_pair['umi_seq']
+                    if not discard_reson:
+                        bam_file.write(
+                            convert_to_AlignedSegment(
+                                header_rv,
+                                sequence_rv,
+                                quality_rv,
+                                barcode,
+                                umi_seq
+                                )
                             )
-                        bam_file.write(read_pair['aligned_segment'])
                     else:
                         read_pair_counters['dropped_rv'] += 1
                         if self.keep_discarded_files:
-                            out_rv_writer_discarded.send((read_pair['header_rv'], read_pair['orig_sequence_rv'], read_pair['orig_quality_rv']))
+                            out_rv_writer_discarded.send((header_rv, orig_sequence_rv, orig_quality_rv))
 
                     count += 1
                     if self.verbose and count % self.stat_line_interwall == 0:
@@ -412,7 +408,8 @@ class InputReadsFilter():
                                 read_pair['discard_reson'] = 'to_short_after_trimming'
 
                     #self.output_read_queue.put( read_pair )
-                    out_chunk.append( read_pair )
+                    #out_chunk.append( read_pair )
+                    out_chunk.append( (read_pair['discard_reson'], read_pair['header_rv'], read_pair['sequence_rv'], read_pair['quality_rv'], read_pair['barcode'], read_pair['umi_seq'], read_pair['header_rv'], read_pair['orig_sequence_rv'], read_pair['orig_quality_rv']) )
 
                     count += 1
                     if self.verbose and count % self.stat_line_interwall == 0:
