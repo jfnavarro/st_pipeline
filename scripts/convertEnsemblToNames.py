@@ -16,6 +16,7 @@ import sys
 import pandas as pd
 import os
 from stpipeline.common.gff_reader import *
+from collections import Counter
 
 def main(st_data_file, annotation, output_file):
 
@@ -44,6 +45,12 @@ def main(st_data_file, annotation, output_file):
 
     # Iterates the genes IDs to get gene names
     st_data = pd.read_table(st_data_file, sep="\t", header=0, index_col=0)
+
+    gene_ids_counter = Counter(st_data.columns)
+    for gene_id, count in gene_ids_counter.most_common():
+        if count == 1: break
+        sys.stdout.write("Warning, gene_id {} was found {} times in the input matrix.\n".format(gene_id, count))
+
     adjustedList = list()
     for gene_id in st_data.columns:
         try:
