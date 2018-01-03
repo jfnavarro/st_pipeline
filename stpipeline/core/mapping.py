@@ -269,7 +269,8 @@ def barcodeDemultiplexing(reads,
             "--homopolymer-filter", 0,
             "--subprocesses", cores,
             "--metric", taggd_metric,
-            "--overhang", over_hang]
+            "--overhang", over_hang] #,
+            #'--use-samtools-merge'] # Could be added to merge using samtools instead of pysam WIP on taggd
             
     if taggd_multiple_hits_keep_one:
         args.append("--multiple-hits-keep-one")  
