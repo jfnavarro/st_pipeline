@@ -17,10 +17,46 @@ import pysam
 
 class InputReadsFilter():
     """
-    DESC
+    This class handles the input read filtering in parrallel using several python subrpocesses.
+      - It performs a sanity check (forward and reverse reads same length and order)
+      - It performs a BWA-based quality trimming discarding very short reads
+      - It removes adaptors from the reads (optional)
+      - It checks for AT and GC content (optional)
+      - It performs a sanity check on the UMI (optional)
+    Reads that do not pass the filters are discarded (both R1 and R2)
+    Reads that pass the filter are written as BAM (R2)
+    :param rv: the bam file with the reverse reads
+    :param out_fw: the name of the output file for the forward reads
+    :param out_rv: the name of the output file for the reverse reads
+    :param out_rv_discarded: the name of the output file for discarded reverse reads
+    :param barcode_length: length of the barcode sequence (integer)
+    :param start_position: the start position of the barcode
+    :param filter_AT_content: % of A and T bases a read2 must have to be discarded
+    :param filter_GC_content: % of G and C bases a read2 must have to be discarded
+    :param umi_start: the start position of the UMI
+    :param umi_end: the end position of the UMI
+    :param min_qual: the min quality value to use in the trimming
+    :param min_length: the min valid length for a read after trimming
+    :param polyA_min_distance: if >5 remove PolyA adaptors from the reads
+    :param polyT_min_distance: if >5 remove PolyT adaptors from the reads
+    :param polyG_min_distance: if >5 remove PolyG adaptors from the reads
+    :param polyC_min_distance: if >5 remove PolyC adaptors from the reads
+    :param polyN_min_distance: if >5 remove PolyN adaptors from the reads
+    :param qual64: true of qualities are in phred64 format
+    :param umi_filter: performs a UMI quality template filter when True
+    :param umi_filter_template: the template to use for the UMI filter
+    :param umi_quality_bases: the number of low quality bases allowed in an UMI
+    :param adaptor_missmatches: number of miss-matches allowed when removing adaptors
     """
 
-    def __init__(self, verbose=True, max_reads_in_memory=10000000, stat_line_interwall=100000, chunk_size=100000):
+    def __init__(self, verbose=False, max_reads_in_memory=10000000, stat_line_interwall=100000, chunk_size=100000):
+        """
+        Initiates the instance and setting default values
+        :param verbose: set to true to write more info to stderr
+        :param max_reads_in_memory: Maximum number of reads to keep in memory at once
+        :param stat_line_interwall: how often info line s should be written of verbose is true
+        :param chunk_size: how many reads should be sent to workers in one chunk
+        """
         self.verbose = verbose
         self.aborted = False
         self.stat_line_interwall = stat_line_interwall
@@ -53,6 +89,32 @@ class InputReadsFilter():
                     umi_quality_bases,
                     adaptor_missmatches,
                     threads):
+        """
+        Sets the input arguments
+        :param rv: the bam file with the reverse reads
+        :param out_fw: the name of the output file for the forward reads
+        :param out_rv: the name of the output file for the reverse reads
+        :param out_rv_discarded: the name of the output file for discarded reverse reads
+        :param barcode_length: length of the barcode sequence (integer)
+        :param start_position: the start position of the barcode
+        :param filter_AT_content: % of A and T bases a read2 must have to be discarded
+        :param filter_GC_content: % of G and C bases a read2 must have to be discarded
+        :param umi_start: the start position of the UMI
+        :param umi_end: the end position of the UMI
+        :param min_qual: the min quality value to use in the trimming
+        :param min_length: the min valid length for a read after trimming
+        :param polyA_min_distance: if >5 remove PolyA adaptors from the reads
+        :param polyT_min_distance: if >5 remove PolyT adaptors from the reads
+        :param polyG_min_distance: if >5 remove PolyG adaptors from the reads
+        :param polyC_min_distance: if >5 remove PolyC adaptors from the reads
+        :param polyN_min_distance: if >5 remove PolyN adaptors from the reads
+        :param qual64: true of qualities are in phred64 format
+        :param umi_filter: performs a UMI quality template filter when True
+        :param umi_filter_template: the template to use for the UMI filter
+        :param umi_quality_bases: the number of low quality bases allowed in an UMI
+        :param adaptor_missmatches: number of miss-matches allowed when removing adaptors
+        :param threads: number of subprocesses tp start
+        """
 
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: Getting input arguments.\n')
 
@@ -105,7 +167,7 @@ class InputReadsFilter():
 
     def run(self, ):
         """
-        Function that starts the subprocesses reading the file(s)
+        Function that starts and controlls the subprocesses and finally merges the outputs
         """
 
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process pid='+str(os.getpid())+'.\n')
@@ -130,7 +192,8 @@ class InputReadsFilter():
 
         # start worker pool
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Starting pool.\n')
-        self.worker_pool = [multiprocessing.Process(target=self.parallel_worker_function) for i in range(self.threads-1)]
+        self.worker_pool = [ multiprocessing.Process(target=self.parallel_worker_function)
+                            for i in range(self.threads-1) ]
         for process in self.worker_pool: process.start()
         worker_process_ids = [process.pid for process in self.worker_pool]
 
@@ -151,15 +214,18 @@ class InputReadsFilter():
         self.workers_running.value = False
 
         # merge bam files
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - merging bam files produced by workers.\n')
-        worker_bams = [ self.out_rv.rstrip('.bam')+'.WORKER_{}.bam'.format(process_id) for process_id in worker_process_ids ]
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - merging bam files produced by workers.\n')
+        worker_bams = [ self.out_rv.rstrip('.bam')+'.WORKER_{}.bam'.format(process_id)
+                        for process_id in worker_process_ids ]
         command = 'samtools merge -@ {} {} {}'.format(
             self.threads,
             self.out_rv,
             ' '.join(worker_bams)
             )
         subprocess.check_call(command, shell=True)
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - removing bam files produced by workers.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - removing bam files produced by workers.\n')
         for bam in worker_bams: os.remove(bam)
 
         # wait for writer to complete
@@ -172,19 +238,38 @@ class InputReadsFilter():
         counter_connection_recv_end.close()
         self.counter_connection_send_end.close()
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - updating logs and checking for prescence of files.\n')
+        if self.verbose:
+            sys.stderr.write(
+                'InputReadsFilter::INFO:: main process - updating logs and checking for prescence of files.\n'
+                )
         # Write info to the log
         self.logger.info("Trimming stats total reads (pair): {}".format(read_pair_counters['total_reads']))
         self.logger.info("Trimming stats {} reads have been dropped!".format(read_pair_counters['dropped_rv']))
-        perc2 = '{percent:.2%}'.format(percent= float(read_pair_counters['dropped_rv']) / float(read_pair_counters['total_reads']) )
+        perc2 = '{percent:.2%}'.format(
+                            percent=float(read_pair_counters['dropped_rv'])/float(read_pair_counters['total_reads'])
+                            )
         self.logger.info("Trimming stats you just lost about {} of your data".format(perc2))
-        self.logger.info("Trimming stats reads remaining: {}".format(read_pair_counters['total_reads'] - read_pair_counters['dropped_rv']))
-        self.logger.info("Trimming stats dropped pairs due to incorrect UMI: {}".format(read_pair_counters['dropped_umi_template']))
-        self.logger.info("Trimming stats dropped pairs due to low quality UMI: {}".format(read_pair_counters['dropped_umi']))
-        self.logger.info("Trimming stats dropped pairs due to high AT content: {}".format(read_pair_counters['dropped_AT']))
-        self.logger.info("Trimming stats dropped pairs due to high GC content: {}".format(read_pair_counters['dropped_GC']))
-        self.logger.info("Trimming stats dropped pairs due to presence of artifacts: {}".format(read_pair_counters['dropped_adaptor']))
-        self.logger.info("Trimming stats dropped pairs due to length after trimming: {}".format(read_pair_counters['to_short_after_trimming']))
+        self.logger.info("Trimming stats reads remaining: {}".format(
+                            read_pair_counters['total_reads'] - read_pair_counters['dropped_rv'])
+                         )
+        self.logger.info("Trimming stats dropped pairs due to incorrect UMI: {}".format(
+                            read_pair_counters['dropped_umi_template'])
+                         )
+        self.logger.info("Trimming stats dropped pairs due to low quality UMI: {}".format(
+                            read_pair_counters['dropped_umi'])
+                         )
+        self.logger.info("Trimming stats dropped pairs due to high AT content: {}".format(
+                            read_pair_counters['dropped_AT'])
+                         )
+        self.logger.info("Trimming stats dropped pairs due to high GC content: {}".format(
+            read_pair_counters['dropped_GC'])
+                         )
+        self.logger.info("Trimming stats dropped pairs due to presence of artifacts: {}".format(
+            read_pair_counters['dropped_adaptor'])
+                         )
+        self.logger.info("Trimming stats dropped pairs due to length after trimming: {}".format(
+            read_pair_counters['to_short_after_trimming'])
+                         )
 
         # Check that output file was written ok
         if not fileOk(self.out_rv):
@@ -201,6 +286,10 @@ class InputReadsFilter():
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - completed.\n')
 
     def input_files_reader(self, ):
+        """
+        Worker function for the input reader subprocess,
+        reading input files and sending data to workers thorugh a multiprocessing queue
+        """
 
         cdef double start_time = time.time()
         cdef int count = 0
@@ -208,7 +297,8 @@ class InputReadsFilter():
         cdef int last_count = count
         cdef str identity = 'READER'
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: Starting input files reader pid='+str(os.getpid())+'.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: Starting input files reader pid={}.\n'.format(os.getpid()))
 
         # Open fastq files with the fastq parser
         fw_file = safeOpenFile(self.fw, "rU")
@@ -250,6 +340,11 @@ class InputReadsFilter():
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: input files reader - completed.\n')
 
     def output_files_writer(self, ):
+        """
+        Worker function for writing outputfiles and incrementing counters
+        Note that the bamfiles a written by the workers and merged by the class.run function
+        Only discarded files are written here
+        """
 
         cdef double start_time = time.time()
         cdef int count = 0
@@ -257,7 +352,8 @@ class InputReadsFilter():
         cdef int last_count = count
         cdef str identity = 'WRITER'
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: Starting output files writer pid='+str(os.getpid())+'.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: Starting output files writer pid={}.\n'.format(os.getpid()))
 
         # Create output file writers
         if self.keep_discarded_files:
@@ -278,7 +374,8 @@ class InputReadsFilter():
         cdef list chunk
         cdef dict read_pair
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: output files writer - starting to parse reads from queue.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: output files writer - starting to parse reads from queue.\n')
         while self.workers_running.value or not self.output_read_queue.empty():
 
             while not self.output_read_queue.empty():
@@ -309,7 +406,8 @@ class InputReadsFilter():
 
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: output files writer - all reads parsed.\n')
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: output files writer - sending counter to parent process.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: output files writer - sending counter to parent process.\n')
         self.counter_connection_send_end.send(read_pair_counters)
 
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: output files writer - closing outfiles.\n')
@@ -321,6 +419,11 @@ class InputReadsFilter():
         if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: output files writer - completed.\n')
 
     def parallel_worker_function(self, ):
+        """
+        Worker function for the parallel worker processes
+        Here read trimming is performed for the chunks from the input_files_reader
+        and trimmed data is written to the output bam files
+        """
 
         start_time = time.time()
         count = 0
@@ -328,15 +431,19 @@ class InputReadsFilter():
         last_count = count
         identity = 'WORKER_'+str(os.getpid())
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: Starting parallel worker process pid='+str(os.getpid())+'.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: Starting parallel worker process pid={}.\n'.format(os.getpid()))
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: parallel worker process pid='+str(os.getpid())+' - starting to parse reads.\n')
+        if self.verbose:
+            sys.stderr.write(
+            'InputReadsFilter::INFO:: parallel worker process pid={} - starting to parse reads.\n'.format(os.getpid())
+            )
         bam_header = {
                 'HD': {'VN': '1.5', 'SO':'unsorted'},
                 'RG': [{'ID': '0', 'SM' : 'unknown_sample', 'PL' : 'ILLUMINA' }]
             }
         bam_file = pysam.AlignmentFile(self.out_rv.rstrip('.bam')+'.{}.bam'.format(identity), "wbu", header=bam_header)
-        
+
         while self.reader_running.value or not self.input_read_queue.empty():
 
             while not self.input_read_queue.empty():
@@ -389,18 +496,33 @@ class InputReadsFilter():
 
                     if not discard_reason:
 
-                        if self.do_adaptorA and len(sequence_rv) > self.min_length: sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, self.adaptorA, self.adaptor_missmatches)
-                        if self.do_adaptorT and len(sequence_rv) > self.min_length: sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, self.adaptorT, self.adaptor_missmatches)
-                        if self.do_adaptorG and len(sequence_rv) > self.min_length: sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, self.adaptorG, self.adaptor_missmatches)
-                        if self.do_adaptorC and len(sequence_rv) > self.min_length: sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, self.adaptorC, self.adaptor_missmatches)
-                        if self.do_adaptorN and len(sequence_rv) > self.min_length: sequence_rv, quality_rv = removeAdaptor(sequence_rv, quality_rv, self.adaptorN, self.adaptor_missmatches)
+                        if self.do_adaptorA and len(sequence_rv) > self.min_length:
+                            sequence_rv, quality_rv = removeAdaptor(
+                                sequence_rv, quality_rv, self.adaptorA, self.adaptor_missmatches)
+                        if self.do_adaptorT and len(sequence_rv) > self.min_length:
+                            sequence_rv, quality_rv = removeAdaptor(
+                                sequence_rv, quality_rv, self.adaptorT, self.adaptor_missmatches)
+                        if self.do_adaptorG and len(sequence_rv) > self.min_length:
+                            sequence_rv, quality_rv = removeAdaptor(
+                                sequence_rv, quality_rv, self.adaptorG, self.adaptor_missmatches)
+                        if self.do_adaptorC and len(sequence_rv) > self.min_length:
+                            sequence_rv, quality_rv = removeAdaptor(
+                                sequence_rv, quality_rv, self.adaptorC, self.adaptor_missmatches)
+                        if self.do_adaptorN and len(sequence_rv) > self.min_length:
+                            sequence_rv, quality_rv = removeAdaptor(
+                                sequence_rv, quality_rv, self.adaptorN, self.adaptor_missmatches)
 
                         # Check if the read is smaller than the minimum after removing artifacts
                         if len(sequence_rv) < self.min_length:
                             discard_reason = 'dropped_adaptor'
                         else:
                             # Trim reverse read (will return None if length of trimmed sequence is less than min_length)
-                            sequence_rv, quality_rv = trim_quality(sequence_rv, quality_rv, self.min_qual, self.min_length, self.phred)
+                            sequence_rv, quality_rv = trim_quality(
+                                                        sequence_rv,
+                                                        quality_rv,
+                                                        self.min_qual,
+                                                        self.min_length,
+                                                        self.phred)
                             if not sequence_rv or not quality_rv:
                                 discard_reason = 'to_short_after_trimming'
 
@@ -425,18 +547,23 @@ class InputReadsFilter():
                         last_count = count
 
                 self.output_read_queue.put( out_chunk )
-            #if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: parallel worker process pid='+str(os.getpid())+' - queue empty.\n')
+            # if self.verbose:
+            #    sys.stderr.write(
+            #       'InputReadsFilter::INFO:: parallel worker process pid='+str(os.getpid())+' - queue empty.\n')
 
         if self.verbose:
             self.print_stat_line(start_time, last_time, count, last_count, identity)
             last_time = time.time()
             last_count = count
         bam_file.close()
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: parallel worker process pid='+str(os.getpid())+' - completed.\n')
+        if self.verbose:
+            sys.stderr.write(
+                'InputReadsFilter::INFO:: parallel worker process pid={} - completed.\n'.format(os.getpid())
+                )
 
     def print_stat_line(self, start_time, last_time, count, last_count, identity, header=False):
         """
-        Function that prints a current status row to stderr
+        Function that prints a "current status" row to stderr
         """
 
         import sys
