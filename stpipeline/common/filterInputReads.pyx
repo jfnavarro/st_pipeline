@@ -1,19 +1,20 @@
-import multiprocessing
 import sys
 import time
+import os
+import re
+import Queue
+import pysam
+import ctypes
+import multiprocessing
+import subprocess
+import logging
 from stpipeline.common.utils import safeOpenFile, fileOk, is_fifo
 from stpipeline.common.fastq_utils import *
 from stpipeline.common.sam_utils import convert_to_AlignedSegment
 from stpipeline.common.adaptors import removeAdaptor
 from stpipeline.common.stats import qa_stats
-import subprocess
-import logging
 from itertools import izip
 from sqlitedict import SqliteDict
-import os
-import re
-import Queue
-import pysam
 
 class InputReadsFilter():
     """
@@ -62,7 +63,8 @@ class InputReadsFilter():
         self.stat_line_interwall = stat_line_interwall
         self.chunk_size = chunk_size
         self.max_chunks_in_queue = min(32767,max_reads_in_memory/(self.chunk_size*2))
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: initiation completed.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: initiation completed.\n')
 
     def input_arguments(
                     self,
@@ -116,7 +118,8 @@ class InputReadsFilter():
         :param threads: number of subprocesses tp start
         """
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: Getting input arguments.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: Getting input arguments.\n')
 
         self.logger = logging.getLogger("STPipeline")
         if not (os.path.isfile(fw) or is_fifo(fw)) or not (os.path.isfile(rv) or is_fifo(rv)):
@@ -170,46 +173,57 @@ class InputReadsFilter():
         Function that starts and controlls the subprocesses and finally merges the outputs
         """
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process pid='+str(os.getpid())+'.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process pid='+str(os.getpid())+'.\n')
 
         # create queues and connections
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Creating queues and connections.\n')
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Creating input reads queue.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - Creating queues and connections.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - Creating input reads queue.\n')
         self.input_read_queue = multiprocessing.Queue(self.max_chunks_in_queue)
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Creating output reads queue.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - Creating output reads queue.\n')
         self.output_read_queue = multiprocessing.Queue(self.max_chunks_in_queue)
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Creating counter pipe.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - Creating counter pipe.\n')
         self.counter_connection_send_end, counter_connection_recv_end = multiprocessing.Pipe()
 
-        import ctypes
         self.reader_running = multiprocessing.Value(ctypes.c_bool, True)
         self.workers_running= multiprocessing.Value(ctypes.c_bool, True)
 
         # start reader subprocess
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Starting reader.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - Starting reader.\n')
         self.reader = multiprocessing.Process(target=self.input_files_reader)
         self.reader.start()
 
         # start worker pool
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Starting pool.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - Starting pool.\n')
         self.worker_pool = [ multiprocessing.Process(target=self.parallel_worker_function)
                             for i in range(self.threads-1) ]
         for process in self.worker_pool: process.start()
         worker_process_ids = [process.pid for process in self.worker_pool]
 
         # start writer subprocess
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Creating writer.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - Creating writer.\n')
         self.writer = multiprocessing.Process(target=self.output_files_writer)
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - Stariting writer.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - Stariting writer.\n')
         self.writer.start()
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - writer started.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - writer started.\n')
 
         # wait for reader to complete
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - waiting for reader.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - waiting for reader.\n')
         self.reader.join()
 
         # wait for worker pool to complete
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - waiting for pool.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - waiting for pool.\n')
         for process in self.worker_pool: process.join()
         self.workers_running.value = False
 
@@ -229,11 +243,13 @@ class InputReadsFilter():
         for bam in worker_bams: os.remove(bam)
 
         # wait for writer to complete
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - waiting for writer.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - waiting for writer.\n')
         self.writer.join()
 
         # get the counters from the writer process
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - fetching counter.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - fetching counter.\n')
         read_pair_counters = counter_connection_recv_end.recv()
         counter_connection_recv_end.close()
         self.counter_connection_send_end.close()
@@ -283,7 +299,8 @@ class InputReadsFilter():
         qa_stats.input_reads_reverse = read_pair_counters['total_reads']
         qa_stats.reads_after_trimming_forward = (read_pair_counters['total_reads'] - read_pair_counters['dropped_rv'])
         qa_stats.reads_after_trimming_reverse = (read_pair_counters['total_reads'] - read_pair_counters['dropped_rv'])
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: main process - completed.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: main process - completed.\n')
 
     def input_files_reader(self, ):
         """
@@ -304,8 +321,10 @@ class InputReadsFilter():
         fw_file = safeOpenFile(self.fw, "rU")
         rv_file = safeOpenFile(self.rv, "rU")
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: input files reader - starting to parse reads.\n')
-        if self.verbose: self.print_stat_line(start_time, last_time, count, last_count, identity, header=True)
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: input files reader - starting to parse reads.\n')
+        if self.verbose:
+            self.print_stat_line(start_time, last_time, count, last_count, identity, header=True)
         cdef list chunk = []
         cdef tuple read_one
         cdef tuple read_two
@@ -327,17 +346,21 @@ class InputReadsFilter():
             last_time = time.time()
             last_count = count
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: input files reader - all reads parsed.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: input files reader - all reads parsed.\n')
         fw_file.close()
         rv_file.close()
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: input files reader - closing and joining queue.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: input files reader - closing and joining queue.\n')
         self.input_read_queue.close()
         self.input_read_queue.join_thread()
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: input files reader - shutting down.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: input files reader - shutting down.\n')
         self.reader_running.value = False
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: input files reader - completed.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: input files reader - completed.\n')
 
     def output_files_writer(self, ):
         """
@@ -384,7 +407,8 @@ class InputReadsFilter():
                 for (discard_reason, header_rv, orig_sequence_rv, orig_quality_rv) in chunk:
 
                     read_pair_counters['total_reads'] += 1
-                    if discard_reason: read_pair_counters[ discard_reason ] += 1
+                    if discard_reason:
+                        read_pair_counters[ discard_reason ] += 1
 
                     # Write reverse read to output
                     if discard_reason:
@@ -404,19 +428,22 @@ class InputReadsFilter():
             last_time = time.time()
             last_count = count
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: output files writer - all reads parsed.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: output files writer - all reads parsed.\n')
 
         if self.verbose:
             sys.stderr.write('InputReadsFilter::INFO:: output files writer - sending counter to parent process.\n')
         self.counter_connection_send_end.send(read_pair_counters)
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: output files writer - closing outfiles.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: output files writer - closing outfiles.\n')
         if self.keep_discarded_files:
             out_rv_handle_discarded.flush()
             out_rv_handle_discarded.close()
             out_rv_writer_discarded.close()
 
-        if self.verbose: sys.stderr.write('InputReadsFilter::INFO:: output files writer - completed.\n')
+        if self.verbose:
+            sys.stderr.write('InputReadsFilter::INFO:: output files writer - completed.\n')
 
     def parallel_worker_function(self, ):
         """
@@ -438,6 +465,7 @@ class InputReadsFilter():
             sys.stderr.write(
             'InputReadsFilter::INFO:: parallel worker process pid={} - starting to parse reads.\n'.format(os.getpid())
             )
+        
         bam_header = {
                 'HD': {'VN': '1.5', 'SO':'unsorted'},
                 'RG': [{'ID': '0', 'SM' : 'unknown_sample', 'PL' : 'ILLUMINA' }]
@@ -566,10 +594,8 @@ class InputReadsFilter():
         Function that prints a "current status" row to stderr
         """
 
-        import sys
-        import time
-
-        if header: sys.stderr.write('PROCESS\tREADSPROCESSED\tTIME (s)\tAV_SPEED (reads/s)\tCU_SPEED (reads/s)\n')
+        if header:
+            sys.stderr.write('PROCESS\tREADSPROCESSED\tTIME (s)\tAV_SPEED (reads/s)\tCU_SPEED (reads/s)\n')
 
         sys.stderr.write(
                 str(identity)+'\t'+\
