@@ -90,7 +90,8 @@ class InputReadsFilter():
                     umi_filter_template,
                     umi_quality_bases,
                     adaptor_missmatches,
-                    threads):
+                    threads,
+                    overhang):
         """
         Sets the input arguments
         :param rv: the bam file with the reverse reads
@@ -115,7 +116,8 @@ class InputReadsFilter():
         :param umi_filter_template: the template to use for the UMI filter
         :param umi_quality_bases: the number of low quality bases allowed in an UMI
         :param adaptor_missmatches: number of miss-matches allowed when removing adaptors
-        :param threads: number of subprocesses tp start
+        :param threads: number of subprocesses to start
+        :param overhang: extra bases on the edges of the barcode to include in bam tag
         """
 
         #if self.verbose:
@@ -162,6 +164,7 @@ class InputReadsFilter():
         self.barcode_length = barcode_length
         self.start_position = start_position
         self.threads = threads
+        self.overhang = overhang
 
         self.fw = fw
         self.rv = rv
@@ -496,8 +499,7 @@ class InputReadsFilter():
                                        "names {} and {}".format(header_fw,header_rv))
 
                     # get the barcode sequence
-                    # should add overhang here as well ...
-                    barcode = sequence_fw[self.start_position:(self.start_position+self.barcode_length)]
+                    barcode = sequence_fw[max(0,self.start_position-self.overhang):(self.start_position+self.barcode_length+self.overhang)]
 
                     # If we want to check for UMI quality and the UMI is incorrect
                     # then we discard the reads

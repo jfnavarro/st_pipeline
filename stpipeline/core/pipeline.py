@@ -675,7 +675,8 @@ class Pipeline():
                              self.umi_filter_template,
                              self.umi_quality_bases,
                              self.adaptor_missmatches,
-                             self.threads)
+                             self.threads,
+                             self.overhang)
             inputfilter.run()
         except Exception:
             raise
