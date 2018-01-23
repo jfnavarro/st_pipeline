@@ -14,6 +14,7 @@ from stpipeline.common.dataset import createDataset
 from stpipeline.common.saturation import computeSaturation
 from stpipeline.version import version_number
 from taggd.io.barcode_utils import read_barcode_file
+from stpipeline.common.filterInputReads import InputReadsFilter
 import logging
 import argparse
 import sys
@@ -650,7 +651,6 @@ class Pipeline():
         # Start the filterInputReads function
         self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
         try:
-            from stpipeline.common.filterInputReads import InputReadsFilter
             inputfilter = InputReadsFilter()
             inputfilter.input_arguments(
                              self.fastq_fw,
