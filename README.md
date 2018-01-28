@@ -48,6 +48,9 @@ The ST pipeline will also output a log file with useful information.
 
 **Installation**
 
+NOTE that the current un-released master branch (1.6.0) requires the latest un-released
+STAR aligner that you can build and install from its Github. 
+
 We recommend you install a virtual environment like Pyenv or Anaconda before you install the pipeline. 
 The ST Pipeline works with python 2.7.
 
