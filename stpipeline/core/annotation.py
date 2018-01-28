@@ -8,6 +8,7 @@ import os
 import pysam
 from stpipeline.common.utils import fileOk
 from stpipeline.common.stats import qa_stats
+from stpipeline.common.sam_utils import merge_bam
 import itertools
 import HTSeq
 import multiprocessing
@@ -380,27 +381,3 @@ def split_bam(input_bamfile_name, temp_dir, threads):
             _tmp_read_counter = 0
     # Return a dictionary PART_NUMBER -> FILENAME
     return output_file_names
-
-def merge_bam(merged_file_name, files_to_merge):
-    """
-    Function for merging partial bam files after annotation.
-    also counts the number of reads for different types of annotations (the XF tags of the reads)
-    and returns these counts as a dict: anotation=>count
-    :param merged_file_name: name of the merged output bamfile
-    :param files_to_merge: list with names of the partial bamfiles to merge
-    :returns: the number of annotated records
-    """
-    annotations = {}
-    with pysam.AlignmentFile(files_to_merge[0], mode='rb') as input_bamfile:
-        merged_file = pysam.AlignmentFile(merged_file_name, 
-                                          mode="wb", template=input_bamfile)
-    # Simply merges the BAM files and creates a counter of annotated records
-    for file_name in files_to_merge:
-        input_bamfile = pysam.AlignmentFile( file_name, mode='rb' )
-        for record in input_bamfile.fetch(until_eof=True):
-            merged_file.write(record)
-            try:
-                annotations[record.get_tag("XF")] += 1
-            except KeyError:
-                annotations[record.get_tag("XF")] = 1
-    return sum(annotations.values())

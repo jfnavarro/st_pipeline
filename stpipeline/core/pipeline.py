@@ -14,6 +14,7 @@ from stpipeline.common.dataset import createDataset
 from stpipeline.common.saturation import computeSaturation
 from stpipeline.version import version_number
 from taggd.io.barcode_utils import read_barcode_file
+from stpipeline.common.filterInputReads import InputReadsFilter
 import logging
 import argparse
 import sys
@@ -650,7 +651,9 @@ class Pipeline():
         # Start the filterInputReads function
         self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
         try:
-            filterInputReads(self.fastq_fw,
+            inputfilter = InputReadsFilter()
+            inputfilter.input_arguments(
+                             self.fastq_fw,
                              self.fastq_rv,
                              FILENAMES["quality_trimmed_R2"],
                              FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
@@ -671,7 +674,10 @@ class Pipeline():
                              self.umi_filter,
                              self.umi_filter_template,
                              self.umi_quality_bases,
-                             self.adaptor_missmatches)
+                             self.adaptor_missmatches,
+                             self.threads,
+                             self.overhang)
+            inputfilter.run()
         except Exception:
             raise
         
