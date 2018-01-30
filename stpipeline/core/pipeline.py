@@ -219,7 +219,7 @@ class Pipeline():
             self.umi_filter_template = temp_reg_exp
                          
         # Add checks for trimming parameters, demultiplex parameters and UMI parameters
-        if self.allowed_missed >= self.allowed_kmer:
+        if self.allowed_missed > self.allowed_kmer:
             error = "Error starting the pipeline.\n" \
             "Taggd allowed mismatches is bigger or equal than the Taggd k-mer size"
             self.logger.error(error)
@@ -239,7 +239,7 @@ class Pipeline():
             self.logger.error(error)
             raise RuntimeError(error)  
         
-        if self.umi_allowed_mismatches >= (self.umi_end_position - self.umi_start_position):
+        if self.umi_allowed_mismatches > (self.umi_end_position - self.umi_start_position):
             error = "Error starting the pipeline.\n" \
             "The allowed UMI mismatches is bigger than the UMI size"
             self.logger.error(error)
@@ -255,8 +255,8 @@ class Pipeline():
             error = "Error starting the pipeline.\n" \
             "Required software not found:\t".join(unavailable_scripts)
             self.logger.error(error)
-            raise RuntimeError(error) 
-       
+            raise RuntimeError(error)
+            
     def createParameters(self, parser):
         """
         Adds the pipeline's parameters to a given

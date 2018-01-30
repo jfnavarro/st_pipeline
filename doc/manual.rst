@@ -84,6 +84,8 @@ these arrays is fully randomised.
                           [--demultiplexing-multiple-hits-keep-one]
                           [--demultiplexing-trim-sequences [INT]]
                           [--homopolymer-mismatches [INT]]]
+                          [--star-genome-loading [STRING]]
+                          [--star-sort-mem-limit STAR_SORT_MEM_LIMIT
                           [--version]
                           fastq_file_fw fastq_file_rv
 
