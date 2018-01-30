@@ -1,16 +1,14 @@
 # Spatial Transcriptomics Pipeline
 
-[![Build Status](https://travis-ci.org/jfnavarro/st_pipeline.svg?branch=master)](https://travis-ci.org/jfnavarro/st_pipeline)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Coverage Status](https://coveralls.io/repos/github/jfnavarro/st_pipeline/badge.svg?branch=master)](https://coveralls.io/github/jfnavarro/st_pipeline?branch=master)
 [![Python27](https://img.shields.io/badge/python-2.7-blue.svg)](https://badge.fury.io/py/stpipeline)
 [![PyPI version](https://badge.fury.io/py/stpipeline.svg)](https://badge.fury.io/py/stpipeline)
-[![Code Climate](https://codeclimate.com/github/jfnavarro/st_pipeline/badges/gpa.svg)](https://codeclimate.com/github/jfnavarro/st_pipeline)
 
 The ST Pipeline contains the tools and scripts needed to process and analyze the raw files generated with the Spatial Transcriptomics technology in FASTQ format to generate datasets for down-stream analysis. 
 The ST pipeline can also be used to process single cell data as long as a file with barcodes identifying each cell is provided (same template as the files in the folder "ids").
 
 The ST Pipeline has been optimized for speed, robustness and it is very easy to use with many parameters to adjust all the settings.
+The ST Pipeline is fully paralell and has constant memory use. 
 
 The following files/parameters are required :
 - FASTQ files (Read 1 containing the spatial information and the UMI and read 2 containing the genomic sequence) 
@@ -54,6 +52,12 @@ STAR aligner that you can build and install from its Github.
 We recommend you install a virtual environment like Pyenv or Anaconda before you install the pipeline. 
 The ST Pipeline works with python 2.7.
 
+You can install the ST Pipeline using PyPy:
+
+    pip install stpipeline
+ 
+Alternatively, you can build the ST Pipeline yourself:
+
 First clone the repository 
 
     git clone <stpipeline repository> 
@@ -78,10 +82,6 @@ To run a test type (you need internet connection to run the tests)
 To see the different options type 
 
     st_pipeline_run.py --help
-    
-Alternatively, you can install the ST Pipeline using PyPy:
-
-    pip install stpipeline
     
 **Example**
 
@@ -173,7 +173,7 @@ You can see them in the file dependencies.txt
 **Requirements**
 
 The ST Pipeline requires to have installed
-in the system the aligner STAR (minimum version 2.5.0) :
+in the system the aligner STAR (minimum version 2.5.4 if you use a ST Pipeline version >= 1.6.0) :
 https://github.com/alexdobin/STAR
 
 The ST Pipeline is recommended to be run on a computer with at least 32GB of RAM and 8 cpu cores. 
