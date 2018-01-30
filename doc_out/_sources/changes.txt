@@ -2,10 +2,16 @@ Changes
 -------
 **Version 1.6.0**
 
-* Made the parsing of unique UMIs gene by gene and parallel 
+* Made the parsing of unique UMIs gene by gene and parallel
+* AdjacentBi is now the default method for UMI counting
 * Made the trimming function output the trimmed R2 in BAM format with the barcode and UMI
-* Made the mapping function works with a BAM file (latest STAR release)
+* Made the mapping function works with a BAM file as input (latest STAR release)
+* Made the annotation function parallel
+* Made the quality step parallel
 * Improvements in speed and memory (constant memory use)
+* The STAR genome loading strategy can be now set
+* Added an affinity based method to cluster UMIs
+* Added option to set the STAR BAM sort memory limit
 
 **Version 1.5.1**
 
