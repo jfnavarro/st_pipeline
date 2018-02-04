@@ -8,7 +8,6 @@ do sanity check and ultimately run the pipeline.
 from stpipeline.common.utils import *
 from stpipeline.core.mapping import alignReads, barcodeDemultiplexing
 from stpipeline.core.annotation import annotateReads
-from stpipeline.common.fastq_utils import filterInputReads
 from stpipeline.common.stats import qa_stats
 from stpipeline.common.dataset import createDataset
 from stpipeline.common.saturation import computeSaturation
@@ -104,6 +103,8 @@ class Pipeline():
         self.adaptor_missmatches = 0
         self.star_genome_loading = "NoSharedMemory"
         self.star_sort_mem_limit = 0
+        self.disable_umi = False
+        self.disable_barcode = False
         
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -161,13 +162,13 @@ class Pipeline():
             self.logger.error(error)
             raise RuntimeError(error)
              
-        if not os.path.isfile(self.ids):
+        if not self.disable_barcode and not os.path.isfile(self.ids):
             error = "Error parsing parameters.\n" \
             "Invalid IDs file {}".format(self.ids)
             self.logger.error(error)
             raise RuntimeError(error)      
            
-        if self.umi_filter:
+        if not self.disable_umi and self.umi_filter:
             # Check template validity
             import re
             regex = "[^ACGTURYSWKMBDHVN]"
@@ -275,7 +276,7 @@ class Pipeline():
                     raise argparse.ArgumentTypeError("{0} is not a readable dir".format(prospective_dir))
 
         parser.add_argument('fastq_files', nargs=2)
-        parser.add_argument('--ids', metavar="[FILE]", required=True,
+        parser.add_argument('--ids', metavar="[FILE]", required=False,
                             help='Path to the file containing the map of barcodes to the array coordinates')
         parser.add_argument('--ref-map', metavar="[FOLDER]", action=readable_dir, required=True,
                             help="Path to the folder with the STAR index " \
@@ -415,6 +416,12 @@ class Pipeline():
         parser.add_argument('--star-sort-mem-limit', default=0, type=int,
                             help="The maximum available RAM for sorting BAM during mapping. Default is 0\n" \
                             "which means that it will be set to the genome index size")
+        parser.add_argument("--disable-barcode", default=False, action="store_true",
+                            help="Use this flag if you want to skip the barcode demultiplexing step." )
+        parser.add_argument("--disable-umi", default=False, action="store_true",
+                            help="Use this flag if you want to skip the UMI filterign step." )
+        parser.add_argument("--demultiplexing-multiple-hits-keep-one", default=False, action="store_true",
+                            help="When multiple ambiguous hits with same score are found in the demultiplexing, keep one (random)." )
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -487,6 +494,8 @@ class Pipeline():
         self.adaptor_missmatches = options.homopolymer_mismatches
         self.star_genome_loading = options.star_genome_loading
         self.star_sort_mem_limit = options.star_sort_mem_limit
+        self.disable_barcode = options.disable_barcode
+        self.disable_umi = options.disable_umi
         
         # Assign class parameters to the QA stats object
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
@@ -522,15 +531,18 @@ class Pipeline():
         if self.contaminant_index is not None:
             self.logger.info("Using contamination filter STAR index: {}".format(self.contaminant_index))
         self.logger.info("CPU Nodes: {}".format(self.threads))
-        self.logger.info("Ids(barcodes) file: {}".format(self.ids))
-        self.logger.info("TaggD allowed mismatches: {}".format(self.allowed_missed))
-        self.logger.info("TaggD kmer size: {}".format(self.allowed_kmer))
-        self.logger.info("TaggD overhang: {}".format(self.overhang))
-        self.logger.info("TaggD metric: {}".format(self.taggd_metric))
-        if self.taggd_multiple_hits_keep_one:
-            self.logger.info("TaggD multiple hits keep one (random) is enabled")
-        if self.taggd_trim_sequences is not None:
-            self.logger.info("TaggD trimming from the barcodes " + '-'.join(str(x) for x in self.taggd_trim_sequences))
+        if not self.disable_barcode:
+            self.logger.info("Ids(barcodes) file: {}".format(self.ids))
+            self.logger.info("TaggD allowed mismatches: {}".format(self.allowed_missed))
+            self.logger.info("TaggD kmer size: {}".format(self.allowed_kmer))
+            self.logger.info("TaggD overhang: {}".format(self.overhang))
+            self.logger.info("TaggD metric: {}".format(self.taggd_metric))
+            if self.taggd_multiple_hits_keep_one:
+                self.logger.info("TaggD multiple hits keep one (random) is enabled")
+            if self.taggd_trim_sequences is not None:
+                self.logger.info("TaggD trimming from the barcodes " + '-'.join(str(x) for x in self.taggd_trim_sequences))
+        else:
+            self.logger.info("TaggD demultiplexing is disabled!")
         self.logger.info("Mapping reverse trimming: {}".format(self.trimming_rv))
         self.logger.info("Mapping inverse reverse trimming: {}".format(self.inverse_trimming_rv))
         self.logger.info("Mapping tool: STAR")
@@ -550,16 +562,19 @@ class Pipeline():
             self.logger.info("Computing saturation curve with several sub-samples...")
         if self.include_non_annotated:
             self.logger.info("Including non annotated reads in the output")
-        self.logger.info("UMIs start position: {}".format(self.umi_start_position))
-        self.logger.info("UMIs end position: {}".format(self.umi_end_position))
-        self.logger.info("UMIs allowed mismatches: {}".format(self.umi_allowed_mismatches))
-        self.logger.info("UMIs clustering algorithm: {}".format(self.umi_cluster_algorithm))
-        self.logger.info("Allowing an offset of {} when clustering UMIs " \
-                         "by strand-start in a gene-spot".format(self.umi_counting_offset))
-        self.logger.info("Allowing {} low quality bases in an UMI".format(self.umi_quality_bases))
-        self.logger.info("Discarding reads that after trimming are shorter than {}".format(self.min_length_trimming))
-        if self.umi_filter:
-            self.logger.info("UMIs using filter: {}".format(self.umi_filter_template))    
+        if not self.disable_umi:
+            self.logger.info("UMIs start position: {}".format(self.umi_start_position))
+            self.logger.info("UMIs end position: {}".format(self.umi_end_position))
+            self.logger.info("UMIs allowed mismatches: {}".format(self.umi_allowed_mismatches))
+            self.logger.info("UMIs clustering algorithm: {}".format(self.umi_cluster_algorithm))
+            self.logger.info("Allowing an offset of {} when clustering UMIs " \
+                             "by strand-start in a gene-spot".format(self.umi_counting_offset))
+            self.logger.info("Allowing {} low quality bases in an UMI".format(self.umi_quality_bases))
+            self.logger.info("Discarding reads that after trimming are shorter than {}".format(self.min_length_trimming))
+            if self.umi_filter:
+                self.logger.info("UMIs using filter: {}".format(self.umi_filter_template))
+        else:
+            self.logger.info("UMIs filtering is disabled!")
         if self.remove_polyA_distance > 0:
             self.logger.info("Removing polyA sequences of a length of at least: {}".format(self.remove_polyA_distance))                        
         if self.remove_polyT_distance > 0:
@@ -676,7 +691,9 @@ class Pipeline():
                              self.umi_quality_bases,
                              self.adaptor_missmatches,
                              self.threads,
-                             self.overhang)
+                             self.overhang,
+                             self.disable_umi,
+                             self.disable_barcode)
             inputfilter.run()
         except Exception:
             raise
@@ -783,34 +800,35 @@ class Pipeline():
         #=================================================================
         # STEP: DEMULTIPLEX READS Map against the barcodes
         #=================================================================
-        self.logger.info("Starting barcode demultiplexing {}".format(globaltime.getTimestamp()))
-        try:
-            barcodeDemultiplexing(FILENAMES["mapped"],
-                                  self.ids,
-                                  self.allowed_missed,
-                                  self.allowed_kmer,
-                                  self.barcode_start,
-                                  self.overhang,
-                                  self.taggd_metric,
-                                  self.taggd_multiple_hits_keep_one,
-                                  self.taggd_trim_sequences,
-                                  self.threads,
-                                  FILENAMES["demultiplexed_prefix"], # Prefix for output files
-                                  self.keep_discarded_files)
-            # TaggD does not output the BAM file sorted
-            command = "samtools sort -T sort_bam -@ {} -o {} {}".format(self.threads,
-                                                                        FILENAMES["demultiplexed_matched"],
-                                                                        FILENAMES["demultiplexed_matched"])
-            subprocess.check_call(command, shell=True) 
-        except Exception:
-            raise 
+        if not self.disable_barcode:
+            self.logger.info("Starting barcode demultiplexing {}".format(globaltime.getTimestamp()))
+            try:
+                barcodeDemultiplexing(FILENAMES["mapped"],
+                                      self.ids,
+                                      self.allowed_missed,
+                                      self.allowed_kmer,
+                                      self.barcode_start,
+                                      self.overhang,
+                                      self.taggd_metric,
+                                      self.taggd_multiple_hits_keep_one,
+                                      self.taggd_trim_sequences,
+                                      self.threads,
+                                      FILENAMES["demultiplexed_prefix"], # Prefix for output files
+                                      self.keep_discarded_files)
+                # TaggD does not output the BAM file sorted
+                command = "samtools sort -T sort_bam -@ {} -o {} {}".format(self.threads,
+                                                                            FILENAMES["demultiplexed_matched"],
+                                                                            FILENAMES["demultiplexed_matched"])
+                subprocess.check_call(command, shell=True) 
+            except Exception:
+                raise 
         
         #=================================================================
         # STEP: annotate using htseq-count
         #=================================================================
         self.logger.info("Starting annotation {}".format(globaltime.getTimestamp()))
         try:
-            annotateReads(FILENAMES["demultiplexed_matched"],
+            annotateReads(FILENAMES["demultiplexed_matched"] if not self.disable_barcode else FILENAMES["mapped"],
                           self.ref_annotation,
                           FILENAMES["annotated"],
                           FILENAMES_DISCARDED["annotated_discarded"] if self.keep_discarded_files else None,
@@ -838,6 +856,7 @@ class Pipeline():
                                   self.umi_cluster_algorithm,
                                   self.umi_allowed_mismatches,
                                   self.umi_counting_offset,
+                                  self.disable_umi,
                                   self.expName,
                                   self.temp_folder)
             except Exception:
@@ -854,6 +873,7 @@ class Pipeline():
                           self.umi_cluster_algorithm,
                           self.umi_allowed_mismatches,
                           self.umi_counting_offset,
+                          self.disable_umi,
                           self.output_folder,
                           self.expName,
                           True) # Verbose

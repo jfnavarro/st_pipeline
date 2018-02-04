@@ -50,7 +50,8 @@ class InputReadsFilter():
     :param adaptor_missmatches: number of miss-matches allowed when removing adaptors
     """
 
-    def __init__(self, verbose=False, max_reads_in_memory=10000000, stat_line_interwall=100000, chunk_size=100000):
+    def __init__(self, verbose=False, max_reads_in_memory=10000000, 
+                 stat_line_interwall=100000, chunk_size=100000):
         """
         Initiates the instance and setting default values
         :param verbose: set to true to write more info to stderr
@@ -63,8 +64,6 @@ class InputReadsFilter():
         self.stat_line_interwall = stat_line_interwall
         self.chunk_size = chunk_size
         self.max_chunks_in_queue = min(32767,max_reads_in_memory/(self.chunk_size*2))
-        #if self.verbose:
-        #    self.logger.debug('InputReadsFilter::INFO:: initiation completed.')
 
     def input_arguments(
                     self,
@@ -91,7 +90,9 @@ class InputReadsFilter():
                     umi_quality_bases,
                     adaptor_missmatches,
                     threads,
-                    overhang):
+                    overhang,
+                    disable_umi,
+                    disable_barcode):
         """
         Sets the input arguments
         :param rv: the bam file with the reverse reads
@@ -118,10 +119,9 @@ class InputReadsFilter():
         :param adaptor_missmatches: number of miss-matches allowed when removing adaptors
         :param threads: number of subprocesses to start
         :param overhang: extra bases on the edges of the barcode to include in bam tag
+        :param disable_umi: when the user wants to skip the UMI filtering
+        :param disable_barcode: when the user wants to skip the barcode demultiplexing
         """
-
-        #if self.verbose:
-        #    self.logger.debug('InputReadsFilter::INFO:: Getting input arguments.')
 
         self.logger = logging.getLogger("STPipeline")
         if not (os.path.isfile(fw) or is_fifo(fw)) or not (os.path.isfile(rv) or is_fifo(rv)):
@@ -165,6 +165,8 @@ class InputReadsFilter():
         self.start_position = start_position
         self.threads = threads
         self.overhang = overhang
+        self.disable_umi = disable_umi
+        self.disable_barcode = disable_barcode
 
         self.fw = fw
         self.rv = rv
@@ -287,7 +289,7 @@ class InputReadsFilter():
             read_pair_counters['dropped_adaptor'])
                          )
         self.logger.info("Trimming stats dropped pairs due to length after trimming: {}".format(
-            read_pair_counters['to_short_after_trimming'])
+            read_pair_counters['too_short_after_trimming'])
                          )
 
         # Check that output file was written ok
@@ -342,7 +344,7 @@ class InputReadsFilter():
                 last_time = time.time()
                 last_count = count
 
-        self.input_read_queue.put( chunk )
+        self.input_read_queue.put(chunk)
 
         if self.verbose:
             self.print_stat_line(start_time, last_time, count, last_count, identity)
@@ -388,14 +390,14 @@ class InputReadsFilter():
 
         # Some counters
         cdef dict read_pair_counters = {
-            'total_reads':0,
-            'dropped_rv':0,
-            'dropped_umi':0,
-            'dropped_umi_template':0,
-            'dropped_AT': 0,
-            'dropped_GC':0,
-            'dropped_adaptor':0,
-            'to_short_after_trimming':0
+            'total_reads' : 0,
+            'dropped_rv' : 0,
+            'dropped_umi' : 0,
+            'dropped_umi_template' : 0,
+            'dropped_AT' : 0,
+            'dropped_GC' : 0,
+            'dropped_adaptor' : 0,
+            'too_short_after_trimming' : 0
         }
         cdef list chunk
         cdef dict read_pair
@@ -459,7 +461,7 @@ class InputReadsFilter():
         count = 0
         last_time = start_time
         last_count = count
-        identity = 'WORKER_'+str(os.getpid())
+        identity = 'WORKER_' + str(os.getpid())
 
         if self.verbose:
             self.logger.debug('InputReadsFilter::INFO:: Starting parallel worker process pid={}.'.format(os.getpid()))
@@ -473,7 +475,7 @@ class InputReadsFilter():
                 'HD': {'VN': '1.5', 'SO':'unsorted'},
                 'RG': [{'ID': '0', 'SM' : 'unknown_sample', 'PL' : 'ILLUMINA' }]
             }
-        bam_file = pysam.AlignmentFile(self.out_rv.rstrip('.bam')+'.{}.bam'.format(identity), "wbu", header=bam_header)
+        bam_file = pysam.AlignmentFile(self.out_rv.rstrip('.bam') + '.{}.bam'.format(identity), "wbu", header=bam_header)
 
         while self.reader_running.value or not self.input_read_queue.empty():
 
@@ -491,7 +493,6 @@ class InputReadsFilter():
                     if not sequence_fw or not sequence_rv:
                         error = "Error doing quality trimming, Checks of raw reads.\n" \
                         "The input files are not of the same length"
-                        #"The input files {},{} are not of the same length".format(fw,rv)
                         self.logger.error(error)
 
                     if header_fw.split()[0] != header_rv.split()[0]:
@@ -499,20 +500,26 @@ class InputReadsFilter():
                                        "names {} and {}".format(header_fw,header_rv))
 
                     # get the barcode sequence
-                    barcode = sequence_fw[max(0,self.start_position-self.overhang):(self.start_position+self.barcode_length+self.overhang)]
+                    if self.disable_barcode:
+                        barcode = None
+                    else:
+                        barcode = sequence_fw[max(0,self.start_position-self.overhang):(self.start_position+self.barcode_length+self.overhang)]
 
-                    # If we want to check for UMI quality and the UMI is incorrect
-                    # then we discard the reads
-                    umi_seq = sequence_fw[self.umi_start:self.umi_end]
-                    if self.umi_filter \
-                    and not check_umi_template(umi_seq, self.umi_filter_template):
-                        discard_reason = 'dropped_umi_template'
-
-                    # Check if the UMI has many low quality bases
-                    umi_qual=quality_fw[self.umi_start:self.umi_end]
-                    if not discard_reason and (self.umi_end - self.umi_start) >= self.umi_quality_bases and \
-                    len([b for b in umi_qual if (ord(b) - self.phred) < self.min_qual]) > self.umi_quality_bases:
-                        discard_reason = 'dropped_umi'
+                    if not self.disable_umi:
+                        # If we want to check for UMI quality and the UMI is incorrect
+                        # then we discard the reads
+                        umi_seq = sequence_fw[self.umi_start:self.umi_end]
+                        if self.umi_filter \
+                        and not check_umi_template(umi_seq, self.umi_filter_template):
+                            discard_reason = 'dropped_umi_template'
+    
+                        # Check if the UMI has many low quality bases
+                        umi_qual = quality_fw[self.umi_start:self.umi_end]
+                        if not discard_reason and (self.umi_end - self.umi_start) >= self.umi_quality_bases and \
+                        len([b for b in umi_qual if (ord(b) - self.phred) < self.min_qual]) > self.umi_quality_bases:
+                            discard_reason = 'dropped_umi'
+                    else:
+                        umi_seq = None
 
                     # If reverse read has a high AT content discard...
                     if not discard_reason and self.do_AT_filter and \
@@ -554,7 +561,7 @@ class InputReadsFilter():
                                                         self.min_length,
                                                         self.phred)
                             if not sequence_rv or not quality_rv:
-                                discard_reason = 'to_short_after_trimming'
+                                discard_reason = 'too_short_after_trimming'
 
                     if not discard_reason:
                         bam_file.write(
@@ -566,9 +573,9 @@ class InputReadsFilter():
                                 umi_seq
                                 )
                             )
-                        out_chunk.append( (discard_reason, None, None, None) )
+                        out_chunk.append((discard_reason, None, None, None))
                     else:
-                        out_chunk.append( (discard_reason, header_rv, orig_sequence_rv, orig_quality_rv) )
+                        out_chunk.append((discard_reason, header_rv, orig_sequence_rv, orig_quality_rv))
 
                     count += 1
                     if self.verbose and count % self.stat_line_interwall == 0:
@@ -577,9 +584,6 @@ class InputReadsFilter():
                         last_count = count
 
                 self.output_read_queue.put( out_chunk )
-            # if self.verbose:
-            #    self.logger.debug(
-            #       'InputReadsFilter::INFO:: parallel worker process pid='+str(os.getpid())+' - queue empty.')
 
         if self.verbose:
             self.print_stat_line(start_time, last_time, count, last_count, identity)
