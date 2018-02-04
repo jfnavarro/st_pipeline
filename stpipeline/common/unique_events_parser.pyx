@@ -152,10 +152,10 @@ class uniqueEventsParser():
                     umi = str(v) ## The UMI
                 else:
                     continue
-            # Check that all tags are present
-            if 'None' in [gene,umi] or -1 in [x,y]:
+            # Check that all tags are present (We allow now no barcode and no UMI)
+            if gene is None:
                 logger.warning("Warning parsing annotated reads.\n" \
-                               "Missing attributes for record {}\n".format(clear_name))
+                               "Missing gene for record {}\n".format(clear_name))
                 continue
 
             # Create a new transcript and add it to the in memory gene_buffer dictionary
@@ -167,7 +167,8 @@ class uniqueEventsParser():
         # Close the bam file and yield the last gene(s)
         sam_file.close()
         genes_buffer.put_finished_genes_in_queue(self.q, empty=True)
-        self.q.put( "COMPLETED" ) # send a last keyword to the parent process to define the end of the data
+        # send a last keyword to the parent process to define the end of the data
+        self.q.put("COMPLETED") 
 
         # cleanup and exit
         while not self.q.empty():
@@ -188,7 +189,8 @@ class uniqueEventsParser():
         """
         
         # start the worker if not already done
-        if self.check_running != 'RUNNING': self.run()
+        if self.check_running != 'RUNNING': 
+            self.run()
         
         # yield genes until the bam file has been parsed and the uniqueEventsParser shuts down
         while True:
@@ -360,8 +362,8 @@ class geneBuffer():
                 # Create the new gene entry and add it to the buffer
                 new_spot_dict = {spot_coordinates:new_reads_list}
                 new_gene_dict = {
-                        'spots':new_spot_dict,
-                        'gene_end_coordinate':gene_end_coordinate
+                        'spots' : new_spot_dict,
+                        'gene_end_coordinate' : gene_end_coordinate
                     }
                 self.buffer[gene] = new_gene_dict
 

@@ -449,3 +449,7 @@ Version 1.6.0
 * The STAR genome loading strategy can be now set
 * Added an affinity based method to cluster UMIs
 * Added option to set the STAR BAM sort memory limit
+
+Version 1.6.1
+* Added option to disable the barcode demultiplexing step
+* Added option to disable the UMI filtering step

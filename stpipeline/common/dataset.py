@@ -54,6 +54,7 @@ def createDataset(input_file,
                   umi_cluster_algorithm="hierarchical",
                   umi_allowed_mismatches=1,
                   umi_counting_offset=250,
+                  diable_umi=False,
                   output_folder=None,
                   output_template=None,
                   verbose=True):
@@ -70,6 +71,7 @@ def createDataset(input_file,
     :param umi_allowed_mismatches: the number of miss matches allowed to remove
                                   duplicates by UMIs
     :param umi_counting_offset: the number of bases allowed as offset (start position) when counting UMIs
+    :param diable_umi: when True the UMI filtering step will not be performed
     :param output_folder: path to place the output files
     :param output_template: the name of the dataset
     :param verbose: True if we can to collect the stats in the logger
@@ -77,6 +79,7 @@ def createDataset(input_file,
     :type umi_cluster_algorithm: str
     :type umi_allowed_mismatches: boolean
     :type umi_counting_offset: integer
+    :type diable_umi: bool
     :type output_folder: str
     :type output_template: str
     :type verbose: bool
@@ -134,9 +137,12 @@ def createDataset(input_file,
                 # First:
                 # Get the original number of transcripts (reads)
                 read_count = len(reads)
-                # Compute unique transcripts (based on UMI, strand and start position +- threshold)
-                unique_transcripts = computeUniqueUMIs(reads, umi_counting_offset, 
-                                                       umi_allowed_mismatches, group_umi_func)
+                if not diable_umi:
+                    # Compute unique transcripts (based on UMI, strand and start position +- threshold)
+                    unique_transcripts = computeUniqueUMIs(reads, umi_counting_offset, 
+                                                           umi_allowed_mismatches, group_umi_func)
+                else:
+                    unique_transcripts = reads
                 # The new transcript count
                 transcript_count = len(unique_transcripts)
                 assert transcript_count > 0 and transcript_count <= read_count

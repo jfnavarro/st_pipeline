@@ -19,6 +19,7 @@ def computeSaturation(nreads,
                       umi_cluster_algorithm,
                       umi_allowed_mismatches,
                       umi_counting_offset,
+                      diable_umi,
                       expName,
                       temp_folder=None):
     """
@@ -33,6 +34,7 @@ def computeSaturation(nreads,
     :param umi_allowed_mismatches: the number of miss matches allowed to remove
                                   duplicates by UMIs
     :param umi_counting_offset: the number of bases allowed as offset when couting UMIs
+    :param diable_umi: when True the UMI filtering step will not be performed
     :param expName: the name of the dataset
     :param temp_folder: the path where to put the output files
     :type nreads: integer
@@ -40,6 +42,7 @@ def computeSaturation(nreads,
     :type umi_cluster_algorithm: str
     :type umi_allowed_mismatches: boolean
     :type umi_counting_offset: integer
+    :type diable_umi: bool
     :type expName: str
     :type temp_folder: str
     :raises: RuntimeError
@@ -119,6 +122,7 @@ def computeSaturation(nreads,
                           umi_cluster_algorithm,
                           umi_allowed_mismatches,
                           umi_counting_offset,
+                          diable_umi,
                           temp_folder,
                           expName,
                           False) # Verbose
