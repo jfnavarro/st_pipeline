@@ -417,11 +417,9 @@ class Pipeline():
                             help="The maximum available RAM for sorting BAM during mapping. Default is 0\n" \
                             "which means that it will be set to the genome index size")
         parser.add_argument("--disable-barcode", default=False, action="store_true",
-                            help="Use this flag if you want to skip the barcode demultiplexing step." )
+                            help="Use this flag if you want to skip the barcode demultiplexing step" )
         parser.add_argument("--disable-umi", default=False, action="store_true",
-                            help="Use this flag if you want to skip the UMI filterign step." )
-        parser.add_argument("--demultiplexing-multiple-hits-keep-one", default=False, action="store_true",
-                            help="When multiple ambiguous hits with same score are found in the demultiplexing, keep one (random)." )
+                            help="Use this flag if you want to skip the UMI filtering step" )
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
