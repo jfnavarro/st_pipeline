@@ -220,27 +220,30 @@ class Pipeline():
             self.umi_filter_template = temp_reg_exp
                          
         # Add checks for trimming parameters, demultiplex parameters and UMI parameters
-        if self.allowed_missed > self.allowed_kmer:
+        if self.allowed_missed > self.allowed_kmer and not self.disable_barcode:
             error = "Error starting the pipeline.\n" \
             "Taggd allowed mismatches is bigger or equal than the Taggd k-mer size"
             self.logger.error(error)
             raise RuntimeError(error)
         
         if self.barcode_start > self.umi_start_position \
-        and self.barcode_start < self.umi_end_position:
+        and self.barcode_start < self.umi_end_position \
+        and not self.disable_barcode and not self.disable_umi:
             error = "Error starting the pipeline.\n" \
             "The start position of the barcodes is between the UMIs start-end position"
             self.logger.error(error)
             raise RuntimeError(error)
         
-        if self.barcode_start == self.umi_start_position \
-        or self.barcode_start == self.umi_end_position:
+        if (self.barcode_start == self.umi_start_position \
+        or self.barcode_start == self.umi_end_position) \
+        and not self.disable_barcode and not self.disable_umi:
             error = "Error starting the pipeline.\n" \
             "The start position of the barcodes is equal the UMIs start or end position"
             self.logger.error(error)
             raise RuntimeError(error)  
         
-        if self.umi_allowed_mismatches > (self.umi_end_position - self.umi_start_position):
+        if self.umi_allowed_mismatches > (self.umi_end_position - self.umi_start_position) \
+        and not self.disable_umi:
             error = "Error starting the pipeline.\n" \
             "The allowed UMI mismatches is bigger than the UMI size"
             self.logger.error(error)
