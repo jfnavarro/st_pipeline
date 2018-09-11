@@ -8,7 +8,7 @@ import os
 import pysam
 from stpipeline.common.utils import fileOk
 from stpipeline.common.stats import qa_stats
-from stpipeline.common.sam_utils import merge_bam
+from stpipeline.common.sam_utils import merge_bam, split_bam
 import itertools
 import HTSeq
 import multiprocessing
@@ -32,8 +32,7 @@ def invert_strand( iv ):
 
 def count_reads_in_features(sam_filename, 
                             gff_filename, 
-                            samtype, 
-                            order, 
+                            samtype,
                             stranded,
                             overlap_mode, 
                             feature_type, 
@@ -67,8 +66,7 @@ def count_reads_in_features(sam_filename,
     can be found here: http://www.gnu.org/licenses/gpl-3.0-standalone.html
     """
     # Set up the filters
-    count_reads_in_features.filter_htseq = \
-    ["__too_low_aQual", "__not_aligned", "__alignment_not_unique"]
+    count_reads_in_features.filter_htseq = ["__too_low_aQual", "__not_aligned"]
     if not include_non_annotated: 
         count_reads_in_features.filter_htseq.append("__no_feature")
     count_reads_in_features.filter_htseq_no_ambiguous = htseq_no_ambiguous
@@ -77,9 +75,13 @@ def count_reads_in_features(sam_filename,
     flag_write = "wb" if samtype == "bam" else "wh"
     flag_read = "rb" if samtype == "bam" else "r"
     saminfile = pysam.AlignmentFile(sam_filename, flag_read)
-    count_reads_in_features.samoutfile = pysam.AlignmentFile(samout, flag_write, template=saminfile)
+    count_reads_in_features.samoutfile = pysam.AlignmentFile(samout, 
+                                                             flag_write, 
+                                                             template=saminfile)
     if outputDiscarded is not None:
-        count_reads_in_features.samdiscarded = pysam.AlignmentFile(outputDiscarded, flag_write, template=saminfile)
+        count_reads_in_features.samdiscarded = pysam.AlignmentFile(outputDiscarded, 
+                                                                   flag_write, 
+                                                                   template=saminfile)
     saminfile.close()
     
     # Counter of annotated records
@@ -142,17 +144,6 @@ def count_reads_in_features(sam_filename,
             if not r.aligned:
                 write_to_samout(r, "__not_aligned")
                 continue
-            try:
-                if r.optional_field("NH") > 1:
-                    write_to_samout(r, "__alignment_not_unique")
-                    # Should these reads potentially be printed twice?
-                    # should there not be a continue statement here?
-                    # otherwise the read will move on through the if statemets
-                    # until it gets a gene id annotation and will be printed again?
-            except KeyError:
-                pass
-            except Exception as e:
-                raise e
             if r.aQual < minaqual:
                 write_to_samout(r, "__too_low_aQual")
                 continue
@@ -161,7 +152,7 @@ def count_reads_in_features(sam_filename,
             else:
                 iv_seq = (invert_strand(co.ref_iv) 
                           for co in r.cigar 
-                          if co.type == "M" and co.size > 0)
+                          if co.type in ["M","=","X"] and co.size > 0)
             try:
                 if overlap_mode == "union":
                     fs = set()
@@ -184,9 +175,7 @@ def count_reads_in_features(sam_filename,
                 else:
                     raise RuntimeError, "Illegal overlap mode."
                 
-                if fs is None:
-                    continue
-                elif len(fs) == 0:
+                if fs is None or len(fs) == 0:
                     write_to_samout(r, "__no_feature")
                 elif len(fs) > 1:
                     write_to_samout(r, "__ambiguous[" + '+'.join(fs) + "]")
@@ -194,17 +183,16 @@ def count_reads_in_features(sam_filename,
                     write_to_samout(r, list(fs)[0])
                     
             except UnknownChrom:
+                write_to_samout(r, "__no_feature")
                 pass
 
     except:
+        raise
+    finally:
         count_reads_in_features.samoutfile.close()
         if outputDiscarded is not None:
             count_reads_in_features.samdiscarded.close()
-        raise
-
-    count_reads_in_features.samoutfile.close()
-    if outputDiscarded is not None:
-        count_reads_in_features.samdiscarded.close()
+            
     return count_reads_in_features.annotated
 
 def annotateReads(mappedReads, 
@@ -222,6 +210,8 @@ def annotateReads(mappedReads,
     version of the htseq-count tool. It writes the annotated records to a file.
     It assumes the input reads (BAM) are single end and do not contain
     multiple alignments or un-annotated reads.
+    It splits the BAM file into small files to perform the annotation separately
+    and then join the results.
     :param mappedReads: path to a BAM file with mapped reads sorted by coordinate
     :param gtfFile: path to an annotation file in GTF format
     :param outputFile: where to write the annotated records (BAM)
@@ -254,34 +244,32 @@ def annotateReads(mappedReads,
         error = "Error during annotation, input file not present {}\n".format(mappedReads)
         logger.error(error)
         raise RuntimeError(error)
-    
-    # split bam file (returns a dictionary PART -> FILENAME
-    partial_bam_files = split_bam(mappedReads, temp_dir, threads)
-    
-    # the splitted input files
-    sub_input_files = [bamfile_name for _, bamfile_name in partial_bam_files.iteritems()]
+
+    # split input BAM file 
+    sub_input_files = split_bam(mappedReads, temp_dir, threads)
+    num_parts = len(sub_input_files)
     
     # the name of the splitted output files
     sub_out_files = [os.path.join(temp_dir, "tmp_annotated_part_{}.bam".format(part)) 
-                     for part in partial_bam_files.keys()]
+                     for part in range(num_parts)]
     
     # the name of the splitted output discarded files
     sub_out_discarded_files = [os.path.join(temp_dir, 
                                             "tmp_annotated_discarded_part_{}.bam".format(part))
                                if outputDiscarded else None 
-                               for part in partial_bam_files.keys()]
+                               for part in range(num_parts)]
+    
     # counter of annotated reads
     annotated = 0
     discarded_annotations = 0
     try:
-        # create an annotation subprocess for each partial bam
-        subprocesses = [ multiprocessing.Process(
+        # create an annotation subprocess for each partial input BAM
+        subprocesses = [multiprocessing.Process(
             target=count_reads_in_features,
             args=(
                 input,
                 gtfFile,
                 "bam", # Type BAM for files
-                "pos", # Order pos or name
                 strandness, # Strand yes/no/reverse
                 mode, # intersection_nonempty, union, intersection_strict
                 "exon", # feature type in GFF
@@ -297,17 +285,19 @@ def annotateReads(mappedReads,
                                                     sub_out_discarded_files)]
 
         # start work in child processes
-        for p in subprocesses: p.start()
+        for p in subprocesses: 
+            p.start()
 
         # wait for all processes to finish
-        while True in [p.is_alive() for p in subprocesses]: time.sleep(0.1)
+        while True in [p.is_alive() for p in subprocesses]: 
+            time.sleep(0.1)
 
         # join the children
         for p in subprocesses:
             assert p.exitcode == 0, "Error during annotation: subprocess error."
             p.join()
 
-        # merge the annotated bam files and summmarize the stats
+        # merge the annotated BAM files and summmarize the stats
         annotated = merge_bam(outputFile, sub_out_files)
         if outputDiscarded:
             discarded_annotations = merge_bam(outputDiscarded, sub_out_discarded_files)
@@ -335,49 +325,3 @@ def annotateReads(mappedReads,
 
     logger.info("Annotated reads: {}".format(annotated))
     qa_stats.reads_after_annotation = annotated
-
-def split_bam(input_bamfile_name, temp_dir, threads):
-    """
-    Splits a bam file in to parts with equal read counts.
-    The number of parts to split the bamfile into equals the 
-    number of cores on the machine.
-    :param input_bamfile_name: path to the bamfile to be splitted
-    :param temp_dir: path to the folder where to put the created files
-    :param threads: the number of CPU cores to use
-    :retuns: a dictionary
-        keys are an integer corresponding to the number 
-        of a partial bam file (0 to number of files -1)
-        values are the filenames of the corresponding partial bamfile created
-    """
-
-    # Create the splitted BAM files names (one for each cpu core)
-    parts = {part:[] for part in range(threads)}
-    output_file_names = {part:os.path.join(temp_dir,
-                                           "{0}.part_{1}.bam".format(input_bamfile_name,part)) 
-                         for part in parts}
-
-    # Index and open the input_bamfile
-    pysam.index(input_bamfile_name, 
-                os.path.join(temp_dir,'{0}.bai'.format(input_bamfile_name)))
-    input_bamfile = pysam.AlignmentFile(input_bamfile_name, mode='rb')
-    assert input_bamfile.check_index()
-
-    # Open the output bam files
-    output_bamfiles = {
-        part:pysam.AlignmentFile(file_name, mode="wbu", template=input_bamfile) \
-        for part, file_name in output_file_names.iteritems()
-        }
-
-    # Split the bam file
-    total_read_count = input_bamfile.mapped + input_bamfile.unmapped
-    reads_per_part = math.ceil(float(total_read_count) / threads)
-    _tmp_read_counter = 0
-    part = 0
-    for record in input_bamfile.fetch(until_eof=True):
-        output_bamfiles[part].write(record)
-        _tmp_read_counter += 1
-        if _tmp_read_counter == reads_per_part:
-            part += 1
-            _tmp_read_counter = 0
-    # Return a dictionary PART_NUMBER -> FILENAME
-    return output_file_names

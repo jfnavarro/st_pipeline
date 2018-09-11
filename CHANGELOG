@@ -456,3 +456,8 @@ Version 1.6.1
 
 Version 1.6.2
 * Fixed a error in the parameters
+
+Version 1.6.5
+* Improved the st_qa.py script
+* Few small improvements in the annotation step
+* Added support to use a transcriptome (--transcriptome)

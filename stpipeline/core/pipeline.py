@@ -105,6 +105,7 @@ class Pipeline():
         self.star_sort_mem_limit = 0
         self.disable_umi = False
         self.disable_barcode = False
+        self.transcriptome = False
         
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -134,12 +135,17 @@ class Pipeline():
         Performs some basic sanity checks on the input parameters
         """
 
-        if not os.path.isfile(self.ref_annotation) or \
+        if self.ref_annotation is not None and (not os.path.isfile(self.ref_annotation) or \
         (not self.ref_annotation.endswith(".gtf") \
         and not self.ref_annotation.endswith(".gff3") \
-        and not self.ref_annotation.endswith(".gff")):
+        and not self.ref_annotation.endswith(".gff"))):
             error = "Error parsing parameters.\n" \
             "Invalid annotation file {}".format(self.ref_annotation)
+            self.logger.error(error)
+            raise RuntimeError(error)
+        
+        if self.ref_annotation is None and not self.transcriptome:
+            error = "Error, annotation file is missing and the transcriptome option is disabled\n"
             self.logger.error(error)
             raise RuntimeError(error)
           
@@ -167,6 +173,12 @@ class Pipeline():
             "Invalid IDs file {}".format(self.ids)
             self.logger.error(error)
             raise RuntimeError(error)      
+        
+        if not self.disable_barcode and self.ids is None:
+            error = "Error IDs file is missing but the option to disable the "\
+            "demultiplexing step is not activated\n"
+            self.logger.error(error)
+            raise RuntimeError(error)   
            
         if not self.disable_umi and self.umi_filter:
             # Check template validity
@@ -284,7 +296,7 @@ class Pipeline():
         parser.add_argument('--ref-map', metavar="[FOLDER]", action=readable_dir, required=True,
                             help="Path to the folder with the STAR index " \
                             "for the genome that you want to use to align the reads")
-        parser.add_argument('--ref-annotation', metavar="[FILE]", required=True,
+        parser.add_argument('--ref-annotation', metavar="[FILE]", required=False,
                             help="Path to the reference annotation file " \
                             "(GTF or GFF format is required) to be used to annotated the reads")
         parser.add_argument('--expName', type=str, metavar="[STRING]", required=True,
@@ -423,6 +435,8 @@ class Pipeline():
                             help="Use this flag if you want to skip the barcode demultiplexing step" )
         parser.add_argument("--disable-umi", default=False, action="store_true",
                             help="Use this flag if you want to skip the UMI filtering step" )
+        parser.add_argument("--transcriptome", default=False, action="store_true",
+                            help="Use a transcriptome instead of a genome, the gene tag will be obtained from the transcriptome file" )
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -497,6 +511,7 @@ class Pipeline():
         self.star_sort_mem_limit = options.star_sort_mem_limit
         self.disable_barcode = options.disable_barcode
         self.disable_umi = options.disable_umi
+        self.transcriptome = options.transcriptome
         
         # Assign class parameters to the QA stats object
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
@@ -528,7 +543,8 @@ class Pipeline():
         self.logger.info("Forward(R1) input file: {}".format(self.fastq_fw))
         self.logger.info("Reverse(R2) input file: {}".format(self.fastq_rv))
         self.logger.info("Reference mapping STAR index folder: {}".format(self.ref_map))
-        self.logger.info("Reference annotation file: {}".format(self.ref_annotation))
+        if self.ref_annotation is not None:
+            self.logger.info("Reference annotation file: {}".format(self.ref_annotation))
         if self.contaminant_index is not None:
             self.logger.info("Using contamination filter STAR index: {}".format(self.contaminant_index))
         self.logger.info("CPU Nodes: {}".format(self.threads))
@@ -827,20 +843,35 @@ class Pipeline():
         #=================================================================
         # STEP: annotate using htseq-count
         #=================================================================
-        self.logger.info("Starting annotation {}".format(globaltime.getTimestamp()))
-        try:
-            annotateReads(FILENAMES["demultiplexed_matched"] if not self.disable_barcode else FILENAMES["mapped"],
-                          self.ref_annotation,
-                          FILENAMES["annotated"],
-                          FILENAMES_DISCARDED["annotated_discarded"] if self.keep_discarded_files else None,
-                          self.htseq_mode,
-                          self.strandness,
-                          self.htseq_no_ambiguous,
-                          self.include_non_annotated,
-                          self.temp_folder,
-                          self.threads)
-        except Exception:
-            raise
+        if self.transcriptome:
+            self.logger.info("Assigning gene names from transcriptome {}".format(globaltime.getTimestamp()))
+            # Iterate the BAM file to set the gene name as the transcriptome's entry
+            input_file = FILENAMES["demultiplexed_matched"] if not self.disable_barcode else FILENAMES["mapped"]
+            flag_read = "rb"
+            flag_write = "wb"
+            infile = pysam.AlignmentFile(input_file, flag_read)
+            outfile = pysam.AlignmentFile(FILENAMES["annotated"], flag_write, template=infile)
+            for rec in infile.fetch(until_eof=True):
+                #NOTE chrom may have to be trimmed to 250 characters max
+                chrom = infile.getrname(rec.reference_id).split()[0]
+                rec.set_tag("XF", chrom, "Z")
+                outfile.write(rec)
+            infile.close()
+            outfile.close()
+        else:
+            self.logger.info("Starting annotation {}".format(globaltime.getTimestamp()))
+            try:
+                annotateReads(FILENAMES["demultiplexed_matched"] if not self.disable_barcode else FILENAMES["mapped"],
+                              self.ref_annotation, 
+                              FILENAMES["annotated"], 
+                              FILENAMES_DISCARDED["annotated_discarded"] if self.keep_discarded_files else None,
+                              self.htseq_mode, self.strandness, 
+                              self.htseq_no_ambiguous, 
+                              self.include_non_annotated, 
+                              self.temp_folder, 
+                              self.threads)
+            except Exception:
+                raise
 
         #=================================================================
         # STEP: compute saturation (Optional)

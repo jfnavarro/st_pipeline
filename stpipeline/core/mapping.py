@@ -110,6 +110,7 @@ def alignReads(reverse_reads,
              "--alignIntronMax", max_intron_size,
              "--outFilterMatchNmin", min_length,
              "--outSAMmultNmax", 1,
+             "--outMultimapperOrder", "Random",
              "--readMatesLengthsIn", "NotEqual",
              "--outFilterMismatchNoverLmax", 0.1, ## (0.3 default)
              "--genomeLoad", star_genome_loading,
