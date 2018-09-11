@@ -12,3 +12,4 @@ HTSeq>=0.7.1
 pysam>=0.7.4
 setuptools
 pympler
+seaborn

@@ -9,11 +9,14 @@ some plots in the folder that is run.
 
 @Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
 """
+import matplotlib
+matplotlib.use('Agg')
 import pandas as pd
 import numpy as np
 import os.path
 import argparse
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 def scatter_plot(x_points, y_points, output, colors,
                  title="Scatter", xlabel="X", ylabel="Y",
@@ -85,7 +88,12 @@ def main(input_data):
     max_count = counts_table.values.max()
     min_count = counts_table.values.min()
     aggregated_spot_counts = counts_table.sum(axis=1).values
-    aggregated_gene_counts = (counts_table != 0).sum(axis=1).values
+    aggregated_gene_counts = (counts_table > 0).sum(axis=1).values
+    aggregated_gene_counts_1 = (counts_table > 1).sum(axis=1).values
+    aggregated_gene_counts_2 = (counts_table > 2).sum(axis=1).values
+    aggregated_gene_gene_counts = (counts_table > 0).sum(axis=0).values
+    aggregated_gene_gene_counts_1 = (counts_table > 1).sum(axis=0).values
+    aggregated_gene_gene_counts_2 = (counts_table > 2).sum(axis=0).values
     max_genes_feature = aggregated_gene_counts.max()
     min_genes_feature = aggregated_gene_counts.min()
     max_reads_feature = aggregated_spot_counts.max()
@@ -96,9 +104,37 @@ def main(input_data):
     std_genes_feature = np.std(aggregated_gene_counts)
     # Generate heatmap plots
     histogram(aggregated_spot_counts, nbins=20, xlabel="#Reads", ylabel="#Spots",
-              output=input_name + "_hist_counts.pdf", title="Reads per spot")
+              output=input_name + "_hist_reads_spot.pdf", title="Reads per spot")
     histogram(aggregated_gene_counts, nbins=20, xlabel="#Genes", ylabel="#Spots", 
-              output=input_name + "_hist_genes.pdf", title="Genes per spot")
+              output=input_name + "_hist_genes_spot.pdf", title="Genes per spot (>0)")
+    histogram(aggregated_gene_counts_1, nbins=20, xlabel="#Genes", ylabel="#Spots", 
+              output=input_name + "_hist_genes_spots_1.pdf", title="Genes per spot (>1)")
+    histogram(aggregated_gene_counts_2, nbins=20, xlabel="#Genes", ylabel="#Spots", 
+              output=input_name + "_hist_genes_spots_2.pdf", title="Genes per spot (>2)")
+    histogram(aggregated_gene_gene_counts, nbins=20, xlabel="#Genes", ylabel="#Genes", 
+              output=input_name + "_hist_genes_gene.pdf", title="Genes per gene (>0)")
+    histogram(aggregated_gene_gene_counts_1, nbins=20, xlabel="#Genes", ylabel="#Genes", 
+              output=input_name + "_hist_genes_gene_1.pdf", title="Genes per gene (>1)")
+    histogram(aggregated_gene_gene_counts_2, nbins=20, xlabel="#Genes", ylabel="#Genes", 
+              output=input_name + "_hist_genes_gene_2.pdf", title="Genes per gene (>2)")
+        
+    # Generate density plots
+    fig = plt.figure()
+    sns.distplot(aggregated_gene_counts, hist=False, label="Counts > 0")
+    sns.distplot(aggregated_gene_counts_1, hist=False, label="Counts > 1")
+    sns_plot = sns.distplot(aggregated_gene_counts_2, 
+                            axlabel="#Spots", hist=False, label="Counts > 2")
+    fig = sns_plot.get_figure()
+    fig.savefig(input_name + "_density_genes_by_spot.pdf")
+    
+    fig = plt.figure()
+    sns.distplot(aggregated_gene_gene_counts, hist=False, label="Counts > 0")
+    sns.distplot(aggregated_gene_gene_counts_1, hist=False, label="Counts > 1")
+    sns_plot = sns.distplot(aggregated_gene_gene_counts_2, 
+                            axlabel="#Genes", hist=False, label="Counts > 2")
+    fig = sns_plot.get_figure()
+    fig.savefig(input_name + "_density_genes_by_gene.pdf")
+    
     # Get the spot coordinates
     x_points = list()
     y_points = list()
@@ -107,7 +143,7 @@ def main(input_data):
         assert(len(tokens) == 2)
         y_points.append(float(tokens[1]))
         x_points.append(float(tokens[0]))
-    # Generate scater plots
+    # Generate scatter plots
     scatter_plot(x_points, y_points, colors=aggregated_spot_counts, 
                  xlabel="X", ylabel="Y", output=input_name + "_heatmap_counts.pdf", 
                  title="Heatmap expression")

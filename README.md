@@ -8,7 +8,7 @@ The ST Pipeline contains the tools and scripts needed to process and analyze the
 The ST pipeline can also be used to process single cell data as long as a file with barcodes identifying each cell is provided (same template as the files in the folder "ids").
 
 The ST Pipeline has been optimized for speed, robustness and it is very easy to use with many parameters to adjust all the settings.
-The ST Pipeline is fully paralell and has constant memory use. 
+The ST Pipeline is fully parallel and has constant memory use. 
 
 The following files/parameters are required :
 - FASTQ files (Read 1 containing the spatial information and the UMI and read 2 containing the genomic sequence) 
