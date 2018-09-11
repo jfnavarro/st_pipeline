@@ -13,8 +13,8 @@ The ST Pipeline is fully parallel and has constant memory use.
 The following files/parameters are required :
 - FASTQ files (Read 1 containing the spatial information and the UMI and read 2 containing the genomic sequence) 
 - A genome index generated with STAR 
-- An annotation file in GTF or GFF3 format
-- The file containing the barcodes and array coordinates (look at the folder "ids" and chose the correct one). Basically this file contains 3 columns (BARCODE, X and Y), so if you provide this file with barcodes identinfying cells (for example), the ST pipeline can be used for single cell data.
+- An annotation file in GTF or GFF3 format (optional when using a transcriptome)
+- The file containing the barcodes and array coordinates (look at the folder "ids" and chose the correct one). Basically this file contains 3 columns (BARCODE, X and Y), so if you provide this file with barcodes identinfying cells (for example), the ST pipeline can be used for single cell data. This file is also optional if the data is not barcode (for example RNA-Seq data).
 - A name for the dataset
 
 The ST pipeline has multiple parameters mostly related to trimming, mapping and annotation but generally the default values are good enough. You can see a full description of the parameters typing "st_pipeline_run.py --help" after you have installed the ST pipeline.
