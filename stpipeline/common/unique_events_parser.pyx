@@ -131,7 +131,7 @@ class uniqueEventsParser():
                 start, end = end, start
 
             # Get TAGGD tags from the bam file
-            x,y,gene,umi = (-1,-1,'None','None')
+            x,y,gene,umi = (-1,-1,None,None)
             for (k, v) in rec.tags:
                 if k == "B1":
                     x = int(v) ## The X coordinate

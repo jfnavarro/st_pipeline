@@ -461,3 +461,6 @@ Version 1.6.5
 * Improved the st_qa.py script
 * Few small improvements in the annotation step
 * Added support to use a transcriptome (--transcriptome)
+
+Version 1.7.0
+* Removed parallel code that made the pipeline actually slower

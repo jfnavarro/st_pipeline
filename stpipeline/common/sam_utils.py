@@ -64,7 +64,7 @@ def split_bam(input_bamfile_name, temp_dir, threads):
     """
     Splits a BAM file in to parts with equal read counts.
     The number of parts to split the BAM File into equals the 
-    number of cores on the machine.
+    number of cores given as input.
     :param input_bamfile_name: path to the BAM file to be splitted
     :param temp_dir: path to the folder where to put the created files
     :param threads: the number of CPU cores to use
@@ -138,8 +138,8 @@ def convert_to_AlignedSegment(header, sequence, quality,
 def merge_bam(merged_file_name, files_to_merge, ubam=False):
     """
     Function for merging partial BAM files into one.
-    :param merged_file_name: name of the merged output bamfile
-    :param files_to_merge: list with names of the partial bamfiles to merge
+    :param merged_file_name: name of the merged output bam file
+    :param files_to_merge: list with names of the partial bam files to merge
     :param ubam: indicates unaligned bam file (True or False, default False)
     :returns: the total number of records
     """
