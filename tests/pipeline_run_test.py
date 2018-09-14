@@ -12,6 +12,7 @@ import numpy as np
 from subprocess import check_call
 from stpipeline.core.pipeline import Pipeline
 import os
+from shutil import copyfile
 
 class TestPipeline(unittest.TestCase):
  
@@ -51,8 +52,8 @@ class TestPipeline(unittest.TestCase):
         # Download and unpack fasta files
         try:
             print "ST Pipeline Test Downloading genome files..."
-            urllib.urlretrieve ("ftp://ftp.ensembl.org/pub/release-79/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.19.fa.gz", 
-                                genomefastagz)
+            copyfile(os.path.join(testdir, "config/Homo_sapiens.GRCh38.dna.chromosome.19.fa.gz"), 
+                     genomefastagz)
             check_call(['gunzip', genomefastagz])
         except Exception as e:
             print str(e)

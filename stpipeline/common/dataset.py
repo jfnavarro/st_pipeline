@@ -10,8 +10,7 @@ import numpy as np
 from collections import defaultdict
 import pandas as pd
 from stpipeline.common.clustering import *
-from stpipeline.common.unique_events_parser import uniqueEventsParser
-from stpipeline.common.sam_utils import parseUniqueEventsSlow
+from stpipeline.common.unique_events_parser import parse_unique_events
 import logging
 import sys
 
@@ -126,8 +125,8 @@ def createDataset(input_file,
     list_indexes = list()   
 
     # Parse unique events to generate the unique counts and the BED file   
-    unique_events = uniqueEventsParser(input_file, gff_filename).all_unique_events() \
-    if gff_filename is not None else parseUniqueEventsSlow(input_file).iteritems()
+    unique_events = parse_unique_events(input_file, gff_filename) \
+    if gff_filename is not None else parse_unique_events(input_file).iteritems()
     with open(os.path.join(output_folder, filenameReadsBED), "w") as reads_handler:
         # this is the generator returning a dictionary with spots for each gene
         for gene, spots in unique_events: 

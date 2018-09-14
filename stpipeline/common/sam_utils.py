@@ -8,63 +8,11 @@ import logging
 from collections import defaultdict
 import math
 
-# NOTE olf function only kept for convenience
-def parseUniqueEventsSlow(filename):
-    """
-    Parses the transcripts present in the filename given as input.
-    It expects a BAM file where the spot coordinates, 
-    gene and UMI are present as extra tags
-    The output will be a dictionary 
-    [spot][gene] -> (chrom, start, end, clear_name, mapping_quality, strand, umi). 
-    :param filename: the input file containing the annotated BAM records
-    :return: A dictionary of spots(x,y) to a map of gene names to a list of transcripts 
-    (chrom, start, end, clear_name, mapping_quality, strand, umi)
-    As map[(x,y)][gene]->list((chrom, start, end, clear_name, mapping_quality, strand, UMI))
-    """
-    logger = logging.getLogger("STPipeline")
-    unique_events = defaultdict(lambda : defaultdict(list))
-    sam_file = pysam.AlignmentFile(filename, "rb")
-    for rec in sam_file.fetch(until_eof=True):
-        clear_name = rec.query_name
-        mapping_quality = rec.mapping_quality
-        # Account for soft-clipped bases when retrieving the start/end coordinates
-        start = int(rec.reference_start - rec.query_alignment_start)
-        end = int(rec.reference_end + (rec.query_length - rec.query_alignment_end))
-        chrom = sam_file.getrname(rec.reference_id)
-        strand = "+" 
-        if rec.is_reverse:
-            # We swap start and end if the transcript mapped to the reverse strand
-            strand = "-" 
-            start, end = end, start
-        # Get TAGGD tags
-        x,y,gene,umi = (None,None,None,None)
-        for (k, v) in rec.tags:
-            if k == "B1":
-                x = int(v) ## The X coordinate
-            elif k == "B2":
-                y = int(v) ## The Y coordinate
-            elif k == "XF":
-                gene = str(v) ## The gene name
-            elif k == "B3":
-                umi = str(v) ## The UMI
-            else:
-                continue
-        # Check that all tags are present
-        if None in [x,y,gene,umi]:
-            logger.warning("Warning parsing annotated reads.\n" \
-                           "Missing attributes for record {}\n".format(clear_name))
-            continue
-        # Create a new transcript and add it to the dictionary
-        transcript = (chrom, start, end, clear_name, mapping_quality, strand, umi)
-        unique_events[gene][(x,y)].append(transcript)
-    sam_file.close()
-    return unique_events
-
 def split_bam(input_bamfile_name, temp_dir, threads):
     """
     Splits a BAM file in to parts with equal read counts.
     The number of parts to split the BAM File into equals the 
-    number of cores on the machine.
+    number of cores given as input.
     :param input_bamfile_name: path to the BAM file to be splitted
     :param temp_dir: path to the folder where to put the created files
     :param threads: the number of CPU cores to use
@@ -138,8 +86,8 @@ def convert_to_AlignedSegment(header, sequence, quality,
 def merge_bam(merged_file_name, files_to_merge, ubam=False):
     """
     Function for merging partial BAM files into one.
-    :param merged_file_name: name of the merged output bamfile
-    :param files_to_merge: list with names of the partial bamfiles to merge
+    :param merged_file_name: name of the merged output bam file
+    :param files_to_merge: list with names of the partial bam files to merge
     :param ubam: indicates unaligned bam file (True or False, default False)
     :returns: the total number of records
     """

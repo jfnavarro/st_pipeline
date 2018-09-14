@@ -683,9 +683,7 @@ class Pipeline():
         # Start the filterInputReads function
         self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
         try:
-            inputfilter = InputReadsFilter()
-            inputfilter.input_arguments(
-                             self.fastq_fw,
+            InputReadsFilter(self.fastq_fw,
                              self.fastq_rv,
                              FILENAMES["quality_trimmed_R2"],
                              FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
@@ -707,17 +705,17 @@ class Pipeline():
                              self.umi_filter_template,
                              self.umi_quality_bases,
                              self.adaptor_missmatches,
-                             self.threads,
                              self.overhang,
                              self.disable_umi,
                              self.disable_barcode)
-            inputfilter.run()
         except Exception:
             raise
         
         # After filtering is completed remove the temporary FIFOs
-        if is_fifo(temp_r1_fifo_name): os.remove(temp_r1_fifo_name)
-        if is_fifo(temp_r2_fifo_name): os.remove(temp_r2_fifo_name)
+        if is_fifo(temp_r1_fifo_name): 
+            os.remove(temp_r1_fifo_name)
+        if is_fifo(temp_r2_fifo_name): 
+            os.remove(temp_r2_fifo_name)
         
         #=================================================================
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. typically bacterial rRNA

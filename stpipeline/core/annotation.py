@@ -45,7 +45,7 @@ def count_reads_in_features(sam_filename,
                             outputDiscarded):
     """
     This is taken from the function count_reads_in_features() from the 
-    script htseq-count in the HTSeq package version 0.61.p2 
+    script htseq-count in the HTSeq package version 0.70 
     The reason to do so is to fix two really small bugs related to the SAM output.
     The code of the function is small and simple so for now we
     will use the patched function here. A patch request has been sent
@@ -210,8 +210,6 @@ def annotateReads(mappedReads,
     version of the htseq-count tool. It writes the annotated records to a file.
     It assumes the input reads (BAM) are single end and do not contain
     multiple alignments or un-annotated reads.
-    It splits the BAM file into small files to perform the annotation separately
-    and then join the results.
     :param mappedReads: path to a BAM file with mapped reads sorted by coordinate
     :param gtfFile: path to an annotation file in GTF format
     :param outputFile: where to write the annotated records (BAM)
@@ -244,84 +242,30 @@ def annotateReads(mappedReads,
         error = "Error during annotation, input file not present {}\n".format(mappedReads)
         logger.error(error)
         raise RuntimeError(error)
-
-    # split input BAM file 
-    sub_input_files = split_bam(mappedReads, temp_dir, threads)
-    num_parts = len(sub_input_files)
     
-    # the name of the splitted output files
-    sub_out_files = [os.path.join(temp_dir, "tmp_annotated_part_{}.bam".format(part)) 
-                     for part in range(num_parts)]
-    
-    # the name of the splitted output discarded files
-    sub_out_discarded_files = [os.path.join(temp_dir, 
-                                            "tmp_annotated_discarded_part_{}.bam".format(part))
-                               if outputDiscarded else None 
-                               for part in range(num_parts)]
-    
-    # counter of annotated reads
-    annotated = 0
-    discarded_annotations = 0
     try:
-        # create an annotation subprocess for each partial input BAM
-        subprocesses = [multiprocessing.Process(
-            target=count_reads_in_features,
-            args=(
-                input,
-                gtfFile,
-                "bam", # Type BAM for files
-                strandness, # Strand yes/no/reverse
-                mode, # intersection_nonempty, union, intersection_strict
-                "exon", # feature type in GFF
-                "gene_id", # gene_id or gene_name
-                True, # Quiet mode
-                0, # Min quality score
-                output,
-                include_non_annotated,
-                htseq_no_ambiguous,
-                discarded
-            )) for input, output, discarded in izip(sub_input_files, 
-                                                    sub_out_files, 
-                                                    sub_out_discarded_files)]
-
-        # start work in child processes
-        for p in subprocesses: 
-            p.start()
-
-        # wait for all processes to finish
-        while True in [p.is_alive() for p in subprocesses]: 
-            time.sleep(0.1)
-
-        # join the children
-        for p in subprocesses:
-            assert p.exitcode == 0, "Error during annotation: subprocess error."
-            p.join()
-
-        # merge the annotated BAM files and summmarize the stats
-        annotated = merge_bam(outputFile, sub_out_files)
-        if outputDiscarded:
-            discarded_annotations = merge_bam(outputDiscarded, sub_out_discarded_files)
-        
+        annotated = count_reads_in_features(mappedReads,
+                                            gtfFile,
+                                            "bam", # Type BAM for filesz
+                                            strandness, # Strand yes/no/reverse
+                                            mode, # intersection_nonempty, union, intersection_strict
+                                            "exon", # feature type in GFF
+                                            "gene_id", # gene_id or gene_name
+                                            True, # Quiet mode
+                                            0, # Min quality score
+                                            outputFile,
+                                            include_non_annotated,
+                                            htseq_no_ambiguous,
+                                            outputDiscarded)
     except Exception as e:
         error = "Error during annotation. HTSEQ execution failed\n"
         logger.error(error)
         raise e
-    finally:
-        # remove the sub-files
-        for input, output, discarded in izip(sub_input_files,
-                                             sub_out_files,
-                                             sub_out_discarded_files):
-            if os.path.isfile(input):
-                os.remove(input)
-            if os.path.isfile(output):
-                os.remove(output)
-            if discarded and os.path.isfile(discarded):
-                os.remove(discarded)                    
-               
+    
     if not fileOk(outputFile) or annotated == 0:
         error = "Error during annotation. Output file not present {}\n".format(outputFile)
         logger.error(error)
         raise RuntimeError(error)
-
+    
     logger.info("Annotated reads: {}".format(annotated))
     qa_stats.reads_after_annotation = annotated
