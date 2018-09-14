@@ -29,6 +29,7 @@ install:
     - conda install -c conda-forge regex=2017.04.05
     - conda install scikit-learn
     - conda install invoke
+    - conda install matplotlib
     - pip install htseq
     - pip install taggd
     - python setup.py build
