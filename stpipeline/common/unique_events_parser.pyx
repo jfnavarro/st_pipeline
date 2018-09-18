@@ -139,8 +139,9 @@ class geneBuffer():
         cdef str chrom
         cdef int end_position
         #NOTE seems like we have to go trough all the genes
-        #in bugger every time we want to check and clear
+        #in the buffer every time we want to check and clear
         #we cannot rely on the gene's genomic coordinates only
+        #even though the BAM file is sorted by position
         for gene in _tmp:
             # fix to include any "__no_feature" annotations
             if gene == '__no_feature' and not empty: 
@@ -154,7 +155,7 @@ class geneBuffer():
                 del self.buffer[gene]
         return gene_transcripts
                 
-def parse_unique_events(input_file, gff_filename):
+def parse_unique_events(input_file, gff_filename=None):
     """
     This function parses the transcripts present in the filename given as input.
     It expects a coordinate sorted BAM file where the spot coordinates,
@@ -162,7 +163,7 @@ def parse_unique_events(input_file, gff_filename):
     Will yield a dictionary per gene with a spot coordinate tuple as keys
     foreach gene yield: [spot] -> [(chrom, start, end, clear_name, mapping_quality, strand, umi), ... ]
     :param filename: the input file containing the annotated BAM records
-    :param gff_filename: the gff file containing the gene coordinates
+    :param gff_filename: the gff file containing the gene coordinates (optional)
     """
     cdef object genes_buffer = geneBuffer(gff_filename) if gff_filename is not None else None
     cdef object genes_dict = dict()
