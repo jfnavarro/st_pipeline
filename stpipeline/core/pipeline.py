@@ -457,7 +457,8 @@ class Pipeline():
         self.verbose = options.verbose
         self.ids = os.path.abspath(options.ids)
         self.ref_map = os.path.abspath(options.ref_map)
-        self.ref_annotation = os.path.abspath(options.ref_annotation)
+        self.ref_annotation = os.path.abspath(options.ref_annotation) \
+        if options.ref_annotation is not None else None
         self.expName = options.expName
         self.htseq_mode = options.htseq_mode
         self.htseq_no_ambiguous = options.htseq_no_ambiguous
