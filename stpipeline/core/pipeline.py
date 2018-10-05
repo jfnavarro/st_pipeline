@@ -889,7 +889,7 @@ class Pipeline():
         # To compute saturation points we need the number of annotated reads
         # the fastest way is to get that information from the stats object
         if self.compute_saturation:
-            reads = qa_stats.reads_after_annotation if not self.transcriptome else self.reads_after_demultiplexing
+            reads = qa_stats.reads_after_annotation if not self.transcriptome else qa_stats.reads_after_demultiplexing
             self.logger.info("Starting computing saturation points {}".format(globaltime.getTimestamp()))
             try:
                 computeSaturation(reads,
