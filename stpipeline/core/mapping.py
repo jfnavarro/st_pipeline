@@ -318,6 +318,7 @@ def barcodeDemultiplexing(reads,
             logger.info(str(line))
         if line.find("Total reads written:") != -1:
             logger.info(str(line))
+            qa_stats.reads_after_demultiplexing = line.split()[-1]
         if line.find("Perfect Matches:") != -1:
             logger.info(str(line))
         if line.find("Imperfect Matches") != -1:

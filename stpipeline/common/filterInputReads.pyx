@@ -168,7 +168,7 @@ def InputReadsFilter(fw,
             umi_qual = quality_fw[umi_start:umi_end]
             if not discard_read and (umi_end - umi_start) >= umi_quality_bases and \
             len([b for b in umi_qual if (ord(b) - phred) < min_qual]) > umi_quality_bases:
-                discard_read += 1
+                dropped_umi += 1
                 discard_read = True
         else:
             umi_seq = None
@@ -176,13 +176,13 @@ def InputReadsFilter(fw,
         # If reverse read has a high AT content discard...
         if not discard_read and do_AT_filter and \
         ((sequence_rv.count("A") + sequence_rv.count("T")) / len(sequence_rv)) * 100 >= filter_AT_content:
-            discard_read += dropped_AT
+            dropped_AT += 1
             discard_read = True
 
         # If reverse read has a high GC content discard...
         if not discard_read and do_GC_filter and \
         ((sequence_rv.count("G") + sequence_rv.count("C")) / len(sequence_rv)) * 100 >= filter_GC_content:
-            discard_read += dropped_GC
+            dropped_GC += 1
             discard_read = True
 
         if not discard_read:
@@ -205,7 +205,7 @@ def InputReadsFilter(fw,
 
             # Check if the read is smaller than the minimum after removing artifacts
             if len(sequence_rv) < min_length:
-                discard_read += dropped_adaptor
+                dropped_adaptor += 1
                 discard_read = True
 
         if not discard_read:
@@ -217,7 +217,7 @@ def InputReadsFilter(fw,
                 min_length,
                 phred)
             if not sequence_rv or not quality_rv:
-                discard_read += too_short_after_trimming
+                too_short_after_trimming += 1
                 discard_read = True
 
         if not discard_read:
