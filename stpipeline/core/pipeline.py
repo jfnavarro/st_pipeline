@@ -399,6 +399,9 @@ class Pipeline():
         parser.add_argument('--compute-saturation', action="store_true", default=False,
                             help="Performs a saturation curve computation by sub-sampling the annotated reads, computing " \
                             "unique molecules and then a saturation curve (included in the log file)")
+        parser.add_argument("--saturation-points", default=None, nargs='+', type=int,
+                            help="Saturation points can be provided instead of using default values.\n" \
+                            "Provide separate values like this for example: 10000 20000 50000 100000")
         parser.add_argument('--include-non-annotated', action="store_true", default=False,
                             help="Do not discard un-annotated reads (they will be labeled __no_feature)")
         parser.add_argument('--inverse-mapping-rv-trimming', default=0, type=int, metavar="[INT]", choices=range(0, 50),
