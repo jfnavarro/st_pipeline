@@ -445,9 +445,6 @@ class Pipeline():
                             help="Use this flag if you want to skip the UMI filtering step" )
         parser.add_argument("--transcriptome", default=False, action="store_true",
                             help="Use a transcriptome instead of a genome, the gene tag will be obtained from the transcriptome file" )
-        parser.add_argument("--saturation-points", default=None, nargs='+', type=int,
-                            help="Saturation points can be provided instead of using default values.\n" \
-                            "Provide separate values like this for example: 10000 20000 50000 100000")
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
