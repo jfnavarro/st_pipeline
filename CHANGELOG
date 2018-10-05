@@ -463,4 +463,5 @@ Version 1.6.5
 * Added support to use a transcriptome (--transcriptome)
 
 Version 1.7.0
-* Removed parallel code that made the pipeline actually slower
+* Removed parallel code for un-necessary parts
+* Added option to provide saturation points

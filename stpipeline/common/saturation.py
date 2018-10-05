@@ -21,7 +21,8 @@ def computeSaturation(nreads,
                       umi_counting_offset,
                       diable_umi,
                       expName,
-                      temp_folder=None):
+                      temp_folder=None,
+                      saturation_points=None):
     """
     It splits the input file up into sub-files containing
     random reads from the input file up to the saturation point. 
@@ -37,6 +38,7 @@ def computeSaturation(nreads,
     :param diable_umi: when True the UMI filtering step will not be performed
     :param expName: the name of the dataset
     :param temp_folder: the path where to put the output files
+    :param saturation_points: a list of saturation points to be used
     :type nreads: integer
     :type annotated_reads: str
     :type umi_cluster_algorithm: str
@@ -45,6 +47,7 @@ def computeSaturation(nreads,
     :type diable_umi: bool
     :type expName: str
     :type temp_folder: str
+    :type saturation_points: list
     :raises: RuntimeError
     """
     logger = logging.getLogger("STPipeline")
@@ -54,13 +57,21 @@ def computeSaturation(nreads,
         logger.error(error)
         raise RuntimeError(error)
     
-    # Create a list of 15 saturation points (different number of reads)
-    saturation_points = list()
-    for x in xrange(0,15):
-        spoint = int(math.floor(1e5 + (math.exp(x) * 1e5)))
-        if spoint >= nreads:
-            break
-        saturation_points.append(spoint)
+    if saturation_points is not None:
+        saturation_points = [p for p in saturation_points if p < nreads]
+        if len(saturation_points) == 0:
+            error = "Error, all saturation points provided are bigger than the number" \
+            " of annotated reads {}\n".format(nreads)
+            logger.error(error)
+            raise RuntimeError(error)     
+    else:
+         # Create a list of 15 saturation points (different number of reads)
+        saturation_points = list()
+        for x in xrange(0,15):
+            spoint = int(math.floor(1e5 + (math.exp(x) * 1e5)))
+            if spoint >= nreads:
+                break
+            saturation_points.append(spoint)
         
     files = dict()
     file_names = dict()

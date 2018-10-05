@@ -106,6 +106,7 @@ class Pipeline():
         self.disable_umi = False
         self.disable_barcode = False
         self.transcriptome = False
+        self.saturation_points = None
         
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -175,11 +176,15 @@ class Pipeline():
             raise RuntimeError(error)      
         
         if not self.disable_barcode and self.ids is None:
-            error = "Error IDs file is missing but the option to disable the "\
+            error = "Error IDs file is missing but the option to disable the " \
             "demultiplexing step is not activated\n"
             self.logger.error(error)
             raise RuntimeError(error)   
            
+        if self.saturation_points is not None and not self.compute_saturation:
+            self.logger.warning("Saturation points are provided but the option" \
+                                "to compute saturation is disabled.")
+            
         if not self.disable_umi and self.umi_filter:
             # Check template validity
             import re
@@ -437,6 +442,9 @@ class Pipeline():
                             help="Use this flag if you want to skip the UMI filtering step" )
         parser.add_argument("--transcriptome", default=False, action="store_true",
                             help="Use a transcriptome instead of a genome, the gene tag will be obtained from the transcriptome file" )
+        parser.add_argument("--saturation-points", default=None, nargs='+', type=int,
+                            help="Saturation points can be provided instead of using default values.\n" \
+                            "Provide separate values like this for example: 10000 20000 50000 100000")
         parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
         return parser
          
@@ -513,6 +521,7 @@ class Pipeline():
         self.disable_barcode = options.disable_barcode
         self.disable_umi = options.disable_umi
         self.transcriptome = options.transcriptome
+        self.saturation_points = options.saturation_points
         
         # Assign class parameters to the QA stats object
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
@@ -578,6 +587,8 @@ class Pipeline():
         self.logger.info("STAR genome loading strategy {}".format(self.star_genome_loading))
         if self.compute_saturation:
             self.logger.info("Computing saturation curve with several sub-samples...")
+            if self.saturation_points is not None:
+                self.logger.info("Using the following points {}".format(' '.join(str(p) for p in self.saturation_points)))
         if self.include_non_annotated:
             self.logger.info("Including non annotated reads in the output")
         if not self.disable_umi:
@@ -889,7 +900,8 @@ class Pipeline():
                                   self.umi_counting_offset,
                                   self.disable_umi,
                                   self.expName,
-                                  self.temp_folder)
+                                  self.temp_folder,
+                                  self.saturation_points)
             except Exception:
                 raise
                 
