@@ -521,7 +521,8 @@ class Pipeline():
         self.disable_barcode = options.disable_barcode
         self.disable_umi = options.disable_umi
         self.transcriptome = options.transcriptome
-        self.saturation_points = [int(p) for p in options.saturation_points]
+        self.saturation_points = [int(p) for p in options.saturation_points] \
+        if options.saturation_points is not None else None
         
         # Assign class parameters to the QA stats object
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
