@@ -50,7 +50,7 @@ def computeUniqueUMIs(transcripts, umi_counting_offset, umi_allowed_mismatches, 
 
 def createDataset(input_file,
                   qa_stats,
-                  gff_filename,
+                  gff_filename=None,
                   umi_cluster_algorithm="hierarchical",
                   umi_allowed_mismatches=1,
                   umi_counting_offset=250,
@@ -125,8 +125,7 @@ def createDataset(input_file,
     list_indexes = list()   
 
     # Parse unique events to generate the unique counts and the BED file   
-    unique_events = parse_unique_events(input_file, gff_filename) \
-    if gff_filename is not None else parse_unique_events(input_file).iteritems()
+    unique_events = parse_unique_events(input_file, gff_filename)
     with open(os.path.join(output_folder, filenameReadsBED), "w") as reads_handler:
         # this is the generator returning a dictionary with spots for each gene
         for gene, spots in unique_events: 
