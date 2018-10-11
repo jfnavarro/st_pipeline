@@ -179,7 +179,7 @@ def parse_unique_events(input_file, gff_filename=None):
     cdef int x
     cdef int y
     cdef str gene
-
+    
     # Open the log file and open the bam file for reading
     sam_file = pysam.AlignmentFile(input_file, "rb")
     
@@ -223,9 +223,12 @@ def parse_unique_events(input_file, gff_filename=None):
                 yield (g, t)
         else:
             try:
-                genes_dict[gene].append(transcript)
+                genes_dict[gene][(x,y)].append(transcript)
             except KeyError:
-                genes_dict[gene] = [transcript]
+                try:    
+                    genes_dict[gene][(x,y)] = [transcript]
+                except KeyError:
+                    genes_dict[gene] = {(x,y):[transcript]}
         
     # Close the bam file and yield the last gene(s)
     sam_file.close()
@@ -233,4 +236,6 @@ def parse_unique_events(input_file, gff_filename=None):
         for g, t in genes_buffer.check_and_clear_buffer(True):
             yield (g, t)
     else:
-        return genes_dict
+        for (g,t) in genes_dict.iteritems():
+            yield (g,t)
+

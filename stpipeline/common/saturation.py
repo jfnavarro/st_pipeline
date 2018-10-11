@@ -56,9 +56,10 @@ def computeSaturation(nreads,
         error = "Error, input file not present {}\n".format(annotated_reads)
         logger.error(error)
         raise RuntimeError(error)
-    
+
     if saturation_points is not None:
-        saturation_points = [p for p in saturation_points if p < nreads]
+        saturation_points = [p for p in saturation_points if p < int(nreads)]
+
         if len(saturation_points) == 0:
             error = "Error, all saturation points provided are bigger than the number" \
             " of annotated reads {}\n".format(nreads)
@@ -69,10 +70,10 @@ def computeSaturation(nreads,
         saturation_points = list()
         for x in xrange(0,15):
             spoint = int(math.floor(1e5 + (math.exp(x) * 1e5)))
-            if spoint >= nreads:
+            if spoint >= int(nreads):
                 break
             saturation_points.append(spoint)
-        
+
     files = dict()
     file_names = dict()
     subsampling = dict()
@@ -94,7 +95,7 @@ def computeSaturation(nreads,
         file_names[spoint] = file_name
         files[spoint] = output_sam
         # Generate a list of indexes in the sam file to extract sub samples 
-        indices = list(xrange(nreads))
+        indices = list(xrange(int(nreads)))
         random.shuffle(indices)
         subbed = indices[0:spoint]
         subbed.sort()
