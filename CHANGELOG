@@ -462,6 +462,6 @@ Version 1.6.5
 * Few small improvements in the annotation step
 * Added support to use a transcriptome (--transcriptome)
 
-Version 1.7.0
+Version 1.7.2
 * Removed parallel code for un-necessary parts
 * Added option to provide saturation points
