@@ -119,7 +119,6 @@ def main(input_data):
               output=input_name + "_hist_genes_gene_2.pdf", title="Genes per gene (>2)")
         
     # Generate density plots
-    fig = plt.figure()
     sns.distplot(aggregated_gene_counts, hist=False, label="Counts > 0")
     sns.distplot(aggregated_gene_counts_1, hist=False, label="Counts > 1")
     sns_plot = sns.distplot(aggregated_gene_counts_2, 
@@ -127,7 +126,6 @@ def main(input_data):
     fig = sns_plot.get_figure()
     fig.savefig(input_name + "_density_genes_by_spot.pdf")
     
-    fig = plt.figure()
     sns.distplot(aggregated_gene_gene_counts, hist=False, label="Counts > 0")
     sns.distplot(aggregated_gene_gene_counts_1, hist=False, label="Counts > 1")
     sns_plot = sns.distplot(aggregated_gene_gene_counts_2, 
