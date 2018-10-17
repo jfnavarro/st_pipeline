@@ -134,6 +134,13 @@ want to obtain more detail information about the quality of the data, you can ru
 
 	st_qa.py --input-data stdata.tsv 
 	
+If you want to perform quality stats on multiple samples you can run:
+
+	multi_qa.py --counts-table-files stdata1.tsv stadata2.tsv stdata3.tsv ... 
+	
+Multi_qa.py generates violing plots, correlation plots/tables and more useful information and 
+it allows to log the counts for the correlation.
+	
 **Documentation**
 
 You can see a more detailed documentation in the folder "doc_out".
