@@ -59,10 +59,11 @@ def main(st_data_file, annotation, output_file):
                 # We assume input Ensemgl ids are unique as we checked this before
                 gene_name = gene_id
                 sys.stdout.write("Warning, gene name {} was already matched so the original " \
-                "Ensembl ID {} will be kept\n".format(gene_name, gene_id))
+                                 "Ensembl ID {} will be kept\n".format(gene_name, gene_id))
         except KeyError:
             sys.stdout.write("Warning, {} was not found in the annotation, " \
-                             "so the original Ensembl ID {} will be kept\n".format(gene_id))
+                             "so the original Ensembl ID will be kept\n".format(gene_id))
+            gene_name = gene_id
         adjustedList.append(gene_name)
 
     # Update the table with the gene names

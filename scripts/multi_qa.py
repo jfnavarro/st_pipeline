@@ -38,11 +38,11 @@ def create_violin_plot(data, pos, labels, title, fontsize, outfile):
     ax.violinplot(data, pos, points=50, widths=0.5,
                   showmeans=True, showextrema=True, showmedians=True)
     ax.set_xticklabels(labels, rotation=90, fontsize=6)
-    ax.set_xlim(0.5, len(labels) + 0.5)
+    #ax.set_xlim(0.5, len(labels) + 0.5)
     ax.set_axisbelow(True)
     ax.set_title(title)
-    ax.get_xaxis().set_tick_params(direction='out')
-    ax.xaxis.set_ticks_position('bottom')
+    #ax.get_xaxis().set_tick_params(direction='out')
+    #ax.xaxis.set_ticks_position('bottom')
     fig.savefig(outfile, format='pdf', dpi=90)
         
 def create_pca_plot(data, labels, title, outfile):
@@ -59,7 +59,7 @@ def create_pca_plot(data, labels, title, outfile):
     ax.legend(recs, labels, loc=4)
     fig.savefig(outfile, format='pdf', dpi=90)   
       
-def main(counts_table_files, outdir, use_log, n_col):
+def main(counts_table_files, outdir, use_log):
 
     if len(counts_table_files) == 0 or \
     any([not os.path.isfile(f) for f in counts_table_files]):
@@ -104,8 +104,8 @@ def main(counts_table_files, outdir, use_log, n_col):
                        "Total genes", 6, os.path.join(outdir, "violin_plot_genes.pdf"))   
     
     # Compute and plot PCA (sum gene counts)    
-    decomp_model = PCA(n_components=2, whiten=True, copy=True)
-    reduced_data = decomp_model.fit_transform(genes_counts)
+    decomp_model = PCA(n_components=2, whiten=False, copy=True)
+    reduced_data = decomp_model.fit_transform(np.log1p(genes_counts))
     create_pca_plot(reduced_data, genes_counts.index, 
                     "PCA (sum gene counts", os.path.join(outdir, "pca.pdf"))
 
@@ -116,10 +116,9 @@ def main(counts_table_files, outdir, use_log, n_col):
     genes_correlations = pd.DataFrame(index=counts_table_files, columns=counts_table_files)
     genes_correlations.fillna(0)
 
-    n_plots = len(counts_table_files) * len(counts_table_files)
-    n_col = min(n_col, n_plots) 
-    n_row = max(int(n_plots / n_col), 1) 
-    plt.rcParams.update({'font.size': 4})
+    n_col = len(counts_table_files)
+    n_row = len(counts_table_files)
+    plt.rcParams.update({'font.size': 6})
     fig, ax = plt.subplots(n_col, n_row, sharex='col', sharey='row', figsize=(14, 10))
     fig.subplots_adjust(hspace=0.4, wspace=0.4)
     for i,(d1,n1) in enumerate(datasets):
@@ -141,7 +140,7 @@ def main(counts_table_files, outdir, use_log, n_col):
             ax[i,j].set_xlabel(n1)
             ax[i,j].set_ylabel(n2)
     
-    fig.savefig(os.path.join(outdir,"gene_correlations.pdf"), format='pdf', dpi=90)
+    fig.savefig(os.path.join(outdir,"gene_correlations.png"), format='png', dpi=180)
     genes_similarities.to_csv(os.path.join(outdir,"gene_similarities.tsv"), sep='\t')
     genes_correlations.to_csv(os.path.join(outdir,"gene_correlations.tsv"), sep='\t')
 
@@ -153,11 +152,8 @@ if __name__ == '__main__':
     parser.add_argument("--outdir", default=None, help="Path to the output directory")
     parser.add_argument("--use-log-scale", action="store_true", default=False, 
                         help="Convert counts to log space for the correlation")
-    parser.add_argument("--num-columns", default=1, type=int, metavar="[INT]",
-                        help="The number of columns for the correlation plot (default: %(default)s)")
     args = parser.parse_args()
 
     main(args.counts_table_files,
          args.outdir,
-         args.use_log_scale,
-         args.num_columns)
+         args.use_log_scale)
