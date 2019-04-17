@@ -19,8 +19,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 def scatter_plot(x_points, y_points, output, colors,
-                 title="Scatter", xlabel="X", ylabel="Y",
-                 xlim=[1,33], ylim=[1,35]):
+                 title="Scatter", xlabel="X", ylabel="Y"):
     """ 
     This function makes a scatter plot of a set of points (x,y).
     and a given list of color values for each point.
@@ -44,8 +43,6 @@ def scatter_plot(x_points, y_points, output, colors,
               s=50)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    plt.xlim(xlim)
-    plt.ylim(ylim)
     plt.gca().invert_yaxis()
     plt.title(title)
     plt.colorbar()
@@ -143,22 +140,6 @@ def main(input_data):
     fig.savefig(input_name + "_scatter_reads_vs_genes.pdf")
     plt.clf() 
     
-    # Get the spot coordinates
-    x_points = list()
-    y_points = list()
-    for spot in counts_table.index:
-        tokens = spot.split("x")
-        assert(len(tokens) == 2)
-        y_points.append(float(tokens[1]))
-        x_points.append(float(tokens[0]))
-    # Generate scatter plots
-    scatter_plot(x_points, y_points, colors=aggregated_spot_counts, 
-                 xlabel="X", ylabel="Y", output=input_name + "_heatmap_counts.pdf", 
-                 title="Heatmap expression")
-    scatter_plot(x_points, y_points, colors=aggregated_gene_counts, 
-                 xlabel="X", ylabel="Y", output=input_name + "_heatmap_genes.pdf", 
-                 title="Heatmap genes")
-    
     sns_plot = sns.scatterplot(x=aggregated_spot_counts, y=aggregated_gene_counts)
     sns_plot = sns.scatterplot(x=aggregated_spot_counts, y=aggregated_gene_gene_counts_1)
     sns_plot = sns.scatterplot(x=aggregated_spot_counts, y=aggregated_gene_gene_counts_2)
@@ -190,6 +171,22 @@ def main(input_data):
     print("".join(qa_stats))
     with open("{}_qa_stats.txt".format(input_name), "a") as outfile:
         outfile.write("".join(qa_stats))
+        
+    # Generate scatter plots
+    # Get the spot coordinates
+    x_points = list()
+    y_points = list()
+    for spot in counts_table.index:
+        tokens = spot.split("x")
+        assert(len(tokens) == 2)
+        y_points.append(float(tokens[1]))
+        x_points.append(float(tokens[0]))
+    scatter_plot(x_points, y_points, colors=aggregated_spot_counts, 
+                 xlabel="X", ylabel="Y", output=input_name + "_heatmap_counts.pdf", 
+                 title="Heatmap expression")
+    scatter_plot(x_points, y_points, colors=aggregated_gene_counts, 
+                 xlabel="X", ylabel="Y", output=input_name + "_heatmap_genes.pdf", 
+                 title="Heatmap genes")
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
