@@ -844,10 +844,11 @@ class Pipeline():
                                       FILENAMES["demultiplexed_prefix"], # Prefix for output files
                                       self.keep_discarded_files)
                 # TaggD does not output the BAM file sorted
-                command = "samtools sort -T sort_bam -@ {} -o {} {}".format(self.threads,
+                command = "samtools sort -T {}/sort_bam -@ {} -o {} {}".format(self.temp_folder,
+                                                                            self.threads,
                                                                             FILENAMES["demultiplexed_matched"],
                                                                             FILENAMES["demultiplexed_matched"])
-                subprocess.check_call(command, shell=True) 
+                subprocess.check_call(command, shell=True)
             except Exception:
                 raise 
         
