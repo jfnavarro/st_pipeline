@@ -5,7 +5,7 @@
 [![PyPI version](https://badge.fury.io/py/stpipeline.svg)](https://badge.fury.io/py/stpipeline)
 
 The ST Pipeline contains the tools and scripts needed to process and analyze the raw files generated with the Spatial Transcriptomics technology in FASTQ format to generate datasets for down-stream analysis. 
-The ST pipeline can also be used to process single cell data as long as a file with barcodes identifying each cell is provided (same template as the files in the folder "ids").
+The ST pipeline can also be used to process single cell RNASeq data as long as a file with barcodes identifying each cell is provided (same template as the files in the folder "ids").
 
 The ST Pipeline has been optimized for speed, robustness and it is very easy to use with many parameters to adjust all the settings.
 The ST Pipeline is fully parallel and has constant memory use. 
@@ -180,5 +180,5 @@ The ST Pipeline requires to have installed
 in the system the aligner STAR (minimum version 2.5.4 if you use a ST Pipeline version >= 1.6.0) :
 https://github.com/alexdobin/STAR
 
-The ST Pipeline is recommended to be run on a computer with at least 32GB of RAM and 8 cpu cores. 
+The ST Pipeline is recommended to be run on a computer with at least 32GB of RAM (depending on the size of the genome) and 8 cpu cores. 
 

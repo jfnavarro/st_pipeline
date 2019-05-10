@@ -465,3 +465,7 @@ Version 1.6.5
 Version 1.7.2
 * Removed parallel code for un-necessary parts
 * Added option to provide saturation points
+
+Version 1.7.3
+* Fixed a small bug when soring the output of taggd
+* Improved the st_qa.py script

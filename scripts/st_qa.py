@@ -19,8 +19,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 def scatter_plot(x_points, y_points, output, colors,
-                 title="Scatter", xlabel="X", ylabel="Y",
-                 xlim=[1,33], ylim=[1,35]):
+                 title="Scatter", xlabel="X", ylabel="Y"):
     """ 
     This function makes a scatter plot of a set of points (x,y).
     and a given list of color values for each point.
@@ -44,8 +43,6 @@ def scatter_plot(x_points, y_points, output, colors,
               s=50)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    plt.xlim(xlim)
-    plt.ylim(ylim)
     plt.gca().invert_yaxis()
     plt.title(title)
     plt.colorbar()
@@ -111,28 +108,71 @@ def main(input_data):
               output=input_name + "_hist_genes_spots_1.pdf", title="Genes per spot (>1)")
     histogram(aggregated_gene_counts_2, nbins=20, xlabel="#Genes", ylabel="#Spots", 
               output=input_name + "_hist_genes_spots_2.pdf", title="Genes per spot (>2)")
-    histogram(aggregated_gene_gene_counts, nbins=20, xlabel="#Genes", ylabel="#Genes", 
-              output=input_name + "_hist_genes_gene.pdf", title="Genes per gene (>0)")
-    histogram(aggregated_gene_gene_counts_1, nbins=20, xlabel="#Genes", ylabel="#Genes", 
-              output=input_name + "_hist_genes_gene_1.pdf", title="Genes per gene (>1)")
-    histogram(aggregated_gene_gene_counts_2, nbins=20, xlabel="#Genes", ylabel="#Genes", 
-              output=input_name + "_hist_genes_gene_2.pdf", title="Genes per gene (>2)")
+    histogram(aggregated_gene_gene_counts, nbins=20, xlabel="#Spots", ylabel="#Genes", 
+              output=input_name + "_hist_spots_gene.pdf", title="Spots per gene (>0)")
+    histogram(aggregated_gene_gene_counts_1, nbins=20, xlabel="#Spots", ylabel="#Genes", 
+              output=input_name + "_hist_spots_gene_1.pdf", title="Spots per gene (>1)")
+    histogram(aggregated_gene_gene_counts_2, nbins=20, xlabel="#Spots", ylabel="#Genes", 
+              output=input_name + "_hist_spots_gene_2.pdf", title="Spots per gene (>2)")
+    plt.clf() 
         
     # Generate density plots
     sns.distplot(aggregated_gene_counts, hist=False, label="Counts > 0")
     sns.distplot(aggregated_gene_counts_1, hist=False, label="Counts > 1")
     sns_plot = sns.distplot(aggregated_gene_counts_2, 
-                            axlabel="#Spots", hist=False, label="Counts > 2")
+                            axlabel="#Genes", hist=False, label="Counts > 2")
     fig = sns_plot.get_figure()
     fig.savefig(input_name + "_density_genes_by_spot.pdf")
+    plt.clf()
     
     sns.distplot(aggregated_gene_gene_counts, hist=False, label="Counts > 0")
     sns.distplot(aggregated_gene_gene_counts_1, hist=False, label="Counts > 1")
     sns_plot = sns.distplot(aggregated_gene_gene_counts_2, 
-                            axlabel="#Genes", hist=False, label="Counts > 2")
+                            axlabel="#Spots", hist=False, label="Counts > 2")
     fig = sns_plot.get_figure()
-    fig.savefig(input_name + "_density_genes_by_gene.pdf")
+    fig.savefig(input_name + "_density_spots_by_gene.pdf")
+    plt.clf() 
     
+    sns.scatterplot(x=aggregated_spot_counts, y=aggregated_gene_counts, label="Gene counts >0")
+    sns.scatterplot(x=aggregated_spot_counts, y=aggregated_gene_counts_1, label="Gene counts >1")
+    sns_plot = sns.scatterplot(x=aggregated_spot_counts, y=aggregated_gene_counts_2, label="Gene counts >2")
+    fig = sns_plot.get_figure()
+    fig.savefig(input_name + "_scatter_reads_vs_genes.pdf")
+    plt.clf() 
+    
+    sns_plot = sns.scatterplot(x=aggregated_spot_counts, y=aggregated_gene_counts)
+    sns_plot = sns.scatterplot(x=aggregated_spot_counts, y=aggregated_gene_gene_counts_1)
+    sns_plot = sns.scatterplot(x=aggregated_spot_counts, y=aggregated_gene_gene_counts_2)
+    fig = sns_plot.get_figure()
+    fig.savefig(input_name + "_scatter_reads_vs_genes.pdf")
+    
+    sns_plot = sns.jointplot(x=aggregated_spot_counts, 
+                             y=aggregated_gene_counts, kind='kde', color="skyblue")
+    fig = sns_plot.get_figure()
+    fig.savefig(input_name + "_join_density_reads_vs_genes.pdf")
+    plt.clf() 
+    
+    qa_stats = [
+    ("Number of features: {}".format(total_barcodes)+"\n"),
+    ("Number of reads present: {}".format(total_transcripts)+"\n"),
+    ("Number of unique genes present: {}".format(number_genes)+"\n"),
+    ("Max number of genes over all spots: {}".format(max_genes_feature)+"\n"),
+    ("Min number of genes over all spots: {}".format(min_genes_feature)+"\n"),
+    ("Max number of reads over all spots: {}".format(max_reads_feature)+"\n"),
+    ("Min number of reads over all spots: {}".format(min_reads_feature)+"\n"),
+    ("Average number genes per spots: {}".format(average_genes_feature)+"\n"),
+    ("Average number reads per spot: {}".format(average_reads_feature)+"\n"),
+    ("Std number genes per spot: {}".format(std_genes_feature)+"\n"),
+    ("Std number reads per spot: {}".format(std_reads_feature)+"\n"),
+    ("Max number of reads over all unique events: {}".format(max_count)+"\n"),
+    ("Min number of reads over all unique events: {}".format(min_count)+"\n")
+    ]
+    # Print stats to stdout and a file
+    print("".join(qa_stats))
+    with open("{}_qa_stats.txt".format(input_name), "a") as outfile:
+        outfile.write("".join(qa_stats))
+        
+    # Generate scatter plots
     # Get the spot coordinates
     x_points = list()
     y_points = list()
@@ -141,33 +181,12 @@ def main(input_data):
         assert(len(tokens) == 2)
         y_points.append(float(tokens[1]))
         x_points.append(float(tokens[0]))
-    # Generate scatter plots
     scatter_plot(x_points, y_points, colors=aggregated_spot_counts, 
                  xlabel="X", ylabel="Y", output=input_name + "_heatmap_counts.pdf", 
                  title="Heatmap expression")
     scatter_plot(x_points, y_points, colors=aggregated_gene_counts, 
                  xlabel="X", ylabel="Y", output=input_name + "_heatmap_genes.pdf", 
                  title="Heatmap genes")
-
-    qa_stats = [
-    ("Number of features: {}".format(total_barcodes)+"\n"),
-    ("Number of unique molecules present: {}".format(total_transcripts)+"\n"),
-    ("Number of unique genes present: {}".format(number_genes)+"\n"),
-    ("Max number of genes over all spots: {}".format(max_genes_feature)+"\n"),
-    ("Min number of genes over all spots: {}".format(min_genes_feature)+"\n"),
-    ("Max number of unique molecules over all spots: {}".format(max_reads_feature)+"\n"),
-    ("Min number of unique molecules over all spots: {}".format(min_reads_feature)+"\n"),
-    ("Average number genes per spots: {}".format(average_genes_feature)+"\n"),
-    ("Average number unique molecules per spot: {}".format(average_reads_feature)+"\n"),
-    ("Std number genes per spot: {}".format(std_genes_feature)+"\n"),
-    ("Std number unique molecules per spot: {}".format(std_reads_feature)+"\n"),
-    ("Max number of unique molecules over all unique events: {}".format(max_count)+"\n"),
-    ("Min number of unique molecules over all unique events: {}".format(min_count)+"\n")
-    ]
-    # Print stats to stdout and a file
-    print("".join(qa_stats))
-    with open("{}_qa_stats.txt".format(input_name), "a") as outfile:
-        outfile.write("".join(qa_stats))
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
