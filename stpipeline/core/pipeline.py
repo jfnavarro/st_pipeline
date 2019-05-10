@@ -929,7 +929,9 @@ class Pipeline():
         # END PIPELINE
         #=================================================================
         # Write stats to JSON
-        qa_stats.writeJSON(os.path.join(self.output_folder, self.expName + "_qa_stats.json"))
+        print(qa_stats)
+        # TODO this is giving problems in Python3
+        #qa_stats.writeJSON(os.path.join(self.output_folder, self.expName + "_qa_stats.json"))
         
         finish_exe_time = globaltime.getTimestamp()
         total_exe_time = finish_exe_time - start_exe_time

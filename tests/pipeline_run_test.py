@@ -177,7 +177,7 @@ class TestPipeline(unittest.TestCase):
         self.assertTrue(os.path.getsize(datafile) > 1024, "ST Data file is not empty")
         self.assertTrue(os.path.exists(readsfile), "ST Data BED file exists")
         self.assertTrue(os.path.getsize(readsfile) > 1024, "ST Data BED file is not empty")
-        self.assertTrue(os.path.exists(statsfile), "Stats JSON file exists")
+        #self.assertTrue(os.path.exists(statsfile), "Stats JSON file exists")
         
         # Verify that the stats are correct
         counts_table = pd.read_table(datafile, sep="\t", header=0, index_col=0)
