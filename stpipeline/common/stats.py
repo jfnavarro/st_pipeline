@@ -79,7 +79,7 @@ class Stats():
                          "genes_found" : self.genes_found,
                          "duplicates_found" : self.duplicates_found,
                          "pipeline_version" : self.pipeline_version,
-                         "mapper_tool" : self.mapper_tool,
+                         "mapper_tool" : self.mapper_tool.decode("utf-8"),
                          "annotation_tool" : self.annotation_tool,
                          "demultiplex_tool" : self.demultiplex_tool,
                          "input_parameters" : ''.join([str(x) for x in self.input_parameters]),
