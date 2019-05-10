@@ -181,8 +181,8 @@ class TestPipeline(unittest.TestCase):
         
         # Verify that the stats are correct
         counts_table = pd.read_table(datafile, sep="\t", header=0, index_col=0)
-        self.assertTrue(np.sum(counts_table.values, dtype=np.int32) == 8429, "ST data incorrect stats")
-        self.assertTrue(len(counts_table.columns) == 638, "ST data incorrect stats")
+        self.assertTrue(np.sum(counts_table.values, dtype=np.int32) == 8420, "ST data incorrect stats")
+        self.assertTrue(len(counts_table.columns) == 642, "ST data incorrect stats")
         aggregated_spot_counts = counts_table.sum(axis=1).values
         aggregated_gene_counts = (counts_table != 0).sum(axis=1).values
         self.assertTrue(aggregated_gene_counts.max() == 78, "ST data incorrect stats")
