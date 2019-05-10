@@ -469,3 +469,6 @@ Version 1.7.2
 Version 1.7.3
 * Fixed a small bug when soring the output of taggd
 * Improved the st_qa.py script
+
+Version 1.7.5
+* Ported to Python 3

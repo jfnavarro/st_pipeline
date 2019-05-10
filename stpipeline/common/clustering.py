@@ -35,7 +35,8 @@ def countUMIHierarchical(molecular_barcodes,
     # Distance computation function
     def d(coord):
         i,j = coord
-        return hamming_distance(molecular_barcodes[i], molecular_barcodes[j])
+        return hamming_distance(molecular_barcodes[i].encode("UTF-8"), 
+                                molecular_barcodes[j].encode("UTF-8"))
     # Create hierarchical clustering and obtain flat clusters at the distance given
     indices = np.triu_indices(len(molecular_barcodes), 1)
     distance_matrix = np.apply_along_axis(d, 0, indices)
@@ -45,7 +46,7 @@ def countUMIHierarchical(molecular_barcodes,
     items = defaultdict(list)
     for i, item in enumerate(flat_clusters):
         items[item].append(i)
-    return [molecular_barcodes[random.choice(members)] for members in items.itervalues()]
+    return [molecular_barcodes[random.choice(members)] for members in list(items.values())]
   
 def countUMINaive(molecular_barcodes, allowed_mismatches):
     """
@@ -73,13 +74,14 @@ def countUMINaive(molecular_barcodes, allowed_mismatches):
             # compare distant of previous molecular barcodes and new one
             # if distance is between threshold we add it to the cluster 
             # otherwise we create a new cluster
-            if hamming_distance(clusters_dict[nclusters][-1], molecular_barcode) <= allowed_mismatches:
+            if hamming_distance(clusters_dict[nclusters][-1].encode("UTF-8"), 
+                                molecular_barcode.encode("UTF-8")) <= allowed_mismatches:
                 clusters_dict[nclusters].append(molecular_barcode)
             else:
                 nclusters += 1
                 clusters_dict[nclusters] = [molecular_barcode]
     # Return the non clustered UMIs
-    return [random.choice(members) for members in clusters_dict.itervalues()]
+    return [random.choice(members) for members in list(clusters_dict.values())]
 
 def breadth_first_search(node, adj_list):
     """ This function has been obtained from 
@@ -118,7 +120,8 @@ def dedup_adj(molecular_barcodes, allowed_mismatches):
     c = Counter(molecular_barcodes)
         
     def get_adj_list_adjacency(umis):
-        return {umi: [umi2 for umi2 in umis if hamming_distance(umi, umi2) \
+        return {umi: [umi2 for umi2 in umis if hamming_distance(umi.encode("UTF-8"), 
+                                                                umi2.encode("UTF-8")) \
                       <= allowed_mismatches] for umi in umis}
 
     def get_connected_components_adjacency(graph, Counter):
@@ -163,7 +166,8 @@ def dedup_dir_adj(molecular_barcodes, allowed_mismatches):
     c = Counter(molecular_barcodes)
     
     def get_adj_list_directional_adjacency(umis, counts):
-        return {umi: [umi2 for umi2 in umis if hamming_distance(umi, umi2) <= allowed_mismatches and
+        return {umi: [umi2 for umi2 in umis if hamming_distance(umi.encode("UTF-8"), 
+                                                                umi2.encode("UTF-8")) <= allowed_mismatches and
                       counts[umi] >= (counts[umi2]*2)-1] for umi in umis}  
     
     def get_connected_components_adjacency(graph, Counter):
@@ -196,7 +200,8 @@ def affinity_umi_removal(molecular_barcodes, _):
     if len(molecular_barcodes) <= 2:
         return countUMINaive(molecular_barcodes, allowed_mismatches)
     words = np.asarray(molecular_barcodes)
-    lev_similarity = -1 * np.array([[hamming_distance(w1,w2) for w1 in words] for w2 in words])
+    lev_similarity = -1 * np.array([[hamming_distance(w1.encode("UTF-8"),
+                                                      w2.encode("UTF-8")) for w1 in words] for w2 in words])
     affprop = AffinityPropagation(affinity="precomputed", damping=0.5)
     affprop.fit(lev_similarity)
     unique_clusters = list()

@@ -113,10 +113,10 @@ class Pipeline():
         all temp files
         """
         if self.clean:
-            for file_name in FILENAMES.itervalues():
+            for file_name in list(FILENAMES.values()):
                 safeRemove(file_name)
         if not self.keep_discarded_files:
-            for file_name in FILENAMES_DISCARDED.itervalues():
+            for file_name in list(FILENAMES_DISCARDED.values()):
                 safeRemove(file_name)
         if self.temp_folder is not None and os.path.isdir(self.temp_folder):
             safeRemove(os.path.join(self.temp_folder,"unzipped_fastq_fw.fastq"))
@@ -628,9 +628,9 @@ class Pipeline():
         """
         # First adjust the intermediate files with the temp_folder path
         if self.temp_folder:
-            for key, value in FILENAMES.iteritems():
+            for key, value in list(FILENAMES.items()):
                 FILENAMES[key] = os.path.join(self.temp_folder, value)
-            for key, value in FILENAMES_DISCARDED.iteritems():
+            for key, value in list(FILENAMES_DISCARDED.items()):
                 FILENAMES_DISCARDED[key] = os.path.join(self.temp_folder, value)
                       
         # Get the starting time to compute total execution time
@@ -691,7 +691,7 @@ class Pipeline():
         #=================================================================
 
         # Get the barcode length
-        barcode_length = len(read_barcode_file(self.ids).values()[0].sequence)
+        barcode_length = len(list(read_barcode_file(self.ids).values())[0].sequence)
     
         # Start the filterInputReads function
         self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
@@ -929,7 +929,9 @@ class Pipeline():
         # END PIPELINE
         #=================================================================
         # Write stats to JSON
-        qa_stats.writeJSON(os.path.join(self.output_folder, self.expName + "_qa_stats.json"))
+        print(qa_stats)
+        # TODO this is giving problems in Python3
+        #qa_stats.writeJSON(os.path.join(self.output_folder, self.expName + "_qa_stats.json"))
         
         finish_exe_time = globaltime.getTimestamp()
         total_exe_time = finish_exe_time - start_exe_time

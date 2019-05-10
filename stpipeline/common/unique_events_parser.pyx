@@ -134,7 +134,7 @@ class geneBuffer():
         If so the gene will be returned in a list and deleted from the buffer
         :param empty: when True if forces to empty the buffer
         """
-        cdef list _tmp = self.buffer.keys()
+        cdef list _tmp = list(self.buffer.keys())
         cdef gene_transcripts = list()
         cdef str chrom
         cdef int end_position
@@ -219,7 +219,7 @@ def parse_unique_events(input_file, gff_filename=None):
         transcript = (chrom, start, end, clear_name, mapping_quality, strand, umi)
         if gff_filename is not None:
             genes_buffer.add_transcript(gene, (x,y), transcript, rec.reference_start)
-            for g, t in genes_buffer.check_and_clear_buffer():
+            for g, t in list(genes_buffer.check_and_clear_buffer()):
                 yield (g, t)
         else:
             try:
@@ -236,6 +236,6 @@ def parse_unique_events(input_file, gff_filename=None):
         for g, t in genes_buffer.check_and_clear_buffer(True):
             yield (g, t)
     else:
-        for (g,t) in genes_dict.iteritems():
+        for (g,t) in list(genes_dict.items()):
             yield (g,t)
 

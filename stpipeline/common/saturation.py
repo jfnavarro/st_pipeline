@@ -68,7 +68,7 @@ def computeSaturation(nreads,
     else:
          # Create a list of 15 saturation points (different number of reads)
         saturation_points = list()
-        for x in xrange(0,15):
+        for x in range(0,15):
             spoint = int(math.floor(1e5 + (math.exp(x) * 1e5)))
             if spoint >= int(nreads):
                 break
@@ -95,7 +95,7 @@ def computeSaturation(nreads,
         file_names[spoint] = file_name
         files[spoint] = output_sam
         # Generate a list of indexes in the sam file to extract sub samples 
-        indices = list(xrange(int(nreads)))
+        indices = list(range(int(nreads)))
         random.shuffle(indices)
         subbed = indices[0:spoint]
         subbed.sort()
@@ -115,7 +115,7 @@ def computeSaturation(nreads,
                  
     # Close the files
     annotated_sam.close()
-    for file_sam in files.itervalues():
+    for file_sam in list(files.values()):
         file_sam.close()
                  
     # Compute saturation points by calling createDataset on each file
@@ -151,7 +151,7 @@ def computeSaturation(nreads,
         saturation_points_average_reads.append(stats.average_reads_feature)
        
     # Remove the files
-    for file_sam in file_names.itervalues():
+    for file_sam in list(file_names.values()):
         safeRemove(file_sam)     
                                     
     # Update the log with the computed saturation points

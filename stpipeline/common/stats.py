@@ -4,7 +4,7 @@ different statistics and QA parameters for
 the pipeline run.
 """
 import json
-    
+
 class Stats():
     """
     Stats is meant to be used
