@@ -7,7 +7,7 @@ scipy
 scikit-learn
 sqlitedict
 regex
-taggd>=0.3.3
+taggd>=0.3.6
 HTSeq>=0.7.1
 pysam>=0.7.4
 setuptools

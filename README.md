@@ -47,7 +47,8 @@ The ST pipeline will also output a log file with useful information.
 **Installation**
 
 We recommend you install a virtual environment like Pyenv or Anaconda before you install the pipeline. 
-The ST Pipeline works with python 2.7.
+
+The ST Pipeline works with python 3.6 or bigger.
 
 You can install the ST Pipeline using PyPy:
 
@@ -84,7 +85,7 @@ To see the different options type
 
 An example run would be
 
-	st_pipeline_run.py --ids ids_file.txt --ref-map path_to_index --log-file log_file.txt --output-folder /home/me/results --ref-annotation annotation_file.gtf file1.fastq file2.fastq 
+	st_pipeline_run.py --expName test --ids ids_file.txt --ref-map path_to_index --log-file log_file.txt --output-folder /home/me/results --ref-annotation annotation_file.gtf file1.fastq file2.fastq 
 
 **Emsembl ids**
 

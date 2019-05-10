@@ -29,14 +29,14 @@ def computeUniqueUMIs(transcripts, umi_counting_offset, umi_allowed_mismatches, 
     # size variability and then group the rest of transcripts normally by (strand, start, position).
     unique_transcripts = list()
     num_transcripts = len(transcripts)
-    for i in xrange(num_transcripts - 1):
+    for i in range(num_transcripts - 1):
         current = sorted_transcripts[i]
         nextone = sorted_transcripts[i + 1]
         grouped_transcripts[current[6]].append(current)
         if abs(current[1] - nextone[1]) > umi_counting_offset or current[5] != nextone[5]:
             # A new group has been reached (strand, start-pos, offset)
             # Compute unique UMIs by hamming distance
-            unique_umis = group_umi_func(grouped_transcripts.keys(), umi_allowed_mismatches)
+            unique_umis = group_umi_func(list(grouped_transcripts.keys()), umi_allowed_mismatches)
             # Choose 1 random transcript for the clustered transcripts (by UMI)
             unique_transcripts += [random.choice(grouped_transcripts[u_umi]) for u_umi in unique_umis]
             # Reset the container
@@ -44,7 +44,7 @@ def computeUniqueUMIs(transcripts, umi_counting_offset, umi_allowed_mismatches, 
     # We process the last one and more transcripts if they were not processed
     lastone = sorted_transcripts[num_transcripts - 1]
     grouped_transcripts[lastone[6]].append(lastone)
-    unique_umis = group_umi_func(grouped_transcripts.keys(), umi_allowed_mismatches)
+    unique_umis = group_umi_func(list(grouped_transcripts.keys()), umi_allowed_mismatches)
     unique_transcripts += [random.choice(grouped_transcripts[u_umi]) for u_umi in unique_umis]
     return unique_transcripts
 
@@ -124,18 +124,19 @@ def createDataset(input_file,
     list_row_values = list()
     list_indexes = list()   
 
-    # Parse unique events to generate the unique counts and the BED file   
+    # Parse unique events to generate the unique counts and the BED file
     unique_events = parse_unique_events(input_file, gff_filename)
     with open(os.path.join(output_folder, filenameReadsBED), "w") as reads_handler:
         # this is the generator returning a dictionary with spots for each gene
-        for gene, spots in unique_events: 
+        for gene, spots in unique_events:
             transcript_counts_by_spot = {}
-            for spot_coordinates, reads in spots.iteritems():
+            for spot_coordinates, reads in list(spots.items()):
                 (x,y) = spot_coordinates
                 # Re-compute the read count accounting for duplicates using the UMIs
                 # Transcripts is the list of transcripts (chrom, start, end, clear_name, mapping_quality, strand, UMI)
                 # First:
                 # Get the original number of transcripts (reads)
+                reads = list(reads)
                 read_count = len(reads)
                 if not diable_umi:
                     # Compute unique transcripts (based on UMI, strand and start position +- threshold)

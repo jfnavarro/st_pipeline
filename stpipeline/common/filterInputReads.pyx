@@ -9,7 +9,6 @@ from stpipeline.common.fastq_utils import *
 from stpipeline.common.sam_utils import convert_to_AlignedSegment
 from stpipeline.common.adaptors import removeAdaptor
 from stpipeline.common.stats import qa_stats
-from itertools import izip
 
 bam_header = {
         'HD': {'VN': '1.5', 'SO':'unsorted'},
@@ -86,11 +85,11 @@ def InputReadsFilter(fw,
     cdef bint keep_discarded_files = out_rv_discarded is not None
 
     # Build fake sequence adaptors with the parameters given
-    cdef str adaptorA = "".join("A" for k in xrange(polyA_min_distance))
-    cdef str adaptorT = "".join("T" for k in xrange(polyT_min_distance))
-    cdef str adaptorG = "".join("G" for k in xrange(polyG_min_distance))
-    cdef str adaptorC = "".join("C" for k in xrange(polyC_min_distance))
-    cdef str adaptorN = "".join("N" for k in xrange(polyN_min_distance))
+    cdef str adaptorA = "".join("A" for k in range(polyA_min_distance))
+    cdef str adaptorT = "".join("T" for k in range(polyT_min_distance))
+    cdef str adaptorG = "".join("G" for k in range(polyG_min_distance))
+    cdef str adaptorC = "".join("C" for k in range(polyC_min_distance))
+    cdef str adaptorN = "".join("N" for k in range(polyN_min_distance))
 
     # Not recommended to do adaptor trimming for adaptors smaller than 5
     cdef bint do_adaptorA = polyA_min_distance >= 5
@@ -133,7 +132,7 @@ def InputReadsFilter(fw,
         out_rv_writer_discarded = writefq(out_rv_handle_discarded)
         
     for (header_fw, sequence_fw, quality_fw), \
-    (header_rv, sequence_rv, quality_rv) in izip(readfq(fw_file), readfq(rv_file)):
+    (header_rv, sequence_rv, quality_rv) in zip(readfq(fw_file), readfq(rv_file)):
         
         discard_read = False
         orig_sequence_rv, orig_quality_rv = sequence_rv, quality_rv

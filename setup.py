@@ -15,7 +15,7 @@ import glob
 import sys
 from setuptools import setup, find_packages
 from stpipeline.version import version_number
-from distutils.extension import Extension
+from distutils.core import setup, Extension
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -33,14 +33,14 @@ except IOError:
     raise SystemExit("Could not find requirements.txt file")
    
 major, minor1, minor2, s, tmp = sys.version_info
-if major != 2 or minor1 < 7:
-    raise SystemExit("ST Pipeline requires Python 2.7.x")
+if major != 3 or minor1 < 6:
+    raise SystemExit("ST Pipeline requires Python 3.6 or bigger")
 
 # setuptools DWIM monkey-patch madness
 # http://mail.python.org/pipermail/distutils-sig/2007-September/thread.html#8204
-if 'setuptools.extension' in sys.modules:
-    m = sys.modules['setuptools.extension']
-    m.Extension.__dict__ = m._Extension.__dict__
+#if 'setuptools.extension' in sys.modules:
+#    m = sys.modules['setuptools.extension']
+#    m.Extension.__dict__ = m._Extension.__dict__
     
 setup(
   name = 'stpipeline',
@@ -68,9 +68,10 @@ setup(
     'Development Status :: 5 - Production/Stable',
     'Intended Audience :: Science/Research',
     'Topic :: Software Development',
-    'Topic :: Scientific/Engineering :: Bio-Informatics',
+    'Topic :: Scientific/Engineering :: Bionformatics :: Spatial Transcriptomics',
     'License :: OSI Approved :: MIT License',
-    'Programming Language :: Python :: 2.7',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
     'Operating System :: Unix',
     'Operating System :: MacOS',
     'Environment :: Console',

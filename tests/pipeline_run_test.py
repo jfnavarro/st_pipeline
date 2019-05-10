@@ -28,12 +28,12 @@ class TestPipeline(unittest.TestCase):
         
         # Obtain temp dir
         self.tmpdir = tempfile.mkdtemp(prefix="st_pipeline_test_temp")
-        print "ST Pipeline Test Temporary directory {}".format(self.tmpdir)
+        print("ST Pipeline Test Temporary directory {}".format(self.tmpdir))
         self.outdir = tempfile.mkdtemp(prefix="st_pipeline_test_output")
-        print "ST Pipeline Test Temporary output {}".format(self.outdir)
+        print("ST Pipeline Test Temporary output {}".format(self.outdir))
         self.error_file = os.path.join(self.tmpdir, 'error.log')
         self.logFile = tempfile.mktemp(prefix="st_pipeline_test_log")
-        print "ST Pipeline Test Log file {}".format(self.logFile)
+        print("ST Pipeline Test Log file {}".format(self.logFile))
    
         # Create genome index dirs.
         self.genomedir = os.path.join(self.tmpdir, 'config/genomes/mouse_grcm38')
@@ -51,30 +51,30 @@ class TestPipeline(unittest.TestCase):
           
         # Download and unpack fasta files
         try:
-            print "ST Pipeline Test Downloading genome files..."
+            print("ST Pipeline Test Downloading genome files...")
             copyfile(os.path.join(testdir, "config/Homo_sapiens.GRCh38.dna.chromosome.19.fa.gz"), 
                      genomefastagz)
             check_call(['gunzip', genomefastagz])
         except Exception as e:
-            print str(e)
+            print(str(e))
             self.assertTrue(0, "Downloading genome files failed \n")
    
         # Make genome indexes
         try:
-            print "ST Pipeline Test Creating genome index..."
+            print("ST Pipeline Test Creating genome index...")
             check_call(["STAR", "--runMode", "genomeGenerate",
                     "--runThreadN", str(multiprocessing.cpu_count() - 1),
                     "--genomeDir", self.genomedir,
                     "--genomeFastaFiles", genomefasta])
    
-            print "ST Pipeline Test Creating contaminant genome index..."
+            print("ST Pipeline Test Creating contaminant genome index...")
             contamfasta = os.path.join(testdir, "config/contaminant_genomes/R45S5_R5S1/Rn45s_Rn5s.fasta")
             check_call(["STAR", "--runMode", "genomeGenerate",
                     "--runThreadN", str(multiprocessing.cpu_count() - 1),
                     "--genomeDir", self.contamdir,
                     "--genomeFastaFiles", contamfasta])
         except Exception as e:
-            print str(e)
+            print(str(e))
             self.assertTrue(0, "Creating genome index failed \n")
                   
         # Verify existence of input files
@@ -131,7 +131,7 @@ class TestPipeline(unittest.TestCase):
         
     @classmethod
     def tearDownClass(self):
-        print "ST Pipeline Test Remove temporary output {}".format(self.outdir)
+        print("ST Pipeline Test Remove temporary output {}".format(self.outdir))
         for root, dirs, files in os.walk(self.outdir, topdown=False):
             for name in files:
                 os.remove(os.path.join(root, name))
@@ -140,7 +140,7 @@ class TestPipeline(unittest.TestCase):
         if os.path.exists(self.outdir):
             os.rmdir(self.outdir)  
             
-        print "ST Pipeline Test Remove temporary directory {}".format(self.tmpdir)
+        print("ST Pipeline Test Remove temporary directory {}".format(self.tmpdir))
         for root, dirs, files in os.walk(self.tmpdir, topdown=False):
             for name in files:
                 os.remove(os.path.join(root, name))
@@ -201,7 +201,7 @@ class TestPipeline(unittest.TestCase):
             self.pipeline.run()
             self.pipeline.clean_filenames()
         except Exception as e:
-            print str(e)
+            print(str(e))
             self.assertTrue(0, "Running Pipeline Test failed \n")
  
         self.validateOutputData(self.expname)
