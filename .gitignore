@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# cythonized files
+stpipeline/common/*.c
+
 # Distribution / packaging
 .Python
 env/

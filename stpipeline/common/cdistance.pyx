@@ -1,3 +1,5 @@
+#cython: language_level=3
+
 cpdef int hamming_distance(a, b):
     cdef char * aa = a
     cdef char * bb = b
