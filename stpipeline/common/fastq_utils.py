@@ -8,7 +8,6 @@ from stpipeline.common.adaptors import removeAdaptor
 from stpipeline.common.sam_utils import convert_to_AlignedSegment
 from stpipeline.common.stats import qa_stats
 import logging 
-from itertools import izip
 from sqlitedict import SqliteDict
 import os
 import re
@@ -20,7 +19,7 @@ def coroutine(func):
     """
     def start(*args, **kwargs):
         cr = func(*args, **kwargs)
-        cr.next()
+        cr.__next__()
         return cr
     return start
 
@@ -125,7 +124,7 @@ def quality_trim_index(bases, qualities, cutoff, base=33):
     s = 0
     max_qual = 0
     max_i = len(qualities)
-    for i in reversed(xrange(max_i)):
+    for i in reversed(range(max_i)):
         q = ord(qualities[i]) - base
         if bases[i] == 'G':
             q = cutoff - 1

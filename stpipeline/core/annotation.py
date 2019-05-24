@@ -15,7 +15,6 @@ import multiprocessing
 import operator
 import math
 import time
-from itertools import izip
 
 class UnknownChrom( Exception ):
     pass
@@ -27,7 +26,7 @@ def invert_strand( iv ):
     elif iv2.strand == "-":
         iv2.strand = "+"
     else:
-        raise ValueError, "Illegal strand"  
+        raise ValueError("Illegal strand")
     return iv2
 
 def count_reads_in_features(sam_filename, 
@@ -112,10 +111,10 @@ def count_reads_in_features(sam_filename,
                 try:
                     feature_id = f.attr[id_attribute]
                 except KeyError:
-                    raise ValueError, ("Feature %s does not contain a '%s' attribute" \
+                    raise ValueError("Feature %s does not contain a '%s' attribute" \
                                        % (f.name, id_attribute))
                 if stranded != "no" and f.iv.strand == ".":
-                    raise ValueError, ("Feature %s at %s does not have strand information but you are " \
+                    raise ValueError("Feature %s at %s does not have strand information but you are " \
                                        "running htseq-count in stranded mode. Use '--stranded=no'." % 
                                        (f.name, f.iv))
                 features[f.iv] += feature_id
@@ -124,19 +123,19 @@ def count_reads_in_features(sam_filename,
         raise
     
     if len(counts) == 0:
-        raise RuntimeError, "No features of type '%s' found.\n" % feature_type
+        raise RuntimeError("No features of type '%s' found.\n" % feature_type)
         
     if samtype == "sam":
         SAM_or_BAM_Reader = HTSeq.SAM_Reader
     elif samtype == "bam":
         SAM_or_BAM_Reader = HTSeq.BAM_Reader
     else:
-        raise ValueError, "Unknown input format %s specified." % samtype
+        raise ValueError("Unknown input format %s specified." % samtype)
 
     try:
         read_seq = SAM_or_BAM_Reader(sam_filename)
     except:
-        raise RuntimeError, "Error occurred when reading beginning of SAM/BAM file."
+        raise RuntimeError("Error occurred when reading beginning of SAM/BAM file.")
 
     try:
         
@@ -173,7 +172,7 @@ def count_reads_in_features(sam_filename,
                                 else:
                                     fs = fs.intersection(fs2)
                 else:
-                    raise RuntimeError, "Illegal overlap mode."
+                    raise RuntimeError("Illegal overlap mode.")
                 
                 if fs is None or len(fs) == 0:
                     write_to_samout(r, "__no_feature")

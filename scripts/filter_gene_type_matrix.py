@@ -50,7 +50,7 @@ def main(counts_matrix, gene_types_keep, outfile, annotation, ensembl_ids):
     if len(genes_drop) > 0:
         counts_table.drop(genes_drop, axis=1, inplace=True)
     else:
-        print "Not a single gene could be discarded..."
+        print("Not a single gene could be discarded...")
     # Write filtered table
     counts_table.to_csv(outfile, sep='\t')
                

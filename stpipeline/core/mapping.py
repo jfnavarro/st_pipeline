@@ -265,7 +265,7 @@ def barcodeDemultiplexing(reads,
             
     args += ["--max-edit-distance", mismatches,
             "--k", kmer,
-            "--barcode-tag", "B0", # if input if BAM we tell taggd what tag contains the barcode
+            "--barcode-tag", "B0", # if input is BAM we tell taggd what tag contains the barcode
             "--start-position", start_positon,
             "--homopolymer-filter", 0,
             "--subprocesses", cores,
@@ -311,7 +311,7 @@ def barcodeDemultiplexing(reads,
                        "demultiplexing.\n{}\n".format(errmsg))
            
     # TODO must be a cleaner way to get the stats from the output file
-    procOut = stdout.split("\n")
+    procOut = stdout.decode().split("\n")
     logger.info("Demultiplexing Mapping stats:")
     for line in procOut: 
         if line.find("Total reads:") != -1:
