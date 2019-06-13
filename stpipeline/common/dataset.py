@@ -15,8 +15,11 @@ import logging
 import sys
 
 def computeUniqueUMIs(transcripts, umi_counting_offset, umi_allowed_mismatches, group_umi_func):
-    """ Helper function to compute unique transcripts UMIs from
-    a given list of transcripts
+    """ 
+    Helper function to compute unique transcripts UMIs from
+    a given list of transcripts. The function using an offset (genomic coordinates) 
+    where all UMIs will be grouped together by a grouping function and with a certain
+    number of mismatches allowed (hamming distance)
     """
     # Sort transcripts by strand and start position
     sorted_transcripts = sorted(transcripts, key = lambda x: (x[5], x[1]))
@@ -183,8 +186,6 @@ def createDataset(input_file,
     total_barcodes = len(counts_table.index)
     total_transcripts = np.sum(counts_table.values, dtype=np.int32)
     number_genes = len(counts_table.columns)
-    max_count = counts_table.values.max()
-    min_count = counts_table.values.min()
     aggregated_spot_counts = counts_table.sum(axis=1).values
     aggregated_gene_counts = (counts_table != 0).sum(axis=1).values
     max_genes_feature = aggregated_gene_counts.max()
@@ -198,24 +199,21 @@ def createDataset(input_file,
         
     # Print some statistics
     if verbose:
-        logger.info("Number of unique molecules present: {}".format(total_transcripts))
-        logger.info("Number of unique events (gene-feature) present: {}".format(total_record))
+        logger.info("Number of reads present: {}".format(total_transcripts))
+        logger.info("Number of unique events (gene-spot) present: {}".format(total_record))
         logger.info("Number of unique genes present: {}".format(number_genes))
-        logger.info("Max number of genes over all features: {}".format(max_genes_feature))
-        logger.info("Min number of genes over all features: {}".format(min_genes_feature))
-        logger.info("Max number of unique molecules over all features: {}".format(max_reads_feature))
-        logger.info("Min number of unique molecules over all features: {}".format(min_reads_feature))
-        logger.info("Average number genes per feature: {}".format(average_genes_feature))
-        logger.info("Average number unique molecules per feature: {}".format(average_reads_feature))
-        logger.info("Std number genes per feature: {}".format(std_genes_feature))
-        logger.info("Std number unique molecules per feature: {}".format(std_reads_feature))
-        logger.info("Max number of unique molecules over all unique events: {}".format(max_count))
-        logger.info("Min number of unique molecules over all unique events: {}".format(min_count))
+        logger.info("Max number of genes over all spots: {}".format(max_genes_feature))
+        logger.info("Min number of genes over all spots: {}".format(min_genes_feature))
+        logger.info("Max number of reads over all spots: {}".format(max_reads_feature))
+        logger.info("Min number of reads over all spots: {}".format(min_reads_feature))
+        logger.info("Average number genes per spot: {}".format(average_genes_feature))
+        logger.info("Average number reads per spot: {}".format(average_reads_feature))
+        logger.info("Std. number genes per spot: {}".format(std_genes_feature))
+        logger.info("Std. number reads per spot: {}".format(std_reads_feature))
         logger.info("Number of discarded reads (possible duplicates): {}".format(discarded_reads))
         
     # Update the QA object
     qa_stats.reads_after_duplicates_removal = int(total_transcripts)
-    qa_stats.unique_events = total_record
     qa_stats.barcodes_found = total_barcodes
     qa_stats.genes_found = number_genes
     qa_stats.duplicates_found = discarded_reads
@@ -223,8 +221,6 @@ def createDataset(input_file,
     qa_stats.min_genes_feature = min_genes_feature
     qa_stats.max_reads_feature = max_reads_feature
     qa_stats.min_reads_feature = min_reads_feature
-    qa_stats.max_reads_unique_event = max_count
-    qa_stats.min_reads_unique_event = min_count
     qa_stats.average_gene_feature = average_genes_feature
     qa_stats.average_reads_feature = average_reads_feature
      
