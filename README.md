@@ -1,7 +1,7 @@
 # Spatial Transcriptomics Pipeline
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python27](https://img.shields.io/badge/python-2.7-blue.svg)](https://badge.fury.io/py/stpipeline)
+[![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
 [![PyPI version](https://badge.fury.io/py/stpipeline.svg)](https://badge.fury.io/py/stpipeline)
 
 The ST Pipeline contains the tools and scripts needed to process and analyze the raw files generated with the Spatial Transcriptomics technology in FASTQ format to generate datasets for down-stream analysis. 
