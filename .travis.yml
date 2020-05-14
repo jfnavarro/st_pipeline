@@ -34,6 +34,7 @@ install:
     - pip install taggd
     - python setup.py build
     - python setup.py install
+    - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
    
 script:
     - python setup.py test
