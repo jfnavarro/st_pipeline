@@ -20,7 +20,7 @@ x y new_x new_y pixel_x pixel_y
 Optionally, the coordinates of the spots in the matrix
 can be changed to the new coordinates (pixel or array).
 
-@Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+@Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
 
 import argparse
