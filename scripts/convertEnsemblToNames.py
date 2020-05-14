@@ -7,7 +7,7 @@ with the ENSEMBL IDs converted to gene names IDS.
 For that the script also needs the annotation file (GFF format) used to create
 the ST dataset.
 
-@Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+@Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
 
 import argparse
