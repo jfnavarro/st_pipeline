@@ -32,9 +32,9 @@ install:
     - conda install matplotlib
     - pip install htseq
     - pip install taggd
+    - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
     - python setup.py build
     - python setup.py install
-    - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
    
 script:
     - python setup.py test
