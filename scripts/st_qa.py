@@ -7,7 +7,7 @@ of a ST dataset (matrix in TSV) format.
 The scripts writes stats and generates
 some plots in the folder that is run. 
 
-@Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+@Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
 import matplotlib
 matplotlib.use('Agg')
