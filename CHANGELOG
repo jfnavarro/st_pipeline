@@ -472,3 +472,7 @@ Version 1.7.3
 
 Version 1.7.6
 * Ported to Python 3
+
+Version 1.7.8
+* Updaed docs
+* Added flags to skip (trimming, mapping and annotation)

@@ -103,6 +103,9 @@ class Pipeline():
         self.adaptor_missmatches = 0
         self.star_genome_loading = "NoSharedMemory"
         self.star_sort_mem_limit = 0
+        self.disable_trimming = False
+        self.disable_mapping = False
+        self.disable_annotation = False
         self.disable_umi = False
         self.disable_barcode = False
         self.transcriptome = False
@@ -439,6 +442,12 @@ class Pipeline():
         parser.add_argument('--star-sort-mem-limit', default=0, type=int,
                             help="The maximum available RAM for sorting BAM during mapping. Default is 0\n" \
                             "which means that it will be set to the genome index size")
+        parser.add_argument("--disable-trimming", default=False, action="store_true",
+                            help="Use this flag if you want to skip the trimming step" )
+        parser.add_argument("--disable-mapping", default=False, action="store_true",
+                            help="Use this flag if you want to skip the mapping step" )
+        parser.add_argument("--disable-annotation", default=False, action="store_true",
+                            help="Use this flag if you want to skip the annotation" )
         parser.add_argument("--disable-barcode", default=False, action="store_true",
                             help="Use this flag if you want to skip the barcode demultiplexing step" )
         parser.add_argument("--disable-umi", default=False, action="store_true",
@@ -519,6 +528,10 @@ class Pipeline():
         self.star_genome_loading = options.star_genome_loading
         self.star_sort_mem_limit = options.star_sort_mem_limit
         self.disable_barcode = options.disable_barcode
+        self.disable_trimming = options.disable_trimming
+        self.disable_mapping = options.disable_mapping
+        self.disable_annotation = options.disable_annotation
+        self.transcriptome = options.transcriptome
         self.disable_umi = options.disable_umi
         self.transcriptome = options.transcriptome
         self.saturation_points = [int(p) for p in options.saturation_points] \
@@ -569,29 +582,29 @@ class Pipeline():
                 self.logger.info("TaggD multiple hits keep one (random) is enabled")
             if self.taggd_trim_sequences is not None:
                 self.logger.info("TaggD trimming from the barcodes " + '-'.join(str(x) for x in self.taggd_trim_sequences))
-        else:
-            self.logger.info("TaggD demultiplexing is disabled!")
-        self.logger.info("Mapping reverse trimming: {}".format(self.trimming_rv))
-        self.logger.info("Mapping inverse reverse trimming: {}".format(self.inverse_trimming_rv))
-        self.logger.info("Mapping tool: STAR")
-        self.logger.info("Annotation tool: HTSeq")
-        self.logger.info("Annotation mode: {}".format(self.htseq_mode))
-        self.logger.info("Annotation strandness {}".format(self.strandness))
-        self.logger.info("Remove reads whose AT content is {}%".format(self.filter_AT_content))
-        self.logger.info("Remove reads whose GC content is {}%".format(self.filter_GC_content))
-        if self.disable_clipping:
-            self.logger.info("Not allowing soft clipping when mapping with STAR")
-        if self.disable_multimap:
-            self.logger.info("Not allowing multiple alignments when mapping with STAR")
-        self.logger.info("Mapping minimum intron size allowed (splice alignments) with STAR: {}".format(self.min_intron_size))
-        self.logger.info("Mapping maximum intron size allowed (splice alignments) with STAR: {}".format(self.max_intron_size))
-        self.logger.info("STAR genome loading strategy {}".format(self.star_genome_loading))
+        if not self.disable_mapping:
+            self.logger.info("Mapping reverse trimming: {}".format(self.trimming_rv))
+            self.logger.info("Mapping inverse reverse trimming: {}".format(self.inverse_trimming_rv))
+            self.logger.info("Mapping tool: STAR")
+            self.logger.info("Mapping minimum intron size allowed (splice alignments) with STAR: {}".format(self.min_intron_size))
+            self.logger.info("Mapping maximum intron size allowed (splice alignments) with STAR: {}".format(self.max_intron_size))
+            self.logger.info("STAR genome loading strategy {}".format(self.star_genome_loading))
+            if self.disable_clipping:
+                self.logger.info("Not allowing soft clipping when mapping with STAR")
+            if self.disable_multimap:
+                self.logger.info("Not allowing multiple alignments when mapping with STAR")
+            if self.two_pass_mode :
+                self.logger.info("Using the STAR 2-pass mode for the mapping step")
+        if not self.disable_annotation:
+            self.logger.info("Annotation tool: HTSeq")
+            self.logger.info("Annotation mode: {}".format(self.htseq_mode))
+            self.logger.info("Annotation strandness {}".format(self.strandness))
+            if self.include_non_annotated:
+                self.logger.info("Including non annotated reads in the output")
         if self.compute_saturation:
             self.logger.info("Computing saturation curve with several sub-samples...")
             if self.saturation_points is not None:
                 self.logger.info("Using the following points {}".format(' '.join(str(p) for p in self.saturation_points)))
-        if self.include_non_annotated:
-            self.logger.info("Including non annotated reads in the output")
         if not self.disable_umi:
             self.logger.info("UMIs start position: {}".format(self.umi_start_position))
             self.logger.info("UMIs end position: {}".format(self.umi_end_position))
@@ -603,22 +616,21 @@ class Pipeline():
             self.logger.info("Discarding reads that after trimming are shorter than {}".format(self.min_length_trimming))
             if self.umi_filter:
                 self.logger.info("UMIs using filter: {}".format(self.umi_filter_template))
-        else:
-            self.logger.info("UMIs filtering is disabled!")
-        if self.remove_polyA_distance > 0:
-            self.logger.info("Removing polyA sequences of a length of at least: {}".format(self.remove_polyA_distance))                        
-        if self.remove_polyT_distance > 0:
-            self.logger.info("Removing polyT sequences of a length of at least: {}".format(self.remove_polyT_distance))
-        if self.remove_polyG_distance > 0:
-            self.logger.info("Removing polyG sequences of a length of at least: {}".format(self.remove_polyG_distance))
-        if self.remove_polyC_distance > 0:
-            self.logger.info("Removing polyC sequences of a length of at least: {}".format(self.remove_polyC_distance))
-        if self.remove_polyN_distance > 0:
-            self.logger.info("Removing polyN sequences of a length of at least: {}".format(self.remove_polyN_distance))
-        self.logger.info("Allowing {} mismatches when removing homopolymers".format(self.adaptor_missmatches))
-        if self.two_pass_mode :
-            self.logger.info("Using the STAR 2-pass mode for the mapping step")
-        
+        if not self.disable_trimming:
+            if self.remove_polyA_distance > 0:
+                self.logger.info("Removing polyA sequences of a length of at least: {}".format(self.remove_polyA_distance))                        
+            if self.remove_polyT_distance > 0:
+                self.logger.info("Removing polyT sequences of a length of at least: {}".format(self.remove_polyT_distance))
+            if self.remove_polyG_distance > 0:
+                self.logger.info("Removing polyG sequences of a length of at least: {}".format(self.remove_polyG_distance))
+            if self.remove_polyC_distance > 0:
+                self.logger.info("Removing polyC sequences of a length of at least: {}".format(self.remove_polyC_distance))
+            if self.remove_polyN_distance > 0:
+                self.logger.info("Removing polyN sequences of a length of at least: {}".format(self.remove_polyN_distance))
+            self.logger.info("Allowing {} mismatches when removing homopolymers".format(self.adaptor_missmatches))
+            self.logger.info("Remove reads whose AT content is {}%".format(self.filter_AT_content))
+            self.logger.info("Remove reads whose GC content is {}%".format(self.filter_GC_content))
+
     def run(self):
         """ 
         Runs the whole pipeline given the parameters present.
@@ -689,46 +701,44 @@ class Pipeline():
         # STEP: FILTERING 
         # Applies different filters : sanity, quality, short, adaptors, UMI...
         #=================================================================
-
         # Get the barcode length
         barcode_length = len(list(read_barcode_file(self.ids).values())[0].sequence)
-    
-        # Start the filterInputReads function
-        self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
-        try:
-            InputReadsFilter(self.fastq_fw,
-                             self.fastq_rv,
-                             FILENAMES["quality_trimmed_R2"],
-                             FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
-                             barcode_length,
-                             self.barcode_start,
-                             self.filter_AT_content,
-                             self.filter_GC_content,
-                             self.umi_start_position,
-                             self.umi_end_position,
-                             self.min_quality_trimming,
-                             self.min_length_trimming,
-                             self.remove_polyA_distance,
-                             self.remove_polyT_distance,
-                             self.remove_polyG_distance,
-                             self.remove_polyC_distance,
-                             self.remove_polyN_distance,
-                             self.qual64,
-                             self.umi_filter,
-                             self.umi_filter_template,
-                             self.umi_quality_bases,
-                             self.adaptor_missmatches,
-                             self.overhang,
-                             self.disable_umi,
-                             self.disable_barcode)
-        except Exception:
-            raise
+        if not self.disable_trimming:
+            self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
+            try:
+                InputReadsFilter(self.fastq_fw,
+                                 self.fastq_rv,
+                                 FILENAMES["quality_trimmed_R2"],
+                                 FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
+                                 barcode_length,
+                                 self.barcode_start,
+                                 self.filter_AT_content,
+                                 self.filter_GC_content,
+                                 self.umi_start_position,
+                                 self.umi_end_position,
+                                 self.min_quality_trimming,
+                                 self.min_length_trimming,
+                                 self.remove_polyA_distance,
+                                 self.remove_polyT_distance,
+                                 self.remove_polyG_distance,
+                                 self.remove_polyC_distance,
+                                 self.remove_polyN_distance,
+                                 self.qual64,
+                                 self.umi_filter,
+                                 self.umi_filter_template,
+                                 self.umi_quality_bases,
+                                 self.adaptor_missmatches,
+                                 self.overhang,
+                                 self.disable_umi,
+                                 self.disable_barcode)
+            except Exception:
+                raise
         
-        # After filtering is completed remove the temporary FIFOs
-        if is_fifo(temp_r1_fifo_name): 
-            os.remove(temp_r1_fifo_name)
-        if is_fifo(temp_r2_fifo_name): 
-            os.remove(temp_r2_fifo_name)
+            # After filtering is completed remove the temporary FIFOs
+            if is_fifo(temp_r1_fifo_name): 
+                os.remove(temp_r1_fifo_name)
+            if is_fifo(temp_r2_fifo_name): 
+                os.remove(temp_r2_fifo_name)
         
         #=================================================================
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. typically bacterial rRNA
@@ -789,41 +799,42 @@ class Pipeline():
         #=================================================================
         # STEP: Maps against the genome using STAR
         #=================================================================
-        self.logger.info("Starting genome alignment {}".format(globaltime.getTimestamp()))
-        input_reads = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
-        try:
-            # Make the alignment call
-            alignReads(input_reads,
-                       self.ref_map,
-                       FILENAMES["mapped"],
-                       self.ref_annotation,
-                       self.temp_folder,
-                       self.trimming_rv,
-                       self.inverse_trimming_rv,
-                       self.threads,
-                       self.min_intron_size,
-                       self.max_intron_size,
-                       self.disable_multimap,
-                       self.disable_clipping,
-                       self.two_pass_mode,
-                       self.min_length_trimming,
-                       self.keep_discarded_files,
-                       self.star_genome_loading,
-                       self.star_sort_mem_limit)        
-            # Remove secondary alignments and un-mapped
-            # NOTE: this will not be needed when STAR allows to chose the discarded
-            # reads format (BAM)
-            if self.keep_discarded_files:
-                temp_name = os.path.join(self.temp_folder, next(tempfile._get_candidate_names()))
-                # Note use 260 to also discard multiple-alignments
-                command = "samtools view -b -h -F 4 -@ {} -o {} -U {} {}".format(self.threads,
-                                                                                 temp_name,
-                                                                                 FILENAMES_DISCARDED["mapped_discarded"],
-                                                                                 FILENAMES["mapped"])
-                subprocess.check_call(command, shell=True)
-                os.rename(temp_name, FILENAMES["mapped"])                
-        except Exception:
-            raise
+        if not self.disable_mapping:
+            self.logger.info("Starting genome alignment {}".format(globaltime.getTimestamp()))
+            input_reads = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
+            try:
+                # Make the alignment call
+                alignReads(input_reads,
+                           self.ref_map,
+                           FILENAMES["mapped"],
+                           self.ref_annotation,
+                           self.temp_folder,
+                           self.trimming_rv,
+                           self.inverse_trimming_rv,
+                           self.threads,
+                           self.min_intron_size,
+                           self.max_intron_size,
+                           self.disable_multimap,
+                           self.disable_clipping,
+                           self.two_pass_mode,
+                           self.min_length_trimming,
+                           self.keep_discarded_files,
+                           self.star_genome_loading,
+                           self.star_sort_mem_limit)        
+                # Remove secondary alignments and un-mapped
+                # NOTE: this will not be needed when STAR allows to chose the discarded
+                # reads format (BAM)
+                if self.keep_discarded_files:
+                    temp_name = os.path.join(self.temp_folder, next(tempfile._get_candidate_names()))
+                    # Note use 260 to also discard multiple-alignments
+                    command = "samtools view -b -h -F 4 -@ {} -o {} -U {} {}".format(self.threads,
+                                                                                     temp_name,
+                                                                                     FILENAMES_DISCARDED["mapped_discarded"],
+                                                                                     FILENAMES["mapped"])
+                    subprocess.check_call(command, shell=True)
+                    os.rename(temp_name, FILENAMES["mapped"])                
+            except Exception:
+                raise
                       
         #=================================================================
         # STEP: DEMULTIPLEX READS Map against the barcodes
@@ -853,7 +864,7 @@ class Pipeline():
                 raise 
         
         #=================================================================
-        # STEP: annotate using htseq-count
+        # STEP: annotate using htseq-count or the transcriptome
         #=================================================================
         if self.transcriptome:
             self.logger.info("Assigning gene names from transcriptome {}".format(globaltime.getTimestamp()))
@@ -870,7 +881,7 @@ class Pipeline():
                 outfile.write(rec)
             infile.close()
             outfile.close()
-        else:
+        elif not self.disable_annotation:
             self.logger.info("Starting annotation {}".format(globaltime.getTimestamp()))
             try:
                 annotateReads(FILENAMES["demultiplexed_matched"] if not self.disable_barcode else FILENAMES["mapped"],
