@@ -119,7 +119,6 @@ def computeSaturation(nreads,
         file_sam.close()
                  
     # Compute saturation points by calling createDataset on each file
-    saturation_points_values_unique_events = list()
     saturation_points_values_reads = list()
     saturation_points_values_genes = list()
     saturation_points_average_genes = list()
@@ -145,7 +144,6 @@ def computeSaturation(nreads,
             raise e
        
         # Update lists with the computed points    
-        saturation_points_values_unique_events.append(stats.unique_events)
         saturation_points_values_reads.append(stats.reads_after_duplicates_removal)
         saturation_points_values_genes.append(stats.genes_found)
         saturation_points_average_genes.append(stats.average_gene_feature)
@@ -158,8 +156,6 @@ def computeSaturation(nreads,
     # Update the log with the computed saturation points
     logger.info("Saturation points:")
     logger.info(', '.join(str(a) for a in saturation_points))
-    logger.info("Unique events per saturation point")
-    logger.info(', '.join(str(a) for a in saturation_points_values_unique_events))
     logger.info("Reads per saturation point")
     logger.info(', '.join(str(a) for a in saturation_points_values_reads))
     logger.info("Genes per saturation point")

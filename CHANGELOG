@@ -476,3 +476,5 @@ Version 1.7.6
 Version 1.7.8
 * Updaed docs
 * Added flags to skip (trimming, mapping and annotation)
+* Fixed a bug in the compute saturation option
+* Restored the unittests

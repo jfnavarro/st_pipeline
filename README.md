@@ -9,6 +9,7 @@ The ST pipeline can also be used to process single cell RNASeq data as long as a
 
 The ST Pipeline has been optimized for speed, robustness and it is very easy to use with many parameters to adjust all the settings.
 The ST Pipeline is fully parallel and has constant memory use. 
+The ST Pipeline allows to skip any of the steps and to use the genome or the transcriptome as reference. 
 
 The following files/parameters are required :
 - FASTQ files (Read 1 containing the spatial information and the UMI and read 2 containing the genomic sequence) 
@@ -81,6 +82,28 @@ To see the different options type
 
     st_pipeline_run.py --help
     
+**Requirements**
+
+The ST Pipeline requires STAR installed in the system (minimum version 2.5.4 if you use a ST Pipeline version >= 1.6.0):
+https://github.com/alexdobin/STAR
+
+If you use anaconda you can install STAR with
+
+    conda install -c bioconda star
+    
+The ST Pipeline requires samtools installed in the system
+If you use anaconda you can install Samtools with
+
+    conda install -c bioconda samtools openssl=1.0
+
+The ST Pipeline recommends a computer with at least 32GB of RAM (depending on the size of the genome) and 8 cpu cores. 
+
+**Dependencies** 
+
+The ST Pipeline depends on some Python packages that will
+be automatically installed during the installation process. 
+You can see them in the file dependencies.txt
+
 **Example**
 
 An example run would be
@@ -169,17 +192,4 @@ Oxford BioInformatics
 For questions, bugs, feedback, etc.. you can contact 
 Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 
-**Dependencies** 
-
-The ST Pipeline depends on some Python packages that will
-be automatically installed during the installation process. 
-You can see them in the file dependencies.txt
-
-**Requirements**
-
-The ST Pipeline requires to have installed
-in the system the aligner STAR (minimum version 2.5.4 if you use a ST Pipeline version >= 1.6.0) :
-https://github.com/alexdobin/STAR
-
-The ST Pipeline is recommended to be run on a computer with at least 32GB of RAM (depending on the size of the genome) and 8 cpu cores. 
 

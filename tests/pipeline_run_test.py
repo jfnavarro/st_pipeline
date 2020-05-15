@@ -63,7 +63,7 @@ class TestPipeline(unittest.TestCase):
         try:
             print("ST Pipeline Test Creating genome index...")
             check_call(["STAR", "--runMode", "genomeGenerate",
-                    "--genomeSAindexNbases", 11,
+                    "--genomeSAindexNbases", "11",
                     "--runThreadN", str(multiprocessing.cpu_count() - 1),
                     "--genomeDir", self.genomedir,
                     "--genomeFastaFiles", genomefasta])
@@ -71,7 +71,7 @@ class TestPipeline(unittest.TestCase):
             print("ST Pipeline Test Creating contaminant genome index...")
             contamfasta = os.path.join(testdir, "config/contaminant_genomes/R45S5_R5S1/Rn45s_Rn5s.fasta")
             check_call(["STAR", "--runMode", "genomeGenerate",
-                    "--genomeSAindexNbases", 8,
+                    "--genomeSAindexNbases", "8",
                     "--runThreadN", str(multiprocessing.cpu_count() - 1),
                     "--genomeDir", self.contamdir,
                     "--genomeFastaFiles", contamfasta])
