@@ -113,7 +113,7 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.ref_map = os.path.abspath(self.genomedir)
         self.pipeline.ref_annotation = os.path.abspath(self.annotfile)
         self.pipeline.htseq_mode = "intersection-nonempty"
-        self.pipeline.htseq_no_ambiguous = False
+        self.pipeline.htseq_no_ambiguous = True
         self.pipeline.contaminant_index= os.path.abspath(self.contamdir)  
         self.pipeline.output_folder = os.path.abspath(self.outdir)
         self.pipeline.temp_folder = os.path.abspath(self.tmpdir)

@@ -1,34 +1,24 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>Changes &mdash; ST Pipeline 1.6.0 documentation</title>
-    
+    <meta charset="utf-8" />
+    <title>Changes &#8212; ST Pipeline 1.7.8 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '1.6.0',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="ST Pipeline 1.6.0 documentation" href="index.html" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="License" href="license.html" />
     <link rel="prev" title="Examples" href="example.html" /> 
-  </head>
-  <body role="document">
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -41,7 +31,7 @@
         <li class="right" >
           <a href="example.html" title="Examples"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.6.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.7.8 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -52,556 +42,584 @@
             
   <div class="section" id="changes">
 <h1>Changes<a class="headerlink" href="#changes" title="Permalink to this headline">¶</a></h1>
+<p><strong>Version 1.7.8</strong></p>
+<ul class="simple">
+<li><p>Updated docs</p></li>
+<li><p>Added flags to skip (trimming, mapping and annotation)</p></li>
+<li><p>Fixed a bug in the compute saturation option</p></li>
+<li><p>Restored the unittests</p></li>
+<li><p>Improvements when dealing with ambiguous and no_feature genes</p></li>
+</ul>
+<p><strong>Version 1.7.6</strong></p>
+<ul class="simple">
+<li><p>Ported to Python 3</p></li>
+</ul>
+<p><strong>Version 1.7.3</strong></p>
+<ul class="simple">
+<li><p>Fixed a small bug when soring the output of taggd</p></li>
+<li><p>Improved the st_qa.py script</p></li>
+</ul>
+<p><strong>Version 1.7.2</strong></p>
+<ul class="simple">
+<li><p>Removed parallel code for un-necessary parts</p></li>
+<li><p>Added option to provide saturation points</p></li>
+</ul>
+<p><strong>Version 1.6.2</strong></p>
+<ul class="simple">
+<li><p>Fixed a error in the parameters</p></li>
+</ul>
+<p><strong>Version 1.6.1</strong></p>
+<ul class="simple">
+<li><p>Added option to disable the barcode demultiplexing step</p></li>
+<li><p>Added option to disable the UMI filtering step</p></li>
+</ul>
 <p><strong>Version 1.6.0</strong></p>
 <ul class="simple">
-<li>Made the parsing of unique UMIs gene by gene and parallel</li>
-<li>AdjacentBi is now the default method for UMI counting</li>
-<li>Made the trimming function output the trimmed R2 in BAM format with the barcode and UMI</li>
-<li>Made the mapping function works with a BAM file as input (latest STAR release)</li>
-<li>Made the annotation function parallel</li>
-<li>Made the quality step parallel</li>
-<li>Improvements in speed and memory (constant memory use)</li>
-<li>The STAR genome loading strategy can be now set</li>
-<li>Added an affinity based method to cluster UMIs</li>
-<li>Added option to set the STAR BAM sort memory limit</li>
+<li><p>Made the parsing of unique UMIs gene by gene and parallel</p></li>
+<li><p>AdjacentBi is now the default method for UMI counting</p></li>
+<li><p>Made the trimming function output the trimmed R2 in BAM format with the barcode and UMI</p></li>
+<li><p>Made the mapping function works with a BAM file as input (latest STAR release)</p></li>
+<li><p>Made the annotation function parallel</p></li>
+<li><p>Made the quality step parallel</p></li>
+<li><p>Improvements in speed and memory (constant memory use)</p></li>
+<li><p>The STAR genome loading strategy can be now set</p></li>
+<li><p>Added an affinity based method to cluster UMIs</p></li>
+<li><p>Added option to set the STAR BAM sort memory limit</p></li>
 </ul>
 <p><strong>Version 1.5.1</strong></p>
 <ul class="simple">
-<li>Fixed a bug that will output the matrix of counts inverted</li>
+<li><p>Fixed a bug that will output the matrix of counts inverted</p></li>
 </ul>
 <p><strong>Version 1.5.0</strong></p>
 <ul class="simple">
-<li>st_qa.py generate expression heatmap plots</li>
-<li>Fixed a minor bug in the computation of the saturation curves</li>
-<li>adjust_matrix_coordinates now does not update the coordinates by default</li>
-<li>adjust_matrix_coordiantes works with the latest ST Spot detector format</li>
-<li>small updates in the fastq merging script</li>
-<li>relaxed a bit the restriction checks for some parameters</li>
+<li><p>st_qa.py generate expression heatmap plots</p></li>
+<li><p>Fixed a minor bug in the computation of the saturation curves</p></li>
+<li><p>adjust_matrix_coordinates now does not update the coordinates by default</p></li>
+<li><p>adjust_matrix_coordiantes works with the latest ST Spot detector format</p></li>
+<li><p>small updates in the fastq merging script</p></li>
+<li><p>relaxed a bit the restriction checks for some parameters</p></li>
 </ul>
 <p><strong>Version 1.4.5</strong></p>
-<ul>
-<li><dl class="first docutils">
-<dt>Added extra scripts:</dt>
-<dd><ul class="first last simple">
-<li>merge_bcl : merge BCL files based in patterns</li>
-<li>filter_gene_type_matrix : filter gene in output data based on Ensembl gene types</li>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Added extra scripts:</dt><dd><ul>
+<li><p>merge_bcl : merge BCL files based in patterns</p></li>
+<li><p>filter_gene_type_matrix : filter gene in output data based on Ensembl gene types</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li><p class="first">Bumped Pysam and HTSeq</p>
-</li>
+<li><p>Bumped Pysam and HTSeq</p></li>
 </ul>
 <p><strong>Version 1.4.1</strong></p>
 <ul class="simple">
-<li>Small update to make the PIP installation more robust</li>
+<li><p>Small update to make the PIP installation more robust</p></li>
 </ul>
 <p><strong>Version 1.4.0</strong></p>
 <ul class="simple">
-<li>Small update to make the PIP installation more robust</li>
+<li><p>Small update to make the PIP installation more robust</p></li>
 </ul>
 <p><strong>Version 1.3.5</strong></p>
 <ul class="simple">
-<li>Optimized the counting of UMIs by strand, start-pos and offset</li>
+<li><p>Optimized the counting of UMIs by strand, start-pos and offset</p></li>
 </ul>
 <p><strong>Version 1.3.4</strong></p>
 <ul class="simple">
-<li>Fixed a typo in one of the parameter that caused the pipeline to not run</li>
+<li><p>Fixed a typo in one of the parameter that caused the pipeline to not run</p></li>
 </ul>
 <p><strong>Version 1.3.3</strong></p>
 <ul class="simple">
-<li>Disabled spliced alignments by default</li>
+<li><p>Disabled spliced alignments by default</p></li>
 </ul>
 <p><strong>Version 1.3.2</strong></p>
 <ul class="simple">
-<li>Optimized the mapping and annotation steps</li>
+<li><p>Optimized the mapping and annotation steps</p></li>
 </ul>
 <p><strong>Version 1.3.1</strong></p>
 <ul class="simple">
-<li>Homopolymer miss-matches is a parameter now</li>
-<li>Removing now also PolyNs (parameter)</li>
+<li><p>Homopolymer miss-matches is a parameter now</p></li>
+<li><p>Removing now also PolyNs (parameter)</p></li>
 </ul>
 <p><strong>Version 1.3.0</strong></p>
 <ul class="simple">
-<li>Added more methods to cluster UMIs</li>
-<li>Optimized the UMI counting algorithm</li>
-<li>Optimized the memory use</li>
+<li><p>Added more methods to cluster UMIs</p></li>
+<li><p>Optimized the UMI counting algorithm</p></li>
+<li><p>Optimized the memory use</p></li>
 </ul>
 <p><strong>Version 1.2.6</strong></p>
 <ul class="simple">
-<li>Take into account soft-clipped bases when computing start/end positions</li>
+<li><p>Take into account soft-clipped bases when computing start/end positions</p></li>
 </ul>
 <p><strong>Version 1.2.5</strong>
 * Changed the limit range of some parameters</p>
 <p><strong>Version 1.2.4</strong></p>
 <ul class="simple">
-<li>Fixed small bugs</li>
-<li>Small improvements in st_qa.py and convertEnsemblToNames.py</li>
+<li><p>Fixed small bugs</p></li>
+<li><p>Small improvements in st_qa.py and convertEnsemblToNames.py</p></li>
 </ul>
 <p><strong>Version 1.2.3</strong></p>
 <ul class="simple">
-<li>Bumped TaggD version</li>
-<li>Added more stats to the dataset output</li>
-<li>Added scripts to compute stats</li>
-<li>Added new option for TaggD</li>
+<li><p>Bumped TaggD version</p></li>
+<li><p>Added more stats to the dataset output</p></li>
+<li><p>Added scripts to compute stats</p></li>
+<li><p>Added new option for TaggD</p></li>
 </ul>
 <p><strong>Version 1.2.2</strong></p>
 <ul class="simple">
-<li>Fixed bugs in convertEnsemblToNames</li>
-<li>Added some parameters for TaggD demultiplexing</li>
-<li>Bumped version of TaggD</li>
+<li><p>Fixed bugs in convertEnsemblToNames</p></li>
+<li><p>Added some parameters for TaggD demultiplexing</p></li>
+<li><p>Bumped version of TaggD</p></li>
 </ul>
 <p><strong>Version 1.2.1</strong></p>
 <ul class="simple">
-<li>Made homopolymers filters enabled by default</li>
-<li>Added a test dataset to the docs</li>
+<li><p>Made homopolymers filters enabled by default</p></li>
+<li><p>Added a test dataset to the docs</p></li>
 </ul>
 <p><strong>Version 1.2.0</strong></p>
 <ul class="simple">
-<li>Fixed a small bug in the deletion of the tmp folder</li>
+<li><p>Fixed a small bug in the deletion of the tmp folder</p></li>
 </ul>
 <p><strong>Version 1.1.7</strong></p>
 <ul class="simple">
-<li>Make sure to remove tmp files even if an error happens</li>
+<li><p>Make sure to remove tmp files even if an error happens</p></li>
 </ul>
 <p><strong>Version 1.1.6</strong></p>
 <ul class="simple">
-<li>Fixed bug that would leave some files in /tmp</li>
-<li>Allowed mis-matches when removing adaptors is now 2</li>
+<li><p>Fixed bug that would leave some files in /tmp</p></li>
+<li><p>Allowed mis-matches when removing adaptors is now 2</p></li>
 </ul>
 <p><strong>Version 1.1.5</strong></p>
 <ul class="simple">
-<li>Removed some un-necessary parameters</li>
+<li><p>Removed some un-necessary parameters</p></li>
 </ul>
 <p><strong>Version 1.1.1</strong></p>
 <ul class="simple">
-<li>Simplified the two pass mode</li>
+<li><p>Simplified the two pass mode</p></li>
 </ul>
 <p><strong>Version 1.1.0</strong></p>
 <ul class="simple">
-<li>Added flag to discard reads mapping to anti-sense strand</li>
-<li>Parameters for GC content filter instead of using the same value as AT content filter</li>
-<li>Fixed a small bug in the logging of some parameters</li>
+<li><p>Added flag to discard reads mapping to anti-sense strand</p></li>
+<li><p>Parameters for GC content filter instead of using the same value as AT content filter</p></li>
+<li><p>Fixed a small bug in the logging of some parameters</p></li>
 </ul>
 <p><strong>Version 1.0.4</strong></p>
 <ul class="simple">
-<li>When removing adaptors (homopolymers streches) allow to up to 3 missmatches</li>
-<li>Added GC content filter (same % as AT content)</li>
+<li><p>When removing adaptors (homopolymers streches) allow to up to 3 missmatches</p></li>
+<li><p>Added GC content filter (same % as AT content)</p></li>
 </ul>
 <p><strong>Version 1.0.3</strong></p>
 <ul class="simple">
-<li>Fixed a minor bug in the counting of UMIs or - strand</li>
+<li><p>Fixed a minor bug in the counting of UMIs or - strand</p></li>
 </ul>
 <p><strong>Version 1.0.2</strong></p>
 <ul class="simple">
-<li>If no temp folder is given a new unique one is created on top of the execution folder</li>
-<li>integrate createDataset.py into the code of the pipeline</li>
-<li>Adjusted some parameters names and descriptions (no UMI is default)</li>
-<li>Added sliding window when counting unique molecules</li>
-<li>Added support for bzip</li>
+<li><p>If no temp folder is given a new unique one is created on top of the execution folder</p></li>
+<li><p>integrate createDataset.py into the code of the pipeline</p></li>
+<li><p>Adjusted some parameters names and descriptions (no UMI is default)</p></li>
+<li><p>Added sliding window when counting unique molecules</p></li>
+<li><p>Added support for bzip</p></li>
 </ul>
 <p><strong>Version 1.0.1</strong></p>
 <ul class="simple">
-<li>Fixed small bug in the parsing of the umi quality parameter</li>
+<li><p>Fixed small bug in the parsing of the umi quality parameter</p></li>
 </ul>
 <p><strong>Version 1.0.0</strong></p>
 <ul class="simple">
-<li>Added option to check for UMI quality</li>
-<li>Optimized the UMI template check code</li>
-<li>Optimized how the unique molecules are counted</li>
-<li>Better stats for the quality filter step</li>
-<li>Updated convertEnsemblToNames script</li>
-<li>Updated stringdocs</li>
+<li><p>Added option to check for UMI quality</p></li>
+<li><p>Optimized the UMI template check code</p></li>
+<li><p>Optimized how the unique molecules are counted</p></li>
+<li><p>Better stats for the quality filter step</p></li>
+<li><p>Updated convertEnsemblToNames script</p></li>
+<li><p>Updated stringdocs</p></li>
 </ul>
 <p><strong>Version 0.9.9</strong></p>
 <ul class="simple">
-<li>Small bug fixes</li>
+<li><p>Small bug fixes</p></li>
 </ul>
 <p><strong>Version 0.9.6</strong></p>
 <ul class="simple">
-<li>Fixed a bug with the non ambiguous option</li>
-<li>Fix a bug in the saturation computation</li>
+<li><p>Fixed a bug with the non ambiguous option</p></li>
+<li><p>Fix a bug in the saturation computation</p></li>
 </ul>
 <p><strong>Version 0.9.5</strong></p>
 <ul class="simple">
-<li>When a R2 is trimmed its correspondant R1 is trimmed as well</li>
+<li><p>When a R2 is trimmed its correspondant R1 is trimmed as well</p></li>
 </ul>
 <p><strong>Version 0.9.4</strong></p>
 <ul class="simple">
-<li>Fixed a stupid bug in the compute saturation option</li>
+<li><p>Fixed a stupid bug in the compute saturation option</p></li>
 </ul>
 <p><strong>Version 0.9.3</strong></p>
 <ul class="simple">
-<li>Changed the rRNA filter so the BAM output does not need to be sorted</li>
+<li><p>Changed the rRNA filter so the BAM output does not need to be sorted</p></li>
 </ul>
 <p><strong>Version 0.9.2</strong></p>
 <ul class="simple">
-<li>Fixed a bug in the parsing of parameters</li>
+<li><p>Fixed a bug in the parsing of parameters</p></li>
 </ul>
 <p><strong>Version 0.9.1</strong></p>
 <ul class="simple">
-<li>Fixed a small bug with the location of discarded files</li>
+<li><p>Fixed a small bug with the location of discarded files</p></li>
 </ul>
 <p><strong>Version 0.9.0</strong></p>
 <ul class="simple">
-<li>Replaced JSON for data frame in the output format</li>
-<li>Replaced python gzip for system call (faster)</li>
-<li>Changed the logic of how the filenames are stored and handled</li>
+<li><p>Replaced JSON for data frame in the output format</p></li>
+<li><p>Replaced python gzip for system call (faster)</p></li>
+<li><p>Changed the logic of how the filenames are stored and handled</p></li>
 </ul>
 <p><strong>Version 0.8.9</strong></p>
 <ul class="simple">
-<li>Improved the error messages and error handling</li>
+<li><p>Improved the error messages and error handling</p></li>
 </ul>
 <p><strong>Version 0.8.8</strong></p>
 <ul class="simple">
-<li>Removed barcodes IDs from the output file</li>
+<li><p>Removed barcodes IDs from the output file</p></li>
 </ul>
 <p><strong>Version 0.8.7</strong></p>
 <ul class="simple">
-<li>Updated comments, manual and license</li>
-<li>Small improvements</li>
+<li><p>Updated comments, manual and license</p></li>
+<li><p>Small improvements</p></li>
 </ul>
 <p><strong>Version 0.8.5</strong></p>
 <ul class="simple">
-<li>Fixed a bug in the computation of saturation curves</li>
+<li><p>Fixed a bug in the computation of saturation curves</p></li>
 </ul>
 <p><strong>Version 0.8.4</strong></p>
 <ul class="simple">
-<li>Added a normal hash with INT keys to increase speed and reduce memory</li>
-<li>Using the gene_id for annotation again</li>
+<li><p>Added a normal hash with INT keys to increase speed and reduce memory</p></li>
+<li><p>Using the gene_id for annotation again</p></li>
 </ul>
 <p><strong>Version 0.8.3</strong></p>
 <ul class="simple">
-<li>Added parameter for strandness in annotation (yes by default)</li>
-<li>Simplified a bit the quality trimming step (do not account for user input trimmed bases)</li>
+<li><p>Added parameter for strandness in annotation (yes by default)</p></li>
+<li><p>Simplified a bit the quality trimming step (do not account for user input trimmed bases)</p></li>
 </ul>
 <p><strong>Version 0.8.2</strong></p>
 <ul class="simple">
-<li>Added stats for annotated reads</li>
-<li>Replaced shelve dict for sqldict</li>
-<li>Fixed some small bugs in the annotation</li>
+<li><p>Added stats for annotated reads</p></li>
+<li><p>Replaced shelve dict for sqldict</p></li>
+<li><p>Fixed some small bugs in the annotation</p></li>
 </ul>
 <p><strong>Version 0.8.1</strong></p>
 <ul class="simple">
-<li>Removed the pair mode keep option</li>
-<li>Removed un-neccessary pair mode and mapped checks after alignment</li>
+<li><p>Removed the pair mode keep option</p></li>
+<li><p>Removed un-neccessary pair mode and mapped checks after alignment</p></li>
 </ul>
 <p><strong>Version 0.8.0</strong></p>
 <ul class="simple">
-<li>Added option to do the STAR 2 pass mode</li>
-<li>Removed option to run pipeline without IDs</li>
-<li>Speed improvements</li>
-<li>Perform demultiplex after mapping</li>
-<li>No attaching the barcode to reverse reads</li>
-<li>Removing some parameters</li>
-<li>Some improvements in stDataPlotter</li>
-<li>Option to use BAM format</li>
-<li>Removed annotation filtering step</li>
-<li>Removed forward trimming parameters</li>
-<li>Output gene names even with ENSEMBL</li>
+<li><p>Added option to do the STAR 2 pass mode</p></li>
+<li><p>Removed option to run pipeline without IDs</p></li>
+<li><p>Speed improvements</p></li>
+<li><p>Perform demultiplex after mapping</p></li>
+<li><p>No attaching the barcode to reverse reads</p></li>
+<li><p>Removing some parameters</p></li>
+<li><p>Some improvements in stDataPlotter</p></li>
+<li><p>Option to use BAM format</p></li>
+<li><p>Removed annotation filtering step</p></li>
+<li><p>Removed forward trimming parameters</p></li>
+<li><p>Output gene names even with ENSEMBL</p></li>
 </ul>
 <p><strong>Version 0.7.7</strong></p>
 <ul class="simple">
-<li>Small memory improvements</li>
-<li>Updates in plotting script</li>
+<li><p>Small memory improvements</p></li>
+<li><p>Updates in plotting script</p></li>
 </ul>
 <p><strong>Version 0.7.6</strong></p>
 <ul class="simple">
-<li>End coordinates now contain the whole read length</li>
-<li>Make annotation strand aware (reverse)</li>
-<li>Updated to STAR 2.5</li>
+<li><p>End coordinates now contain the whole read length</p></li>
+<li><p>Make annotation strand aware (reverse)</p></li>
+<li><p>Updated to STAR 2.5</p></li>
 </ul>
 <p><strong>Version 0.7.5</strong></p>
 <ul class="simple">
-<li>Fixed a small bug</li>
+<li><p>Fixed a small bug</p></li>
 </ul>
 <p><strong>Version 0.7.4</strong></p>
 <ul class="simple">
-<li>Added some memory improvements</li>
+<li><p>Added some memory improvements</p></li>
 </ul>
 <p><strong>Version 0.7.3</strong></p>
 <ul class="simple">
-<li>Added parameters for inverse trimming</li>
-<li>Memory and speed optimizations in createDatasets</li>
-<li>Added option for low_memory use</li>
+<li><p>Added parameters for inverse trimming</p></li>
+<li><p>Memory and speed optimizations in createDatasets</p></li>
+<li><p>Added option for low_memory use</p></li>
 </ul>
 <p><strong>Version 0.7.2</strong></p>
 <ul class="simple">
-<li>Added unique genes to saturation points</li>
-<li>Added option to keep non-annotated reads</li>
+<li><p>Added unique genes to saturation points</p></li>
+<li><p>Added option to keep non-annotated reads</p></li>
 </ul>
 <p><strong>Version 0.7.1</strong></p>
 <ul class="simple">
-<li>Fixed some small bugs</li>
+<li><p>Fixed some small bugs</p></li>
 </ul>
 <p><strong>Version 0.7.0</strong></p>
 <ul class="simple">
-<li>Fixed a bug in the saturation points</li>
-<li>Removed counttrie as option for clustering</li>
-<li>Updated and improved CTTS scripts</li>
-<li>Updated datfa plotter color list</li>
+<li><p>Fixed a bug in the saturation points</p></li>
+<li><p>Removed counttrie as option for clustering</p></li>
+<li><p>Updated and improved CTTS scripts</p></li>
+<li><p>Updated datfa plotter color list</p></li>
 </ul>
 <p><strong>Version 0.6.9</strong></p>
 <ul class="simple">
-<li>Fixed a bug in the saturation points</li>
+<li><p>Fixed a bug in the saturation points</p></li>
 </ul>
 <p><strong>Version 0.6.8</strong></p>
 <ul class="simple">
-<li>Improved speed and memory in createDatasets</li>
-<li>Changed saturation points to fixed values that grow exp</li>
-<li>Improved speed in computation of saturation points</li>
-<li>Small bug fixes</li>
-<li>Upgraded json2Scatter with many improvements</li>
-<li>Rename json2scatter to stDataPlotter</li>
+<li><p>Improved speed and memory in createDatasets</p></li>
+<li><p>Changed saturation points to fixed values that grow exp</p></li>
+<li><p>Improved speed in computation of saturation points</p></li>
+<li><p>Small bug fixes</p></li>
+<li><p>Upgraded json2Scatter with many improvements</p></li>
+<li><p>Rename json2scatter to stDataPlotter</p></li>
 </ul>
 <p><strong>Version 0.6.7</strong></p>
 <ul class="simple">
-<li>Fixed a bug in the hierarchical clustering</li>
-<li>Added the input parameter to qa_stats</li>
-<li>Append experiment name to output files</li>
-<li>Added option to compute saturation points</li>
-<li>Added tool to plot stdata and clusters with aligned image</li>
+<li><p>Fixed a bug in the hierarchical clustering</p></li>
+<li><p>Added the input parameter to qa_stats</p></li>
+<li><p>Append experiment name to output files</p></li>
+<li><p>Added option to compute saturation points</p></li>
+<li><p>Added tool to plot stdata and clusters with aligned image</p></li>
 </ul>
 <p><strong>Version 0.6.6</strong></p>
 <ul class="simple">
-<li>Fixed a bug in the hierarchical clustering</li>
-<li>Fixed a bug in the printed stats</li>
+<li><p>Fixed a bug in the hierarchical clustering</p></li>
+<li><p>Fixed a bug in the printed stats</p></li>
 </ul>
 <p><strong>Version 0.6.5</strong></p>
 <ul class="simple">
-<li>Fixed a bug in retrieving the version of the software</li>
-<li>Added time stamps in different steps</li>
-<li>Added a UMI template quality filter</li>
+<li><p>Fixed a bug in retrieving the version of the software</p></li>
+<li><p>Added time stamps in different steps</p></li>
+<li><p>Added a UMI template quality filter</p></li>
 </ul>
 <p><strong>Version 0.6.4</strong></p>
 <ul class="simple">
-<li>Fixed a bug in counttrie clustering method</li>
-<li>Improved sorting of molecular barcodes prior clustering</li>
-<li>Added hiearachical clustering option</li>
+<li><p>Fixed a bug in counttrie clustering method</p></li>
+<li><p>Improved sorting of molecular barcodes prior clustering</p></li>
+<li><p>Added hiearachical clustering option</p></li>
 </ul>
 <p><strong>Version 0.6.3</strong></p>
 <ul class="simple">
-<li>Removed reads.json</li>
-<li>Added qa_stats.json to the output</li>
-<li>Restored old versioning system</li>
-<li>Removed hadoop related stuff</li>
-<li>Added support for gziped input files</li>
+<li><p>Removed reads.json</p></li>
+<li><p>Added qa_stats.json to the output</p></li>
+<li><p>Restored old versioning system</p></li>
+<li><p>Removed hadoop related stuff</p></li>
+<li><p>Added support for gziped input files</p></li>
 </ul>
 <p><strong>Version 0.6.2</strong></p>
 <ul class="simple">
-<li>Improved the log a bit</li>
-<li>Added parameters for max,min intron size and max gap size</li>
+<li><p>Improved the log a bit</p></li>
+<li><p>Added parameters for max,min intron size and max gap size</p></li>
 </ul>
 <p><strong>Version 0.6.1</strong></p>
 <ul class="simple">
-<li>Fixed some bugs in the prefix tree</li>
+<li><p>Fixed some bugs in the prefix tree</p></li>
 </ul>
 <p><strong>Version 0.5.9</strong></p>
 <ul class="simple">
-<li>Added an option to find molecular barcodes clusters using a prefix tree</li>
+<li><p>Added an option to find molecular barcodes clusters using a prefix tree</p></li>
 </ul>
 <p><strong>Version 0.5.8</strong></p>
 <ul class="simple">
-<li>Fixed a bug in the function to retrieve the pipeline version</li>
+<li><p>Fixed a bug in the function to retrieve the pipeline version</p></li>
 </ul>
 <p><strong>Version 0.5.7</strong></p>
 <ul class="simple">
-<li>Fixed a bug with --disable-multimap option</li>
+<li><p>Fixed a bug with –disable-multimap option</p></li>
 </ul>
 <p><strong>Version 0.5.6</strong></p>
 <ul class="simple">
-<li>Fixed a typo in a parameter</li>
-<li>Fixed a bug that caused some parameters to not work</li>
+<li><p>Fixed a typo in a parameter</p></li>
+<li><p>Fixed a bug that caused some parameters to not work</p></li>
 </ul>
 <p><strong>Version 0.5.5</strong></p>
 <ul class="simple">
-<li>Added some extra debugging info in createDatasets</li>
-<li>Output the read name in the BED output file</li>
-<li>Changed --allowed-kimera for --allowed-kmer</li>
-<li>Added version as parameter and log message</li>
+<li><p>Added some extra debugging info in createDatasets</p></li>
+<li><p>Output the read name in the BED output file</p></li>
+<li><p>Changed –allowed-kimera for –allowed-kmer</p></li>
+<li><p>Added version as parameter and log message</p></li>
 </ul>
 <p><strong>Version 0.5.4</strong></p>
 <ul class="simple">
-<li>Added parameter to disable soft clipping in mapping</li>
-<li>Disable softclipping in rRNA filter</li>
-<li>Make sure that discarded reads after rRNA filter are replaced by Ns</li>
-<li>Improved stats info a bit</li>
+<li><p>Added parameter to disable soft clipping in mapping</p></li>
+<li><p>Disable softclipping in rRNA filter</p></li>
+<li><p>Make sure that discarded reads after rRNA filter are replaced by Ns</p></li>
+<li><p>Improved stats info a bit</p></li>
 </ul>
 <p><strong>Version 0.5.3</strong></p>
 <ul class="simple">
-<li>Bumped Taggd to 0.2.2</li>
+<li><p>Bumped Taggd to 0.2.2</p></li>
 </ul>
 <p><strong>Version 0.5.2</strong></p>
 <ul class="simple">
-<li>Fixed a bug in the rRNA filter that would cause to not discard rRNA mapped reads</li>
+<li><p>Fixed a bug in the rRNA filter that would cause to not discard rRNA mapped reads</p></li>
 </ul>
 <p><strong>Version 0.5.1</strong></p>
 <ul class="simple">
-<li>Added check when UMI is the same as barcode</li>
-<li>Added more stats</li>
-<li>Added percentiles distributiosn stats for createDAtaset</li>
-<li>Added support for BAM and SAM (not functional now)</li>
-<li>Added option to disable multiple aligned reads</li>
-<li>Fixed a bug in the bed file</li>
+<li><p>Added check when UMI is the same as barcode</p></li>
+<li><p>Added more stats</p></li>
+<li><p>Added percentiles distributiosn stats for createDAtaset</p></li>
+<li><p>Added support for BAM and SAM (not functional now)</p></li>
+<li><p>Added option to disable multiple aligned reads</p></li>
+<li><p>Fixed a bug in the bed file</p></li>
 </ul>
 <p><strong>Version 0.5.0</strong></p>
 <ul class="simple">
-<li>Added AT content filter in quality trimming</li>
-<li>Added min mapped length filter after mapping</li>
-<li>Make sure one of the multiple aligned reads is set as not multiple</li>
+<li><p>Added AT content filter in quality trimming</p></li>
+<li><p>Added min mapped length filter after mapping</p></li>
+<li><p>Make sure one of the multiple aligned reads is set as not multiple aligned so it can be annotated</p></li>
+<li><p>Discard the other multiple aligned reads after mapping</p></li>
+<li><p>Disable sorting</p></li>
+<li><p>Restored back to use gene_id as column for annotation</p></li>
 </ul>
-<p>aligned so it can be annotated
-* Discard the other multiple aligned reads after mapping
-* Disable sorting
-* Restored back to use gene_id as column for annotation</p>
 <p><strong>Version 0.4.9</strong></p>
 <ul class="simple">
-<li>Changed naming convention</li>
-<li>Added support for normal RNA analysis</li>
+<li><p>Changed naming convention</p></li>
+<li><p>Added support for normal RNA analysis</p></li>
 </ul>
 <p><strong>Version 0.4.8</strong></p>
 <ul class="simple">
-<li>Improved STAR configuration</li>
-<li>Added mapping post processing to filter out and adjust reversed reads</li>
-<li>Changed to use gene_name for annotation</li>
-<li>Fixed some bugs and some improvements</li>
-<li>Fixed bugs in the trimming</li>
+<li><p>Improved STAR configuration</p></li>
+<li><p>Added mapping post processing to filter out and adjust reversed reads</p></li>
+<li><p>Changed to use gene_name for annotation</p></li>
+<li><p>Fixed some bugs and some improvements</p></li>
+<li><p>Fixed bugs in the trimming</p></li>
 </ul>
 <p><strong>Version 0.4.7</strong></p>
 <ul class="simple">
-<li>Improved stats</li>
-<li>Fixed a bug that would remove original input files</li>
-<li>Added a script to convert ENSEMBL ids to gene names</li>
+<li><p>Improved stats</p></li>
+<li><p>Fixed a bug that would remove original input files</p></li>
+<li><p>Added a script to convert ENSEMBL ids to gene names</p></li>
 </ul>
 <p><strong>Version 0.4.6</strong></p>
 <ul class="simple">
-<li>Fixed a bug that would not compute the number of discarded reads when using molecular barcodes</li>
+<li><p>Fixed a bug that would not compute the number of discarded reads when using molecular barcodes</p></li>
 </ul>
 <p><strong>Version 0.4.5</strong></p>
 <ul class="simple">
-<li>Fixed a bug in the barcodes JSON output</li>
+<li><p>Fixed a bug in the barcodes JSON output</p></li>
 </ul>
 <p><strong>Version 0.4.4</strong></p>
 <ul class="simple">
-<li>Fixed a bug in the molecular barcodes algorithm</li>
-<li>Fixed a bug that would keep the original fastq reads in the system</li>
-<li>Update taggd version</li>
+<li><p>Fixed a bug in the molecular barcodes algorithm</p></li>
+<li><p>Fixed a bug that would keep the original fastq reads in the system</p></li>
+<li><p>Update taggd version</p></li>
 </ul>
 <p><strong>Version 0.4.3</strong></p>
 <ul class="simple">
-<li>Small improvements with error checking and log in the mapping</li>
-<li>Fixed a bug that would remove the file after filtering annoted reads</li>
-<li>Make the sorting by name instead by position due to a bug in htseq-count</li>
+<li><p>Small improvements with error checking and log in the mapping</p></li>
+<li><p>Fixed a bug that would remove the file after filtering annoted reads</p></li>
+<li><p>Make the sorting by name instead by position due to a bug in htseq-count</p></li>
 </ul>
 <p><strong>Version 0.4.2</strong></p>
 <ul class="simple">
-<li>Fixed a bug in the capture of parameters</li>
+<li><p>Fixed a bug in the capture of parameters</p></li>
 </ul>
 <p><strong>Version 0.4.1</strong></p>
 <ul class="simple">
-<li>Improved the logs</li>
-<li>Fixed few bugs</li>
+<li><p>Improved the logs</p></li>
+<li><p>Fixed few bugs</p></li>
 </ul>
 <p><strong>Version 0.4.0</strong></p>
 <ul class="simple">
-<li>Added back taggd</li>
-<li>Added BED file to output</li>
-<li>Added STAR</li>
-<li>Optimized workflow</li>
-<li>do rRNA filter first</li>
-<li>Optimized annotation</li>
-<li>Optimized trimming</li>
-<li>Output reads do not contain duplicates</li>
+<li><p>Added back taggd</p></li>
+<li><p>Added BED file to output</p></li>
+<li><p>Added STAR</p></li>
+<li><p>Optimized workflow</p></li>
+<li><p>do rRNA filter first</p></li>
+<li><p>Optimized annotation</p></li>
+<li><p>Optimized trimming</p></li>
+<li><p>Output reads do not contain duplicates</p></li>
 </ul>
 <p><strong>Version 0.3.9</strong></p>
 <ul class="simple">
-<li>Allowing molecular barcodes to be before the barcodes</li>
+<li><p>Allowing molecular barcodes to be before the barcodes</p></li>
 </ul>
 <p><strong>Version 0.3.8</strong></p>
 <ul class="simple">
-<li>Added back findIndexes</li>
+<li><p>Added back findIndexes</p></li>
 </ul>
 <p><strong>Version 0.3.7</strong></p>
 <ul class="simple">
-<li>Removed cutadapt dependency</li>
+<li><p>Removed cutadapt dependency</p></li>
 </ul>
 <p><strong>Version 0.3.6</strong></p>
 <ul class="simple">
-<li>Fixed a bug in the installation</li>
+<li><p>Fixed a bug in the installation</p></li>
 </ul>
 <p><strong>Version 0.3.5</strong></p>
 <ul class="simple">
-<li>Added options to remove PolyC fix bugs in adaptors removal</li>
+<li><p>Added options to remove PolyC fix bugs in adaptors removal</p></li>
 </ul>
 <p><strong>Version 0.3.4</strong></p>
 <ul class="simple">
-<li>Added test for STAR and STAR binary to dependencies</li>
-<li>Added TAGGD and removed findIndexes</li>
-<li>Improved install script</li>
-<li>Added options to remove adaptors (PolyA, PolyT and PolyG)</li>
-<li>Exchanged Bowtie as primary mapper with STAR.</li>
+<li><p>Added test for STAR and STAR binary to dependencies</p></li>
+<li><p>Added TAGGD and removed findIndexes</p></li>
+<li><p>Improved install script</p></li>
+<li><p>Added options to remove adaptors (PolyA, PolyT and PolyG)</p></li>
+<li><p>Exchanged Bowtie as primary mapper with STAR.</p></li>
 </ul>
 <p><strong>Version 0.3.3</strong></p>
 <ul class="simple">
-<li>Added option to keep files with discarded reads/barcodes</li>
-<li>Internal refactoring and optimization</li>
+<li><p>Added option to keep files with discarded reads/barcodes</p></li>
+<li><p>Internal refactoring and optimization</p></li>
 </ul>
 <p><strong>Version 0.3.2</strong></p>
 <ul class="simple">
-<li>Outputted reads JSON now only has the portion of the read that was used to map</li>
-<li>Cutadapt is integrated but only using the quality trimming for now</li>
-<li>Internal refactoring and optimizations</li>
+<li><p>Outputted reads JSON now only has the portion of the read that was used to map</p></li>
+<li><p>Cutadapt is integrated but only using the quality trimming for now</p></li>
+<li><p>Internal refactoring and optimizations</p></li>
 </ul>
 <p><strong>Version 0.3.1</strong></p>
 <ul class="simple">
-<li>Added small unit-test for molecular barcodes</li>
-<li>Added more molecular barcodes algorithms (using a naive one for now)</li>
-<li>Fixed small issues in JSON parsing libraries</li>
+<li><p>Added small unit-test for molecular barcodes</p></li>
+<li><p>Added more molecular barcodes algorithms (using a naive one for now)</p></li>
+<li><p>Fixed small issues in JSON parsing libraries</p></li>
 </ul>
 <p><strong>Version 0.3.0</strong></p>
 <ul class="simple">
-<li>Rewrite createDatasets.py</li>
-<li>Clean up repository and deprecated files</li>
-<li>Change the unit-test library and structure</li>
-<li>Refactor the unit-test (use pipeline API instead of command line calls)</li>
-<li>Ensure unit-test remove tmp files when failing</li>
-<li>Add better error handling</li>
-<li>Add unit-test for Molecular Barcodes</li>
-<li>Add Molecular Barcodes functionality</li>
-<li>General refactor and clean up</li>
-<li>Add invoke options (clean, build, install)</li>
-<li>Fix an important bug in createDatasets that caused incorrect computation of reads counts</li>
+<li><p>Rewrite createDatasets.py</p></li>
+<li><p>Clean up repository and deprecated files</p></li>
+<li><p>Change the unit-test library and structure</p></li>
+<li><p>Refactor the unit-test (use pipeline API instead of command line calls)</p></li>
+<li><p>Ensure unit-test remove tmp files when failing</p></li>
+<li><p>Add better error handling</p></li>
+<li><p>Add unit-test for Molecular Barcodes</p></li>
+<li><p>Add Molecular Barcodes functionality</p></li>
+<li><p>General refactor and clean up</p></li>
+<li><p>Add invoke options (clean, build, install)</p></li>
+<li><p>Fix an important bug in createDatasets that caused incorrect computation of reads counts</p></li>
 </ul>
 <p><strong>Version 0.2.5</strong></p>
 <ul class="simple">
-<li>Improved installers</li>
-<li>Small bug fixes</li>
-<li>Added basic unit-test to do a run of the pipeline</li>
+<li><p>Improved installers</p></li>
+<li><p>Small bug fixes</p></li>
+<li><p>Added basic unit-test to do a run of the pipeline</p></li>
 </ul>
 <p><strong>Version 0.2.4</strong></p>
 <ul class="simple">
-<li>Some optimizations and bug fixes</li>
+<li><p>Some optimizations and bug fixes</p></li>
 </ul>
 <p><strong>Version 0.2.3</strong></p>
 <ul class="simple">
-<li>Fixed a error with new version of HTSeq-count that will discard more reads</li>
+<li><p>Fixed a error with new version of HTSeq-count that will discard more reads</p></li>
 </ul>
 <p><strong>Version 0.2.2</strong></p>
 <ul class="simple">
-<li>Added extra parameters</li>
-<li>Fixed some typos</li>
-<li>Fixed a bug that caused to remove some bases from the barcode ID in the rv reads</li>
+<li><p>Added extra parameters</p></li>
+<li><p>Fixed some typos</p></li>
+<li><p>Fixed a bug that caused to remove some bases from the barcode ID in the rv reads</p></li>
 </ul>
 <p><strong>Version 0.2.1</strong></p>
 <ul class="simple">
-<li>code refactored and modularized</li>
-<li>add argparse for parameters parsing</li>
-<li>add API for Amazon EMR and terminal version</li>
-<li>better error handling</li>
-<li>optimized code</li>
-<li>new version of FindIndexes</li>
-<li>remove dependencies</li>
-<li>added proper installers and documentation</li>
+<li><p>code refactored and modularized</p></li>
+<li><p>add argparse for parameters parsing</p></li>
+<li><p>add API for Amazon EMR and terminal version</p></li>
+<li><p>better error handling</p></li>
+<li><p>optimized code</p></li>
+<li><p>new version of FindIndexes</p></li>
+<li><p>remove dependencies</p></li>
+<li><p>added proper installers and documentation</p></li>
 </ul>
 </div>
 
@@ -620,23 +638,20 @@
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="_sources/changes.txt"
+      <li><a href="_sources/changes.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
-    <p class="searchtip" style="font-size: 90%">
-    Enter search terms or a module, class or function name.
-    </p>
+    </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -653,12 +668,12 @@
         <li class="right" >
           <a href="example.html" title="Examples"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.6.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.7.8 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &copy; Copyright 2017, Jose Fernandez Navarro.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.5.
+        &#169; Copyright 2017, Jose Fernandez Navarro.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.
     </div>
   </body>
 </html>

@@ -2,12 +2,10 @@ License
 -------
 
 The MIT License (MIT)
-Copyright (c) 2016 Jose Fernandez Navarro, KTH, KI.
+Copyright (c) 2016 Jose Fernandez Navarro.
 All rights reserved.
 
-* Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
-* Royal Institute of Technology (KTH)
-* Karolisnka Institute (KI)
+* Jose Fernandez Navarro <jc.fernandez.navarro@gmai.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in

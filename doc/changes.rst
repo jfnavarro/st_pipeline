@@ -1,5 +1,37 @@
 Changes
 -------
+
+**Version 1.7.8**
+
+* Updated docs
+* Added flags to skip (trimming, mapping and annotation)
+* Fixed a bug in the compute saturation option
+* Restored the unittests
+* Improvements when dealing with ambiguous and no_feature genes
+
+**Version 1.7.6**
+
+* Ported to Python 3
+
+**Version 1.7.3**
+
+* Fixed a small bug when soring the output of taggd
+* Improved the st_qa.py script
+
+**Version 1.7.2**
+
+* Removed parallel code for un-necessary parts
+* Added option to provide saturation points
+
+**Version 1.6.2**
+
+* Fixed a error in the parameters
+
+**Version 1.6.1**
+
+* Added option to disable the barcode demultiplexing step
+* Added option to disable the UMI filtering step
+
 **Version 1.6.0**
 
 * Made the parsing of unique UMIs gene by gene and parallel
@@ -391,8 +423,7 @@ Changes
 
 * Added AT content filter in quality trimming
 * Added min mapped length filter after mapping
-* Make sure one of the multiple aligned reads is set as not multiple
-aligned so it can be annotated
+* Make sure one of the multiple aligned reads is set as not multiple aligned so it can be annotated
 * Discard the other multiple aligned reads after mapping
 * Disable sorting
 * Restored back to use gene_id as column for annotation

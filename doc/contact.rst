@@ -1,4 +1,4 @@
 Contact
 -------
 
-Author: Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+Author: Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
