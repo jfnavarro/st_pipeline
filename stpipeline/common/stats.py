@@ -23,10 +23,10 @@ class Stats():
         self.reads_after_duplicates_removal = 0
         self.genes_found = 0
         self.duplicates_found = 0
-        self.pipeline_version = "1.7.5"
-        self.mapper_tool = "STAR 2.5.1"
-        self.annotation_tool = "HTSeq 0.7.1"
-        self.demultiplex_tool = "TaggD 0.3.6"
+        self.pipeline_version = "-"
+        self.mapper_tool = "-"
+        self.annotation_tool = "-"
+        self.demultiplex_tool = "-"
         self.input_parameters = []
         self.max_genes_feature = 0
         self.min_genes_feature = 0
