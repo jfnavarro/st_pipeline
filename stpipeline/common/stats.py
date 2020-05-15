@@ -21,20 +21,17 @@ class Stats():
         self.reads_after_annotation = 0
         self.reads_after_demultiplexing = 0
         self.reads_after_duplicates_removal = 0
-        self.unique_events = 0
         self.genes_found = 0
         self.duplicates_found = 0
-        self.pipeline_version = "0.6.1"
-        self.mapper_tool = "STAR 2.4.0"
-        self.annotation_tool = "HTSeq 0.6.1"
-        self.demultiplex_tool = "TAGGD 0.2.2"
+        self.pipeline_version = "-"
+        self.mapper_tool = "-"
+        self.annotation_tool = "-"
+        self.demultiplex_tool = "-"
         self.input_parameters = []
         self.max_genes_feature = 0
         self.min_genes_feature = 0
         self.max_reads_feature = 0
         self.min_reads_feature = 0
-        self.max_reads_unique_event = 0
-        self.min_reads_unique_event = 0
         self.average_gene_feature = 0
         self.average_reads_feature = 0
     
@@ -48,7 +45,6 @@ class Stats():
         "\nreads_after_annotation: " + str(self.reads_after_annotation) + \
         "\nreads_after_demultiplexing: " + str(self.reads_after_demultiplexing) + \
         "\nreads_after_duplicates_removal: " + str(self.reads_after_duplicates_removal) + \
-        "\nunique_events: " + str(self.unique_events) + \
         "\ngenes_found: " + str(self.genes_found) + \
         "\nduplicates_found: " + str(self.duplicates_found) + \
         "\npipeline_version: " + str(self.pipeline_version) + \
@@ -60,8 +56,6 @@ class Stats():
         "\nmin_genes_feature: " + str(self.min_genes_feature) + \
         "\nmax_reads_feature: " + str(self.max_reads_feature) + \
         "\nmin_reads_feature: " + str(self.min_reads_feature) + \
-        "\nmax_reads_unique_event: " + str(self.max_reads_unique_event) + \
-        "\nmin_reads_unique_event: " + str(self.min_reads_unique_event) + \
         "\navergage_gene_feature: " + str(self.average_gene_feature) + \
         "\naverage_reads_feature: " + str(self.average_reads_feature)
         
@@ -75,7 +69,6 @@ class Stats():
                          "reads_after_annotation" : self.reads_after_annotation,
                          "reads_after_demultiplexing" : self.reads_after_demultiplexing,
                          "reads_after_duplicates_removal" : self.reads_after_duplicates_removal,
-                         "unique_events" : self.unique_events,
                          "genes_found" : self.genes_found,
                          "duplicates_found" : self.duplicates_found,
                          "pipeline_version" : self.pipeline_version,
@@ -87,8 +80,6 @@ class Stats():
                          "min_genes_feature" : self.min_genes_feature,
                          "max_reads_feature" : self.max_reads_feature,
                          "min_reads_feature" : self.min_reads_feature,
-                         "max_reads_unique_event" : self.max_reads_unique_event,
-                         "min_reads_unique_event" : self.min_reads_unique_event,
                          "avergage_gene_feature" : self.average_gene_feature,
                          "average_reads_feature" : self.average_reads_feature}
                          

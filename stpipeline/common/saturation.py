@@ -58,7 +58,7 @@ def computeSaturation(nreads,
         raise RuntimeError(error)
 
     if saturation_points is not None:
-        saturation_points = [p for p in saturation_points if p < int(nreads)]
+        saturation_points = [p for p in sorted(saturation_points) if p < int(nreads)]
 
         if len(saturation_points) == 0:
             error = "Error, all saturation points provided are bigger than the number" \
@@ -69,7 +69,7 @@ def computeSaturation(nreads,
          # Create a list of 15 saturation points (different number of reads)
         saturation_points = list()
         for x in range(0,15):
-            spoint = int(math.floor(1e5 + (math.exp(x) * 1e5)))
+            spoint = int(math.floor(1e3 + (math.exp(x) * 1e3)))
             if spoint >= int(nreads):
                 break
             saturation_points.append(spoint)
@@ -119,11 +119,11 @@ def computeSaturation(nreads,
         file_sam.close()
                  
     # Compute saturation points by calling createDataset on each file
-    saturation_points_values_unique_events = list()
     saturation_points_values_reads = list()
     saturation_points_values_genes = list()
     saturation_points_average_genes = list()
     saturation_points_average_reads = list()
+    # TODO make this parallel 
     for spoint in saturation_points:
         stats = Stats()
         input_file = file_names[spoint]
@@ -144,7 +144,6 @@ def computeSaturation(nreads,
             raise e
        
         # Update lists with the computed points    
-        saturation_points_values_unique_events.append(stats.unique_events)
         saturation_points_values_reads.append(stats.reads_after_duplicates_removal)
         saturation_points_values_genes.append(stats.genes_found)
         saturation_points_average_genes.append(stats.average_gene_feature)
@@ -157,11 +156,9 @@ def computeSaturation(nreads,
     # Update the log with the computed saturation points
     logger.info("Saturation points:")
     logger.info(', '.join(str(a) for a in saturation_points))
-    logger.info("Unique events per saturation point")
-    logger.info(', '.join(str(a) for a in saturation_points_values_unique_events))
-    logger.info("Unique transcripts per saturation point")
+    logger.info("Reads per saturation point")
     logger.info(', '.join(str(a) for a in saturation_points_values_reads))
-    logger.info("Unique genes per saturation point")
+    logger.info("Genes per saturation point")
     logger.info(', '.join(str(a) for a in saturation_points_values_genes))
     logger.info("Average genes/spot per saturation point")
     logger.info(', '.join(str(a) for a in saturation_points_average_genes))

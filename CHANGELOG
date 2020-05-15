@@ -472,3 +472,10 @@ Version 1.7.3
 
 Version 1.7.6
 * Ported to Python 3
+
+Version 1.7.8
+* Updated docs
+* Added flags to skip (trimming, mapping and annotation)
+* Fixed a bug in the compute saturation option
+* Restored the unittests
+* Improvements when dealing with ambiguous and no_feature genes

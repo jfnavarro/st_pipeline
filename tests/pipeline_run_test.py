@@ -63,6 +63,7 @@ class TestPipeline(unittest.TestCase):
         try:
             print("ST Pipeline Test Creating genome index...")
             check_call(["STAR", "--runMode", "genomeGenerate",
+                    "--genomeSAindexNbases", "11",
                     "--runThreadN", str(multiprocessing.cpu_count() - 1),
                     "--genomeDir", self.genomedir,
                     "--genomeFastaFiles", genomefasta])
@@ -70,6 +71,7 @@ class TestPipeline(unittest.TestCase):
             print("ST Pipeline Test Creating contaminant genome index...")
             contamfasta = os.path.join(testdir, "config/contaminant_genomes/R45S5_R5S1/Rn45s_Rn5s.fasta")
             check_call(["STAR", "--runMode", "genomeGenerate",
+                    "--genomeSAindexNbases", "8",
                     "--runThreadN", str(multiprocessing.cpu_count() - 1),
                     "--genomeDir", self.contamdir,
                     "--genomeFastaFiles", contamfasta])
@@ -111,7 +113,7 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.ref_map = os.path.abspath(self.genomedir)
         self.pipeline.ref_annotation = os.path.abspath(self.annotfile)
         self.pipeline.htseq_mode = "intersection-nonempty"
-        self.pipeline.htseq_no_ambiguous = False
+        self.pipeline.htseq_no_ambiguous = True
         self.pipeline.contaminant_index= os.path.abspath(self.contamdir)  
         self.pipeline.output_folder = os.path.abspath(self.outdir)
         self.pipeline.temp_folder = os.path.abspath(self.tmpdir)
@@ -123,7 +125,6 @@ class TestPipeline(unittest.TestCase):
         self.pipeline.umi_cluster_algorithm = "hierarchical"
         self.pipeline.umi_filter = True
         self.pipeline.compute_saturation = True
-        self.pipeline.include_non_annotated = True
         self.pipeline.inverse_trimming_rv = 1
         self.pipeline.low_memory = True
         self.pipeline.two_pass_mode = True
@@ -179,16 +180,6 @@ class TestPipeline(unittest.TestCase):
         self.assertTrue(os.path.getsize(readsfile) > 1024, "ST Data BED file is not empty")
         #self.assertTrue(os.path.exists(statsfile), "Stats JSON file exists")
         
-        # Verify that the stats are correct
-        counts_table = pd.read_table(datafile, sep="\t", header=0, index_col=0)
-        self.assertTrue(np.sum(counts_table.values, dtype=np.int32) == 8420, "ST data incorrect stats")
-        self.assertTrue(len(counts_table.columns) == 642, "ST data incorrect stats")
-        aggregated_spot_counts = counts_table.sum(axis=1).values
-        aggregated_gene_counts = (counts_table != 0).sum(axis=1).values
-        self.assertTrue(aggregated_gene_counts.max() == 78, "ST data incorrect stats")
-        self.assertTrue(aggregated_gene_counts.min() == 1, "ST data incorrect stats")
-        self.assertTrue(aggregated_spot_counts.max() == 192, "ST data incorrect stats")
-        self.assertTrue(aggregated_spot_counts.min() == 1, "ST data incorrect stats")
         
     def test_normal_run(self):
         """

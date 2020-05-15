@@ -14,7 +14,7 @@ the path to a annotation file in GTF format an a dataset name.
 The ST Pipeline has many parameters, you can see a description of them
 by typing : st_pipeline_run.py --help
 
-@Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+@Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
 
 import sys

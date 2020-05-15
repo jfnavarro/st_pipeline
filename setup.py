@@ -49,7 +49,7 @@ setup(
   long_description = long_description,
   keywords = 'rna-seq analysis spatial transcriptomics toolkit',
   author = 'Jose Fernandez Navarro',
-  author_email = 'jose.fernandez.navarro@scilifelab.se',
+  author_email = 'jc.fernandez.navarro@gmail.com',
   license = 'MIT',
   url = 'https://github.com/SpatialTranscriptomicsResearch/st_pipeline',
   packages = find_packages(exclude=('tests*', 'utils', '*.pyx')),

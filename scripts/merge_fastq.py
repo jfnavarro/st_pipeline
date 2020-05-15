@@ -3,7 +3,8 @@
 Script that merges the FASTQ files present in an Illumina run folder path.
 The script merges the the FASTQ files based on the indexes/identifiers given
 as input and puts the merged files in the given output folder.
-@Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+
+@Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
 
 import argparse

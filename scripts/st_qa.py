@@ -7,7 +7,7 @@ of a ST dataset (matrix in TSV) format.
 The scripts writes stats and generates
 some plots in the folder that is run. 
 
-@Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+@Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
 import matplotlib
 matplotlib.use('Agg')
@@ -153,7 +153,7 @@ def main(input_data):
     plt.clf() 
     
     qa_stats = [
-    ("Number of features: {}".format(total_barcodes)+"\n"),
+    ("Number of spots: {}".format(total_barcodes)+"\n"),
     ("Number of reads present: {}".format(total_transcripts)+"\n"),
     ("Number of unique genes present: {}".format(number_genes)+"\n"),
     ("Max number of genes over all spots: {}".format(max_genes_feature)+"\n"),
@@ -164,8 +164,8 @@ def main(input_data):
     ("Average number reads per spot: {}".format(average_reads_feature)+"\n"),
     ("Std number genes per spot: {}".format(std_genes_feature)+"\n"),
     ("Std number reads per spot: {}".format(std_reads_feature)+"\n"),
-    ("Max number of reads over all unique events: {}".format(max_count)+"\n"),
-    ("Min number of reads over all unique events: {}".format(min_count)+"\n")
+    ("Max number of reads over all spots/genes: {}".format(max_count)+"\n"),
+    ("Min number of reads over all spots/genes: {}".format(min_count)+"\n")
     ]
     # Print stats to stdout and a file
     print("".join(qa_stats))
