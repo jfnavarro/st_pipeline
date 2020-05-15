@@ -12,7 +12,7 @@ whose type is not in the allowed types given (Ensembl annotation
 gene type). For this, the script needs to be given an annotation
 file in GFF format. 
 
-@Author Jose Fernandez Navarro <jose.fernandez.navarro@scilifelab.se>
+@Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
 
 import argparse

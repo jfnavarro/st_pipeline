@@ -2,7 +2,7 @@ language: python
 sudo: required
 
 python:
-    - "2.7"
+    - "3.6"
   
 before_install:
   - wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -20,7 +20,7 @@ before_install:
   - export TMPDIR=$HOME/tmp
 
 install:
-    - conda create -q -n testenv --yes python=2.7 numpy scipy pandas cython
+    - conda create -q -n testenv --yes python=3.6 numpy scipy pandas cython
     - source activate testenv
     - conda config --add channels r
     - conda config --add channels bioconda
@@ -32,6 +32,7 @@ install:
     - conda install matplotlib
     - pip install htseq
     - pip install taggd
+    - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
     - python setup.py build
     - python setup.py install
    
