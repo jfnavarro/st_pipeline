@@ -1,13 +1,16 @@
 The ST Pipeline contains the tools and scripts needed to process 
 and analyze the raw files generated with the Spatial Transcriptomics 
-and Visium in FASTQ format to generated datasets for down-stream analysis. 
-The ST pipeline can also be used to process single cell data as 
+or Visium in FASTQ format to generate datasets for down-stream analysis. 
+The ST pipeline can also be used to process single cell RNA-seq data as 
 long as a file with barcodes identifying each cell is provided.
 The ST Pipeline can also process RNA-Seq datasets generated with 
 or without UMIs. 
 
-The ST Pipeline has been optimized for speed, robustness and it is very 
-easy to use with many parameters to adjust all the settings.
+The ST Pipeline has been optimized for speed, robustness and 
+it is very easy to use with many parameters to adjust all the settings.
+The ST Pipeline is fully parallel and has constant memory use. 
+The ST Pipeline allows to skip any of the steps and to use the 
+genome or the transcriptome as reference. 
 
 The following files/parameters are required:
 

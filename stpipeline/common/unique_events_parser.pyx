@@ -85,9 +85,9 @@ class geneBuffer():
         except KeyError:
             # trying to handle HTSeq ambiguous gene annotations correctly,
             # they will have an annotation with the following style __ambiguous[GENE1+GENE2]
-            if gene[0:len('__ambiguous[')] == '__ambiguous[':
+            if '__ambiguous[' in gene:
                 try: # to get the right most right most coordinate ;)
-                    ambiguous_genes = gene[len('__ambiguous['):-1].split('+')
+                    ambiguous_genes = gene[gene.index('[')+1:gene.index(']')].split('+')
                     gene_end_coordinate = max([self.gene_end_coordinates[amb_gene]
                                                for amb_gene in ambiguous_genes],
                                                key=operator.itemgetter(1))
@@ -135,7 +135,6 @@ class geneBuffer():
         :param empty: when True if forces to empty the buffer
         """
         cdef list _tmp = list(self.buffer.keys())
-        cdef gene_transcripts = list()
         cdef str chrom
         cdef int end_position
         #NOTE seems like we have to go trough all the genes
@@ -153,7 +152,6 @@ class geneBuffer():
                 yield (gene, self.buffer[gene])
                 # Remove the gene from the buffer
                 del self.buffer[gene]
-        return gene_transcripts
                 
 def parse_unique_events(input_file, gff_filename=None):
     """
@@ -233,7 +231,7 @@ def parse_unique_events(input_file, gff_filename=None):
     # Close the bam file and yield the last gene(s)
     sam_file.close()
     if gff_filename is not None:
-        for g, t in genes_buffer.check_and_clear_buffer(True):
+        for g, t in list(genes_buffer.check_and_clear_buffer(True)):
             yield (g, t)
     else:
         for (g,t) in list(genes_dict.items()):
