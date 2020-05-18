@@ -149,7 +149,12 @@ class Pipeline():
             raise RuntimeError(error)
         
         if self.ref_annotation is None and not self.transcriptome:
-            error = "Error, annotation file is missing and the transcriptome option is disabled\n"
+            error = "Error, annotation file is missing but the transcriptome option is disabled\n"
+            self.logger.error(error)
+            raise RuntimeError(error)
+            
+        if self.ref_map is None and not self.disable_mapping:
+            error = "Error, genome reference is missing but the disable_mapping option is disabled\n"
             self.logger.error(error)
             raise RuntimeError(error)
           
@@ -301,7 +306,7 @@ class Pipeline():
         parser.add_argument('fastq_files', nargs=2)
         parser.add_argument('--ids', metavar="[FILE]", required=False,
                             help='Path to the file containing the map of barcodes to the array coordinates')
-        parser.add_argument('--ref-map', metavar="[FOLDER]", action=readable_dir, required=True,
+        parser.add_argument('--ref-map', metavar="[FOLDER]", action=readable_dir, required=False,
                             help="Path to the folder with the STAR index " \
                             "for the genome that you want to use to align the reads")
         parser.add_argument('--ref-annotation', metavar="[FILE]", required=False,
@@ -473,14 +478,16 @@ class Pipeline():
         self.threads = options.mapping_threads
         self.verbose = options.verbose
         self.ids = os.path.abspath(options.ids)
-        self.ref_map = os.path.abspath(options.ref_map)
-        self.ref_annotation = os.path.abspath(options.ref_annotation) \
-        if options.ref_annotation is not None else None
+        if options.ref_map is not None:
+            self.ref_map = os.path.abspath(options.ref_map)
+        if options.ref_annotation is not None:
+            self.ref_annotation = os.path.abspath(options.ref_annotation)
         self.expName = options.expName
         self.htseq_mode = options.htseq_mode
         self.htseq_no_ambiguous = options.htseq_no_ambiguous
         self.qual64 = options.qual_64
-        self.contaminant_index = options.contaminant_index
+        if options.contaminant_index is not None:
+            self.contaminant_index = os.path.abspath(options.contaminant_index)
         # Load the given path into the system PATH
         if options.bin_path is not None and os.path.isdir(options.bin_path): 
             os.environ["PATH"] += os.pathsep + options.bin_path
@@ -534,9 +541,8 @@ class Pipeline():
         self.transcriptome = options.transcriptome
         self.disable_umi = options.disable_umi
         self.transcriptome = options.transcriptome
-        self.saturation_points = [int(p) for p in options.saturation_points] \
-        if options.saturation_points is not None else None
-        
+        if options.saturation_points is not None:
+            self.saturation_points = [int(p) for p in options.saturation_points]
         # Assign class parameters to the QA stats object
         attributes = inspect.getmembers(self, lambda a:not(inspect.isroutine(a)))
         attributes_filtered = [a for a in attributes if not(a[0].startswith('__') and a[0].endswith('__'))]
@@ -866,42 +872,43 @@ class Pipeline():
         #=================================================================
         # STEP: annotate using htseq-count or the transcriptome
         #=================================================================
-        if self.transcriptome:
-            self.logger.info("Assigning gene names from transcriptome {}".format(globaltime.getTimestamp()))
-            # Iterate the BAM file to set the gene name as the transcriptome's entry
-            input_file = FILENAMES["demultiplexed_matched"] if not self.disable_barcode else FILENAMES["mapped"]
-            flag_read = "rb"
-            flag_write = "wb"
-            infile = pysam.AlignmentFile(input_file, flag_read)
-            outfile = pysam.AlignmentFile(FILENAMES["annotated"], flag_write, template=infile)
-            for rec in infile.fetch(until_eof=True):
-                #NOTE chrom may have to be trimmed to 250 characters max
-                chrom = infile.getrname(rec.reference_id).split()[0]
-                rec.set_tag("XF", chrom, "Z")
-                outfile.write(rec)
-            infile.close()
-            outfile.close()
-        elif not self.disable_annotation:
-            self.logger.info("Starting annotation {}".format(globaltime.getTimestamp()))
-            try:
-                annotateReads(FILENAMES["demultiplexed_matched"] if not self.disable_barcode else FILENAMES["mapped"],
-                              self.ref_annotation, 
-                              FILENAMES["annotated"], 
-                              FILENAMES_DISCARDED["annotated_discarded"] if self.keep_discarded_files else None,
-                              self.htseq_mode, self.strandness, 
-                              self.htseq_no_ambiguous, 
-                              self.include_non_annotated, 
-                              self.temp_folder, 
-                              self.threads)
-            except Exception:
-                raise
+        if not self.disable_annotation:
+            input_file = FILENAMES["demultiplexed_matched"] if FILENAMES["demultiplexed_matched"] else FILENAMES["mapped"]
+            if self.transcriptome:
+                self.logger.info("Assigning gene names from transcriptome {}".format(globaltime.getTimestamp()))
+                # Iterate the BAM file to set the gene name as the transcriptome's entry
+                flag_read = "rb"
+                flag_write = "wb"
+                infile = pysam.AlignmentFile(input_file, flag_read)
+                outfile = pysam.AlignmentFile(FILENAMES["annotated"], flag_write, template=infile)
+                for rec in infile.fetch(until_eof=True):
+                    #NOTE chrom may have to be trimmed to 250 characters max
+                    chrom = infile.getrname(rec.reference_id).split()[0]
+                    rec.set_tag("XF", chrom, "Z")
+                    outfile.write(rec)
+                infile.close()
+                outfile.close()
+            else:
+                self.logger.info("Starting annotation {}".format(globaltime.getTimestamp()))
+                try:
+                    annotateReads(input_file,
+                                  self.ref_annotation, 
+                                  FILENAMES["annotated"], 
+                                  FILENAMES_DISCARDED["annotated_discarded"] if self.keep_discarded_files else None,
+                                  self.htseq_mode, self.strandness, 
+                                  self.htseq_no_ambiguous, 
+                                  self.include_non_annotated, 
+                                  self.temp_folder, 
+                                  self.threads)
+                except Exception:
+                    raise
 
         #=================================================================
         # STEP: compute saturation (Optional)
         #=================================================================
         # To compute saturation points we need the number of annotated reads
         # the fastest way is to get that information from the stats object
-        if self.compute_saturation:
+        if self.compute_saturation and os.path.isfile(FILENAMES["annotated"]):
             reads = qa_stats.reads_after_annotation if not self.transcriptome else qa_stats.reads_after_demultiplexing
             self.logger.info("Starting computing saturation points {}".format(globaltime.getTimestamp()))
             try:
@@ -921,20 +928,21 @@ class Pipeline():
         #=================================================================
         # STEP: Create dataset and remove duplicates
         #=================================================================
-        self.logger.info("Starting creating dataset {}".format(globaltime.getTimestamp()))
-        try:
-            createDataset(FILENAMES["annotated"],
-                          qa_stats, # Passed as reference
-                          self.ref_annotation,
-                          self.umi_cluster_algorithm,
-                          self.umi_allowed_mismatches,
-                          self.umi_counting_offset,
-                          self.disable_umi,
-                          self.output_folder,
-                          self.expName,
-                          True) # Verbose
-        except Exception:
-            raise
+        if os.path.isfile(FILENAMES["annotated"]):
+            self.logger.info("Starting creating dataset {}".format(globaltime.getTimestamp()))
+            try:
+                createDataset(FILENAMES["annotated"],
+                              qa_stats, # Passed as reference
+                              self.ref_annotation,
+                              self.umi_cluster_algorithm,
+                              self.umi_allowed_mismatches,
+                              self.umi_counting_offset,
+                              self.disable_umi,
+                              self.output_folder,
+                              self.expName,
+                              True) # Verbose
+            except Exception:
+                raise
 
         #=================================================================
         # END PIPELINE
