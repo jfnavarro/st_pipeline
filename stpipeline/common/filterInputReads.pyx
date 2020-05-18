@@ -1,3 +1,5 @@
+#cython: language_level=3
+
 import sys
 import os
 import re
