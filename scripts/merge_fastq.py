@@ -16,13 +16,13 @@ import subprocess
 
 def run_command(command, out=subprocess.PIPE):
     try:
-        print "Running command: {}".format(" ".join(x for x in command).rstrip())
+        print("Running command: {}".format(" ".join(x for x in command).rstrip()))
         proc = subprocess.Popen(command,
                                 stdout=out, stderr=subprocess.PIPE,
                                 close_fds=True, shell=False)
         (stdout, errmsg) = proc.communicate()
-        print stdout
-        print errmsg
+        print(stdout)
+        print(errmsg)
     except Exception as e:
         raise e
                
