@@ -33,7 +33,7 @@ def main(counts_matrix, gene_types_keep, outfile, annotation, ensembl_ids):
     gene_types = dict()
     for line in gff_lines(annotation):
         gene_name = line["gene_id"] if ensembl_ids else line["gene_name"]
-        gene_types[gene_name] = line["gene_type"]
+        gene_types[gene_name] = line["gene_type"] if "gene_type" in line else line["gene_biotype"]
     assert(len(gene_types) > 0)
 
     # Read the data frame (genes as columns)
@@ -57,8 +57,8 @@ def main(counts_matrix, gene_types_keep, outfile, annotation, ensembl_ids):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--counts-matrix", required=True,
-                        help="Matrix with gene counts (genes as columns)")
+    parser.add_argument("counts_matrix",
+                        help="Matrix with gene counts (genes as columns) in TSV format")
     parser.add_argument("--outfile", help="Name of the output file")
     parser.add_argument("--gene-types-keep", required=True, nargs='+', type=str,
                         help="List of Ensembl gene types to keep (E.x protein_coding lincRNA")

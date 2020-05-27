@@ -87,8 +87,8 @@ def main(counts_matrix, coordinates_file, update_coordinates, outfile, outformat
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--counts-matrix", required=True,
-                        help="Matrix with gene counts (genes as columns)")
+    parser.add_argument("counts_matrix",
+                        help="Matrix with gene counts (genes as columns) in TSV format")
     parser.add_argument("--outfile", help="Name of the output file")
     parser.add_argument("--update-coordinates", action="store_true", default=False,
                         help="Updates the spot coordinates in the output matrix with the\n"

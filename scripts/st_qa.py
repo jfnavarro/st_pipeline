@@ -5,7 +5,7 @@ Script that performs a basic Quality Control analysis
 of a ST dataset (matrix in TSV) format.
 
 The script writes stats and generates
-some plots in the folder where is run. 
+some plots in the folder where it is run. 
 
 @Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
@@ -185,7 +185,7 @@ def main(input_data):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--input-data", required=True, type=str,
-                        help="The matrix of counts (spots as row names and genes as column names)")
+    parser.add_argument("counts_matrix", 
+                        help="Matrix with gene counts (genes as columns) in TSV format")
     args = parser.parse_args()
-    main(args.input_data)
+    main(args.counts_matrix)

@@ -12,7 +12,7 @@ The ST Pipeline is fully parallel and has constant memory use.
 The ST Pipeline allows to skip any of the steps and to use the 
 genome or the transcriptome as reference. 
 
-The following files/parameters are required:
+The following files/parameters are commonly required:
 
 - FASTQ files (Read 1 containing the spatial information and the UMI 
   and read 2 containing the genomic sequence) 

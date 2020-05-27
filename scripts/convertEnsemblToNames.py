@@ -75,11 +75,12 @@ def main(st_data_file, annotation, output_file):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("st_data_file", help="ST data file in TSV format")
+    parser.add_argument("counts_matrix", 
+                        help="Matrix with gene counts (genes as columns) in TSV format")
     parser.add_argument("--output", default="output.tsv",
                         help="Name of the output file, default output.tsv")
     parser.add_argument("--annotation", required=True,
                         help="Path to the annotation file used to generate the data")
     args = parser.parse_args()
-    main(args.st_data_file, args.annotation, args.output)
+    main(args.counts_matrix, args.annotation, args.output)
 

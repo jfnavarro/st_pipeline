@@ -5,21 +5,29 @@
 [![PyPI version](https://badge.fury.io/py/stpipeline.svg)](https://badge.fury.io/py/stpipeline)
 [![Build Status](https://travis-ci.org/jfnavarro/st_pipeline.svg?branch=master)](https://travis-ci.org/jfnavarro/st_pipeline)
 
-The ST Pipeline contains the tools and scripts needed to process and analyze the raw files generated with the Spatial Transcriptomics and Visium in FASTQ format to generate datasets for down-stream analysis. 
-The ST pipeline can also be used to process single cell RNA-seq data as long as a file with barcodes identifying each cell is provided (same template as the files in the folder "ids").
+The ST Pipeline contains the tools and scripts needed to process and analyze the raw 
+files generated with the Spatial Transcriptomics and Visium in FASTQ format to generate datasets for down-stream analysis. 
+The ST pipeline can also be used to process single cell RNA-seq data as long as a 
+ile with barcodes identifying each cell is provided (same template as the files in the folder "ids").
 
-The ST Pipeline has been optimized for speed, robustness and it is very easy to use with many parameters to adjust all the settings.
+The ST Pipeline has been optimized for speed, robustness and it is very easy 
+to use with many parameters to adjust all the settings.
 The ST Pipeline is fully parallel and has constant memory use. 
 The ST Pipeline allows to skip any of the steps and to use the genome or the transcriptome as reference. 
 
-The following files/parameters are required :
+The following files/parameters are commonly required :
 - FASTQ files (Read 1 containing the spatial information and the UMI and read 2 containing the genomic sequence) 
 - A genome index generated with STAR 
 - An annotation file in GTF or GFF3 format (optional when using a transcriptome)
-- The file containing the barcodes and array coordinates (look at the folder "ids" and chose the correct one). Basically this file contains 3 columns (BARCODE, X and Y), so if you provide this file with barcodes identinfying cells (for example), the ST pipeline can be used for single cell data. This file is also optional if the data is not barcode (for example RNA-Seq data).
+- The file containing the barcodes and array coordinates (look at the folder "ids" and chose the correct one). 
+Basically this file contains 3 columns (BARCODE, X and Y), so if you provide this 
+file with barcodes identinfying cells (for example), the ST pipeline can be used for single cell data. 
+This file is also optional if the data is not barcode (for example RNA-Seq data).
 - A name for the dataset
 
-The ST pipeline has multiple parameters mostly related to trimming, mapping and annotation but generally the default values are good enough. You can see a full description of the parameters typing "st_pipeline_run.py --help" after you have installed the ST pipeline.
+The ST pipeline has multiple parameters mostly related to trimming, mapping and annotation 
+but generally the default values are good enough. You can see a full 
+description of the parameters typing "st_pipeline_run.py --help" after you have installed the ST pipeline.
 
 The input FASTQ files can be given in gzip/bzip format as well. 
 
@@ -70,14 +78,15 @@ Access the cloned ST Pipeline folder or the folder where the tar/zip file has be
 
     cd stpipeline
 
-To install the pipeline type then
+To install the pipeline type 
 
     python setup.py build
     python setup.py install
 
-To run a test type (you need internet connection to run the tests)
+To run a test type
 
     python setup.py test
+    python -m unittest testrun.py
 
 To see the different options type 
 
@@ -134,7 +143,7 @@ If you want to remove from the dataset (matrix in TSV) genes corresponding
 to certain gene types (For instance to keep only protein_coding). You can do
 so with the script filter_gene_type_matrix.py
 
-	filter_gene_type_matrix.py --counts-matrix stdata.tsv --gene-types-keep protein-coding --outfile new_stdata.tsv --annotation path_to_annotation_file
+	filter_gene_type_matrix.py --gene-types-keep protein-coding --annotation path_to_annotation_file stdata.tsv
 	
 You may include the parameter --ensembl-ids if your gene names are represented as gene ids instead.
 
@@ -143,7 +152,7 @@ You may include the parameter --ensembl-ids if your gene names are represented a
 If you want to remove spots from a dataset (matrix in TSV) for instance
 to keep only spots inside the tissue. You can do so with the script adjust_matrix_coordinates.py
 
-	adjust_matrix_coordinates.py --counts-matrix stadata.tsv --outfile new_stdata.tsv --coordinates-file coordinates.txt
+	adjust_matrix_coordinates.py --outfile new_stdata.tsv --coordinates-file coordinates.txt stdata.tsv
 	
 Where coordinates.txt will be a tab delimited file with 6 columns:
 
@@ -157,11 +166,11 @@ can update the coordinates in the matrix choosing for the new array or pixel coo
 The ST Pipeline generate useful statistical information in the LOG file but if you
 want to obtain more detail information about the quality of the data, you can run the following script:
 
-	st_qa.py --input-data stdata.tsv 
+	st_qa.py stdata.tsv 
 	
 If you want to perform quality stats on multiple samples you can run:
 
-	multi_qa.py --counts-table-files stdata1.tsv stadata2.tsv stdata3.tsv ... 
+	multi_qa.py stdata1.tsv stadata2.tsv stdata3.tsv stdata4.tsv
 	
 Multi_qa.py generates violing plots, correlation plots/tables and more useful information and 
 it allows to log the counts for the correlation.
@@ -178,7 +187,8 @@ in the folder called "data".
 
 **License**
 
-The ST pipeline is open source under the MIT license which means that you can use it, change it and re-distribute but you must always refer to our license (see LICENSE and AUTHORS).
+The ST pipeline is open source under the MIT license which means that you can use it, 
+change it and re-distribute but you must always refer to our license (see LICENSE and AUTHORS).
 
 **Reference**
 

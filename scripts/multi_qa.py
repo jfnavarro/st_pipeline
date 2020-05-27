@@ -65,6 +65,10 @@ def main(counts_table_files, outdir, use_log):
         sys.stderr.write("Error, input file/s not present or invalid format\n")
         sys.exit(1)
             
+    if len(counts_table_files) < 2:
+        sys.stderr.write("Error, minimum number of input matrices is 2\n")
+        sys.exit(1)
+        
     if outdir is None or not os.path.isdir(outdir): 
         outdir = os.getcwd()
     outdir = os.path.abspath(outdir)
@@ -150,13 +154,13 @@ def main(counts_table_files, outdir, use_log):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("--counts-table-files", required=True, nargs='+', type=str,
-                        help="One or more matrices with gene counts per feature/spot (genes as columns)")
+    parser.add_argument("counts_matrix_files", nargs='+',
+                        help="One or more matrices with gene counts (genes as columns) in TSV format")
     parser.add_argument("--outdir", default=None, help="Path to the output directory")
     parser.add_argument("--use-log-scale", action="store_true", default=False, 
                         help="Convert counts to log space for the correlation")
     args = parser.parse_args()
 
-    main(args.counts_table_files,
+    main(args.counts_matrix_files,
          args.outdir,
          args.use_log_scale)

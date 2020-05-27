@@ -486,3 +486,7 @@ Version 1.7.9
 file is present
 * Fixed bug in merge_fastq
 * Fixed bugs in st_qa
+
+Version 1.8.0
+* Improved the unit-tests
+* Make input data a positional arguments in extra scripts
