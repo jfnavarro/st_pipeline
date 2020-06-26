@@ -1,11 +1,9 @@
 #! /usr/bin/env python
 """
-Script that parses a ST data file generated
+Script that parses a Spatial Transcriptimics (ST) data file generated
 with the pipeline in matrix (TSV) format where the genes are named
-with ENSEMBL IDs and generates a new file
-with the ENSEMBL IDs converted to gene names IDS.
-For that the script also needs the annotation file (GFF format) used to create
-the ST dataset.
+with ENSEMBL IDs and generates a new file with the ENSEMBL IDs converted to gene names.
+The script needs the annotation file (GFF format) used to create the ST dataset.
 
 @Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
