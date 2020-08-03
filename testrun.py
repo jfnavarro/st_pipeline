@@ -19,7 +19,7 @@ class TestPipeline(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         # Obtain paths and files.
-        testdir = str(os.path.abspath(os.path.dirname(os.path.realpath(__file__))))
+        testdir = os.path.abspath("tests")
         self.infile_fw = os.path.join(testdir, 'input/arrayjet_1002/testdata_R1.fastq')
         self.infile_rv = os.path.join(testdir, 'input/arrayjet_1002/testdata_R2.fastq')
         self.annotfile = os.path.join(testdir, 'config/annotations/Homo_sapiens.GRCh38.79_chr19.gtf')
@@ -62,17 +62,18 @@ class TestPipeline(unittest.TestCase):
         # Make genome indexes
         try:
             print("ST Pipeline Test Creating genome index...")
-            check_call(["STAR", "--runMode", "genomeGenerate",
-                    "--genomeSAindexNbases", "11",
-                    "--runThreadN", str(multiprocessing.cpu_count() - 1),
-                    "--genomeDir", self.genomedir,
-                    "--genomeFastaFiles", genomefasta])
+            check_call(["STAR", 
+                        "--runMode", "genomeGenerate",
+                        "--genomeSAindexNbases", "11",
+                        "--runThreadN", "4",
+                        "--genomeDir", self.genomedir,
+                        "--genomeFastaFiles", genomefasta])
    
             print("ST Pipeline Test Creating contaminant genome index...")
             contamfasta = os.path.join(testdir, "config/contaminant_genomes/R45S5_R5S1/Rn45s_Rn5s.fasta")
             check_call(["STAR", "--runMode", "genomeGenerate",
                     "--genomeSAindexNbases", "8",
-                    "--runThreadN", str(multiprocessing.cpu_count() - 1),
+                    "--runThreadN", "4",
                     "--genomeDir", self.contamdir,
                     "--genomeFastaFiles", contamfasta])
         except Exception as e:
@@ -88,48 +89,7 @@ class TestPipeline(unittest.TestCase):
         assert(os.path.exists(self.chipfile))
         assert(os.path.isdir(self.outdir))
         assert(os.path.isdir(self.tmpdir))
-   
-        # Create a pipeline Instance
-        self.pipeline = Pipeline()
-   
-        # Init pipeline arguments
-        self.pipeline.expName = self.expname
-        self.pipeline.fastq_fw = self.infile_fw
-        self.pipeline.fastq_rv = self.infile_rv
-        self.pipeline.umi_allowed_mismatches = 1
-        self.pipeline.umi_start_position = 18
-        self.pipeline.umi_end_position = 27
-        self.pipeline.keep_discarded_files = True
-        self.pipeline.allowed_missed = 2
-        self.pipeline.allowed_kmer = 6
-        self.pipeline.min_length_trimming = 25
-        self.pipeline.trimming_rv = 1
-        self.pipeline.min_quality_trimming = 20
-        self.pipeline.clean = False
-        self.pipeline.barcode_start = 0
-        self.pipeline.threads = multiprocessing.cpu_count() - 1
-        self.pipeline.verbose = True
-        self.pipeline.ids = os.path.abspath(self.chipfile)
-        self.pipeline.ref_map = os.path.abspath(self.genomedir)
-        self.pipeline.ref_annotation = os.path.abspath(self.annotfile)
-        self.pipeline.htseq_mode = "intersection-nonempty"
-        self.pipeline.htseq_no_ambiguous = True
-        self.pipeline.contaminant_index= os.path.abspath(self.contamdir)  
-        self.pipeline.output_folder = os.path.abspath(self.outdir)
-        self.pipeline.temp_folder = os.path.abspath(self.tmpdir)
-        self.pipeline.logfile = self.logFile
-        self.pipeline.remove_polyA_distance = 15
-        self.pipeline.remove_polyT_distance = 15
-        self.pipeline.remove_polyG_distance = 15
-        self.pipeline.remove_polyC_distance = 15
-        self.pipeline.umi_cluster_algorithm = "hierarchical"
-        self.pipeline.umi_filter = True
-        self.pipeline.compute_saturation = True
-        self.pipeline.inverse_trimming_rv = 1
-        self.pipeline.low_memory = True
-        self.pipeline.two_pass_mode = True
-        self.pipeline.saturation_points = [10, 100, 1000, 10000]
-        
+
     @classmethod
     def tearDownClass(self):
         print("ST Pipeline Test Remove temporary output {}".format(self.outdir))
@@ -165,37 +125,105 @@ class TestPipeline(unittest.TestCase):
         if os.path.isfile(log_progress):
             os.remove(log_progress)
         if os.path.isfile(log_final):
-            os.remove(log_final)
- 
-    def validateOutputData(self, expName):
+            os.remove(log_final)   
+      
+    def test_run(self):
+        # Run st_pipeline_run.py
+        try:
+            print("Running st_pipeline_run.py")
+            check_call(["st_pipeline_run.py",
+                        "--verbose",
+                        "--no-clean-up",
+                        "--two-pass-mode",
+                        "--htseq-no-ambiguous",
+                        "--keep-discarded-files",
+                        "--mapping-threads", "4",
+                        "--log-file", self.logFile,
+                        "--expName", self.expname,
+                        "--ids", self.chipfile,
+                        "--ref-map", self.genomedir,
+                        "--contaminant-index", self.contamdir,
+                        "--output-folder", self.outdir,
+                        "--temp-folder", self.tmpdir,
+                        "--ref-annotation", self.annotfile,
+                        self.infile_fw, self.infile_rv])
+        except Exception as e:
+            print(str(e))
+            self.assertTrue(0, "Running st_pipeline_run.py failed \n")
+        
         # Verify existence of output files and temp files
         self.assertNotEqual(os.listdir(self.outdir), [], "Output folder is not empty")
         self.assertNotEqual(os.listdir(self.tmpdir), [], "Tmp folder is not empty")
-        datafile = os.path.join(self.outdir, str(self.pipeline.expName) + "_stdata.tsv")
-        readsfile = os.path.join(self.outdir, str(self.pipeline.expName) + "_reads.bed")
-        statsfile = os.path.join(self.outdir, str(self.pipeline.expName) + "_qa_stats.json")
+        datafile = os.path.join(self.outdir, self.expname + "_stdata.tsv")
+        readsfile = os.path.join(self.outdir, self.expname + "_reads.bed")
+        statsfile = os.path.join(self.outdir, self.expname + "_qa_stats.json")
         self.assertTrue(os.path.exists(datafile), "ST Data file exists")
         self.assertTrue(os.path.getsize(datafile) > 1024, "ST Data file is not empty")
         self.assertTrue(os.path.exists(readsfile), "ST Data BED file exists")
         self.assertTrue(os.path.getsize(readsfile) > 1024, "ST Data BED file is not empty")
         #self.assertTrue(os.path.exists(statsfile), "Stats JSON file exists")
-        
-        
-    def test_normal_run(self):
-        """
-        Tests st_pipeline on a mouse data subset with normal fastq files
-        """
-        # Start the pipeline
+            
+        # Run st_qa.py
         try:
-            self.pipeline.createLogger()
-            self.pipeline.sanityCheck()
-            self.pipeline.run()
-            self.pipeline.clean_filenames()
+            print("Running st_qa.py")
+            check_call(["st_qa.py", datafile])
         except Exception as e:
             print(str(e))
-            self.assertTrue(0, "Running Pipeline Test failed \n")
- 
-        self.validateOutputData(self.expname)
- 
+            self.assertTrue(0, "Running st_qa.py failed \n")
+        # TODO verify all output files are present
+        self.assertTrue(os.path.exists("{}_qa_stats.txt".format(
+            os.path.basename(datafile).split(".")[0])), 
+                        "Output of st_qa.py file exists")
+        
+        # Run convertEnsemblToNames.py
+        try:
+            print("Running convertEnsemblToNames.py")
+            check_call(["convertEnsemblToNames.py",
+                        "--annotation", self.annotfile, 
+                        datafile])
+        except Exception as e:
+            print(str(e))
+            self.assertTrue(0, "Running convertEnsemblToNames.py failed \n")
+        self.assertTrue(os.path.exists("output.tsv"), 
+                        "Output of convertEnsemblToNames.py file exists")
+        
+        
+        # Run filter_gene_type_matrix.py
+        try:
+            print("Running filter_gene_type_matrix.py")
+            check_call(["filter_gene_type_matrix.py",
+                        "--annotation", self.annotfile,
+                        "--gene-types-keep", "protein_coding",
+                        "--outfile", "output2.tsv",
+                        datafile])
+        except Exception as e:
+            print(str(e))
+            self.assertTrue(0, "Running filter_gene_type_matrix.py failed \n")
+        self.assertTrue(os.path.exists("output2.tsv"), 
+                        "Output of filter_gene_type_matrix.py file exists")
+
+        
+        # TODO complete run tests for adjust_matrix_coordinates.py, merge_fastq.py and multi_qa.py
+        try:
+            print("Running adjust_matrix_coordinates.py")
+            check_call(["adjust_matrix_coordinates.py", "--help"])
+        except Exception as e:
+            print(str(e))
+            self.assertTrue(0, "Running adjust_matrix_coordinates.py failed \n")
+            
+        try:
+            print("Running merge_fastq.py")
+            check_call(["merge_fastq.py", "--help"])
+        except Exception as e:
+            print(str(e))
+            self.assertTrue(0, "Running merge_fastq.py failed \n")
+            
+        try:
+            print("Running multi_qa.py")
+            check_call(["multi_qa.py", "--help"])
+        except Exception as e:
+            print(str(e))
+            self.assertTrue(0, "Running multi_qa.py failed \n")
+        
 if __name__ == '__main__':
     unittest.main()

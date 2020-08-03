@@ -2,7 +2,6 @@ Examples
 --------
 
 The following is an example of an BASH file to run the ST pipeline. 
-This example is for version 1.6.0 of the ST pipeline.
 
 .. code-block:: bash
 
@@ -37,3 +36,14 @@ This example is for version 1.6.0 of the ST pipeline.
 	  --log-file $OUTPUT/${EXP}_log.txt \
 	  --contaminant-index $CONT \
 	  $FW $RV
+
+If you want to process Visium datasets it is recommended to use these settings
+
+
+.. code-block:: bash
+
+    --allowed-missed 1 \
+  	--allowed-kmer 4 \
+  	--umi-allowed-mismatches 2 \
+  	--umi-start-position 16 \
+  	--umi-end-position 28 \

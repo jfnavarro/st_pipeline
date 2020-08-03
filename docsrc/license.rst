@@ -2,7 +2,7 @@ License
 -------
 
 The MIT License (MIT)
-Copyright (c) 2016 Jose Fernandez Navarro.
+Copyright (c) 2020 Jose Fernandez Navarro.
 All rights reserved.
 
 * Jose Fernandez Navarro <jc.fernandez.navarro@gmai.com>

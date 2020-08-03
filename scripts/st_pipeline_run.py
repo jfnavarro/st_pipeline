@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """ 
-ST Pipeline is a tool to process the Spatial Transcriptomics raw data.
+ST Pipeline is a tool to process the Spatial Transcriptomics raw datasets.
 The data is filtered, aligned to a genome, annotated to a reference,
 demultiplexed by array coordinates and then aggregated by counts
 that are not duplicates using the Unique Molecular Indentifiers. 

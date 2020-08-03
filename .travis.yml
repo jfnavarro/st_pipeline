@@ -25,6 +25,7 @@ install:
    
 script:
     - python setup.py test
+    - python -m unittest testrun.py
 
 after_success:
     - coveralls

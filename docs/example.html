@@ -4,7 +4,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Examples &#8212; ST Pipeline 1.7.8 documentation</title>
+    <title>Examples &#8212; ST Pipeline 1.8.0 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="manual.html" title="Manual"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.7.8 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.8.0 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -42,8 +42,7 @@
             
   <div class="section" id="examples">
 <h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
-<p>The following is an example of an BASH file to run the ST pipeline.
-This example is for version 1.6.0 of the ST pipeline.</p>
+<p>The following is an example of an BASH file to run the ST pipeline.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
 
 <span class="c1"># FASTQ reads</span>
@@ -75,6 +74,14 @@ st_pipeline_run.py <span class="se">\</span>
   --log-file <span class="nv">$OUTPUT</span>/<span class="si">${</span><span class="nv">EXP</span><span class="si">}</span>_log.txt <span class="se">\</span>
   --contaminant-index <span class="nv">$CONT</span> <span class="se">\</span>
   <span class="nv">$FW</span> <span class="nv">$RV</span>
+</pre></div>
+</div>
+<p>If you want to process Visium datasets it is recommended to use these settings</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--allowed-missed <span class="m">1</span> <span class="se">\</span>
+    --allowed-kmer <span class="m">4</span> <span class="se">\</span>
+    --umi-allowed-mismatches <span class="m">2</span> <span class="se">\</span>
+    --umi-start-position <span class="m">16</span> <span class="se">\</span>
+    --umi-end-position <span class="m">28</span> <span class="se">\</span>
 </pre></div>
 </div>
 </div>
@@ -124,11 +131,11 @@ st_pipeline_run.py <span class="se">\</span>
         <li class="right" >
           <a href="manual.html" title="Manual"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.7.8 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">ST Pipeline 1.8.0 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2017, Jose Fernandez Navarro.
+        &#169; Copyright 2020, Jose Fernandez Navarro.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.
     </div>
   </body>

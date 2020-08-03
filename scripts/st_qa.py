@@ -4,8 +4,8 @@
 Script that performs a basic Quality Control analysis 
 of a ST dataset (matrix in TSV) format.
 
-The scripts writes stats and generates
-some plots in the folder that is run. 
+The script writes stats and generates
+some plots in the folder where it is run. 
 
 @Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
@@ -140,17 +140,11 @@ def main(input_data):
     fig.savefig(input_name + "_scatter_reads_vs_genes.pdf")
     plt.clf() 
     
-    sns_plot = sns.scatterplot(x=aggregated_spot_counts, y=aggregated_gene_counts)
-    sns_plot = sns.scatterplot(x=aggregated_spot_counts, y=aggregated_gene_gene_counts_1)
-    sns_plot = sns.scatterplot(x=aggregated_spot_counts, y=aggregated_gene_gene_counts_2)
-    fig = sns_plot.get_figure()
-    fig.savefig(input_name + "_scatter_reads_vs_genes.pdf")
-    
-    sns_plot = sns.jointplot(x=aggregated_spot_counts, 
-                             y=aggregated_gene_counts, kind='kde', color="skyblue")
-    fig = sns_plot.get_figure()
-    fig.savefig(input_name + "_join_density_reads_vs_genes.pdf")
-    plt.clf() 
+    #sns_plot = sns.jointplot(x=aggregated_spot_counts, 
+    #                         y=aggregated_gene_counts, kind='kde', color="skyblue")
+    #fig = sns_plot.get_figure()
+    #fig.savefig(input_name + "_join_density_reads_vs_genes.pdf")
+    #plt.clf() 
     
     qa_stats = [
     ("Number of spots: {}".format(total_barcodes)+"\n"),
@@ -191,7 +185,7 @@ def main(input_data):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--input-data", required=True, type=str,
-                        help="The matrix of counts (spots as row names and genes as column names)")
+    parser.add_argument("counts_matrix", 
+                        help="Matrix with gene counts (genes as columns) in TSV format")
     args = parser.parse_args()
-    main(args.input_data)
+    main(args.counts_matrix)

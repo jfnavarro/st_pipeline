@@ -1,6 +1,18 @@
 Changes
 -------
 
+**Version 1.8.0**
+
+* Improved the unit-tests
+* Make input data a positional arguments in extra scripts
+
+**Version 1.7.9**
+
+* --ref-map is not a required parameter now when --disable_mapping is used
+* Create dataset and compute saturation steps are only performed if the annotated file is present
+* Fixed bug in merge_fastq
+* Fixed bugs in st_qa
+
 **Version 1.7.8**
 
 * Updated docs

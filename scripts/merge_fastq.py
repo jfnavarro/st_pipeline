@@ -1,8 +1,8 @@
 #! /usr/bin/env python
 """ 
 Script that merges the FASTQ files present in an Illumina run folder path.
-The script merges the the FASTQ files based on the indexes/identifiers given
-as input and puts the merged files in the given output folder.
+The script merges the FASTQ files based on the indexes/identifiers given
+as input (one identifier to each sample) and puts the merged files in the given output folder.
 
 @Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
@@ -16,13 +16,13 @@ import subprocess
 
 def run_command(command, out=subprocess.PIPE):
     try:
-        print "Running command: {}".format(" ".join(x for x in command).rstrip())
+        print("Running command: {}".format(" ".join(x for x in command).rstrip()))
         proc = subprocess.Popen(command,
                                 stdout=out, stderr=subprocess.PIPE,
                                 close_fds=True, shell=False)
         (stdout, errmsg) = proc.communicate()
-        print stdout
-        print errmsg
+        print(stdout)
+        print(errmsg)
     except Exception as e:
         raise e
                
