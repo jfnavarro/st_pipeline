@@ -42,7 +42,7 @@ If you want to process Visium datasets it is recommended to use these settings
 
 .. code-block:: bash
 
-  	--allowed-missed 1 \
+    --allowed-missed 1 \
   	--allowed-kmer 4 \
   	--umi-allowed-mismatches 2 \
   	--umi-start-position 16 \
