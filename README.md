@@ -124,14 +124,12 @@ An example run would be
 
 To process Visium datasets it is recommended to use these options:
 
-´´´  
-  --allowed-missed 1
-  --allowed-kmer 4
-  --umi-allowed-mismatches 2
-  --umi-start-position 16
-  --umi-end-position 28
+	--allowed-missed 1
+  	--allowed-kmer 4
+  	--umi-allowed-mismatches 2
+  	--umi-start-position 16
+  	--umi-end-position 28
 
-´´´
 **Emsembl ids**
 
 If you used an Ensembl annotation file and you would like change
