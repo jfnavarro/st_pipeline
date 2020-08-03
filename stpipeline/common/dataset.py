@@ -128,7 +128,7 @@ def createDataset(input_file,
     list_indexes = list()   
 
     # Parse unique events to generate the unique counts and the BED file
-    unique_events = parse_unique_events(input_file, gff_filename) if gff_filename is not None else
+    unique_events = parse_unique_events(input_file, gff_filename)
     with open(os.path.join(output_folder, filenameReadsBED), "w") as reads_handler:
         # this is the generator returning a dictionary with spots for each gene
         for gene, spots in unique_events:
