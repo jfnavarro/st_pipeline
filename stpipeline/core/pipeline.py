@@ -50,7 +50,7 @@ class Pipeline():
     def __init__(self):
         self.allowed_missed = 2
         self.allowed_kmer = 6
-        self.overhang = 2
+        self.overhang = 0
         self.min_length_trimming = 20
         self.trimming_rv = 0
         self.min_quality_trimming = 20 
@@ -311,7 +311,7 @@ class Pipeline():
                             "against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--allowed-kmer', default=6, metavar="[INT]", type=int, choices=range(1, 51),
                             help="KMer length when demultiplexing against the barcodes with TaggD (default: %(default)s)")
-        parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0, 11),
+        parser.add_argument('--overhang', default=0, metavar="[INT]", type=int, choices=range(0, 11),
                             help="Extra flanking bases added when demultiplexing against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--min-length-qual-trimming', default=20, metavar="[INT]", type=int, choices=range(10, 101),
                             help="Minimum length of the reads after trimming, " \
