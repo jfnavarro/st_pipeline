@@ -844,7 +844,6 @@ class Pipeline():
                                       self.ids,
                                       self.allowed_missed,
                                       self.allowed_kmer,
-                                      self.barcode_start,
                                       self.overhang,
                                       self.taggd_metric,
                                       self.taggd_multiple_hits_keep_one,
