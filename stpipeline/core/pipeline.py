@@ -50,7 +50,7 @@ class Pipeline():
     def __init__(self):
         self.allowed_missed = 2
         self.allowed_kmer = 6
-        self.overhang = 2
+        self.overhang = 0
         self.min_length_trimming = 20
         self.trimming_rv = 0
         self.min_quality_trimming = 20 
@@ -257,15 +257,7 @@ class Pipeline():
             error = "Error starting the pipeline.\n" \
             "The start position of the barcodes is between the UMIs start-end position"
             self.logger.error(error)
-            raise RuntimeError(error)
-        
-        if (self.barcode_start == self.umi_start_position \
-        or self.barcode_start == self.umi_end_position) \
-        and not self.disable_barcode and not self.disable_umi:
-            error = "Error starting the pipeline.\n" \
-            "The start position of the barcodes is equal the UMIs start or end position"
-            self.logger.error(error)
-            raise RuntimeError(error)  
+            raise RuntimeError(error) 
         
         if self.umi_allowed_mismatches > (self.umi_end_position - self.umi_start_position) \
         and not self.disable_umi:
@@ -319,7 +311,7 @@ class Pipeline():
                             "against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--allowed-kmer', default=6, metavar="[INT]", type=int, choices=range(1, 51),
                             help="KMer length when demultiplexing against the barcodes with TaggD (default: %(default)s)")
-        parser.add_argument('--overhang', default=2, metavar="[INT]", type=int, choices=range(0, 11),
+        parser.add_argument('--overhang', default=0, metavar="[INT]", type=int, choices=range(0, 11),
                             help="Extra flanking bases added when demultiplexing against the barcodes with TaggD (default: %(default)s)")
         parser.add_argument('--min-length-qual-trimming', default=20, metavar="[INT]", type=int, choices=range(10, 101),
                             help="Minimum length of the reads after trimming, " \
@@ -852,7 +844,6 @@ class Pipeline():
                                       self.ids,
                                       self.allowed_missed,
                                       self.allowed_kmer,
-                                      self.barcode_start,
                                       self.overhang,
                                       self.taggd_metric,
                                       self.taggd_multiple_hits_keep_one,
