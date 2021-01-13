@@ -7,6 +7,7 @@ import os
 import subprocess
 import stat
 
+
 def which_program(program):
     """ 
     Checks that a program exists and is executable
@@ -14,6 +15,7 @@ def which_program(program):
     :type program: str
     :return: The program name if the program is in the system and is executable
     """
+
     def is_exe(fpath):
         return fpath is not None and os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
@@ -33,11 +35,13 @@ def which_program(program):
                 if is_exe(candidate):
                     return candidate
     return None
-             
+
+
 class TimeStamper(object):
     """
     Thread safe time stamper 
     """
+
     def __init__(self):
         self.lock = threading.Lock()
         self.prev = None
@@ -54,6 +58,7 @@ class TimeStamper(object):
                 self.count = 1
         return ts
 
+
 def safeRemove(filename):
     """
     Safely remove a file
@@ -65,7 +70,8 @@ def safeRemove(filename):
             os.remove(filename)
     except UnboundLocalError:
         pass
-        
+
+
 def safeOpenFile(filename, atrib):
     """
     Safely opens a file
@@ -90,6 +96,7 @@ def safeOpenFile(filename, atrib):
 
     return open(filename, atrib)
 
+
 def fileOk(_file):
     """
     Checks file exists and is not zero size
@@ -97,17 +104,17 @@ def fileOk(_file):
     :return: True if the file is correct
     """
     return _file is not None and os.path.isfile(_file) and not os.path.getsize(_file) == 0
-        
+
+
 def getSTARVersion():
     """
     Tries to find the STAR binary
     and makes a system call to get its
     version and return it
     """
-    version = ""
     try:
-        proc = subprocess.Popen(["STAR", "--version"], 
-                                stdout=subprocess.PIPE, 
+        proc = subprocess.Popen(["STAR", "--version"],
+                                stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 shell=False, close_fds=True)
         (stdout, errmsg) = proc.communicate()
@@ -115,6 +122,7 @@ def getSTARVersion():
     except Exception:
         version = "Not available"
     return version.rstrip()
+
 
 def getTaggdCountVersion():
     """
@@ -124,8 +132,8 @@ def getTaggdCountVersion():
     """
     version = ""
     try:
-        proc = subprocess.Popen(["pip", "show", "taggd"], 
-                                stdout=subprocess.PIPE, 
+        proc = subprocess.Popen(["pip", "show", "taggd"],
+                                stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 shell=False, close_fds=True)
         (stdout, errmsg) = proc.communicate()
@@ -135,6 +143,7 @@ def getTaggdCountVersion():
     except Exception:
         version = "Not available"
     return version.rstrip()
+
 
 def getHTSeqCountVersion():
     """
@@ -144,8 +153,8 @@ def getHTSeqCountVersion():
     """
     version = ""
     try:
-        proc = subprocess.Popen(["pip", "show", "htseq"], 
-                                stdout=subprocess.PIPE, 
+        proc = subprocess.Popen(["pip", "show", "htseq"],
+                                stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 shell=False, close_fds=True)
         (stdout, errmsg) = proc.communicate()
@@ -156,10 +165,11 @@ def getHTSeqCountVersion():
         version = "Not available"
     return version.rstrip()
 
+
 def is_fifo(file_name):
     """
     Checks if the file name is a FIFO
     :param file_name: a file name
     :return: True if the file is a FIFO
     """
-    return (os.path.exists(file_name) and stat.S_ISFIFO(os.stat(file_name).st_mode))
+    return os.path.exists(file_name) and stat.S_ISFIFO(os.stat(file_name).st_mode)

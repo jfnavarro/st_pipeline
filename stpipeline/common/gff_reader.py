@@ -1,17 +1,21 @@
-from collections import defaultdict
+"""
+A simple module to parse a GFF/GTF file and query it
+"""
 import gzip
 import re
 
 # Code snipped from:
 # https://gist.github.com/slowkow/8101481
 
-GTF_HEADER  = ['seqname', 'source', 'feature', 'start', 'end', 'score', 'strand', 'frame']
+GTF_HEADER = ['seqname', 'source', 'feature', 'start', 'end', 'score', 'strand', 'frame']
 R_SEMICOLON = re.compile(r'\s*;\s*')
-R_COMMA     = re.compile(r'\s*,\s*')
-R_KEYVALUE  = re.compile(r'(\s+|\s*=\s*)')
+R_COMMA = re.compile(r'\s*,\s*')
+R_KEYVALUE = re.compile(r'(\s+|\s*=\s*)')
+
 
 def gff_lines(filename):
-    """Open an optionally gzipped GTF file and generate a dict for each line.
+    """
+    Opens an optionally gzipped GTF/GFF file and generate a dict for each line.
     """
     fn_open = gzip.open if filename.endswith('.gz') else open
     with fn_open(filename) as fh:
@@ -21,8 +25,10 @@ def gff_lines(filename):
             else:
                 yield gff_parse(line)
 
+
 def gff_parse(line):
-    """Parse a single GTF line and return a dict.
+    """
+    Parses a single GTF/GFF line and returns a dict.
     """
     result = {}
     fields = line.rstrip().split('\t')
@@ -42,6 +48,7 @@ def gff_parse(line):
         if value:
             result[key] = _get_value(value)
     return result
+
 
 def _get_value(value):
     if not value:

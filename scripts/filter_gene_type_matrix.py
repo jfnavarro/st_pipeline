@@ -19,21 +19,21 @@ import sys
 import os
 import pandas as pd
 from stpipeline.common.gff_reader import *
-              
-def main(counts_matrix, gene_types_keep, outfile, annotation, ensembl_ids):
 
+
+def main(counts_matrix, gene_types_keep, outfile, annotation, ensembl_ids):
     if not os.path.isfile(counts_matrix) or not os.path.isfile(annotation):
         sys.stderr.write("Error, input file not present or invalid format\n")
         sys.exit(1)
-     
+
     if not outfile:
         outfile = "filtered_{}".format(os.path.basename(counts_matrix))
-    
+
     gene_types = dict()
     for line in gff_lines(annotation):
         gene_name = line["gene_id"] if ensembl_ids else line["gene_name"]
         gene_types[gene_name] = line["gene_type"] if "gene_type" in line else line["gene_biotype"]
-    assert(len(gene_types) > 0)
+    assert (len(gene_types) > 0)
 
     # Read the data frame (genes as columns)
     counts_table = pd.read_table(counts_matrix, sep="\t", header=0, index_col=0)
@@ -52,7 +52,8 @@ def main(counts_matrix, gene_types_keep, outfile, annotation, ensembl_ids):
         print("Not a single gene could be discarded...")
     # Write filtered table
     counts_table.to_csv(outfile, sep='\t')
-               
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -62,8 +63,8 @@ if __name__ == '__main__':
     parser.add_argument("--gene-types-keep", required=True, nargs='+', type=str,
                         help="List of Ensembl gene types to keep (E.x protein_coding lincRNA")
     parser.add_argument("--annotation", help="The Ensembl annotation file", required=True, type=str)
-    parser.add_argument("--ensembl-ids", action="store_true", 
+    parser.add_argument("--ensembl-ids", action="store_true",
                         default=False, help="Pass this parameter if the genes in the matrix" \
-                        "are named with Ensembl Ids instead of gene names")
+                                            "are named with Ensembl Ids instead of gene names")
     args = parser.parse_args()
     main(args.counts_matrix, args.gene_types_keep, args.outfile, args.annotation, args.ensembl_ids)

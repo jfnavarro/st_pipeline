@@ -14,6 +14,7 @@ from stpipeline.common.unique_events_parser import parse_unique_events
 import logging
 import sys
 
+
 def computeUniqueUMIs(transcripts, umi_counting_offset, umi_allowed_mismatches, group_umi_func):
     """ 
     Helper function to compute unique transcripts UMIs from
@@ -22,7 +23,7 @@ def computeUniqueUMIs(transcripts, umi_counting_offset, umi_allowed_mismatches, 
     number of mismatches allowed (hamming distance)
     """
     # Sort transcripts by strand and start position
-    sorted_transcripts = sorted(transcripts, key = lambda x: (x[5], x[1]))
+    sorted_transcripts = sorted(transcripts, key=lambda x: (x[5], x[1]))
     # Group transcripts by strand and start-position allowing an offset
     # And then performs the UMI clustering in each group to finally
     # compute the gene count as the sum of the unique UMIs for each group (strand,start,offset)
@@ -51,6 +52,7 @@ def computeUniqueUMIs(transcripts, umi_counting_offset, umi_allowed_mismatches, 
     unique_transcripts += [random.choice(grouped_transcripts[u_umi]) for u_umi in unique_umis]
     return unique_transcripts
 
+
 def createDataset(input_file,
                   qa_stats,
                   gff_filename=None,
@@ -70,6 +72,7 @@ def createDataset(input_file,
     writes out some statistics.
     :param input_file: the file with the annotated-demultiplexed records in BAM format
     :param qa_stats: the Stats object to add some stats (THIS IS PASSED BY REFERENCE)
+    :param gff_filename: the annotation reference file
     :param umi_cluster_algorithm: the clustering algorithm to cluster UMIs
     :param umi_allowed_mismatches: the number of miss matches allowed to remove
                                   duplicates by UMIs
@@ -79,6 +82,7 @@ def createDataset(input_file,
     :param output_template: the name of the dataset
     :param verbose: True if we can to collect the stats in the logger
     :type input_file: str
+    :type gff_filename: str
     :type umi_cluster_algorithm: str
     :type umi_allowed_mismatches: boolean
     :type umi_counting_offset: integer
@@ -118,8 +122,8 @@ def createDataset(input_file,
     elif umi_cluster_algorithm == "Affinity":
         group_umi_func = affinity_umi_removal
     else:
-        error = "Error creating dataset.\n" \
-        "Incorrect clustering algorithm {}".format(umi_cluster_algorithm)
+        error = "Error creating dataset.\n " \
+                "Incorrect clustering algorithm {}".format(umi_cluster_algorithm)
         logger.error(error)
         raise RuntimeError(error)
  
@@ -134,7 +138,7 @@ def createDataset(input_file,
         for gene, spots in unique_events:
             transcript_counts_by_spot = {}
             for spot_coordinates, reads in list(spots.items()):
-                (x,y) = spot_coordinates
+                x,y = spot_coordinates
                 # Re-compute the read count accounting for duplicates using the UMIs
                 # Transcripts is the list of transcripts (chrom, start, end, clear_name, mapping_quality, strand, UMI)
                 # First:
@@ -180,7 +184,8 @@ def createDataset(input_file,
     # Create the data frame
     counts_table = pd.DataFrame(list_row_values, index=list_indexes)
     counts_table.fillna(0, inplace=True)
-    counts_table=counts_table.T # Transpose the dictionary to still get the spots as rows and genes as columns in the final tsv
+    # Transpose the dictionary to still get the spots as rows and genes as columns in the final tsv
+    counts_table = counts_table.T
     
     # Compute some statistics
     total_barcodes = len(counts_table.index)

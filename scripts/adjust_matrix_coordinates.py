@@ -33,21 +33,21 @@ import sys
 import os
 import pandas as pd
 
-def main(counts_matrix, coordinates_file, update_coordinates, outfile):
 
+def main(counts_matrix, coordinates_file, update_coordinates, outfile):
     if not os.path.isfile(counts_matrix) or not os.path.isfile(coordinates_file):
         sys.stderr.write("Error, input file not present or invalid format\n")
         sys.exit(1)
-     
+
     if not outfile:
         outfile = "adjusted_{}".format(os.path.basename(counts_matrix))
-           
+
     # Get a map of the new coordinates
     new_coordinates = dict()
     with open(coordinates_file, "r") as filehandler:
         for line in filehandler.readlines():
             tokens = line.split()
-            assert(len(tokens) == 6 or len(tokens) == 4 or len(tokens) == 7)
+            assert (len(tokens) == 6 or len(tokens) == 4 or len(tokens) == 7)
             if tokens[0] != "x":
                 old_x = int(tokens[0])
                 old_y = int(tokens[1])
@@ -68,20 +68,21 @@ def main(counts_matrix, coordinates_file, update_coordinates, outfile):
         try:
             new_x, new_y = new_coordinates[(x, y)]
             if not update_coordinates:
-                new_x, new_y = x,y
-            new_index_values.append("{0}x{1}".format(new_x,new_y))
+                new_x, new_y = x, y
+            new_index_values.append("{0}x{1}".format(new_x, new_y))
         except KeyError:
             counts_table.drop(index, inplace=True)
 
     # Assign the new indexes 
     counts_table.index = new_index_values
-    
+
     # Remove genes that have now a total count of zero
     counts_table = counts_table.transpose()[counts_table.sum(axis=0) > 0].transpose()
-    
+
     # Write table again
     counts_table.to_csv(outfile, sep='\t')
-               
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -90,11 +91,9 @@ if __name__ == '__main__':
     parser.add_argument("--outfile", help="Name of the output file")
     parser.add_argument("--update-coordinates", action="store_true", default=False,
                         help="Updates the spot coordinates in the output matrix with the\n"
-                        "new coordinates present in the coordinates file")
-    parser.add_argument("--coordinates-file",  required=True,
+                             "new coordinates present in the coordinates file")
+    parser.add_argument("--coordinates-file", required=True,
                         help="New coordinates in a tab delimited file")
     args = parser.parse_args()
 
     main(args.counts_matrix, args.coordinates_file, args.update_coordinates, args.outfile)
-
-

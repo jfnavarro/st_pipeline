@@ -3,6 +3,7 @@ This module contains some functions to find and removes adaptors in fastq reads
 """
 import regex
 
+
 def removeAdaptor(sequence, quality, adaptor, missmatches=2):
     """
     Tries to find the given adaptor sequence in the given fastq read (sequence, quality)
@@ -27,7 +28,7 @@ def removeAdaptor(sequence, quality, adaptor, missmatches=2):
     if missmatches == 0:
         pos = sequence.find(adaptor)
     else:
-        candidates = regex.findall(r'(?:%s){s<=%s}' % (adaptor, missmatches), 
+        candidates = regex.findall(r'(?:%s){s<=%s}' % (adaptor, missmatches),
                                    sequence, overlapped=False)
         if len(candidates) > 0:
             local_seq = candidates[0]
@@ -44,9 +45,4 @@ def removeAdaptor(sequence, quality, adaptor, missmatches=2):
     if pos != -1:
         return sequence[:pos], quality[:pos]
     else:
-        return sequence, quality    
-
-            
-    
-    
-    
+        return sequence, quality

@@ -1,29 +1,24 @@
 """ 
-This module contains some specific functionalities for
-ST fastq files, mainly quality filtering functions.
+This module contains some specific functions for
+to parse and trime FASTQ files
 """
-
-from stpipeline.common.utils import safeOpenFile, fileOk, is_fifo
-from stpipeline.common.adaptors import removeAdaptor
-from stpipeline.common.sam_utils import convert_to_AlignedSegment
-from stpipeline.common.stats import qa_stats
-import logging 
-from sqlitedict import SqliteDict
-import os
 import re
-import pysam
+
 
 def coroutine(func):
     """ 
     Coroutine decorator, starts coroutines upon initialization.
     """
+
     def start(*args, **kwargs):
         cr = func(*args, **kwargs)
         cr.__next__()
         return cr
+
     return start
 
-def readfq(fp): # this is a generator function
+
+def readfq(fp):
     """ 
     Heng Li's fasta/fastq reader function.
     # https://github.com/lh3/readfq/blob/master/readfq.py
@@ -32,27 +27,27 @@ def readfq(fp): # this is a generator function
     :param fp: opened file descriptor
     :returns an iterator over tuples (name,sequence,quality)
     """
-    last = None # this is a buffer keeping the last unprocessed line
-    while True: # mimic closure; is it a bad idea?
-        if not last: # the first record or a record following a fastq
-            for l in fp: # search for the start of the next record
-                if l[0] in '>@': # fasta/q header line
-                    last = l[:-1] # save this line
+    last = None  # this is a buffer keeping the last unprocessed line
+    while True:  # mimic closure; is it a bad idea?
+        if not last:  # the first record or a record following a fastq
+            for l in fp:  # search for the start of the next record
+                if l[0] in '>@':  # fasta/q header line
+                    last = l[:-1]  # save this line
                     break
         if not last: break
-        #name, seqs, last = last[1:].partition(" ")[0], [], None
+        # name, seqs, last = last[1:].partition(" ")[0], [], None
         name, seqs, last = last[1:], [], None
-        for l in fp: # read the sequence
+        for l in fp:  # read the sequence
             if l[0] in '@+>':
                 last = l[:-1]
                 break
             seqs.append(l[:-1])
-        if not last or last[0] != '+': # this is a fasta record
-            yield name, ''.join(seqs), None # yield a fasta record
+        if not last or last[0] != '+':  # this is a fasta record
+            yield name, ''.join(seqs), None  # yield a fasta record
             if not last: break
-        else: # this is a fastq record
+        else:  # this is a fastq record
             seq, leng, seqs = ''.join(seqs), 0, []
-            for l in fp: # read the quality
+            for l in fp:  # read the quality
                 seqs.append(l[:-1])
                 leng += len(l) - 1
                 if leng >= len(seq):  # have read enough quality
@@ -62,6 +57,7 @@ def readfq(fp): # this is a generator function
             if last:  # reach EOF before reading enough quality
                 yield name, seq, None  # yield a fasta record instead
                 break
+
 
 @coroutine
 def writefq(fp):  # This is a coroutine
@@ -78,7 +74,8 @@ def writefq(fp):  # This is a coroutine
             fp.write(read)
     except GeneratorExit:
         return
-    
+
+
 def quality_trim_index(bases, qualities, cutoff, base=33):
     """
     Function snippet and modified from CutAdapt 
@@ -136,11 +133,12 @@ def quality_trim_index(bases, qualities, cutoff, base=33):
             max_i = i
     return max_i
 
+
 def trim_quality(sequence,
                  quality,
-                 min_qual=20, 
-                 min_length=30, 
-                 phred=33):    
+                 min_qual=20,
+                 min_length=30,
+                 phred=33):
     """
     Quality trims a fastq read using a BWA approach.
     It returns the trimmed record or None if the number of bases
@@ -169,7 +167,8 @@ def trim_quality(sequence,
         return new_seq, new_qual
     else:
         return None, None
-  
+
+
 def check_umi_template(umi, template):
     """
     Checks that the UMI (molecular barcode) given as input complies

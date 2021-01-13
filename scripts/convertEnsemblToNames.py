@@ -15,8 +15,8 @@ import os
 from stpipeline.common.gff_reader import *
 from collections import Counter
 
-def main(st_data_file, annotation, output_file):
 
+def main(st_data_file, annotation, output_file):
     if not os.path.isfile(st_data_file) or not os.path.isfile(annotation):
         sys.stderr.write("Error, input file not present or invalid format\n")
         sys.exit(1)
@@ -25,7 +25,7 @@ def main(st_data_file, annotation, output_file):
     gene_map = dict()
     for line in gff_lines(annotation):
         gene_map[line["gene_id"]] = line["gene_name"]
-    
+
     # Load the ST dataset
     st_data = pd.read_table(st_data_file, sep="\t", header=0, index_col=0)
 
@@ -33,12 +33,12 @@ def main(st_data_file, annotation, output_file):
     if len(gene_map) < len(st_data.columns):
         sys.stdout.write("Error, the annotation file given is invalid\n")
         sys.exit(1)
-            
+
     # Checks that there are no duplicated genes
     gene_ids_counter = Counter(st_data.columns)
     for gene_id, count in gene_ids_counter.most_common():
         if count > 1:
-            sys.stdout.write("Error, Ensembl ID {} was found {} times in the input " \
+            sys.stdout.write("Error, Ensembl ID {} was found {} times in the input "
                              "matrix.\n".format(gene_id, count))
             sys.exit(1)
 
@@ -56,10 +56,10 @@ def main(st_data_file, annotation, output_file):
                 # so we keep the Ensmelb ID.
                 # We assume input Ensemgl ids are unique as we checked this before
                 gene_name = gene_id
-                sys.stdout.write("Warning, gene name {} was already matched so the original " \
+                sys.stdout.write("Warning, gene name {} was already matched so the original "
                                  "Ensembl ID {} will be kept\n".format(gene_name, gene_id))
         except KeyError:
-            sys.stdout.write("Warning, {} was not found in the annotation, " \
+            sys.stdout.write("Warning, {} was not found in the annotation, "
                              "so the original Ensembl ID will be kept\n".format(gene_id))
             gene_name = gene_id
         adjustedList.append(gene_name)
@@ -70,10 +70,11 @@ def main(st_data_file, annotation, output_file):
     # Write table to file
     st_data.to_csv(output_file, sep="\t")
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("counts_matrix", 
+    parser.add_argument("counts_matrix",
                         help="Matrix with gene counts (genes as columns) in TSV format")
     parser.add_argument("--output", default="output.tsv",
                         help="Name of the output file, default output.tsv")
@@ -81,4 +82,3 @@ if __name__ == '__main__':
                         help="Path to the annotation file used to generate the data")
     args = parser.parse_args()
     main(args.counts_matrix, args.annotation, args.output)
-

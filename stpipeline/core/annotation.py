@@ -8,18 +8,14 @@ import os
 import pysam
 from stpipeline.common.utils import fileOk
 from stpipeline.common.stats import qa_stats
-from stpipeline.common.sam_utils import merge_bam, split_bam
-import itertools
 import HTSeq
-import multiprocessing
-import operator
-import math
-import time
 
-class UnknownChrom( Exception ):
+
+class UnknownChrom(Exception):
     pass
 
-def invert_strand( iv ):
+
+def invert_strand(iv):
     iv2 = iv.copy()
     if iv2.strand == "+":
         iv2.strand = "-"
@@ -29,17 +25,17 @@ def invert_strand( iv ):
         raise ValueError("Illegal strand")
     return iv2
 
-def count_reads_in_features(sam_filename, 
-                            gff_filename, 
+
+def count_reads_in_features(sam_filename,
+                            gff_filename,
                             samtype,
                             stranded,
-                            overlap_mode, 
-                            feature_type, 
-                            id_attribute, 
-                            quiet, 
-                            minaqual, 
-                            samout, 
-                            include_non_annotated, 
+                            overlap_mode,
+                            feature_type,
+                            id_attribute,
+                            minaqual,
+                            samout,
+                            include_non_annotated,
                             htseq_no_ambiguous,
                             outputDiscarded):
     """
@@ -66,7 +62,7 @@ def count_reads_in_features(sam_filename,
     """
     # Set up the filters
     count_reads_in_features.filter_htseq = ["__too_low_aQual", "__not_aligned"]
-    if not include_non_annotated: 
+    if not include_non_annotated:
         count_reads_in_features.filter_htseq.append("__no_feature")
     count_reads_in_features.filter_htseq_no_ambiguous = htseq_no_ambiguous
 
@@ -74,18 +70,18 @@ def count_reads_in_features(sam_filename,
     flag_write = "wb" if samtype == "bam" else "wh"
     flag_read = "rb" if samtype == "bam" else "r"
     saminfile = pysam.AlignmentFile(sam_filename, flag_read)
-    count_reads_in_features.samoutfile = pysam.AlignmentFile(samout, 
-                                                             flag_write, 
+    count_reads_in_features.samoutfile = pysam.AlignmentFile(samout,
+                                                             flag_write,
                                                              template=saminfile)
     if outputDiscarded is not None:
-        count_reads_in_features.samdiscarded = pysam.AlignmentFile(outputDiscarded, 
-                                                                   flag_write, 
+        count_reads_in_features.samdiscarded = pysam.AlignmentFile(outputDiscarded,
+                                                                   flag_write,
                                                                    template=saminfile)
     saminfile.close()
-    
+
     # Counter of annotated records
     count_reads_in_features.annotated = 0
-    
+
     # Function to write to SAM output
     def write_to_samout(read, assignment):
         # Creates the PySAM record
@@ -94,16 +90,16 @@ def count_reads_in_features(sam_filename,
         sam_record = read.to_pysam_AlignedSegment(count_reads_in_features.samoutfile)
         sam_record.set_tag("XF", assignment, "Z")
         if read is not None and assignment not in count_reads_in_features.filter_htseq \
-        and not (count_reads_in_features.filter_htseq_no_ambiguous and assignment.find("__ambiguous") != -1):
+                and not (count_reads_in_features.filter_htseq_no_ambiguous and assignment.find("__ambiguous") != -1):
             count_reads_in_features.samoutfile.write(sam_record)
             count_reads_in_features.annotated += 1
         elif outputDiscarded is not None:
             count_reads_in_features.samdiscarded.write(sam_record)
-                
+
     # Annotation objects
     features = HTSeq.GenomicArrayOfSets("auto", stranded != "no")
     counts = {}
-    gff = HTSeq.GFF_Reader(gff_filename)   
+    gff = HTSeq.GFF_Reader(gff_filename)
 
     try:
         for f in gff:
@@ -112,19 +108,19 @@ def count_reads_in_features(sam_filename,
                     feature_id = f.attr[id_attribute]
                 except KeyError:
                     raise ValueError("Feature %s does not contain a '%s' attribute" \
-                                       % (f.name, id_attribute))
+                                     % (f.name, id_attribute))
                 if stranded != "no" and f.iv.strand == ".":
                     raise ValueError("Feature %s at %s does not have strand information but you are " \
-                                       "running htseq-count in stranded mode. Use '--stranded=no'." % 
-                                       (f.name, f.iv))
+                                     "running htseq-count in stranded mode. Use '--stranded=no'." %
+                                     (f.name, f.iv))
                 features[f.iv] += feature_id
                 counts[f.attr[id_attribute]] = 0
     except:
         raise
-    
+
     if len(counts) == 0:
         raise RuntimeError("No features of type '%s' found.\n" % feature_type)
-        
+
     if samtype == "sam":
         SAM_or_BAM_Reader = HTSeq.SAM_Reader
     elif samtype == "bam":
@@ -138,7 +134,7 @@ def count_reads_in_features(sam_filename,
         raise RuntimeError("Error occurred when reading beginning of SAM/BAM file.")
 
     try:
-        
+
         for r in read_seq:
             if not r.aligned:
                 write_to_samout(r, "__not_aligned")
@@ -149,9 +145,9 @@ def count_reads_in_features(sam_filename,
             if stranded != "reverse":
                 iv_seq = (co.ref_iv for co in r.cigar if co.type == "M" and co.size > 0)
             else:
-                iv_seq = (invert_strand(co.ref_iv) 
-                          for co in r.cigar 
-                          if co.type in ["M","=","X"] and co.size > 0)
+                iv_seq = (invert_strand(co.ref_iv)
+                          for co in r.cigar
+                          if co.type in ["M", "=", "X"] and co.size > 0)
             try:
                 if overlap_mode == "union":
                     fs = set()
@@ -173,14 +169,14 @@ def count_reads_in_features(sam_filename,
                                     fs = fs.intersection(fs2)
                 else:
                     raise RuntimeError("Illegal overlap mode.")
-                
+
                 if fs is None or len(fs) == 0:
                     write_to_samout(r, "__no_feature")
                 elif len(fs) > 1:
                     write_to_samout(r, "__ambiguous[" + '+'.join(fs) + "]")
                 else:
                     write_to_samout(r, list(fs)[0])
-                    
+
             except UnknownChrom:
                 write_to_samout(r, "__no_feature")
                 pass
@@ -191,19 +187,18 @@ def count_reads_in_features(sam_filename,
         count_reads_in_features.samoutfile.close()
         if outputDiscarded is not None:
             count_reads_in_features.samdiscarded.close()
-            
+
     return count_reads_in_features.annotated
 
-def annotateReads(mappedReads, 
+
+def annotateReads(mappedReads,
                   gtfFile,
                   outputFile,
                   outputDiscarded,
                   mode,
                   strandness,
-                  htseq_no_ambiguous, 
-                  include_non_annotated,
-                  temp_dir,
-                  threads):
+                  htseq_no_ambiguous,
+                  include_non_annotated):
     """
     Annotates a file with mapped reads (BAM) using a modified 
     version of the htseq-count tool. It writes the annotated records to a file.
@@ -219,8 +214,6 @@ def annotateReads(mappedReads,
     :param include_non_annotated: true if we want to include 
     non annotated reads as __no_feature in the output
     :param outputFile: the name/path to the output file
-    :param temp_dir: path to the folder where to put the created files
-    :param threads: the number of CPU cores to use
     :type mappedReads: str
     :type gtfFile: str
     :type outputFile: str
@@ -230,28 +223,25 @@ def annotateReads(mappedReads,
     :type htseq_no_ambiguos: boolean
     :type include_non_annotated: str
     :type outputFile: str
-    :type temp_dir: str
-    :type threads: int
     :raises: RuntimeError, ValueError
     """
-    
+
     logger = logging.getLogger("STPipeline")
-    
+
     if not os.path.isfile(mappedReads):
         error = "Error during annotation, input file not present {}\n".format(mappedReads)
         logger.error(error)
         raise RuntimeError(error)
-    
+
     try:
         annotated = count_reads_in_features(mappedReads,
                                             gtfFile,
-                                            "bam", # Type BAM for filesz
-                                            strandness, # Strand yes/no/reverse
-                                            mode, # intersection_nonempty, union, intersection_strict
-                                            "exon", # feature type in GFF
-                                            "gene_id", # gene_id or gene_name
-                                            True, # Quiet mode
-                                            0, # Min quality score
+                                            "bam",  # Type BAM for filesz
+                                            strandness,  # Strand yes/no/reverse
+                                            mode,  # intersection_nonempty, union, intersection_strict
+                                            "exon",  # feature type in GFF
+                                            "gene_id",  # gene_id or gene_name
+                                            0,  # Min quality score
                                             outputFile,
                                             include_non_annotated,
                                             htseq_no_ambiguous,
@@ -260,11 +250,11 @@ def annotateReads(mappedReads,
         error = "Error during annotation. HTSEQ execution failed\n"
         logger.error(error)
         raise e
-    
+
     if not fileOk(outputFile) or annotated == 0:
         error = "Error during annotation. Output file not present {}\n".format(outputFile)
         logger.error(error)
         raise RuntimeError(error)
-    
+
     logger.info("Annotated reads: {}".format(annotated))
     qa_stats.reads_after_annotation = annotated

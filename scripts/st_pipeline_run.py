@@ -21,15 +21,15 @@ import sys
 import argparse
 from stpipeline.core.pipeline import Pipeline
 
+
 def main(argv):
-    
     # Create pipeline object
     pipeline = Pipeline()
-    
+
     # Create a parser
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-        
+
     # Parse parameters, sanity check and run the pipeline                  
     try:
         parser = pipeline.createParameters(parser)
@@ -49,8 +49,7 @@ def main(argv):
         sys.exit(1)
     finally:
         pipeline.clean_filenames()
-        
+
+
 if __name__ == "__main__":
     main(sys.argv[1:])
-    
-

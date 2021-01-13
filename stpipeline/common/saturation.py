@@ -13,6 +13,7 @@ from stpipeline.common.dataset import createDataset
 from stpipeline.common.stats import Stats
 from stpipeline.common.utils import safeRemove
 
+
 def computeSaturation(nreads, 
                       annotated_reads,
                       gff_filename,
@@ -61,14 +62,14 @@ def computeSaturation(nreads,
         saturation_points = [p for p in sorted(saturation_points) if p < int(nreads)]
 
         if len(saturation_points) == 0:
-            error = "Error, all saturation points provided are bigger than the number" \
-            " of annotated reads {}\n".format(nreads)
+            error = "Error, all saturation points provided are bigger than the number " \
+                    "of annotated reads {}\n".format(nreads)
             logger.error(error)
             raise RuntimeError(error)     
     else:
-         # Create a list of 15 saturation points (different number of reads)
+        # Create a list of 15 saturation points (different number of reads)
         saturation_points = list()
-        for x in range(0,15):
+        for x in range(0, 15):
             spoint = int(math.floor(1e3 + (math.exp(x) * 1e3)))
             if spoint >= int(nreads):
                 break
@@ -164,4 +165,3 @@ def computeSaturation(nreads,
     logger.info(', '.join(str(a) for a in saturation_points_average_genes))
     logger.info("Average reads/spot per saturation point")
     logger.info(', '.join(str(a) for a in saturation_points_average_reads))
-        

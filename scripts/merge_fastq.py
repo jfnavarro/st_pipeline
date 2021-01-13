@@ -14,6 +14,7 @@ import glob
 import shutil
 import subprocess
 
+
 def run_command(command, out=subprocess.PIPE):
     try:
         print("Running command: {}".format(" ".join(x for x in command).rstrip()))
@@ -25,13 +26,14 @@ def run_command(command, out=subprocess.PIPE):
         print(errmsg)
     except Exception as e:
         raise e
-               
+
+
 def main(run_path, indexes, out_path):
 
     if not os.path.isdir(run_path) or not os.path.isdir(out_path):
         sys.stderr.write("Error, run path or output path folders do not exist\n")
         sys.exit(1)
-                
+
     # First gunzip all the FASTQ files
     os.chdir(run_path)
     try:
@@ -40,7 +42,7 @@ def main(run_path, indexes, out_path):
     except Exception as e:
         sys.stderr.write("Error, gunziping FASTQ files\n" + str(e))
         sys.exit(1)
-       
+
     # Second merge the FASTQ files
     for index in indexes:
         r1_files = sorted(glob.glob("*{}*R1*.fastq".format(index)))
@@ -53,21 +55,22 @@ def main(run_path, indexes, out_path):
         except Exception as e:
             sys.stderr.write("Error, merging FASTQ files\n" + str(e))
             sys.exit(1)
-    
+
     # Third gzip everything again
     try:
-        for file in glob.glob("*.fastq"): 
+        for file in glob.glob("*.fastq"):
             run_command(["gzip", "-f", file])
     except Exception as e:
         sys.stderr.write("Error, gziping FASTQ files\n" + str(e))
         sys.exit(1)
-        
+
     # Move merged FASTQ files to output path
     if run_path != out_path:
         for index in indexes:
             for file in glob.glob("{}_R*".format(index)):
                 shutil.move(file, out_path)
-                   
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)

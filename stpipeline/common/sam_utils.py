@@ -1,12 +1,11 @@
 """ 
-This module contains some functions and utilities for ST SAM/BAM files
+This module contains some functions and utilities for SAM/BAM files
 """
 
 import pysam
 import os
-import logging
-from collections import defaultdict
 import math
+
 
 def split_bam(input_bamfile_name, temp_dir, threads):
     """
@@ -19,17 +18,17 @@ def split_bam(input_bamfile_name, temp_dir, threads):
     :retuns: the list of splitted BAM files
     """
     # Index and open the input BAM
-    pysam.index(input_bamfile_name, 
-                os.path.join(temp_dir,'{0}.bai'.format(input_bamfile_name)))
+    pysam.index(input_bamfile_name,
+                os.path.join(temp_dir, '{0}.bai'.format(input_bamfile_name)))
     input_bamfile = pysam.AlignmentFile(input_bamfile_name, mode='rb')
     assert input_bamfile.check_index()
 
-    output_file_names = {part:os.path.join(temp_dir,
-                                           "{0}.part_{1}.bam".format(input_bamfile_name,part)) 
+    output_file_names = {part: os.path.join(temp_dir,
+                                            "{0}.part_{1}.bam".format(input_bamfile_name, part))
                          for part in range(threads)}
-   # Open the output bam files
+    # Open the output bam files
     output_bamfiles = {
-        part:pysam.AlignmentFile(file_name, mode="wbu", template=input_bamfile) \
+        part: pysam.AlignmentFile(file_name, mode="wbu", template=input_bamfile) \
         for part, file_name in output_file_names.iteritems()
     }
 
@@ -47,7 +46,8 @@ def split_bam(input_bamfile_name, temp_dir, threads):
     input_bamfile.close()
     return output_file_names.values()
 
-def convert_to_AlignedSegment(header, sequence, quality, 
+
+def convert_to_AlignedSegment(header, sequence, quality,
                               barcode_sequence, umi_sequence):
     """
     This function converts the input variables 
@@ -83,6 +83,7 @@ def convert_to_AlignedSegment(header, sequence, quality,
 
     return aligned_segment
 
+
 def merge_bam(merged_file_name, files_to_merge, ubam=False):
     """
     Function for merging partial BAM files into one.
@@ -93,7 +94,7 @@ def merge_bam(merged_file_name, files_to_merge, ubam=False):
     """
     assert files_to_merge is not None and len(files_to_merge) > 0
     num_ele = 0
-    with pysam.AlignmentFile(files_to_merge[0], mode='rb', 
+    with pysam.AlignmentFile(files_to_merge[0], mode='rb',
                              check_sq=(not ubam)) as input_bamfile:
         merged_file = pysam.AlignmentFile(merged_file_name,
                                           mode="wb", template=input_bamfile)

@@ -490,3 +490,6 @@ file is present
 Version 1.8.0
 * Improved the unit-tests
 * Make input data a positional arguments in extra scripts
+
+Version 1.8.1
+* Fix a small bug when having the UMI before the BARCODE
