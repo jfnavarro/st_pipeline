@@ -72,7 +72,8 @@ class TestPipeline(unittest.TestCase):
 
             print("ST Pipeline Test Creating contaminant genome index...")
             contamfasta = os.path.join(testdir, "config/contaminant_genomes/R45S5_R5S1/Rn45s_Rn5s.fasta")
-            check_call(["STAR", "--runMode", "genomeGenerate",
+            check_call(["STAR",
+                        "--runMode", "genomeGenerate",
                         "--genomeSAindexNbases", "8",
                         "--runThreadN", "4",
                         "--genomeDir", self.contamdir,
@@ -135,10 +136,10 @@ class TestPipeline(unittest.TestCase):
             check_call(["st_pipeline_run.py",
                         "--verbose",
                         "--no-clean-up",
-                        "--two-pass-mode",
+                        "--star-two-pass-mode",
                         "--htseq-no-ambiguous",
                         "--keep-discarded-files",
-                        "--mapping-threads", "4",
+                        "--threads", "4",
                         "--log-file", self.logFile,
                         "--expName", self.expname,
                         "--ids", self.chipfile,
@@ -157,7 +158,7 @@ class TestPipeline(unittest.TestCase):
         self.assertNotEqual(os.listdir(self.tmpdir), [], "Tmp folder is not empty")
         datafile = os.path.join(self.outdir, self.expname + "_stdata.tsv")
         readsfile = os.path.join(self.outdir, self.expname + "_reads.bed")
-        statsfile = os.path.join(self.outdir, self.expname + "_qa_stats.json")
+        # statsfile = os.path.join(self.outdir, self.expname + "_qa_stats.json")
         self.assertTrue(os.path.exists(datafile), "ST Data file exists")
         self.assertTrue(os.path.getsize(datafile) > 1024, "ST Data file is not empty")
         self.assertTrue(os.path.exists(readsfile), "ST Data BED file exists")

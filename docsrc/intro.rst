@@ -39,12 +39,12 @@ The input FASTQ files can be given in gzip/bzip format as well.
 Basically what the ST pipeline does is:
 
 - Quality trimming (read 1 and read 2):
-	- Remove low quality bases
-	- Sanity check (reads same length, reads order, etc..)
-	- Check quality UMI (if provided)
-	- Remove artifacts (PolyT, PolyA, PolyG, PolyN and PolyC) of user defined length
-	- Check for AT and GC content
-	- Discard reads with a minimum number of bases of that failed any of the checks above
+    - Remove low quality bases
+    - Sanity check (reads same length, reads order, etc..)
+    - Check quality UMI (if provided)
+    - Remove artifacts (PolyT, PolyA, PolyG, PolyN and PolyC) of user defined length
+    - Check for AT and GC content
+    - Discard reads with a minimum number of bases of that failed any of the checks above
 - Contamimant filter e.x. rRNA genome (Optional)
 - Mapping with STAR (only read 2)
 - Demultiplexing with [Taggd](https://github.com/SpatialTranscriptomicsResearch/taggd) (only read 1)
@@ -55,7 +55,5 @@ Basically what the ST pipeline does is:
 
 You can see a graphical more detailed description of the workflow in the documents workflow.pdf and workflow_extended.pdf
 
-The output will be a matrix of counts (genes as columns, spots as rows),
-a BED file containing the transcripts (Read name, coordinate, gene, etc..), and a JSON
-file with useful stats.
-The ST pipeline will also output a log file with useful information.
+The output will be a matrix of counts (genes as columns, spots as rows)
+and a log file with useful information and stats.

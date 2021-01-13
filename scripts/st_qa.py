@@ -120,16 +120,16 @@ def main(input_data):
     plt.clf()
 
     # Generate density plots
-    sns.displot(aggregated_gene_counts, hist=False, label="Counts > 0")
-    sns.displot(aggregated_gene_counts_1, hist=False, label="Counts > 1")
+    sns.distplot(aggregated_gene_counts, hist=False, label="Counts > 0")
+    sns.distplot(aggregated_gene_counts_1, hist=False, label="Counts > 1")
     sns_plot = sns.distplot(aggregated_gene_counts_2,
                             axlabel="#Genes", hist=False, label="Counts > 2")
     fig = sns_plot.get_figure()
     fig.savefig(input_name + "_density_genes_by_spot.pdf")
     plt.clf()
 
-    sns.displot(aggregated_gene_gene_counts, hist=False, label="Counts > 0")
-    sns.displot(aggregated_gene_gene_counts_1, hist=False, label="Counts > 1")
+    sns.distplot(aggregated_gene_gene_counts, hist=False, label="Counts > 0")
+    sns.distplot(aggregated_gene_gene_counts_1, hist=False, label="Counts > 1")
     sns_plot = sns.distplot(aggregated_gene_gene_counts_2,
                             axlabel="#Spots", hist=False, label="Counts > 2")
     fig = sns_plot.get_figure()

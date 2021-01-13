@@ -106,7 +106,7 @@ If you use anaconda you can install Samtools with
 
     conda install -c bioconda samtools openssl=1.0
 
-The ST Pipeline recommends a computer with at least 32GB of RAM (depending on the size of the genome) and 8 cpu cores. 
+The ST Pipeline needs a computer with at least 32GB of RAM (depending on the size of the genome) and 8 cpu cores. 
 
 **Dependencies** 
 

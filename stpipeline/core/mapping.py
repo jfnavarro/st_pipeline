@@ -205,7 +205,6 @@ def barcodeDemultiplexing(reads,
                           idFile,
                           mismatches,
                           kmer,
-                          start_positon,
                           over_hang,
                           taggd_metric,
                           taggd_multiple_hits_keep_one,
@@ -223,7 +222,6 @@ def barcodeDemultiplexing(reads,
     :param idFile: a tab delimited file (BARCODE - X - Y) containing all the barcodes
     :param mismatches: the number of allowed mismatches
     :param kmer: the kmer length
-    :param start_positon: the start position of the barcode
     :param over_hang: the number of bases to allow for overhang
     :param taggd_metric: the distance metric algorithm (Subglobal, Levensthein or Hamming)
     :param taggd_multiple_hits_keep_one: when True keep one random hit when multiple candidates
@@ -234,7 +232,6 @@ def barcodeDemultiplexing(reads,
     :type idFile: str
     :type mismatches: int
     :type kmer: int
-    :type start_positon: int
     :type over_hang: int
     :type taggd_metric: str
     :type taggd_multiple_hits_keep_one: bool
@@ -271,13 +268,12 @@ def barcodeDemultiplexing(reads,
 
     args += ["--max-edit-distance", mismatches,
              "--k", kmer,
-             "--barcode-tag", "B0",  # if input is BAM we tell taggd what tag contains the barcode
-             "--start-position", start_positon,
+             "--barcode-tag", "B0",  # if input is BAM we tell taggd which tag contains the barcode
              "--homopolymer-filter", 0,
              "--subprocesses", cores,
              "--metric", taggd_metric,
-             "--overhang", over_hang]  # ,
-    # '--use-samtools-merge'] # Could be added to merge using samtools instead of pysam WIP on taggd
+             "--overhang", over_hang]
+    # --use-samtools-merge Could be added to merge using samtools instead of pysam WIP on taggd
 
     if taggd_multiple_hits_keep_one:
         args.append("--multiple-hits-keep-one")

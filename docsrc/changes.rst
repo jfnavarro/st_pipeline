@@ -1,6 +1,11 @@
 Changes
 -------
 
+**Version 1.8.1**
+
+* Fixed a bug when having barcodes after the UMI
+* Improved descriptions for parameters
+
 **Version 1.8.0**
 
 * Improved the unit-tests
