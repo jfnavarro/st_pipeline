@@ -158,10 +158,10 @@ Author Jose Fernandez Navarro <jc.fernandez.navaro@gmail.com>
   --demultiplexing-multiple-hits-keep-one
                         When multiple ambiguous hits with same score are found
                         in the demultiplexing step, keep only one (random).
-  --demultiplexing-trim-sequences DEMULTIPLEXING_TRIM_SEQUENCES [DEMULTIPLEXING_TRIM_SEQUENCES ...]
+  --demultiplexing-trim-sequences DEMULTIPLEXING_TRIM_SEQUENCES
                         Trim the barcodes in the input file when doing
-                        demultiplexing. The input given is a list of tuples:
-                        START END START END .. where START is the integer
+                        demultiplexing. The input given is a list of tuples
+                        START END START END where START is the integer
                         position of the first base (0 based) and END is the
                         integer position of the last base (1 based). The final
                         barcode will be obtained by combining all the
@@ -234,6 +234,3 @@ Author Jose Fernandez Navarro <jc.fernandez.navaro@gmail.com>
                         of a genome, the gene tag will be obtained from the
                         transcriptome file
   --version             show program's version number and exit
-
-
-
