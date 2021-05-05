@@ -103,7 +103,7 @@ def count_reads_in_features(sam_filename,
 
     try:
         for f in gff:
-            if f.type == feature_type:
+            if f.type in feature_type:
                 try:
                     feature_id = f.attr[id_attribute]
                 except KeyError:
@@ -117,14 +117,14 @@ def count_reads_in_features(sam_filename,
         raise
 
     if len(counts) == 0:
-        raise RuntimeError("No features of type '%s' found.\n" % feature_type)
+        raise RuntimeError("No features of type {} found.\n".format(','.join(feature_type)))
 
     if samtype == "sam":
         SAM_or_BAM_Reader = HTSeq.SAM_Reader
     elif samtype == "bam":
         SAM_or_BAM_Reader = HTSeq.BAM_Reader
     else:
-        raise ValueError("Unknown input format %s specified." % samtype)
+        raise ValueError("Unknown input format {} specified.".format(samtype))
 
     try:
         read_seq = SAM_or_BAM_Reader(sam_filename)
@@ -197,7 +197,7 @@ def annotateReads(mappedReads,
                   strandness,
                   htseq_no_ambiguous,
                   include_non_annotated,
-                  feature_type="exon"):
+                  feature_types=["exon"]):
     """
     Annotates a file with mapped reads (BAM) using a modified 
     version of the htseq-count tool. It writes the annotated records to a file.
@@ -213,7 +213,7 @@ def annotateReads(mappedReads,
     :param include_non_annotated: true if we want to include 
     non annotated reads as __no_feature in the output
     :param outputFile: the name/path to the output file
-    :param feature_type: type of feature to use in the GTF to annotate (exon is default)
+    :param feature_types: a list of type of features to use in the GTF to annotate (exon is default)
     :type mappedReads: str
     :type gtfFile: str
     :type outputFile: str
@@ -223,7 +223,7 @@ def annotateReads(mappedReads,
     :type htseq_no_ambiguos: boolean
     :type include_non_annotated: str
     :type outputFile: str
-    :type feature_type: str
+    :type feature_types: list
     :raises: RuntimeError, ValueError
     """
 
@@ -240,7 +240,7 @@ def annotateReads(mappedReads,
                                             "bam",  # Type BAM for files
                                             strandness,  # Strand yes/no/reverse
                                             mode,  # intersection_nonempty, union, intersection_strict
-                                            feature_type,  # feature type in GFF
+                                            feature_types,  # feature types in GFF
                                             "gene_id",  # gene_id or gene_name
                                             0,  # Min quality score
                                             outputFile,

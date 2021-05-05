@@ -66,7 +66,7 @@ class Pipeline():
         self.expName = None
         self.htseq_mode = "intersection-nonempty"
         self.htseq_no_ambiguous = False
-        self.htseq_feature = "exon"
+        self.htseq_features = ["exon"]
         self.qual64 = False
         self.contaminant_index = None
         self.fastq_fw = None
@@ -259,7 +259,7 @@ class Pipeline():
             error = "Error starting the pipeline.\n" \
                     "The start position of the barcodes is between the UMIs start-end position"
             self.logger.error(error)
-            raise RuntimeError(error) 
+            raise RuntimeError(error)
 
         if self.umi_allowed_mismatches > (self.umi_end_position - self.umi_start_position) \
                 and not self.disable_umi:
@@ -524,7 +524,7 @@ class Pipeline():
                             type=str,
                             choices=["Subglobal", "Levenshtein", "Hamming"],
                             help="Distance metric to use for TaggD demultiplexing:\n"
-                                 "Options:\n" \
+                                 "Options:\n"
                                  "  Subglobal, Levenshtein or Hamming (default: Subglobal)")
         parser.add_argument("--demultiplexing-multiple-hits-keep-one",
                             default=False,
@@ -554,11 +554,12 @@ class Pipeline():
                             action="store_true",
                             default=False,
                             help="When using htseq-count discard reads annotating ambiguous genes (default False)")
-        parser.add_argument('--htseq-feature',
-                            default="exon",
+        parser.add_argument('--htseq-features',
+                            nargs='+',
+                            default=["exon"],
                             type=str,
-                            metavar="[STRING]",
-                            help="Which feature type to use from the GTF/GFF file in the annotation (default exon)")
+                            help="Which feature types to use from the GTF/GFF file in the annotation.\n "
+                                 "Can be given more than one type (default exon)")
         parser.add_argument('--strandness',
                             default="yes",
                             type=str,
@@ -687,7 +688,7 @@ class Pipeline():
         self.expName = options.expName
         self.htseq_mode = options.htseq_mode
         self.htseq_no_ambiguous = options.htseq_no_ambiguous
-        self.htseq_feature = options.htseq_feature
+        self.htseq_features = options.htseq_features
         self.qual64 = options.qual_64
         if options.contaminant_index is not None:
             self.contaminant_index = os.path.abspath(options.contaminant_index)
@@ -811,7 +812,7 @@ class Pipeline():
             self.logger.info("Annotation tool: HTSeq")
             self.logger.info("Annotation mode: {}".format(self.htseq_mode))
             self.logger.info("Annotation strandness {}".format(self.strandness))
-            self.logger.info("Annotation feature type {}".format(self.htseq_feature))
+            self.logger.info("Annotation feature types {}".format(','.join(self.htseq_features)))
             if self.include_non_annotated:
                 self.logger.info("Including non annotated reads in the output")
         if self.compute_saturation:
@@ -1115,7 +1116,7 @@ class Pipeline():
                                   self.strandness,
                                   self.htseq_no_ambiguous,
                                   self.include_non_annotated,
-                                  self.htseq_feature)
+                                  self.htseq_features)
                 except Exception:
                     raise
 
