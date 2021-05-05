@@ -64,7 +64,7 @@ if __name__ == '__main__':
                         help="List of Ensembl gene types to keep (E.x protein_coding lincRNA")
     parser.add_argument("--annotation", help="The Ensembl annotation file", required=True, type=str)
     parser.add_argument("--ensembl-ids", action="store_true",
-                        default=False, help="Pass this parameter if the genes in the matrix" \
+                        default=False, help="Pass this parameter if the genes in the matrix "
                                             "are named with Ensembl Ids instead of gene names")
     args = parser.parse_args()
     main(args.counts_matrix, args.gene_types_keep, args.outfile, args.annotation, args.ensembl_ids)

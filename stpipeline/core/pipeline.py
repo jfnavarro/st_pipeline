@@ -66,6 +66,7 @@ class Pipeline():
         self.expName = None
         self.htseq_mode = "intersection-nonempty"
         self.htseq_no_ambiguous = False
+        self.htseq_feature = "exon"
         self.qual64 = False
         self.contaminant_index = None
         self.fastq_fw = None
@@ -141,9 +142,9 @@ class Pipeline():
         Performs some basic sanity checks on the input parameters
         """
 
-        if self.ref_annotation is not None and (not os.path.isfile(self.ref_annotation) or \
-                                                (not self.ref_annotation.endswith(".gtf") \
-                                                 and not self.ref_annotation.endswith(".gff3") \
+        if self.ref_annotation is not None and (not os.path.isfile(self.ref_annotation) or
+                                                (not self.ref_annotation.endswith(".gtf")
+                                                 and not self.ref_annotation.endswith(".gff3")
                                                  and not self.ref_annotation.endswith(".gff"))):
             error = "Error parsing parameters.\n" \
                     "Invalid annotation file {}".format(self.ref_annotation)
@@ -553,6 +554,11 @@ class Pipeline():
                             action="store_true",
                             default=False,
                             help="When using htseq-count discard reads annotating ambiguous genes (default False)")
+        parser.add_argument('--htseq-feature',
+                            default="exon",
+                            type=str,
+                            metavar="[STRING]",
+                            help="Which feature type to use from the GTF/GFF file in the annotation (default exon)")
         parser.add_argument('--strandness',
                             default="yes",
                             type=str,
@@ -681,6 +687,7 @@ class Pipeline():
         self.expName = options.expName
         self.htseq_mode = options.htseq_mode
         self.htseq_no_ambiguous = options.htseq_no_ambiguous
+        self.htseq_feature = options.htseq_feature
         self.qual64 = options.qual_64
         if options.contaminant_index is not None:
             self.contaminant_index = os.path.abspath(options.contaminant_index)
@@ -804,6 +811,7 @@ class Pipeline():
             self.logger.info("Annotation tool: HTSeq")
             self.logger.info("Annotation mode: {}".format(self.htseq_mode))
             self.logger.info("Annotation strandness {}".format(self.strandness))
+            self.logger.info("Annotation feature type {}".format(self.htseq_feature))
             if self.include_non_annotated:
                 self.logger.info("Including non annotated reads in the output")
         if self.compute_saturation:
@@ -846,7 +854,7 @@ class Pipeline():
     def run(self):
         """ 
         Runs the whole pipeline given the parameters present.
-        It performs several sequencial steps.
+        It performs several sequential steps.
         It logs information and running time.
         It throws Exceptions if something went wrong.
         """
@@ -1103,9 +1111,11 @@ class Pipeline():
                                   self.ref_annotation,
                                   FILENAMES["annotated"],
                                   FILENAMES_DISCARDED["annotated_discarded"] if self.keep_discarded_files else None,
-                                  self.htseq_mode, self.strandness,
+                                  self.htseq_mode,
+                                  self.strandness,
                                   self.htseq_no_ambiguous,
-                                  self.include_non_annotated)
+                                  self.include_non_annotated,
+                                  self.htseq_feature)
                 except Exception:
                     raise
 

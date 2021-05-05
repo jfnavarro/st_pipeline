@@ -493,3 +493,6 @@ Version 1.8.0
 
 Version 1.8.1
 * Fix a small bug when having the UMI before the BARCODE
+
+Version 1.8.2
+* Added annotation (htseq) feature type as parameter
