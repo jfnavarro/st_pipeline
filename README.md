@@ -49,10 +49,8 @@ Basically what the ST pipeline does (default mode) is :
 
 You can see a graphical more detailed description of the workflow in the documents workflow.pdf and workflow_extended.pdf
 
-The output is a matrix of counts (genes as columns, spots as rows),
-a BED file containing the transcripts (Read name, coordinate, gene, etc..), and a JSON
-file with useful stats.
-The ST pipeline will also output a log file with useful information.
+The output is a matrix of counts (genes as columns, spots as rows).
+The ST pipeline will also output a log file with useful stats and information.
 
 **Installation**
 
@@ -124,8 +122,8 @@ An example run would be
 
 To process Visium datasets it is recommended to use these options:
 
-	--allowed-missed 1
-  	--allowed-kmer 4
+	--demultiplexing-mismatches 1
+  	--demultiplexing-kmer 4
   	--umi-allowed-mismatches 2
   	--umi-start-position 16
   	--umi-end-position 28
