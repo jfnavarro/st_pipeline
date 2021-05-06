@@ -1,7 +1,7 @@
 """ 
 This module contains a modified version of htseq-count
-with slight modifications to perform annotation
-of ST mapped reads against a reference.
+with modifications and improvements to perform annotation
+of ST mapped reads (BAM file).
 """
 import logging
 import os

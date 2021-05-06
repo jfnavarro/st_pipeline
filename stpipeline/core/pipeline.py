@@ -1,4 +1,5 @@
-""" 
+# coding=utf-8
+"""
 This is the main object for the ST pipeline.
 It contains the Pipeline object that has methods
 to parse the input parameters, generate the input parameters,
@@ -825,7 +826,7 @@ class Pipeline():
             self.logger.info("UMIs end position: {}".format(self.umi_end_position))
             self.logger.info("UMIs allowed mismatches: {}".format(self.umi_allowed_mismatches))
             self.logger.info("UMIs clustering algorithm: {}".format(self.umi_cluster_algorithm))
-            self.logger.info("Allowing an offset of {} when clustering UMIs " \
+            self.logger.info("Allowing an offset of {} when clustering UMIs "
                              "by strand-start in a gene-spot".format(self.umi_counting_offset))
             self.logger.info("Allowing {} low quality bases in an UMI".format(self.umi_quality_bases))
             self.logger.info(
@@ -883,23 +884,19 @@ class Pipeline():
 
             if self.fastq_fw.endswith(".gz"):
                 r1_decompression_command = "gzip --decompress --stdout {} > {}".format(
-                    self.fastq_fw.replace(' ', '\ '),
-                    temp_r1_fifo_name)
+                    self.fastq_fw, temp_r1_fifo_name)
             elif self.fastq_fw.endswith(".bz2"):
                 r1_decompression_command = "bzip2 --decompress --stdout {} > {}".format(
-                    self.fastq_fw.replace(' ', '\ '),
-                    temp_r1_fifo_name)
+                    self.fastq_fw, temp_r1_fifo_name)
             else:
                 r1_decompression_command = None
 
             if self.fastq_rv.endswith(".gz"):
                 r2_decompression_command = "gzip --decompress --stdout {} > {}".format(
-                    self.fastq_rv.replace(' ', '\ '),
-                    temp_r2_fifo_name)
+                    self.fastq_rv, temp_r2_fifo_name)
             elif self.fastq_rv.endswith(".bz2"):
                 r2_decompression_command = "bzip2 --decompress --stdout {} > {}".format(
-                    self.fastq_rv.replace(' ', '\ '),
-                    temp_r2_fifo_name)
+                    self.fastq_rv, temp_r2_fifo_name)
             else:
                 r2_decompression_command = None
 
@@ -1029,7 +1026,7 @@ class Pipeline():
                 alignReads(input_reads,
                            self.ref_map,
                            FILENAMES["mapped"],
-                           self.ref_annotation,
+                           None,  #  Do not annotate on the fly
                            self.temp_folder,
                            self.trimming_rv,
                            self.inverse_trimming_rv,
