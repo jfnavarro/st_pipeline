@@ -10,17 +10,17 @@ We recommend to download and install Anaconda (https://www.anaconda.com/products
 We then create a virtual environment from which we will run the pipeline in.
 Type the following command:
 
-	``conda create -n pipeline python=3.6 anaconda``
+	``conda create -n stpipeline python=3.9``
 
 The name for the virtual environment that we have just created is specified by
-the -n flag. Here is is called pipeline, but this can be anything that you want
+the -n flag. Here is is called stpipeline, but this can be anything that you want
 to name it. To run the pipeline, this virtual environment must be activated. To
 activate the virtual environment, enter the following command:
 
-	``source activate pipeline``
+	``source activate stpipeline``
 
-Where pipeline is the name of your virtual environment (here the virtual
-environment is called pipeline). To deactivate the virtual environment, type the
+Where stpipeline is the name of your virtual environment (here the virtual
+environment is called stpipeline). To deactivate the virtual environment, type the
 following command:
 
 	``source deactivate``
@@ -34,7 +34,7 @@ Change to your home directory
 
 Clone the repository from github
 
-	``git clone git://github.com/SpatialTranscriptomicsResearch/st_pipeline.git``
+	``git clone git://github.com/jfnavarro/st_pipeline.git``
 
 Change into the st_pipeline directory
 

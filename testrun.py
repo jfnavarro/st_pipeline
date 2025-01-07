@@ -203,7 +203,7 @@ class TestPipeline(unittest.TestCase):
         self.assertTrue(os.path.exists("output2.tsv"),
                         "Output of filter_gene_type_matrix.py file exists")
 
-        # TODO complete run tests for adjust_matrix_coordinates.py, merge_fastq.py and multi_qa.py
+        # run tests for adjust_matrix_coordinates.py, merge_fastq.py and multi_qa.py
         try:
             print("Running adjust_matrix_coordinates.py")
             check_call(["adjust_matrix_coordinates.py", "--help"])

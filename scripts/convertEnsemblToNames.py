@@ -1,9 +1,11 @@
 #! /usr/bin/env python
 """
-Script that parses a Spatial Transcriptimics (ST) data file generated
-with the pipeline in matrix (TSV) format where the genes are named
+Script that parses a Spatial Transcriptomics (ST) data file generated
+with the ST Pipeline in matrix (TSV) format where the genes are named
 with ENSEMBL IDs and generates a new file with the ENSEMBL IDs converted to gene names.
-The script needs the annotation file (GFF format) used to create the ST dataset.
+
+The script needs the annotation file (GFF format) used to create the ST dataset with
+the ST Pipeline.
 
 @Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
@@ -16,31 +18,35 @@ from stpipeline.common.gff_reader import *
 from collections import Counter
 
 
-def main(st_data_file, annotation, output_file):
+def main(st_data_file: str, annotation: str, output_file: str) -> int:
     if not os.path.isfile(st_data_file) or not os.path.isfile(annotation):
-        sys.stderr.write("Error, input file not present or invalid format\n")
-        sys.exit(1)
+        print("Error, input file(s) not present or invalid format")
+        return 1
 
-    # loads a map with the ensembl ids -> gene name
+    # loads a map with the Ensembl ids -> gene name
     gene_map = dict()
     for line in gff_lines(annotation):
-        gene_map[line["gene_id"]] = line["gene_name"]
+        try:
+            gene_map[line["gene_id"]] = line["gene_name"]
+        except KeyError as e:
+            print("Error, parsing annotation file, missing key {}".format(e))
+            return 1
+    assert (len(gene_map) > 0)
 
     # Load the ST dataset
     st_data = pd.read_table(st_data_file, sep="\t", header=0, index_col=0)
 
     # Check that the annotation file given was valid
     if len(gene_map) < len(st_data.columns):
-        sys.stdout.write("Error, the annotation file given is invalid\n")
-        sys.exit(1)
+        print("Error, the annotation file given is invalid or does not match the ST data")
+        return 1
 
-    # Checks that there are no duplicated genes
+    # Checks that there are no duplicated genes ids in the input data
     gene_ids_counter = Counter(st_data.columns)
     for gene_id, count in gene_ids_counter.most_common():
         if count > 1:
-            sys.stdout.write("Error, Ensembl ID {} was found {} times in the input "
-                             "matrix.\n".format(gene_id, count))
-            sys.exit(1)
+            print("Error, Ensembl ID {} was found {} times in the input matrix.".format(gene_id, count))
+            return 1
 
     # Iterates the genes IDs to get gene names
     genes_replaced = set()
@@ -53,14 +59,14 @@ def main(st_data_file, annotation, output_file):
                 genes_replaced.add(gene_name)
             else:
                 # This means the gene name would be duplicated in the output
-                # so we keep the Ensmelb ID.
-                # We assume input Ensemgl ids are unique as we checked this before
+                # so we keep the Ensembl ID.
+                # We assume input Ensembl ids are unique as we checked this before
                 gene_name = gene_id
-                sys.stdout.write("Warning, gene name {} was already matched so the original "
-                                 "Ensembl ID {} will be kept\n".format(gene_name, gene_id))
+                print("Warning, gene name {} was already matched so the original "
+                                 "Ensembl ID {} will be kept".format(gene_name, gene_id))
         except KeyError:
-            sys.stdout.write("Warning, {} was not found in the annotation, "
-                             "so the original Ensembl ID will be kept\n".format(gene_id))
+            print("Warning, {} was not found in the annotation, "
+                             "so the original Ensembl ID will be kept".format(gene_id))
             gene_name = gene_id
         adjustedList.append(gene_name)
 
@@ -81,4 +87,4 @@ if __name__ == '__main__':
     parser.add_argument("--annotation", required=True,
                         help="Path to the annotation file used to generate the data")
     args = parser.parse_args()
-    main(args.counts_matrix, args.annotation, args.output)
+    sys.exit(main(args.counts_matrix, args.annotation, args.output))

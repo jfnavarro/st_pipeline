@@ -1,0 +1,181 @@
+[tool.poetry]
+name = "stpipeline"
+version = "2.0.0"
+description = "ST Pipeline: An automated pipeline for spatial mapping of unique transcripts"
+authors = ["Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>"]
+license = "MIT"
+readme = "README_SHORT.md"
+keywords = ["visium", "analysis", "pipeline", "spatial", "transcriptomics", "toolkit"]
+repository = "https://github.com/jfnavarro/st_pipeline"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Topic :: Software Development",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+    "Environment :: Console",
+]
+
+[tool.poetry.include]
+"requirements.txt" = "requirements.txt"
+"README_SHORT.md" = "README_SHORT.md"
+"LICENSE" = "LICENSE"
+"README.md" = "README.md"
+"tests/**" = "tests"
+"doc/**" = "doc"
+
+[tool.poetry.dependencies]
+python = "^3.9.0, <3.12"
+
+[tool.poetry.extras]
+tests = ["pytest"]
+
+[tool.poetry.scripts]
+st_qa = "scripts.st_qa:main"
+st_pipeline_run = "scripts.st_pipeline_run:main"
+multi_qa = "scripts.multi_qa:main"
+merge_fastq = "scripts.merge_fastq:main"
+filter_gene_type_matrix = "scripts.filter_gene_type_matrix:main"
+convertEnsemblToNames = "scripts.convertEnsemblToNames:main"
+adjust_matrix_coordinates = "scripts.adjust_matrix_coordinates:main"
+
+[tool.poetry.plugins.cython]
+modules = [
+    "stpipeline.common.cdistance",
+    "stpipeline.common.unique_events_parser",
+    "stpipeline.common.filterInputReads"
+]
+
+[tool.poetry.extras]
+test = [
+    "pytest",
+    "pytest-cov"
+    ]
+
+dev = [
+    "tox",
+    "pre-commit",
+    "toml",
+    "ruff"
+    ]
+
+doc = [
+    "mkdocs",
+    "mkdocs-include-markdown-plugin",
+    "mkdocs-material",
+    "mkdocstrings",
+    "mkdocstrings-python",
+    "mkdocs-material-extension",
+    "mkdocs-autorefs",
+    "mike",
+    "setuptools",
+    "virtualenv"
+    ]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+    "makefile",
+    "tests",
+    "docs",
+    "*.yml",
+    "*.yaml",
+    "*.md",
+    "*.rst",
+    "*.ipynb",
+    "requirements.txt"
+]
+
+# Same as Black.
+line-length = 120
+indent-width = 4
+
+# Assume Python 3.9
+target-version = "py39"
+
+[tool.ruff.lint]
+ignore = ["E203","E266","F403","F401"]
+select = ["B","C","E","F","W","B9"]
+pydocstyle.convention = "google"
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 18
+
+[tool.mypy]
+# Ensure we know what we do
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unused_configs = true
+
+# Imports management
+ignore_missing_imports = false
+
+# Ensure full coverage
+disallow_untyped_defs = true
+#disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+# Restrict dynamic typing (a little)
+# e.g. `x: List[Any]` or x: List`
+disallow_any_generics = true
+
+# Show errors codes
+show_error_codes = true
+
+# From functions not declared to return Any
+warn_return_any = true

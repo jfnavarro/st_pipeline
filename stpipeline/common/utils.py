@@ -5,26 +5,29 @@ import threading
 from datetime import datetime
 import os
 import subprocess
-import stat
+from typing import Optional, List
 
 
-def which_program(program):
-    """ 
-    Checks that a program exists and is executable
-    :param program: the program name
-    :type program: str
-    :return: The program name if the program is in the system and is executable
+def which_program(program: str) -> Optional[str]:
+    """
+    Checks if a program exists and is executable.
+
+    Args:
+        program (str): The program name.
+
+    Returns:
+        Optional[str]: The full path to the program if found, otherwise None.
     """
 
-    def is_exe(fpath):
-        return fpath is not None and os.path.exists(fpath) and os.access(fpath, os.X_OK)
+    def is_exe(fpath: str) -> bool:
+        return fpath and os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
-    def ext_candidates(fpath):
+    def ext_candidates(fpath: str):
         yield fpath
         for ext in os.environ.get("PATHEXT", "").split(os.pathsep):
             yield fpath + ext
 
-    fpath, fname = os.path.split(program)
+    fpath, _ = os.path.split(program)
     if fpath:
         if is_exe(program):
             return program
@@ -37,21 +40,27 @@ def which_program(program):
     return None
 
 
-class TimeStamper(object):
+class TimeStamper:
     """
-    Thread safe time stamper 
+    Thread-safe time stamper to generate unique timestamps.
     """
 
     def __init__(self):
         self.lock = threading.Lock()
-        self.prev = None
-        self.count = 0
+        self.prev: Optional[str] = None
+        self.count: int = 0
 
-    def getTimestamp(self):
+    def get_timestamp(self) -> str:
+        """
+        Generates a unique timestamp.
+
+        Returns:
+            str: A unique timestamp.
+        """
         with self.lock:
-            ts = datetime.now()
+            ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
             if ts == self.prev:
-                ts += '.%04d' % self.count
+                ts += f".{self.count:04d}"
                 self.count += 1
             else:
                 self.prev = ts
@@ -59,117 +68,124 @@ class TimeStamper(object):
         return ts
 
 
-def safeRemove(filename):
+def safe_remove(filename: Optional[str]) -> None:
     """
-    Safely remove a file
-    :param filename: the path of the file
-    :type filename: str
+    Safely removes a file if it exists.
+
+    Args:
+        filename (Optional[str]): Path to the file.
     """
-    try:
-        if filename is not None and os.path.isfile(filename):
+    if filename and os.path.isfile(filename):
+        try:
             os.remove(filename)
-    except UnboundLocalError:
-        pass
+        except Exception as e:
+            print(f"Error removing file {filename}: {e}")
 
 
-def safeOpenFile(filename, atrib):
+def safe_open_file(filename: str, mode: str):
     """
-    Safely opens a file
-    For writing mode it removes the previous file if it exits
-    For reading mode it check that the file exists
-    :param filename: the path of the file
-    :param atrib: the file open/write attribute
-    :type filename: str
-    :type atrib: str
-    :return: the file descriptor
-    :raises: IOError
+    Safely opens a file.
+
+    For write mode, removes the previous file if it exists.
+    For read mode, checks that the file exists.
+
+    Args:
+        filename (str): Path to the file.
+        mode (str): File open mode.
+
+    Returns:
+        file: The opened file descriptor.
+
+    Raises:
+        IOError: If the file does not exist for read mode or invalid mode is provided.
     """
-    if filename is None:
-        raise IOError("Error, no valid file name given\n")
-    if atrib.find("w") != -1:
-        safeRemove(filename)
-    elif atrib.find("r") != -1:
-        if not (os.path.isfile(filename) or is_fifo(filename)):
-            raise IOError("Error, the file does not exist {}\n".format(filename))
+    if "w" in mode:
+        safe_remove(filename)
+    elif "r" in mode and not (os.path.isfile(filename) or is_fifo(filename)):
+        raise IOError(f"Error: File does not exist: {filename}")
     else:
-        raise IOError("Error, incorrect attribute {}\n".format(atrib))
+        raise IOError(f"Error: Invalid mode: {mode}")
 
-    return open(filename, atrib)
+    return open(filename, mode)
 
 
-def fileOk(_file):
+def file_ok(file: Optional[str]) -> bool:
     """
-    Checks file exists and is not zero size
-    :param file: a file name
-    :return: True if the file is correct
+    Checks if a file exists and is not empty.
+
+    Args:
+        file (Optional[str]): Path to the file.
+
+    Returns:
+        bool: True if the file exists and is not empty, otherwise False.
     """
-    return _file is not None and os.path.isfile(_file) and not os.path.getsize(_file) == 0
+    return bool(file) and os.path.isfile(file) and os.path.getsize(file) > 0
 
 
-def getSTARVersion():
+def get_star_version() -> str:
     """
-    Tries to find the STAR binary
-    and makes a system call to get its
-    version and return it
+    Gets the version of the STAR binary.
+
+    Returns:
+        str: The version of STAR or "Not available" if not found.
     """
     try:
-        proc = subprocess.Popen(["STAR", "--version"],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                shell=False, close_fds=True)
-        (stdout, errmsg) = proc.communicate()
-        version = stdout
+        proc = subprocess.Popen(
+            ["STAR", "--version"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=False,
+            close_fds=True
+        )
+        stdout, _ = proc.communicate()
+        return stdout.decode().strip()
     except Exception:
-        version = "Not available"
-    return version.rstrip()
+        return "Not available"
 
 
-def getTaggdCountVersion():
+def get_taggd_count_version() -> str:
     """
-    Tries to find the Taggd binary
-    and makes a system call to get its
-    version and return it
+    Gets the version of the Taggd binary.
+
+    Returns:
+        str: The version of Taggd or "Not available" if not found.
     """
-    version = ""
     try:
-        proc = subprocess.Popen(["pip", "show", "taggd"],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                shell=False, close_fds=True)
-        (stdout, errmsg) = proc.communicate()
-        for line in stdout.split("\n"):
-            if line.find("Version:") != -1:
-                version = str(line.split()[-1])
+        proc = subprocess.Popen(
+            ["pip", "show", "taggd"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=False,
+            close_fds=True
+        )
+        stdout, _ = proc.communicate()
+        for line in stdout.decode().splitlines():
+            if "Version:" in line:
+                return line.split()[-1]
     except Exception:
-        version = "Not available"
-    return version.rstrip()
+        pass
+    return "Not available"
 
 
-def getHTSeqCountVersion():
+def get_htseq_count_version() -> str:
     """
-    Tries to find the HTSeqCount binary
-    and makes a system call to get its
-    version and return it
+    Gets the version of the HTSeqCount binary.
+
+    Returns:
+        str: The version of HTSeqCount or "Not available" if not found.
     """
-    version = ""
     try:
-        proc = subprocess.Popen(["pip", "show", "htseq"],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                shell=False, close_fds=True)
-        (stdout, errmsg) = proc.communicate()
-        for line in stdout.split("\n"):
-            if line.find("Version:") != -1:
-                version = str(line.split()[-1])
+        proc = subprocess.Popen(
+            ["pip", "show", "htseq"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=False,
+            close_fds=True
+        )
+        stdout, _ = proc.communicate()
+        for line in stdout.decode().splitlines():
+            if "Version:" in line:
+                return line.split()[-1]
     except Exception:
-        version = "Not available"
-    return version.rstrip()
-
-
-def is_fifo(file_name):
-    """
-    Checks if the file name is a FIFO
-    :param file_name: a file name
-    :return: True if the file is a FIFO
-    """
-    return os.path.exists(file_name) and stat.S_ISFIFO(os.stat(file_name).st_mode)
+        pass
+    return "Not available"

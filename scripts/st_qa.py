@@ -1,17 +1,14 @@
 #! /usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Script that performs a basic Quality Control analysis 
-of a ST dataset (matrix in TSV) format.
+of a Spatial Transcriptomics dataset (matrix in TSV) format.
 
-The script writes stats and generates
-some plots in the folder where it is run. 
+The script writes stats and generates some plots in the folder
+where it is run. 
 
 @Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
-import matplotlib
-
-matplotlib.use('Agg')
+from typing import List
 import pandas as pd
 import numpy as np
 import os.path
@@ -20,67 +17,100 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def scatter_plot(x_points, y_points, output, colors,
-                 title="Scatter", xlabel="X", ylabel="Y"):
-    """ 
-    This function makes a scatter plot of a set of points (x,y).
-    and a given list of color values for each point.
-    The plot will be written to a file.
-    :param x_points: a list of x coordinates
-    :param y_points: a list of y coordinates
-    :param output: the name/path of the output file
-    :param colors: a color value for each point
-    :param title: the title for the plot
-    :param xlabel: the name of the X label
-    :param ylabel: the name of the Y label
-    :raises: RuntimeError
+def scatter_plot(
+    x_points: np.ndarray,
+    y_points: np.ndarray,
+    output: str,
+    colors: np.ndarray,
+    title: str = "Scatter",
+    xlabel: str = "X",
+    ylabel: str = "Y"
+) -> None:
     """
-    # Plot spots with the color class in the tissue image
-    fig = plt.figure()
-    plt.scatter(x_points,
-                y_points,
-                c=colors,
-                cmap=plt.get_cmap("YlOrBr"),
-                edgecolor="none",
-                s=50)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.gca().invert_yaxis()
-    plt.title(title)
-    plt.colorbar()
-    # Tweak spacing to prevent clipping of ylabel
-    plt.subplots_adjust(left=0.15)
-    fig.savefig(output, format='pdf', dpi=300)
+    Creates a scatter plot of a set of points (x, y) with corresponding color values
+    and saves it as a PDF.
 
+    Args:
+        x_points: A 1D array of x coordinates.
+        y_points: A 1D array of y coordinates.
+        output: The file path where the plot will be saved.
+        colors: A 1D array of color values for each point.
+        title: The title of the plot. Defaults to "Scatter".
+        xlabel: The label for the x-axis. Defaults to "X".
+        ylabel: The label for the y-axis. Defaults to "Y".
 
-def histogram(x_points, output, title="Histogram", xlabel="X",
-              ylabel="Y", nbins=50, color="blue"):
-    """ This function generates a simple histogram
-    with the points given as input.
-    :param x_points: a list of x coordinates
-    :param title: the title for the plot
-    :param xlabel: the name of the X label
-    :param ylabel: the name of the X label
-    :param output: the name/path of the output file
-    :param nbins: the number of bings for the histogram
-    :param color: the color for the histogram
+    Returns:
+        None
+
+    Raises:
+        RuntimeError: If an error occurs during plot creation or saving.
     """
-    # Create the plot
-    fig = plt.figure()
-    plt.hist(x_points, bins=nbins, facecolor=color)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
-    # Tweak spacing to prevent clipping of ylabel
-    plt.subplots_adjust(left=0.15)
-    fig.savefig(output, format='pdf', dpi=300)
+    try:
+        fig = plt.figure()
+        plt.scatter(
+            x_points,
+            y_points,
+            c=colors,
+            cmap=plt.get_cmap("YlOrBr"),
+            edgecolor="none",
+            s=50
+        )
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.gca().invert_yaxis()
+        plt.title(title)
+        plt.colorbar()
+        plt.subplots_adjust(left=0.15)
+        fig.savefig(output, format='pdf', dpi=300)
+    except Exception as e:
+        raise RuntimeError(f"Failed to create scatter plot: {e}")
+
+def histogram(
+    x_points: List[int],
+    output: str,
+    title: str = "Histogram",
+    xlabel: str = "X",
+    ylabel: str = "Y",
+    nbins: int = 50,
+    color: str = "blue"
+) -> None:
+    """
+    Generates a histogram with the given data points and saves it as a PDF.
+
+    Args:
+        x_points: A list of x coordinates to be plotted.
+        output: The file path where the plot will be saved.
+        title: The title of the plot. Defaults to "Histogram".
+        xlabel: The label for the x-axis. Defaults to "X".
+        ylabel: The label for the y-axis. Defaults to "Y".
+        nbins: The number of bins for the histogram. Defaults to 50.
+        color: The color of the histogram. Defaults to "blue".
+
+    Returns:
+        None
+
+    Raises:
+        RuntimeError: If an error occurs during plot creation or saving.
+    """
+    try:
+        fig = plt.figure()
+        plt.hist(x_points, bins=nbins, facecolor=color)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.title(title)
+        plt.subplots_adjust(left=0.15)
+        fig.savefig(output, format='pdf', dpi=300)
+    except Exception as e:
+        raise RuntimeError(f"Failed to create histogram: {e}")
 
 
 def main(input_data):
     # Parse the data
     counts_table = pd.read_table(input_data, sep="\t", header=0, index_col=0)
+
     # Get the basename
     input_name = os.path.basename(input_data).split(".")[0]
+
     # Compute some statistics
     total_barcodes = len(counts_table.index)
     total_transcripts = np.sum(counts_table.values, dtype=np.int32)
@@ -102,6 +132,7 @@ def main(input_data):
     average_genes_feature = np.mean(aggregated_gene_counts)
     std_reads_feature = np.std(aggregated_spot_counts)
     std_genes_feature = np.std(aggregated_gene_counts)
+
     # Generate heatmap plots
     histogram(aggregated_spot_counts, nbins=20, xlabel="#Reads", ylabel="#Spots",
               output=input_name + "_hist_reads_spot.pdf", title="Reads per spot")
@@ -120,18 +151,18 @@ def main(input_data):
     plt.clf()
 
     # Generate density plots
-    sns.distplot(aggregated_gene_counts, hist=False, label="Counts > 0")
-    sns.distplot(aggregated_gene_counts_1, hist=False, label="Counts > 1")
-    sns_plot = sns.distplot(aggregated_gene_counts_2,
-                            axlabel="#Genes", hist=False, label="Counts > 2")
+    sns.displot(aggregated_gene_counts, kind="kde", label="Counts > 0")
+    sns.displot(aggregated_gene_counts_1, kind="kde", label="Counts > 1")
+    sns_plot = sns.displot(aggregated_gene_counts_2,
+                            axlabel="#Genes", kind="kde", label="Counts > 2")
     fig = sns_plot.get_figure()
     fig.savefig(input_name + "_density_genes_by_spot.pdf")
     plt.clf()
 
-    sns.distplot(aggregated_gene_gene_counts, hist=False, label="Counts > 0")
-    sns.distplot(aggregated_gene_gene_counts_1, hist=False, label="Counts > 1")
-    sns_plot = sns.distplot(aggregated_gene_gene_counts_2,
-                            axlabel="#Spots", hist=False, label="Counts > 2")
+    sns.displot(aggregated_gene_gene_counts, kind="kde", label="Counts > 0")
+    sns.displot(aggregated_gene_gene_counts_1, kind="kde", label="Counts > 1")
+    sns_plot = sns.displot(aggregated_gene_gene_counts_2,
+                            axlabel="#Spots", kind="kde", label="Counts > 2")
     fig = sns_plot.get_figure()
     fig.savefig(input_name + "_density_spots_by_gene.pdf")
     plt.clf()
@@ -171,8 +202,8 @@ def main(input_data):
 
     # Generate scatter plots
     # Get the spot coordinates
-    x_points = list()
-    y_points = list()
+    x_points = []
+    y_points = []
     for spot in counts_table.index:
         tokens = spot.split("x")
         assert (len(tokens) == 2)

@@ -14,7 +14,8 @@ from stpipeline.common.dataset import createDataset
 from stpipeline.common.saturation import computeSaturation
 from stpipeline.version import version_number
 from taggd.io.barcode_utils import read_barcode_file
-from stpipeline.common.filterInputReads import InputReadsFilter
+from stpipeline.common.filter import filter_input_data
+from stpipeline.common.stats import QAStats
 import logging
 import argparse
 import sys
@@ -24,6 +25,7 @@ import tempfile
 import subprocess
 import pysam
 import inspect
+import re
 
 FILENAMES = {"mapped": "mapped.bam",
              "annotated": "annotated.bam",
@@ -89,7 +91,7 @@ class Pipeline():
         self.filter_GC_content = 90
         self.disable_clipping = False
         self.disable_multimap = False
-        self.umi_cluster_algorithm = "hierarchical"
+        self.umi_cluster_algorithm = "AdjacentBi"
         self.min_intron_size = 1
         self.max_intron_size = 1
         self.umi_filter = False
@@ -114,6 +116,7 @@ class Pipeline():
         self.disable_barcode = False
         self.transcriptome = False
         self.saturation_points = None
+        self.qa_stats = QAStats()
 
     def clean_filenames(self):
         """ Just makes sure to remove
@@ -126,8 +129,6 @@ class Pipeline():
             for file_name in list(FILENAMES_DISCARDED.values()):
                 safeRemove(file_name)
         if self.temp_folder is not None and os.path.isdir(self.temp_folder):
-            safeRemove(os.path.join(self.temp_folder, "unzipped_fastq_fw.fastq"))
-            safeRemove(os.path.join(self.temp_folder, "unzipped_fastq_rv.fastq"))
             star_temp1 = os.path.join(self.temp_folder, "_STARgenome")
             star_temp2 = os.path.join(self.temp_folder, "_STARpass1")
             if os.path.isdir(star_temp1):
@@ -153,12 +154,12 @@ class Pipeline():
             raise RuntimeError(error)
 
         if self.ref_annotation is None and not self.transcriptome:
-            error = "Error, annotation file is missing but the transcriptome option is disabled\n"
+            error = "Error, annotation file is missing but the transcriptome option is disabled"
             self.logger.error(error)
             raise RuntimeError(error)
 
         if self.ref_map is None and not self.disable_mapping:
-            error = "Error, genome reference is missing but the disable_mapping option is disabled\n"
+            error = "Error, genome reference is missing but the disable_mapping option is disabled"
             self.logger.error(error)
             raise RuntimeError(error)
 
@@ -199,19 +200,18 @@ class Pipeline():
 
         if not self.disable_umi and self.umi_filter:
             # Check template validity
-            import re
             regex = "[^ACGTURYSWKMBDHVN]"
             if re.search(regex, self.umi_filter_template) is not None:
-                error = "Error invalid UMI template given {}.\n".format(self.umi_filter_template)
+                error = "Error invalid UMI template given {}.".format(self.umi_filter_template)
                 self.logger.error(error)
                 raise RuntimeError(error)
-                # Check template length
+            # Check template length
             if len(self.umi_filter_template) != (self.umi_end_position - self.umi_start_position):
                 error = "Error the UMI template given does not have the same " \
-                        "length as the UMIs {}.\n".format(self.umi_filter_template)
+                        "length as the UMIs {}.".format(self.umi_filter_template)
                 self.logger.error(error)
                 raise RuntimeError(error)
-                # Convert the template into a reg-exp
+            # Convert the template into a reg-exp
             temp_reg_exp = ""
             for ele in self.umi_filter_template:
                 if ele == "W":
@@ -269,8 +269,8 @@ class Pipeline():
             self.logger.error(error)
             raise RuntimeError(error)
 
-            # Test the presence of the scripts
-        required_scripts = set(['STAR'])
+        # Test the presence of the required tools
+        required_scripts = set(["STAR"])
         unavailable_scripts = set()
         for script in required_scripts:
             if which_program(script) is None:
@@ -281,14 +281,11 @@ class Pipeline():
             self.logger.error(error)
             raise RuntimeError(error)
 
-    def createParameters(self, parser):
+    def createParameters(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         """
-        Adds the pipeline's parameters to a given
-        Argparse object
-        :param parser: the Argparse object
-        :return: a new Argparse object with the parameters
+        Adds the pipeline"s parameters to a given
+        Argparse object and returns it.
         """
-
         class readable_dir(argparse.Action):
             def __call__(self, parser, namespace, values, option_string=None):
                 prospective_dir = values
@@ -299,168 +296,168 @@ class Pipeline():
                 else:
                     raise argparse.ArgumentTypeError("{0} is not a readable dir".format(prospective_dir))
 
-        parser.add_argument('fastq_files', nargs=2)
-        parser.add_argument('--ids',
+        parser.add_argument("fastq_files", nargs=2)
+        parser.add_argument("--ids",
                             metavar="[FILE]",
                             required=False,
-                            help='Path to the file containing the map of barcodes to the array coordinates')
-        parser.add_argument('--ref-map',
+                            help="Path to the file containing the map of barcodes to the array coordinates")
+        parser.add_argument("--ref-map",
                             metavar="[FOLDER]",
                             action=readable_dir,
                             required=False,
                             help="Path to the folder with the STAR index "
                                  "for the genome that you want to use as reference")
-        parser.add_argument('--ref-annotation',
+        parser.add_argument("--ref-annotation",
                             metavar="[FILE]",
                             required=False,
                             help="Path to the reference annotation file "
                                  "(GTF or GFF format is required) to be used to annotated the mapped reads")
-        parser.add_argument('--expName',
+        parser.add_argument("--expName",
                             type=str,
                             metavar="[STRING]",
                             required=True,
                             help="Name of the dataset (The output files will prepend this name)")
-        parser.add_argument('--contaminant-index',
+        parser.add_argument("--contaminant-index",
                             metavar="[FOLDER]",
                             action=readable_dir,
                             default=None,
                             help="Path to the folder with a STAR index with a contaminant genome reference.\n"
                                  "Reads will be filtered using the specified genome and mapping reads will be discarded")
-        parser.add_argument('--no-clean-up',
+        parser.add_argument("--no-clean-up",
                             action="store_false",
                             default=True,
                             help="Do not remove temporary/intermediary files (useful for debugging)")
-        parser.add_argument('--verbose',
+        parser.add_argument("--verbose",
                             action="store_true",
                             default=False,
                             help="Show extra information on the log file")
-        parser.add_argument('--threads',
+        parser.add_argument("--threads",
                             default=4,
                             metavar="[INT]",
                             type=int,
                             choices=range(1, 81),
                             help="Number of threads to use (default: %(default)s)")
-        parser.add_argument('--bin-path',
+        parser.add_argument("--bin-path",
                             metavar="[FOLDER]",
                             action=readable_dir,
                             default=None,
                             help="Path to folder where binary executables are present (system path by default)")
-        parser.add_argument('--log-file',
+        parser.add_argument("--log-file",
                             metavar="[STR]",
                             default=None,
                             help="Name of the file that we want to use to store the logs (default output to screen)")
-        parser.add_argument('--output-folder',
+        parser.add_argument("--output-folder",
                             metavar="[FOLDER]",
                             action=readable_dir,
                             default=None,
-                            help='Path of the output folder')
-        parser.add_argument('--temp-folder',
+                            help="Path of the output folder")
+        parser.add_argument("--temp-folder",
                             metavar="[FOLDER]",
                             action=readable_dir,
                             default=None,
-                            help='Path of the location for temporary files')
-        parser.add_argument('--keep-discarded-files',
+                            help="Path of the location for temporary files")
+        parser.add_argument("--keep-discarded-files",
                             action="store_true",
                             default=False,
-                            help='Keep files with discarded reads in every step')
-        parser.add_argument('--qual-64',
+                            help="Keep files with discarded reads in every step")
+        parser.add_argument("--qual-64",
                             action="store_true",
                             default=False,
                             help="Use phred-64 quality instead of phred-33(default) in the quality trimming step")
-        parser.add_argument('--min-length-qual-trimming',
+        parser.add_argument("--min-length-qual-trimming",
                             default=20,
                             metavar="[INT]",
                             type=int,
                             choices=range(5, 151),
                             help="Minimum length of the reads after trimming, "
                                  "shorter reads will be discarded (default: %(default)s)")
-        parser.add_argument('--min-quality-trimming',
+        parser.add_argument("--min-quality-trimming",
                             default=20,
                             metavar="[INT]",
                             type=int,
                             choices=range(1, 61),
                             help="Minimum phred quality a base must have in order to be kept "
                                  "in the quality trimming step (default: %(default)s)")
-        parser.add_argument('--remove-polyA',
+        parser.add_argument("--remove-polyA",
                             default=10,
                             metavar="[INT]",
                             type=int,
                             choices=range(0, 35),
                             help="Remove PolyA stretches of the given length from R2 "
                                  "(Use 0 to disable it) (default: %(default)s)")
-        parser.add_argument('--remove-polyT',
+        parser.add_argument("--remove-polyT",
                             default=10,
                             metavar="[INT]",
                             type=int,
                             choices=range(0, 35),
                             help="Remove PolyT stretches of the given length from R2 "
                                  "(Use 0 to disable it) (default: %(default)s)")
-        parser.add_argument('--remove-polyG',
+        parser.add_argument("--remove-polyG",
                             default=10,
                             metavar="[INT]",
                             type=int,
                             choices=range(0, 35),
                             help="Remove PolyG stretches of the given length from R2 "
                                  "(Use 0 to disable it) (default: %(default)s)")
-        parser.add_argument('--remove-polyC',
+        parser.add_argument("--remove-polyC",
                             default=10,
                             metavar="[INT]",
                             type=int,
                             choices=range(0, 35),
                             help="Remove PolyC stretches of the given length from R2 "
                                  "(Use 0 to disable it) (default: %(default)s)")
-        parser.add_argument('--remove-polyN',
+        parser.add_argument("--remove-polyN",
                             default=10,
                             metavar="[INT]",
                             type=int,
                             choices=range(0, 35),
                             help="Remove PolyN stretches of the given length from R2 "
                                  "(Use 0 to disable it) (default: %(default)s)")
-        parser.add_argument('--homopolymer-mismatches',
+        parser.add_argument("--homopolymer-mismatches",
                             default=0,
                             metavar="[INT]",
                             type=int,
                             choices=range(0, 9),
                             help="Number of mismatches allowed when removing "
                                  "homopolymers (A, T, G, C or N) (default: %(default)s)")
-        parser.add_argument('--filter-AT-content',
+        parser.add_argument("--filter-AT-content",
                             default=90,
                             metavar="[INT%]",
                             type=int,
                             choices=range(0, 101),
                             help="Discards reads whose number of A and T bases in total are more "
                                  "or equal than the percentage given as input (0-100) (default: %(default)s)")
-        parser.add_argument('--filter-GC-content',
+        parser.add_argument("--filter-GC-content",
                             default=90,
                             metavar="[INT%]",
                             type=int,
                             choices=range(0, 100),
                             help="Discards reads whose number of G and C bases in total are more "
                                  "or equal the percentage given as input (0-100) (default: %(default)s)")
-        parser.add_argument('--mapping-rv-trimming',
+        parser.add_argument("--mapping-rv-trimming",
                             default=0,
                             metavar="[INT]",
                             type=int,
                             choices=range(0, 51),
                             help="Number of bases to trim in the reverse reads (R2) for "
-                                 "the mapping step (5' end) (default: %(default)s)")
-        parser.add_argument('--inverse-mapping-rv-trimming',
+                                 "the mapping step (5" end) (default: %(default)s)")
+        parser.add_argument("--inverse-mapping-rv-trimming",
                             default=0,
                             type=int,
                             metavar="[INT]",
                             choices=range(0, 51),
                             help="Number of bases to trim in the reverse reads (R2) for "
-                                 "the mapping step (3' end) (default: %(default)s)")
-        parser.add_argument('--disable-multimap',
+                                 "the mapping step (3" end) (default: %(default)s)")
+        parser.add_argument("--disable-multimap",
                             action="store_true",
                             default=False,
                             help="If activated, multiple aligned reads obtained during mapping will be all discarded. "
                                  "Otherwise the highest scored one will be kept")
-        parser.add_argument('--disable-clipping',
+        parser.add_argument("--disable-clipping",
                             action="store_true",
                             default=False,
                             help="If activated, disable soft-clipping (local alignment) in the mapping step")
-        parser.add_argument('--min-intron-size',
+        parser.add_argument("--min-intron-size",
                             default=1,
                             metavar="[INT]",
                             type=int,
@@ -468,7 +465,7 @@ class Pipeline():
                             help="Minimum allowed intron size when searching for splice variants with STAR\n"
                                  "Splices alignments are disabled by default (=1) but to turn it on set this parameter\n"
                                  "to a bigger number, for example 10 or 20. (default: %(default)s)")
-        parser.add_argument('--max-intron-size',
+        parser.add_argument("--max-intron-size",
                             default=1,
                             metavar="[INT]",
                             type=int,
@@ -476,11 +473,11 @@ class Pipeline():
                             help="Maximum allowed intron size when searching for splice variants with STAR\n"
                                  "Splices alignments are disabled by default (=1) but to turn it on set this parameter\n"
                                  "to a big number, for example 10000 or 100000. (default: %(default)s)")
-        parser.add_argument('--star-two-pass-mode',
+        parser.add_argument("--star-two-pass-mode",
                             default=False,
                             action="store_true",
                             help="Activates the 2-pass mode in STAR to improve mapping accuracy")
-        parser.add_argument('--star-genome-loading',
+        parser.add_argument("--star-genome-loading",
                             default="NoSharedMemory",
                             metavar="[STRING]",
                             type=str,
@@ -488,38 +485,38 @@ class Pipeline():
                             help="Similar to the STAR option --genomeLoad. It allows to load the genome index\n"
                                  "into memory so it can easily be shared by other jobs to save loading time.\n"
                                  "Read the STAR manual for more info on this. (default: %(default)s)")
-        parser.add_argument('--star-sort-mem-limit',
+        parser.add_argument("--star-sort-mem-limit",
                             default=0,
                             type=int,
                             help="The maximum available RAM for sorting BAM during mapping with STAR."
                                  "\nDefault is 0 which means that it will be set to the genome index size")
-        parser.add_argument('--demultiplexing-mismatches',
+        parser.add_argument("--demultiplexing-mismatches",
                             default=2,
                             metavar="[INT]",
                             type=int,
                             choices=range(0, 31),
                             help="Number of allowed mismatches when demultiplexing the reads "
                                  "against the barcodes with TaggD (default: %(default)s)")
-        parser.add_argument('--demultiplexing-kmer',
+        parser.add_argument("--demultiplexing-kmer",
                             default=6,
                             metavar="[INT]",
                             type=int,
                             choices=range(1, 51),
                             help="KMer size to use when demultiplexing against the "
                                  "barcodes with TaggD (default: %(default)s)")
-        parser.add_argument('--demultiplexing-overhang',
+        parser.add_argument("--demultiplexing-overhang",
                             default=0,
                             metavar="[INT]",
                             type=int,
                             choices=range(0, 11),
                             help="Extra flanking bases added on each side of the barcode when demultiplexing against "
                                  "the barcodes with TaggD (default: %(default)s)")
-        parser.add_argument('--demultiplexing-start',
+        parser.add_argument("--demultiplexing-start",
                             default=0,
                             metavar="[INT]",
                             type=int,
                             help="Start position of the IDs (Barcodes) in R1 (counting from 0) (default: %(default)s)")
-        parser.add_argument('--demultiplexing-metric',
+        parser.add_argument("--demultiplexing-metric",
                             default="Subglobal",
                             metavar="[STRING]",
                             type=str,
@@ -532,8 +529,8 @@ class Pipeline():
                             action="store_true",
                             help="When multiple ambiguous hits with same score are "
                                  "found in the demultiplexing step, keep only one (random).")
-        parser.add_argument('--demultiplexing-trim-sequences',
-                            nargs='+',
+        parser.add_argument("--demultiplexing-trim-sequences",
+                            nargs="+",
                             type=int,
                             default=None,
                             help="Trim the barcodes in the input file when doing demultiplexing.\n"
@@ -544,43 +541,42 @@ class Pipeline():
                                  "This is useful when having a barcode composed of multiple sequences in the read"
                                  "or when the barcode needs to be trimmed out.\n"
                                  "Trimmng sequences can be given several times.")
-        parser.add_argument('--htseq-mode',
+        parser.add_argument("--htseq-mode",
                             default="intersection-nonempty",
                             type=str,
                             metavar="[STRING]",
                             choices=["union", "intersection-nonempty", "intersection-strict"],
                             help="Mode of annotation when using htseq-count. "
                                  "Modes = {union, intersection-nonempty(default), intersection-strict}")
-        parser.add_argument('--htseq-no-ambiguous',
+        parser.add_argument("--htseq-no-ambiguous",
                             action="store_true",
                             default=False,
                             help="When using htseq-count discard reads annotating ambiguous genes (default False)")
-        parser.add_argument('--htseq-features',
-                            nargs='+',
+        parser.add_argument("--htseq-features",
+                            nargs="+",
                             default=["exon"],
                             type=str,
                             help="Which feature types to use from the GTF/GFF file in the annotation.\n "
                                  "Can be given more than one type (default exon)")
-        parser.add_argument('--strandness',
+        parser.add_argument("--strandness",
                             default="yes",
                             type=str,
                             metavar="[STRING]",
                             choices=["no", "yes", "reverse"],
                             help="What strandness mode to use when annotating "
                                  "with htseq-count [no, yes(default), reverse]")
-        parser.add_argument('--include-non-annotated',
+        parser.add_argument("--include-non-annotated",
                             action="store_true",
                             default=False,
                             help="Do not discard un-annotated reads (they will be labeled __no_feature)")
-        parser.add_argument('--umi-cluster-algorithm',
+        parser.add_argument("--umi-cluster-algorithm",
                             default="AdjacentBi",
                             metavar="[STRING]",
                             type=str,
-                            choices=["naive", "hierarchical", "Adjacent", "AdjacentBi", "Affinity"],
+                            choices=["hierarchical", "Adjacent", "AdjacentBi"],
                             help="Type of clustering algorithm to use when performing UMIs duplicates removal.\n"
-                                 "Options = {naive, hierarchical, Affinity, Adjacent and AdjacentBi(default)}\n"
-                                 "Note that for the affinity method the umi allowed mismatches parameter will be ignored.")
-        parser.add_argument('--umi-allowed-mismatches',
+                                 "Options = {hierarchical, Adjacent and AdjacentBi(default)}.")
+        parser.add_argument("--umi-allowed-mismatches",
                             default=1,
                             metavar="[INT]",
                             type=int,
@@ -588,34 +584,34 @@ class Pipeline():
                             help="Number of allowed mismatches (hamming distance) "
                                  "that UMIs of the same gene-spot must have in order to "
                                  "cluster together (default: %(default)s)")
-        parser.add_argument('--umi-start-position',
+        parser.add_argument("--umi-start-position",
                             default=18,
                             metavar="[INT]",
                             type=int,
                             help="Position in R1 (base wise) of the first base of the "
                                  "UMI (starting by 0) (default: %(default)s)")
-        parser.add_argument('--umi-end-position',
+        parser.add_argument("--umi-end-position",
                             default=27,
                             metavar="[INT]",
                             type=int,
                             help="Position in R1 (base wise) of the last base of the "
                                  "UMI (starting by 1) (default: %(default)s)")
-        parser.add_argument('--umi-filter',
+        parser.add_argument("--umi-filter",
                             action="store_true",
                             default=False,
                             help="Enables the UMI quality filter based on the template given in --umi-filter-template")
-        parser.add_argument('--umi-filter-template',
+        parser.add_argument("--umi-filter-template",
                             default="WSNNWSNNV",
                             type=str,
                             metavar="[STRING]",
                             help="UMI template (IUPAC nucleotide code) for the UMI filter, default = WSNNWSNNV")
-        parser.add_argument('--umi-quality-bases',
+        parser.add_argument("--umi-quality-bases",
                             default=6,
                             metavar="[INT]",
                             type=int,
                             choices=range(0, 13),
                             help="Maximum number of low quality bases allowed in an UMI (default: %(default)s)")
-        parser.add_argument('--umi-counting-offset',
+        parser.add_argument("--umi-counting-offset",
                             default=250,
                             metavar="[INT]",
                             type=int,
@@ -626,14 +622,14 @@ class Pipeline():
                                  "amplification artifacts. This parameters allows to define an "
                                  "offset window from where to count unique UMIs. You can set it to a very "
                                  "high value +9999 to count unique UMIs for the whole gene (default: %(default)s)")
-        parser.add_argument('--compute-saturation',
+        parser.add_argument("--compute-saturation",
                             action="store_true",
                             default=False,
                             help="Performs a saturation curve computation by sub-sampling the annotated reads, computing "
                                  "unique UMIs and adding the stats to the log file (this can be used to plot saturation curves)")
         parser.add_argument("--saturation-points",
                             default=None,
-                            nargs='+',
+                            nargs="+",
                             type=int,
                             help="Saturation points for the saturation curve computation can be "
                                  "provided instead of using default values.\n"
@@ -663,10 +659,10 @@ class Pipeline():
                             action="store_true",
                             help="Use this flag if you want to use transcriptome instead of a genome, the gene tag will be "
                                  "obtained from the transcriptome file")
-        parser.add_argument('--version', action='version', version='%(prog)s ' + str(version_number))
+        parser.add_argument("--version", action="version", version="%(prog)s " + str(version_number))
         return parser
 
-    def load_parameters(self, options):
+    def load_parameters(self, options: argparse.ArgumentParser):
         """
         Load the input parameters from the argparse object given as parameter
         :param options: a Argparse object
@@ -750,7 +746,7 @@ class Pipeline():
             self.saturation_points = [int(p) for p in options.saturation_points]
         # Assign class parameters to the QA stats object
         attributes = inspect.getmembers(self, lambda a: not (inspect.isroutine(a)))
-        attributes_filtered = [a for a in attributes if not (a[0].startswith('__') and a[0].endswith('__'))]
+        attributes_filtered = [a for a in attributes if not (a[0].startswith("__") and a[0].endswith("__"))]
         # Assign general parameters to the qa_stats object
         qa_stats.input_parameters = attributes_filtered
         qa_stats.annotation_tool = "htseq-count {}".format(getHTSeqCountVersion())
@@ -793,7 +789,7 @@ class Pipeline():
                 self.logger.info("TaggD multiple hits keep one (random) is enabled")
             if self.taggd_trim_sequences is not None:
                 self.logger.info(
-                    "TaggD trimming from the barcodes " + '-'.join(str(x) for x in self.taggd_trim_sequences))
+                    "TaggD trimming from the barcodes " + "-".join(str(x) for x in self.taggd_trim_sequences))
         if not self.disable_mapping:
             self.logger.info("Mapping reverse trimming: {}".format(self.trimming_rv))
             self.logger.info("Mapping inverse reverse trimming: {}".format(self.inverse_trimming_rv))
@@ -813,14 +809,14 @@ class Pipeline():
             self.logger.info("Annotation tool: HTSeq")
             self.logger.info("Annotation mode: {}".format(self.htseq_mode))
             self.logger.info("Annotation strandness {}".format(self.strandness))
-            self.logger.info("Annotation feature types {}".format(','.join(self.htseq_features)))
+            self.logger.info("Annotation feature types {}".format(",".join(self.htseq_features)))
             if self.include_non_annotated:
                 self.logger.info("Including non annotated reads in the output")
         if self.compute_saturation:
             self.logger.info("Computing saturation curve with several sub-samples...")
             if self.saturation_points is not None:
                 self.logger.info(
-                    "Using the following points {}".format(' '.join(str(p) for p in self.saturation_points)))
+                    "Using the following points {}".format(" ".join(str(p) for p in self.saturation_points)))
         if not self.disable_umi:
             self.logger.info("UMIs start position: {}".format(self.umi_start_position))
             self.logger.info("UMIs end position: {}".format(self.umi_end_position))
@@ -876,47 +872,8 @@ class Pipeline():
         start_exe_time = globaltime.getTimestamp()
         self.logger.info("Starting the pipeline: {}".format(start_exe_time))
 
-        # Check if input fastq files are compressed
-        # TODO reliable way to test if files are compressed (something more robust than just file name endings)
-        try:
-            temp_r1_fifo_name = os.path.join(self.temp_folder, "R1_TMP_FIFO.fq")
-            temp_r2_fifo_name = os.path.join(self.temp_folder, "R2_TMP_FIFO.fq")
-
-            if self.fastq_fw.endswith(".gz"):
-                r1_decompression_command = "gzip --decompress --stdout {} > {}".format(
-                    self.fastq_fw, temp_r1_fifo_name)
-            elif self.fastq_fw.endswith(".bz2"):
-                r1_decompression_command = "bzip2 --decompress --stdout {} > {}".format(
-                    self.fastq_fw, temp_r1_fifo_name)
-            else:
-                r1_decompression_command = None
-
-            if self.fastq_rv.endswith(".gz"):
-                r2_decompression_command = "gzip --decompress --stdout {} > {}".format(
-                    self.fastq_rv, temp_r2_fifo_name)
-            elif self.fastq_rv.endswith(".bz2"):
-                r2_decompression_command = "bzip2 --decompress --stdout {} > {}".format(
-                    self.fastq_rv, temp_r2_fifo_name)
-            else:
-                r2_decompression_command = None
-
-            if r1_decompression_command:
-                os.mkfifo(temp_r1_fifo_name)
-                subprocess.Popen(r1_decompression_command, shell=True, preexec_fn=os.setsid)
-                self.fastq_fw = temp_r1_fifo_name
-
-            if r2_decompression_command:
-                os.mkfifo(temp_r2_fifo_name)
-                subprocess.Popen(r2_decompression_command, shell=True, preexec_fn=os.setsid)
-                self.fastq_rv = temp_r2_fifo_name
-
-        except Exception as e:
-            self.logger.error("Error while starting the decompression of "
-                              "GZIP/BZIP2 input files {0} {1}".format(self.fastq_fw, self.fastq_rv))
-            raise e
-
         # =================================================================
-        # STEP: FILTERING 
+        # STEP: FILTERING
         # Applies different filters : sanity, quality, short, adaptors, UMI...
         # =================================================================
         # Get the barcode length
@@ -924,7 +881,7 @@ class Pipeline():
         if not self.disable_trimming:
             self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
             try:
-                InputReadsFilter(self.fastq_fw,
+                stats = filter_input_data(self.fastq_fw,
                                  self.fastq_rv,
                                  FILENAMES["quality_trimmed_R2"],
                                  FILENAMES_DISCARDED[
@@ -950,14 +907,9 @@ class Pipeline():
                                  self.overhang,
                                  self.disable_umi,
                                  self.disable_barcode)
+                # TODO update qa_stats
             except Exception:
                 raise
-
-            # After filtering is completed remove the temporary FIFOs
-            if is_fifo(temp_r1_fifo_name):
-                os.remove(temp_r1_fifo_name)
-            if is_fifo(temp_r2_fifo_name):
-                os.remove(temp_r2_fifo_name)
 
         # =================================================================
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. typically bacterial rRNA
@@ -1062,7 +1014,7 @@ class Pipeline():
         if not self.disable_barcode:
             self.logger.info("Starting barcode demultiplexing {}".format(globaltime.getTimestamp()))
             try:
-                barcodeDemultiplexing(FILENAMES["mapped"],
+                stats = barcodeDemultiplexing(FILENAMES["mapped"],
                                       self.ids,
                                       self.allowed_missed,
                                       self.allowed_kmer,
@@ -1073,7 +1025,8 @@ class Pipeline():
                                       self.threads,
                                       FILENAMES["demultiplexed_prefix"],  # Prefix for output files
                                       self.keep_discarded_files)
-                # TaggD does not output the BAM file sorted
+                # TODO update qa_stats.reads_after_demultiplexing
+                # TODO TaggD does not output the BAM file sorted
                 command = "samtools sort -T {}/sort_bam -@ {} -o {} {}".format(self.temp_folder,
                                                                                self.threads,
                                                                                FILENAMES["demultiplexed_matched"],
@@ -1082,7 +1035,7 @@ class Pipeline():
             except Exception:
                 raise
 
-                # =================================================================
+        # =================================================================
         # STEP: annotate using htseq-count or the transcriptome
         # =================================================================
         if not self.disable_annotation:
@@ -1090,7 +1043,7 @@ class Pipeline():
                 "mapped"]
             if self.transcriptome:
                 self.logger.info("Assigning gene names from transcriptome {}".format(globaltime.getTimestamp()))
-                # Iterate the BAM file to set the gene name as the transcriptome's entry
+                # Iterate the BAM file to set the gene name as the transcriptome"s entry
                 flag_read = "rb"
                 flag_write = "wb"
                 infile = pysam.AlignmentFile(input_file, flag_read)
@@ -1105,7 +1058,7 @@ class Pipeline():
             else:
                 self.logger.info("Starting annotation {}".format(globaltime.getTimestamp()))
                 try:
-                    annotateReads(input_file,
+                    stats = annotateReads(input_file,
                                   self.ref_annotation,
                                   FILENAMES["annotated"],
                                   FILENAMES_DISCARDED["annotated_discarded"] if self.keep_discarded_files else None,
@@ -1114,6 +1067,7 @@ class Pipeline():
                                   self.htseq_no_ambiguous,
                                   self.include_non_annotated,
                                   self.htseq_features)
+                    # TODO update qa_stats.reads_after_annotation
                 except Exception:
                     raise
 
@@ -1145,8 +1099,7 @@ class Pipeline():
         if os.path.isfile(FILENAMES["annotated"]):
             self.logger.info("Starting creating dataset {}".format(globaltime.getTimestamp()))
             try:
-                createDataset(FILENAMES["annotated"],
-                              qa_stats,  # Passed as reference
+                stats = createDataset(FILENAMES["annotated"],
                               self.ref_annotation,
                               self.umi_cluster_algorithm,
                               self.umi_allowed_mismatches,
@@ -1155,6 +1108,8 @@ class Pipeline():
                               self.output_folder,
                               self.expName,
                               True)  # Verbose
+                # TODO update qa_stats
+                
             except Exception:
                 raise
 
@@ -1163,8 +1118,7 @@ class Pipeline():
         # =================================================================
         # Write stats to JSON
         print(qa_stats)
-        # TODO this is giving problems in Python3
-        # qa_stats.writeJSON(os.path.join(self.output_folder, self.expName + "_qa_stats.json"))
+        qa_stats.writeJSON(os.path.join(self.output_folder, self.expName + "_qa_stats.json"))
 
         finish_exe_time = globaltime.getTimestamp()
         total_exe_time = finish_exe_time - start_exe_time

@@ -47,7 +47,7 @@ Basically what the ST pipeline does is:
     - Discard reads with a minimum number of bases of that failed any of the checks above
 - Contamimant filter e.x. rRNA genome (Optional)
 - Mapping with STAR (only read 2)
-- Demultiplexing with [Taggd](https://github.com/SpatialTranscriptomicsResearch/taggd) (only read 1)
+- Demultiplexing with [Taggd](https://github.com/jfnavarro/taggd) (only read 1)
 - Keep reads (read 2) that contain a valid barcode and are correctly mapped
 - Annotate the reads with htseq-count (optional)
 - Group annotated reads by barcode(spot position) and gene to get a read count

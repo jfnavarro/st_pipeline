@@ -1,10 +1,10 @@
 #! /usr/bin/env python
-# -*- coding: utf-8 -*-
-""" 
+"""
 Script that creates multiple QC plots and stats
-from multiple Spatial Transcriptomics datasets. 
-Useful when one have several consecutive sections
-or sections from the same model. 
+from multiple Spatial Transcriptomics datasets in TSV format.
+
+This is useful when one have several consecutive sections
+or sections from the same model.
 
 The tool generates:
 
@@ -26,6 +26,7 @@ from scipy.stats.stats import pearsonr
 from sklearn.decomposition import PCA
 import os
 import sys
+from typing import List
 
 color_map = ["red", "green", "blue", "orange", "cyan", "yellow", "orchid",
              "saddlebrown", "darkcyan", "gray", "darkred", "darkgreen", "darkblue",
@@ -33,43 +34,60 @@ color_map = ["red", "green", "blue", "orange", "cyan", "yellow", "orchid",
              "aliceblue", "plum", "cadetblue", "coral", "olive", "khaki", "lightsalmon"]
 
 
-def create_violin_plot(data, pos, labels, title, fontsize, outfile):
+def create_violin_plot(data: List[List[float]], pos: List[int], title: str, outfile: str) -> None:
+    """
+    Creates a violin plot and saves it as a PDF.
+
+    Args:
+        data: The data to plot, where each sublist represents a dataset.
+        pos: Positions of the datasets on the x-axis.
+        title: The title of the plot.
+        outfile: The file path where the plot will be saved.
+
+    Returns:
+        None
+    """
     fig, ax = plt.subplots(figsize=(14, 10))
     fig.subplots_adjust(left=0.075, right=0.95, top=0.9, bottom=0.25)
     ax.violinplot(data, pos, showmeans=True, showextrema=True, showmedians=True)
-    # ax.set_xticklabels(labels, rotation=90, fontsize=6)
-    # ax.set_xlim(0.5, len(labels) + 0.5)
     ax.set_axisbelow(True)
     ax.set_title(title)
-    # ax.get_xaxis().set_tick_params(direction='out')
-    # ax.xaxis.set_ticks_position('bottom')
     fig.savefig(outfile, format='pdf', dpi=90)
 
+def create_pca_plot(data: np.ndarray, labels: List[str], title: str, outfile: str) -> None:
+    """
+    Creates a PCA scatter plot and saves it as a PDF.
 
-def create_pca_plot(data, labels, title, outfile):
+    Args:
+        data: A 2D array where each row represents a data point, and the columns are the PCA components.
+        labels: Labels corresponding to the data points for the legend.
+        title: The title of the plot.
+        outfile: The file path where the plot will be saved.
+
+    Returns:
+        None
+    """
     fig, ax = plt.subplots(figsize=(14, 10))
-    class_colours = [color_map[i] for i in range(0, len(data))]
-    ax.scatter(data[:, 0], data[:, 1], s=20, c=class_colours,
-               edgecolor="none")
+    class_colours = [color_map[i] for i in range(len(data))]
+    ax.scatter(data[:, 0], data[:, 1], s=20, c=class_colours, edgecolor="none")
     ax.set_xlabel("PC1")
     ax.set_ylabel("PC2")
-    ax.set_title("PCA scatter (sum. gene counts)")
-    recs = list()
-    for i in range(0, len(class_colours)):
-        recs.append(mpatches.Rectangle((0, 0), 1, 1, fc=class_colours[i]))
+    ax.set_title(title)
+    recs = [mpatches.Rectangle((0, 0), 1, 1, fc=color) for color in class_colours]
     ax.legend(recs, labels, loc=4, prop={'size': 6})
     fig.savefig(outfile, format='pdf', dpi=90)
 
 
-def main(counts_table_files, outdir, use_log):
+
+def main(counts_table_files: List[str], outdir: str, use_log: bool) -> int:
     if len(counts_table_files) == 0 or \
             any([not os.path.isfile(f) for f in counts_table_files]):
-        sys.stderr.write("Error, input file/s not present or invalid format\n")
-        sys.exit(1)
+        print("Error, input file(s) not present or invalid format")
+        return 1
 
     if len(counts_table_files) < 2:
-        sys.stderr.write("Error, minimum number of input matrices is 2\n")
-        sys.exit(1)
+        print("Error, minimum number of input datasets is 2")
+        return 1
 
     if outdir is None or not os.path.isdir(outdir):
         outdir = os.getcwd()
@@ -106,7 +124,8 @@ def main(counts_table_files, outdir, use_log):
         violin_data_pos.append(i + 1)
         genes_counts.loc[name, dataset.columns] = dataset.sum(axis=0)
     genes_counts.fillna(0, inplace=True)
-    # Make the violin plots
+
+    # Create the violin plots
     create_violin_plot(violin_data_reads, violin_data_pos, violin_data_names,
                        "Total reads", 6, os.path.join(outdir, "violin_plot_reads.pdf"))
     create_violin_plot(violin_data_genes, violin_data_pos, violin_data_names,
@@ -125,6 +144,7 @@ def main(counts_table_files, outdir, use_log):
     genes_correlations = pd.DataFrame(index=counts_table_files, columns=counts_table_files)
     genes_correlations.fillna(0, inplace=True)
 
+    # Compute and create gene correlation plots
     n_col = len(counts_table_files)
     n_row = len(counts_table_files)
     plt.rcParams.update({'font.size': 6})
@@ -164,6 +184,4 @@ if __name__ == '__main__':
                         help="Convert counts to log space for the correlation")
     args = parser.parse_args()
 
-    main(args.counts_matrix_files,
-         args.outdir,
-         args.use_log_scale)
+    sys.exit(main(args.counts_matrix_files, args.outdir, args.use_log_scale))

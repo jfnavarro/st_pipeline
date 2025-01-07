@@ -34,10 +34,10 @@ import os
 import pandas as pd
 
 
-def main(counts_matrix, coordinates_file, update_coordinates, outfile):
+def main(counts_matrix: str, coordinates_file: str, update_coordinates: bool, outfile: str) -> int:
     if not os.path.isfile(counts_matrix) or not os.path.isfile(coordinates_file):
-        sys.stderr.write("Error, input file not present or invalid format\n")
-        sys.exit(1)
+        print("Error, input file(s) not present or invalid format")
+        return 1
 
     if not outfile:
         outfile = "adjusted_{}".format(os.path.basename(counts_matrix))
@@ -56,6 +56,7 @@ def main(counts_matrix, coordinates_file, update_coordinates, outfile):
                 if len(tokens) == 7 and not bool(tokens[6]):
                     continue
                 new_coordinates[(old_x, old_y)] = (new_x, new_y)
+
     # Read the data frame (spots as rows)
     counts_table = pd.read_table(counts_matrix, sep="\t", header=0, index_col=0)
     new_index_values = list()
@@ -73,7 +74,7 @@ def main(counts_matrix, coordinates_file, update_coordinates, outfile):
         except KeyError:
             counts_table.drop(index, inplace=True)
 
-    # Assign the new indexes 
+    # Assign the new indexes
     counts_table.index = new_index_values
 
     # Remove genes that have now a total count of zero
@@ -96,4 +97,4 @@ if __name__ == '__main__':
                         help="New coordinates in a tab delimited file")
     args = parser.parse_args()
 
-    main(args.counts_matrix, args.coordinates_file, args.update_coordinates, args.outfile)
+    sys.exit(main(args.counts_matrix, args.coordinates_file, args.update_coordinates, args.outfile))

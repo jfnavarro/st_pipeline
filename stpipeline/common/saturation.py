@@ -10,158 +10,166 @@ import os
 from collections import defaultdict
 import logging
 from stpipeline.common.dataset import createDataset
-from stpipeline.common.stats import Stats
 from stpipeline.common.utils import safeRemove
+from typing import List, Dict, Optional, Tuple
+
+logger = logging.getLogger("STPipeline")
+
+def compute_saturation(
+	nreads: int,
+	annotated_reads: str,
+	gff_filename: str,
+	umi_cluster_algorithm: str,
+	umi_allowed_mismatches: bool,
+	umi_counting_offset: int,
+	disable_umi: bool,
+	expName: str,
+	temp_folder: Optional[str] = None,
+	saturation_points: Optional[List[int]] = None,
+) -> None:
+	"""
+	Computes saturation points from annotated reads and logs the results.
+
+	Args:
+		nreads: Total number of reads in the annotated_reads file.
+		annotated_reads: Path to a BAM file with the annotated reads.
+		gff_filename: Path to the GFF file.
+		umi_cluster_algorithm: Clustering algorithm for UMIs.
+		umi_allowed_mismatches: Whether mismatches are allowed for UMI filtering.
+		umi_counting_offset: Number of bases allowed as offset when counting UMIs.
+		disable_umi: If True, disables UMI filtering.
+		expName: Experiment name for logging and file organization.
+		temp_folder: Path to temporary folder for intermediate files.
+		saturation_points: List of saturation points to be used.
+
+	Raises:
+		RuntimeError: If the input file is missing or invalid.
+	"""
+	if not os.path.isfile(annotated_reads):
+		msg = f"Error, input file not present: {annotated_reads}"
+		logger.error(msg)
+		raise RuntimeError(msg)
+
+	saturation_points = _determine_saturation_points(nreads, saturation_points)
+	files, file_names, subsampling = _generate_subsamples(
+		nreads, annotated_reads, saturation_points, temp_folder
+	)
+
+	_write_subsamples_to_files(files, subsampling, annotated_reads, saturation_points)
+
+	results = _compute_saturation_metrics(
+		file_names, saturation_points, gff_filename, umi_cluster_algorithm,
+		umi_allowed_mismatches, umi_counting_offset, disable_umi, temp_folder, expName
+	)
+
+	_cleanup_files(file_names)
+
+	# TODO write this to a CSV file
+	logger.info("Saturation points: %s", ', '.join(map(str, saturation_points)))
+	logger.info("Reads per saturation point: %s", ', '.join(map(str, results["reads"])))
+	logger.info("Genes per saturation point: %s", ', '.join(map(str, results["genes"])))
+	logger.info("Average genes/spot per saturation point: %s", ', '.join(map(str, results["avg_genes"])))
+	logger.info("Average reads/spot per saturation point: %s", ', '.join(map(str, results["avg_reads"])))
 
 
-def computeSaturation(nreads, 
-                      annotated_reads,
-                      gff_filename,
-                      umi_cluster_algorithm,
-                      umi_allowed_mismatches,
-                      umi_counting_offset,
-                      diable_umi,
-                      expName,
-                      temp_folder=None,
-                      saturation_points=None):
-    """
-    It splits the input file up into sub-files containing
-    random reads from the input file up to the saturation point. 
-    It then calls createDataset.py and retrieve some stats to
-    compute the saturation points information that is then added
-    to the log file.
-    :param nreads: the number of reads present in the annotated_reads file
-    :param annotated_reads: path to a BAM file with the annotated reads
-    :param umi_cluster_algorithm: the clustering algorithm to cluster UMIs
-    :param umi_allowed_mismatches: the number of miss matches allowed to remove
-                                  duplicates by UMIs
-    :param umi_counting_offset: the number of bases allowed as offset when couting UMIs
-    :param diable_umi: when True the UMI filtering step will not be performed
-    :param expName: the name of the dataset
-    :param temp_folder: the path where to put the output files
-    :param saturation_points: a list of saturation points to be used
-    :type nreads: integer
-    :type annotated_reads: str
-    :type umi_cluster_algorithm: str
-    :type umi_allowed_mismatches: boolean
-    :type umi_counting_offset: integer
-    :type diable_umi: bool
-    :type expName: str
-    :type temp_folder: str
-    :type saturation_points: list
-    :raises: RuntimeError
-    """
-    logger = logging.getLogger("STPipeline")
+def _determine_saturation_points(nreads: int, saturation_points: Optional[List[int]]) -> List[int]:
+	"""
+	Creates a list of saturations points using the total number of reads. If the points are
+	provided they will be filtered if they are not then they will be extracted from an
+	exponential distribution.
+	"""
+	if saturation_points is None:
+		saturation_points = [int(math.floor(1e3 + (math.exp(x) * 1e3))) for x in range(15)]
+	points = [p for p in sorted(saturation_points) if p < nreads]
+	if not points:
+		msg = "All saturation points are greater than the number of reads."
+		logger.error(msg)
+		raise RuntimeError(msg)
+	return points
 
-    if not os.path.isfile(annotated_reads):
-        error = "Error, input file not present {}\n".format(annotated_reads)
-        logger.error(error)
-        raise RuntimeError(error)
 
-    if saturation_points is not None:
-        saturation_points = [p for p in sorted(saturation_points) if p < int(nreads)]
+def _generate_subsamples(
+	nreads: int, annotated_reads: str, saturation_points: List[int], temp_folder: Optional[str]
+) -> Tuple[Dict[int, pysam.AlignmentFile], Dict[int, str], Dict[int, List[int]]]:
+	"""
+	Creates the saturation files for each saturation point.
+	"""
+	file_ext = os.path.splitext(annotated_reads)[1].lower()
+	flag_read, flag_write = ("rb", "wb") if file_ext != ".sam" else ("r", "wh")
 
-        if len(saturation_points) == 0:
-            error = "Error, all saturation points provided are bigger than the number " \
-                    "of annotated reads {}\n".format(nreads)
-            logger.error(error)
-            raise RuntimeError(error)     
-    else:
-        # Create a list of 15 saturation points (different number of reads)
-        saturation_points = list()
-        for x in range(0, 15):
-            spoint = int(math.floor(1e3 + (math.exp(x) * 1e3)))
-            if spoint >= int(nreads):
-                break
-            saturation_points.append(spoint)
+	annotated_sam = pysam.AlignmentFile(annotated_reads, flag_read)
+	files, file_names, subsampling = {}, {}, {}
 
-    files = dict()
-    file_names = dict()
-    subsampling = dict()
-    file_ext = os.path.splitext(annotated_reads)[1].lower()
-    flag_read = "rb"
-    flag_write = "wb"
-    if file_ext == ".sam":
-        flag_read = "r"
-        flag_write = "wh"
-                 
-    annotated_sam = pysam.AlignmentFile(annotated_reads, flag_read)   
-    # Generate sub-samples and SAM/BAM files for each saturation point
-    for spoint in saturation_points:
-        # Create a file for the sub sample point
-        file_name = "subsample_{}{}".format(spoint, file_ext)
-        if temp_folder is not None and os.path.isdir(temp_folder):
-            file_name = os.path.join(temp_folder, file_name)
-        output_sam = pysam.AlignmentFile(file_name, flag_write, template=annotated_sam)
-        file_names[spoint] = file_name
-        files[spoint] = output_sam
-        # Generate a list of indexes in the sam file to extract sub samples 
-        indices = list(range(int(nreads)))
-        random.shuffle(indices)
-        subbed = indices[0:spoint]
-        subbed.sort()
-        subsampling[spoint] = subbed
-                 
-    # Write sub-samples (SAM/BAM records) to each saturation point file
-    index = 0
-    sub_indexes = defaultdict(int)
-    for read in annotated_sam.fetch(until_eof=True):
-        for spoint in saturation_points:
-            sub_index = sub_indexes[spoint]
-            if sub_index < len(subsampling[spoint]) \
-            and subsampling[spoint][sub_index] == index:
-                files[spoint].write(read)
-                sub_indexes[spoint] += 1
-        index += 1  
-                 
-    # Close the files
-    annotated_sam.close()
-    for file_sam in list(files.values()):
-        file_sam.close()
-                 
-    # Compute saturation points by calling createDataset on each file
-    saturation_points_values_reads = list()
-    saturation_points_values_genes = list()
-    saturation_points_average_genes = list()
-    saturation_points_average_reads = list()
-    # TODO make this parallel 
-    for spoint in saturation_points:
-        stats = Stats()
-        input_file = file_names[spoint]
-        try:
-            createDataset(input_file,
-                          stats,
-                          gff_filename,
-                          umi_cluster_algorithm,
-                          umi_allowed_mismatches,
-                          umi_counting_offset,
-                          diable_umi,
-                          temp_folder,
-                          expName,
-                          False) # Verbose
-        except Exception as e:
-            error = "Error computing saturation curve: createDataset execution failed\n"
-            logger.error(error)
-            raise e
-       
-        # Update lists with the computed points    
-        saturation_points_values_reads.append(stats.reads_after_duplicates_removal)
-        saturation_points_values_genes.append(stats.genes_found)
-        saturation_points_average_genes.append(stats.average_gene_feature)
-        saturation_points_average_reads.append(stats.average_reads_feature)
-       
-    # Remove the files
-    for file_sam in list(file_names.values()):
-        safeRemove(file_sam)     
-                                    
-    # Update the log with the computed saturation points
-    logger.info("Saturation points:")
-    logger.info(', '.join(str(a) for a in saturation_points))
-    logger.info("Reads per saturation point")
-    logger.info(', '.join(str(a) for a in saturation_points_values_reads))
-    logger.info("Genes per saturation point")
-    logger.info(', '.join(str(a) for a in saturation_points_values_genes))
-    logger.info("Average genes/spot per saturation point")
-    logger.info(', '.join(str(a) for a in saturation_points_average_genes))
-    logger.info("Average reads/spot per saturation point")
-    logger.info(', '.join(str(a) for a in saturation_points_average_reads))
+	for spoint in saturation_points:
+		file_name = f"subsample_{spoint}{file_ext}"
+		file_name = os.path.join(temp_folder, file_name) if temp_folder else file_name
+		files[spoint] = pysam.AlignmentFile(file_name, flag_write, template=annotated_sam)
+		file_names[spoint] = file_name
+		indices = list(range(nreads))
+		random.shuffle(indices)
+		subsampling[spoint] = sorted(indices[:spoint])
+
+	annotated_sam.close()
+	return files, file_names, subsampling
+
+
+def _write_subsamples_to_files(
+	files: Dict[int, pysam.AlignmentFile], subsampling: Dict[int, List[int]], annotated_reads: str, saturation_points: List[int]
+):
+	"""
+	Fill the content of each saturation point (file) using the annodated reads.
+	"""
+	annotated_sam = pysam.AlignmentFile(annotated_reads, "rb")
+	index = 0
+	sub_indexes = defaultdict(int)
+
+	for read in annotated_sam.fetch(until_eof=True):
+		for spoint in saturation_points:
+			sub_index = sub_indexes[spoint]
+			if sub_index < len(subsampling[spoint]) and subsampling[spoint][sub_index] == index:
+				files[spoint].write(read)
+				sub_indexes[spoint] += 1
+		index += 1
+
+	annotated_sam.close()
+	for file_sam in files.values():
+		file_sam.close()
+
+
+def _compute_saturation_metrics(
+	file_names: Dict[int, str], saturation_points: List[int], gff_filename: str,
+	umi_cluster_algorithm: str, umi_allowed_mismatches: bool, umi_counting_offset: int,
+	disable_umi: bool, temp_folder: Optional[str], expName: str
+):
+	"""
+	Generates the dataset for each saturation point (file) and fetch stats.
+	"""
+	results = {"reads": [], "genes": [], "avg_genes": [], "avg_reads": []}
+
+	for spoint in saturation_points:
+		input_file = file_names[spoint]
+		try:
+			stats = createDataset(
+				input_file, gff_filename, umi_cluster_algorithm,
+				umi_allowed_mismatches, umi_counting_offset, disable_umi,
+				temp_folder, expName, verbose=False
+			)
+		except Exception as e:
+			logger.error("Error computing saturation curve: createDataset failed.")
+			raise e
+
+		results["reads"].append(stats["reads_after_duplicates_removal"])
+		results["genes"].append(stats["genes_found"])
+		results["avg_genes"].append(stats["average_gene_feature"])
+		results["avg_reads"].append(stats["average_reads_feature"])
+
+	return results
+
+
+def _cleanup_files(file_names: Dict[int, str]):
+	"""
+	Remove the files created during the saturation curve.
+	"""
+	for file_name in file_names.values():
+		safeRemove(file_name)
+
