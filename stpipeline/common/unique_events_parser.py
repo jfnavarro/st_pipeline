@@ -33,18 +33,21 @@ class GeneBuffer:
         """
         self.buffer = {}
         self.last_position = 0
-        self.last_chromosome = 'chrom'
+        self.last_chromosome = "chrom"
         self.gene_end_coordinates = {}
         if gff_filename:
-            self.__compute_gene_end_coordinates(gff_filename)
+            self.compute_gene_end_coordinates(gff_filename)
 
-    def __compute_gene_end_coordinates(self, gff_filename: str) -> None:
+    def compute_gene_end_coordinates(self, gff_filename: str) -> None:
         """
         Reads the end coordinates and chromosomes of all genes present in the GFF file
         and saves them in a dictionary with the gene ID as the key.
 
         Args:
             gff_filename: Path to the GFF file.
+
+        Raises:
+            ValueError: If the gene_id attribute is missing in the GFF file.
         """
         logger.debug(f"Parsing GFF file {gff_filename} to compute gene end coordinates.")
 
@@ -55,19 +58,17 @@ class GeneBuffer:
             gene_id = line.get("gene_id", None)
             if not gene_id:
                 msg = f"The gene_id attribute is missing in the annotation file ({gff_filename})."
-                loggger.error(msg)
+                logger.error(msg)
                 raise ValueError(msg)
-
             if gene_id[0] == '"' and gene_id[-1] == '"': 
                 gene_id = gene_id[1:-1]
-
             if gene_id in gene_end_coordinates:
                 if end > gene_end_coordinates[gene_id][1]:
                     gene_end_coordinates[gene_id] = (seqname, end)
             else:
                 gene_end_coordinates[gene_id] = (seqname, end)
 
-        gene_end_coordinates['__no_feature'] = (None, -1)
+        gene_end_coordinates["__no_feature"] = (None, -1)
         self.gene_end_coordinates = gene_end_coordinates
 
     def get_gene_end_position(self, gene: str) -> Tuple[Optional[str], int]:
@@ -75,10 +76,10 @@ class GeneBuffer:
         Returns the genomic end coordinate and chromosome of the given gene.
 
         Args:
-            gene (str): Gene ID.
+            gene: Gene ID.
 
         Returns:
-            Tuple[Optional[str], int]: Chromosome and end coordinate of the gene.
+            Chromosome and end coordinate of the gene.
 
         Raises:
             ValueError: If the gene is not found in the annotation file or is ambiguous.
@@ -86,30 +87,34 @@ class GeneBuffer:
         try:
             return self.gene_end_coordinates[gene]
         except KeyError:
-            if '__ambiguous[' in gene:
-                ambiguous_genes = gene[gene.index('[') + 1:gene.index(']')].split('+')
+            # Handle ambigous genes as defined in htseq
+            if "__ambiguous[" in gene:
+                ambiguous_genes = gene[gene.index("[") + 1:gene.index("]")].split("+")
                 try:
                     return max(
                         [self.gene_end_coordinates[amb_gene] for amb_gene in ambiguous_genes],
                         key=operator.itemgetter(1)
                     )
                 except KeyError:
-                    raise ValueError(f"Ambiguous gene {gene} not found in annotation file.")
-            raise ValueError(f"Gene {gene} not found in annotation file.")
+                    msg = f"Ambiguous gene {gene} not found in annotation file."
+                    logger.error(msg)
+                    raise ValueError(msg)
+            msg = f"Gene {gene} not found in annotation file."
+            logger.error(msg)
+            raise ValueError(msg)
 
     def add_transcript(self, gene: str, spot_coordinates: Tuple[int, int], transcript: Transcript, position: int) -> None:
         """
         Adds a transcript to the gene buffer.
 
         Args:
-            gene (str): Gene name.
-            spot_coordinates (Tuple[int, int]): Spot coordinates (x, y).
-            transcript (Transcript): Transcript information.
-            position (int): Transcript's left-most genomic coordinate.
+            gene: Gene name.
+            spot_coordinates: Spot coordinates (x, y).
+            transcript: Transcript information.
+            position: Transcript's left-most genomic coordinate.
         """
         self.last_position = position
         self.last_chromosome = transcript.chrom
-
         self.buffer.setdefault(gene, {}).setdefault(spot_coordinates, []).append(transcript)
 
     def check_and_clear_buffer(self, empty: bool = False) -> Generator[Tuple[str, Dict], None, None]:
@@ -117,17 +122,15 @@ class GeneBuffer:
         Checks and clears the buffer, yielding genes that are outside the current chromosome or position.
 
         Args:
-            empty (bool): If True, forces clearing the buffer.
+            empty: If True, forces clearing the buffer.
 
         Yields:
-            Tuple[str, Dict]: Gene name and its buffer content.
+            Gene name and its buffer content.
         """
-        for gene in list(self.buffer.keys()):
-            if gene == '__no_feature' and not empty:
+        for gene in self.buffer.keys():
+            if gene == "__no_feature" and not empty:
                 continue
-
             chrom, end_position = self.get_gene_end_position(gene)
-
             if empty or self.last_position > end_position or self.last_chromosome != chrom:
                 yield gene, self.buffer.pop(gene)
 
@@ -136,15 +139,14 @@ def parse_unique_events(input_file: str, gff_filename: Optional[str] = None) -> 
     Parses transcripts from a coordinate-sorted BAM file and organizes them by gene and spot coordinates.
 
     Args:
-        input_file (str): Path to the input BAM file containing annotated records.
-        gff_filename (Optional[str]): Path to the GFF file containing gene coordinates.
+        input_file: Path to the input BAM file containing annotated records.
+        gff_filename: Path to the GFF file containing gene coordinates.
 
     Yields:
-        Tuple[str, Dict]: Gene name and a dictionary mapping spot coordinates to transcripts.
+        Gene name and a dictionary mapping spot coordinates to transcripts.
     """
     genes_buffer = GeneBuffer(gff_filename) if gff_filename else None
-    genes_dict: Dict[str, Dict[Tuple[int, int], List[Transcript]]] = {}
-
+    genes_dict = {}
     sam_file = pysam.AlignmentFile(input_file, "rb")
 
     for rec in sam_file.fetch(until_eof=True):
@@ -158,7 +160,7 @@ def parse_unique_events(input_file: str, gff_filename: Optional[str] = None) -> 
         if strand == "-":
             start, end = end, start
 
-        x, y, gene, umi = -1, -1, 'None', 'None'
+        x, y, gene, umi = -1, -1, "None", "None"
         for k, v in rec.tags:
             if k == "B1":
                 x = int(v)

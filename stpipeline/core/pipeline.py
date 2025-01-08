@@ -42,6 +42,7 @@ FILENAMES_DISCARDED = {"mapped_discarded": "mapping_discarded.bam",
                        "quality_trimmed_discarded": "R2_quality_trimmed_discarded.fastq",
                        "annotated_discarded": "annotated_discarded.bam"}
 
+logger = logging.getLogger("STPipeline")
 
 class Pipeline():
     """
@@ -50,7 +51,6 @@ class Pipeline():
     the input parameters, do sanity check and
     run the pipeline steps.
     """
-    LogName = "STPipeline"
 
     def __init__(self):
         self.allowed_missed = 2
@@ -74,7 +74,7 @@ class Pipeline():
         self.contaminant_index = None
         self.fastq_fw = None
         self.fastq_rv = None
-        self.logger = None
+        logger = None
         self.logfile = None
         self.output_folder = None
         self.temp_folder = None
@@ -119,8 +119,8 @@ class Pipeline():
         self.qa_stats = QAStats()
 
     def clean_filenames(self):
-        """ Just makes sure to remove
-        all temp files
+        """ 
+        Just makes sure to remove all temp files
         """
         if self.clean:
             for file_name in list(FILENAMES.values()):
@@ -148,25 +148,23 @@ class Pipeline():
                                                 (not self.ref_annotation.endswith(".gtf")
                                                  and not self.ref_annotation.endswith(".gff3")
                                                  and not self.ref_annotation.endswith(".gff"))):
-            error = "Error parsing parameters.\n" \
-                    "Invalid annotation file {}".format(self.ref_annotation)
-            self.logger.error(error)
+            error = f"Error parsing parameters.\nInvalid annotation file {self.ref_annotation}."
+            logger.error(error)
             raise RuntimeError(error)
 
         if self.ref_annotation is None and not self.transcriptome:
-            error = "Error, annotation file is missing but the transcriptome option is disabled"
-            self.logger.error(error)
+            error = "Error, annotation file is missing but the transcriptome option is disabled."
+            logger.error(error)
             raise RuntimeError(error)
 
         if self.ref_map is None and not self.disable_mapping:
-            error = "Error, genome reference is missing but the disable_mapping option is disabled"
-            self.logger.error(error)
+            error = "Error, genome reference is missing but the disable_mapping option is disabled."
+            logger.error(error)
             raise RuntimeError(error)
 
         if not os.path.isfile(self.fastq_fw) or not os.path.isfile(self.fastq_rv):
-            error = "Error parsing parameters.\n" \
-                    "Invalid input files {} {}".format(self.fastq_fw, self.fastq_rv)
-            self.logger.error(error)
+            error = f"Error parsing parameters.\nInvalid input files {self.fastq_fw} {self.fastq_rv}"
+            logger.error(error)
             raise RuntimeError(error)
 
         if (not self.fastq_fw.endswith(".fastq")
@@ -177,39 +175,36 @@ class Pipeline():
                     and not self.fastq_rv.endswith(".fq")
                     and not self.fastq_rv.endswith(".gz")
                     and not self.fastq_rv.endswith(".bz2")):
-            error = "Error parsing parameters.\n" \
-                    "Incorrect format for input files {} {}".format(self.fastq_fw, self.fastq_rv)
-            self.logger.error(error)
+            error = f"Error parsing parameters.\nIncorrect format for input files {self.fastq_fw} {self.fastq_rv}"
+            logger.error(error)
             raise RuntimeError(error)
 
         if not self.disable_barcode and not os.path.isfile(self.ids):
-            error = "Error parsing parameters.\n" \
-                    "Invalid IDs file {}".format(self.ids)
-            self.logger.error(error)
+            error = f"Error parsing parameters.\nInvalid IDs file {self.ids}"
+            logger.error(error)
             raise RuntimeError(error)
 
         if not self.disable_barcode and self.ids is None:
             error = "Error IDs file is missing but the option to disable the " \
                     "demultiplexing step is not activated\n"
-            self.logger.error(error)
+            logger.error(error)
             raise RuntimeError(error)
 
         if self.saturation_points is not None and not self.compute_saturation:
-            self.logger.warning("Saturation points are provided but the option"
+            logger.warning("Saturation points are provided but the option"
                                 "to compute saturation is disabled.")
 
         if not self.disable_umi and self.umi_filter:
             # Check template validity
             regex = "[^ACGTURYSWKMBDHVN]"
             if re.search(regex, self.umi_filter_template) is not None:
-                error = "Error invalid UMI template given {}.".format(self.umi_filter_template)
-                self.logger.error(error)
+                error = f"Error invalid UMI template given {self.umi_filter_template}."
+                logger.error(error)
                 raise RuntimeError(error)
             # Check template length
             if len(self.umi_filter_template) != (self.umi_end_position - self.umi_start_position):
-                error = "Error the UMI template given does not have the same " \
-                        "length as the UMIs {}.".format(self.umi_filter_template)
-                self.logger.error(error)
+                error = f"Error the UMI template given does not have the correct length {self.umi_filter_template}."
+                logger.error(error)
                 raise RuntimeError(error)
             # Convert the template into a reg-exp
             temp_reg_exp = ""
@@ -252,21 +247,21 @@ class Pipeline():
         if self.allowed_missed > self.allowed_kmer and not self.disable_barcode:
             error = "Error starting the pipeline.\n" \
                     "Taggd allowed mismatches is bigger or equal than the Taggd k-mer size"
-            self.logger.error(error)
+            logger.error(error)
             raise RuntimeError(error)
 
         if self.umi_start_position < self.barcode_start < self.umi_end_position \
                 and not self.disable_barcode and not self.disable_umi:
             error = "Error starting the pipeline.\n" \
                     "The start position of the barcodes is between the UMIs start-end position"
-            self.logger.error(error)
+            logger.error(error)
             raise RuntimeError(error)
 
         if self.umi_allowed_mismatches > (self.umi_end_position - self.umi_start_position) \
                 and not self.disable_umi:
             error = "Error starting the pipeline.\n" \
                     "The allowed UMI mismatches is bigger than the UMI size"
-            self.logger.error(error)
+            logger.error(error)
             raise RuntimeError(error)
 
         # Test the presence of the required tools
@@ -278,7 +273,7 @@ class Pipeline():
         if len(unavailable_scripts) != 0:
             error = "Error starting the pipeline.\n" \
                     "Required software not found:\t".join(unavailable_scripts)
-            self.logger.error(error)
+            logger.error(error)
             raise RuntimeError(error)
 
     def createParameters(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
@@ -290,11 +285,11 @@ class Pipeline():
             def __call__(self, parser, namespace, values, option_string=None):
                 prospective_dir = values
                 if not os.path.isdir(prospective_dir):
-                    raise argparse.ArgumentTypeError("{0} is not a valid path".format(prospective_dir))
+                    raise argparse.ArgumentTypeError(f"{prospective_dir} is not a valid path")
                 if os.access(prospective_dir, os.R_OK):
                     setattr(namespace, self.dest, prospective_dir)
                 else:
-                    raise argparse.ArgumentTypeError("{0} is not a readable dir".format(prospective_dir))
+                    raise argparse.ArgumentTypeError(f"{prospective_dir} is not a readable dir")
 
         parser.add_argument("fastq_files", nargs=2)
         parser.add_argument("--ids",
@@ -748,106 +743,100 @@ class Pipeline():
         attributes = inspect.getmembers(self, lambda a: not (inspect.isroutine(a)))
         attributes_filtered = [a for a in attributes if not (a[0].startswith("__") and a[0].endswith("__"))]
         # Assign general parameters to the qa_stats object
-        qa_stats.input_parameters = attributes_filtered
-        qa_stats.annotation_tool = "htseq-count {}".format(getHTSeqCountVersion())
-        qa_stats.demultiplex_tool = "Taggd {}".format(getTaggdCountVersion())
-        qa_stats.pipeline_version = version_number
-        qa_stats.mapper_tool = getSTARVersion()
+        self.qa_stats.input_parameters = attributes_filtered
+        self.qa_stats.annotation_tool = "htseq-count {}".format(getHTSeqCountVersion())
+        self.qa_stats.demultiplex_tool = "Taggd {}".format(getTaggdCountVersion())
+        self.qa_stats.pipeline_version = version_number
+        self.qa_stats.mapper_tool = getSTARVersion()
 
-    def createLogger(self):
-        """
-        Creates a logging object and logs some information from the input parameters
-        """
-        # Create a logger
-        if self.logfile is not None:
-            logging.basicConfig(filename=self.logfile, level=logging.DEBUG)
-        else:
-            logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+def createLogger(self):
+    """
+    Creates a logging object and logs some information from the input parameters.
+    """
+    # Create a logger
+    if self.logfile is not None:
+        logging.basicConfig(filename=self.logfile, level=logging.DEBUG)
+    else:
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
-        self.logger = logging.getLogger(self.__class__.LogName)
-        self.logger.info("ST Pipeline {}".format(version_number))
+    logger.info(f"ST Pipeline {version_number}")
 
-        # Some info
-        self.logger.info("Output directory: {}".format(self.output_folder))
-        self.logger.info("Temporary directory: {}".format(self.temp_folder))
-        self.logger.info("Dataset name: {}".format(self.expName))
-        self.logger.info("Forward(R1) input file: {}".format(self.fastq_fw))
-        self.logger.info("Reverse(R2) input file: {}".format(self.fastq_rv))
-        self.logger.info("Reference mapping STAR index folder: {}".format(self.ref_map))
-        if self.ref_annotation is not None:
-            self.logger.info("Reference annotation file: {}".format(self.ref_annotation))
-        if self.contaminant_index is not None:
-            self.logger.info("Using contamination filter STAR index: {}".format(self.contaminant_index))
-        self.logger.info("CPU Nodes: {}".format(self.threads))
-        if not self.disable_barcode:
-            self.logger.info("Ids(barcodes) file: {}".format(self.ids))
-            self.logger.info("TaggD allowed mismatches: {}".format(self.allowed_missed))
-            self.logger.info("TaggD kmer size: {}".format(self.allowed_kmer))
-            self.logger.info("TaggD overhang: {}".format(self.overhang))
-            self.logger.info("TaggD metric: {}".format(self.taggd_metric))
-            if self.taggd_multiple_hits_keep_one:
-                self.logger.info("TaggD multiple hits keep one (random) is enabled")
-            if self.taggd_trim_sequences is not None:
-                self.logger.info(
-                    "TaggD trimming from the barcodes " + "-".join(str(x) for x in self.taggd_trim_sequences))
-        if not self.disable_mapping:
-            self.logger.info("Mapping reverse trimming: {}".format(self.trimming_rv))
-            self.logger.info("Mapping inverse reverse trimming: {}".format(self.inverse_trimming_rv))
-            self.logger.info("Mapping tool: STAR")
-            self.logger.info(
-                "Mapping minimum intron size allowed (splice alignments) with STAR: {}".format(self.min_intron_size))
-            self.logger.info(
-                "Mapping maximum intron size allowed (splice alignments) with STAR: {}".format(self.max_intron_size))
-            self.logger.info("STAR genome loading strategy {}".format(self.star_genome_loading))
-            if self.disable_clipping:
-                self.logger.info("Not allowing soft clipping when mapping with STAR")
-            if self.disable_multimap:
-                self.logger.info("Not allowing multiple alignments when mapping with STAR")
-            if self.two_pass_mode:
-                self.logger.info("Using the STAR 2-pass mode for the mapping step")
-        if not self.disable_annotation:
-            self.logger.info("Annotation tool: HTSeq")
-            self.logger.info("Annotation mode: {}".format(self.htseq_mode))
-            self.logger.info("Annotation strandness {}".format(self.strandness))
-            self.logger.info("Annotation feature types {}".format(",".join(self.htseq_features)))
-            if self.include_non_annotated:
-                self.logger.info("Including non annotated reads in the output")
-        if self.compute_saturation:
-            self.logger.info("Computing saturation curve with several sub-samples...")
-            if self.saturation_points is not None:
-                self.logger.info(
-                    "Using the following points {}".format(" ".join(str(p) for p in self.saturation_points)))
-        if not self.disable_umi:
-            self.logger.info("UMIs start position: {}".format(self.umi_start_position))
-            self.logger.info("UMIs end position: {}".format(self.umi_end_position))
-            self.logger.info("UMIs allowed mismatches: {}".format(self.umi_allowed_mismatches))
-            self.logger.info("UMIs clustering algorithm: {}".format(self.umi_cluster_algorithm))
-            self.logger.info("Allowing an offset of {} when clustering UMIs "
-                             "by strand-start in a gene-spot".format(self.umi_counting_offset))
-            self.logger.info("Allowing {} low quality bases in an UMI".format(self.umi_quality_bases))
-            self.logger.info(
-                "Discarding reads that after trimming are shorter than {}".format(self.min_length_trimming))
-            if self.umi_filter:
-                self.logger.info("UMIs using filter: {}".format(self.umi_filter_template))
-        if not self.disable_trimming:
-            if self.remove_polyA_distance > 0:
-                self.logger.info(
-                    "Removing polyA sequences of a length of at least: {}".format(self.remove_polyA_distance))
-            if self.remove_polyT_distance > 0:
-                self.logger.info(
-                    "Removing polyT sequences of a length of at least: {}".format(self.remove_polyT_distance))
-            if self.remove_polyG_distance > 0:
-                self.logger.info(
-                    "Removing polyG sequences of a length of at least: {}".format(self.remove_polyG_distance))
-            if self.remove_polyC_distance > 0:
-                self.logger.info(
-                    "Removing polyC sequences of a length of at least: {}".format(self.remove_polyC_distance))
-            if self.remove_polyN_distance > 0:
-                self.logger.info(
-                    "Removing polyN sequences of a length of at least: {}".format(self.remove_polyN_distance))
-            self.logger.info("Allowing {} mismatches when removing homopolymers".format(self.adaptor_missmatches))
-            self.logger.info("Remove reads whose AT content is {}%".format(self.filter_AT_content))
-            self.logger.info("Remove reads whose GC content is {}%".format(self.filter_GC_content))
+    # Log general information
+    logger.info(f"Output directory: {self.output_folder}")
+    logger.info(f"Temporary directory: {self.temp_folder}")
+    logger.info(f"Dataset name: {self.expName}")
+    logger.info(f"Forward(R1) input file: {self.fastq_fw}")
+    logger.info(f"Reverse(R2) input file: {self.fastq_rv}")
+    logger.info(f"Reference mapping STAR index folder: {self.ref_map}")
+    if self.ref_annotation is not None:
+        logger.info(f"Reference annotation file: {self.ref_annotation}")
+    if self.contaminant_index is not None:
+        logger.info(f"Using contamination filter STAR index: {self.contaminant_index}")
+    logger.info(f"CPU Nodes: {self.threads}")
+
+    if not self.disable_barcode:
+        logger.info(f"Ids(barcodes) file: {self.ids}")
+        logger.info(f"TaggD allowed mismatches: {self.allowed_missed}")
+        logger.info(f"TaggD kmer size: {self.allowed_kmer}")
+        logger.info(f"TaggD overhang: {self.overhang}")
+        logger.info(f"TaggD metric: {self.taggd_metric}")
+        if self.taggd_multiple_hits_keep_one:
+            logger.info("TaggD multiple hits keep one (random) is enabled")
+        if self.taggd_trim_sequences is not None:
+            logger.info(f"TaggD trimming from the barcodes: {'-'.join(str(x) for x in self.taggd_trim_sequences)}")
+
+    if not self.disable_mapping:
+        logger.info(f"Mapping reverse trimming: {self.trimming_rv}")
+        logger.info(f"Mapping inverse reverse trimming: {self.inverse_trimming_rv}")
+        logger.info("Mapping tool: STAR")
+        logger.info(f"Mapping minimum intron size allowed (splice alignments) with STAR: {self.min_intron_size}")
+        logger.info(f"Mapping maximum intron size allowed (splice alignments) with STAR: {self.max_intron_size}")
+        logger.info(f"STAR genome loading strategy: {self.star_genome_loading}")
+        if self.disable_clipping:
+            logger.info("Not allowing soft clipping when mapping with STAR")
+        if self.disable_multimap:
+            logger.info("Not allowing multiple alignments when mapping with STAR")
+        if self.two_pass_mode:
+            logger.info("Using the STAR 2-pass mode for the mapping step")
+
+    if not self.disable_annotation:
+        logger.info("Annotation tool: HTSeq")
+        logger.info(f"Annotation mode: {self.htseq_mode}")
+        logger.info(f"Annotation strandness: {self.strandness}")
+        logger.info(f"Annotation feature types: {','.join(self.htseq_features)}")
+        if self.include_non_annotated:
+            logger.info("Including non annotated reads in the output")
+
+    if self.compute_saturation:
+        logger.info("Computing saturation curve with several sub-samples...")
+        if self.saturation_points is not None:
+            logger.info(f"Using the following points: {' '.join(str(p) for p in self.saturation_points)}")
+
+    if not self.disable_umi:
+        logger.info(f"UMIs start position: {self.umi_start_position}")
+        logger.info(f"UMIs end position: {self.umi_end_position}")
+        logger.info(f"UMIs allowed mismatches: {self.umi_allowed_mismatches}")
+        logger.info(f"UMIs clustering algorithm: {self.umi_cluster_algorithm}")
+        logger.info(f"Allowing an offset of {self.umi_counting_offset} when clustering UMIs by strand-start in a gene-spot")
+        logger.info(f"Allowing {self.umi_quality_bases} low quality bases in an UMI")
+        logger.info(f"Discarding reads that after trimming are shorter than {self.min_length_trimming}")
+        if self.umi_filter:
+            logger.info(f"UMIs using filter: {self.umi_filter_template}")
+
+    if not self.disable_trimming:
+        if self.remove_polyA_distance > 0:
+            logger.info(f"Removing polyA sequences of a length of at least: {self.remove_polyA_distance}")
+        if self.remove_polyT_distance > 0:
+            logger.info(f"Removing polyT sequences of a length of at least: {self.remove_polyT_distance}")
+        if self.remove_polyG_distance > 0:
+            logger.info(f"Removing polyG sequences of a length of at least: {self.remove_polyG_distance}")
+        if self.remove_polyC_distance > 0:
+            logger.info(f"Removing polyC sequences of a length of at least: {self.remove_polyC_distance}")
+        if self.remove_polyN_distance > 0:
+            logger.info(f"Removing polyN sequences of a length of at least: {self.remove_polyN_distance}")
+        logger.info(f"Allowing {self.adaptor_missmatches} mismatches when removing homopolymers")
+        logger.info(f"Remove reads whose AT content is {self.filter_AT_content}%")
+        logger.info(f"Remove reads whose GC content is {self.filter_GC_content}%")
 
     def run(self):
         """ 
@@ -870,7 +859,7 @@ class Pipeline():
         # START PIPELINE
         # =================================================================
         start_exe_time = globaltime.getTimestamp()
-        self.logger.info("Starting the pipeline: {}".format(start_exe_time))
+        logger.info(f"Starting the pipeline: {start_exe_time}")
 
         # =================================================================
         # STEP: FILTERING
@@ -879,7 +868,7 @@ class Pipeline():
         # Get the barcode length
         barcode_length = len(list(read_barcode_file(self.ids).values())[0].sequence)
         if not self.disable_trimming:
-            self.logger.info("Start filtering raw reads {}".format(globaltime.getTimestamp()))
+            logger.info(f"Start filtering raw reads {globaltime.getTimestamp()}")
             try:
                 stats = filter_input_data(self.fastq_fw,
                                  self.fastq_rv,
@@ -907,7 +896,8 @@ class Pipeline():
                                  self.overhang,
                                  self.disable_umi,
                                  self.disable_barcode)
-                # TODO update qa_stats
+                # update qa_stats
+
             except Exception:
                 raise
 
@@ -917,7 +907,7 @@ class Pipeline():
         if self.contaminant_index:
             # To remove contaminants sequence we align the reads to the contaminant genome
             # and keep the un-mapped reads
-            self.logger.info("Starting contaminant filter alignment {}".format(globaltime.getTimestamp()))
+            logger.info(f"Starting contaminant filter alignment {globaltime.getTimestamp()}")
             try:
                 # Make the contaminant filter call
                 alignReads(FILENAMES["quality_trimmed_R2"],
@@ -971,7 +961,7 @@ class Pipeline():
         # STEP: Maps against the genome using STAR
         # =================================================================
         if not self.disable_mapping:
-            self.logger.info("Starting genome alignment {}".format(globaltime.getTimestamp()))
+            logger.info(f"Starting genome alignment {globaltime.getTimestamp()}")
             input_reads = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
             try:
                 # Make the alignment call
@@ -1012,7 +1002,7 @@ class Pipeline():
         # STEP: DEMULTIPLEX READS Map against the barcodes
         # =================================================================
         if not self.disable_barcode:
-            self.logger.info("Starting barcode demultiplexing {}".format(globaltime.getTimestamp()))
+            logger.info(f"Starting barcode demultiplexing {globaltime.getTimestamp()}")
             try:
                 stats = barcodeDemultiplexing(FILENAMES["mapped"],
                                       self.ids,
@@ -1025,7 +1015,9 @@ class Pipeline():
                                       self.threads,
                                       FILENAMES["demultiplexed_prefix"],  # Prefix for output files
                                       self.keep_discarded_files)
-                # TODO update qa_stats.reads_after_demultiplexing
+                # pdate qa_stats
+                self.qa_stats.reads_after_demultiplexing = stats
+
                 # TODO TaggD does not output the BAM file sorted
                 command = "samtools sort -T {}/sort_bam -@ {} -o {} {}".format(self.temp_folder,
                                                                                self.threads,
@@ -1042,7 +1034,7 @@ class Pipeline():
             input_file = FILENAMES["demultiplexed_matched"] if FILENAMES["demultiplexed_matched"] else FILENAMES[
                 "mapped"]
             if self.transcriptome:
-                self.logger.info("Assigning gene names from transcriptome {}".format(globaltime.getTimestamp()))
+                logger.info(f"Assigning gene names from transcriptome {globaltime.getTimestamp()}")
                 # Iterate the BAM file to set the gene name as the transcriptome"s entry
                 flag_read = "rb"
                 flag_write = "wb"
@@ -1056,7 +1048,7 @@ class Pipeline():
                 infile.close()
                 outfile.close()
             else:
-                self.logger.info("Starting annotation {}".format(globaltime.getTimestamp()))
+                logger.info(f"Starting annotation {globaltime.getTimestamp()}")
                 try:
                     stats = annotateReads(input_file,
                                   self.ref_annotation,
@@ -1067,7 +1059,8 @@ class Pipeline():
                                   self.htseq_no_ambiguous,
                                   self.include_non_annotated,
                                   self.htseq_features)
-                    # TODO update qa_stats.reads_after_annotation
+                    # update qa_stats
+                    self.qa_stats.reads_after_annotation = stats
                 except Exception:
                     raise
 
@@ -1077,8 +1070,8 @@ class Pipeline():
         # To compute saturation points we need the number of annotated reads
         # the fastest way is to get that information from the stats object
         if self.compute_saturation and os.path.isfile(FILENAMES["annotated"]):
-            reads = qa_stats.reads_after_annotation if not self.transcriptome else qa_stats.reads_after_demultiplexing
-            self.logger.info("Starting computing saturation points {}".format(globaltime.getTimestamp()))
+            reads = self.qa_stats.reads_after_annotation if not self.transcriptome else self.qa_stats.reads_after_demultiplexing
+            logger.info(f"Starting computing saturation points {globaltime.getTimestamp()}")
             try:
                 computeSaturation(reads,
                                   FILENAMES["annotated"],
@@ -1097,7 +1090,7 @@ class Pipeline():
         # STEP: Create dataset and remove duplicates
         # =================================================================
         if os.path.isfile(FILENAMES["annotated"]):
-            self.logger.info("Starting creating dataset {}".format(globaltime.getTimestamp()))
+            logger.info(f"Starting creating dataset {globaltime.getTimestamp()}")
             try:
                 stats = createDataset(FILENAMES["annotated"],
                               self.ref_annotation,
@@ -1108,8 +1101,18 @@ class Pipeline():
                               self.output_folder,
                               self.expName,
                               True)  # Verbose
-                # TODO update qa_stats
-                
+                # update qa_stats
+                self.qa_stats.max_genes_feature =  stats["max_genes_feature"]
+                self.qa_stats.min_genes_feature =  stats["min_genes_feature"]
+                self.qa_stats.max_reads_feature =  stats["max_reads_feature"]
+                self.qa_stats.min_reads_feature =  stats["min_reads_feature"]
+                self.qa_stats.average_reads_feature =  stats["average_reads_feature"]
+                self.qa_stats.std_reads_feature =  stats["std_reads_feature"]
+                self.qa_stats.std_genes_feature =  stats["std_genes_feature"]
+                self.qa_stats.reads_after_duplicates_removal =  stats["reads_after_duplicates_removal"]
+                self.qa_stats.barcodes_found =  stats["barcodes_found"]
+                self.qa_stats.genes_found =  stats["genes_found"]
+                self.qa_stats.duplicates_found =  stats["duplicates_found"]
             except Exception:
                 raise
 
@@ -1117,9 +1120,9 @@ class Pipeline():
         # END PIPELINE
         # =================================================================
         # Write stats to JSON
-        print(qa_stats)
-        qa_stats.writeJSON(os.path.join(self.output_folder, self.expName + "_qa_stats.json"))
+        print(self.qa_stats)
+        self.qa_stats.writeJSON(os.path.join(self.output_folder, self.expName + "_qa_stats.json"))
 
         finish_exe_time = globaltime.getTimestamp()
         total_exe_time = finish_exe_time - start_exe_time
-        self.logger.info("Total Execution Time: {}".format(total_exe_time))
+        logger.info(f"Total Execution Time: {total_exe_time}")

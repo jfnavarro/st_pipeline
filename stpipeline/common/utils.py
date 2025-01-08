@@ -5,7 +5,7 @@ import threading
 from datetime import datetime
 import os
 import subprocess
-from typing import Optional, List
+from typing import Optional
 
 
 def which_program(program: str) -> Optional[str]:
@@ -13,10 +13,10 @@ def which_program(program: str) -> Optional[str]:
     Checks if a program exists and is executable.
 
     Args:
-        program (str): The program name.
+        program: The program name.
 
     Returns:
-        Optional[str]: The full path to the program if found, otherwise None.
+        The full path to the program if found, otherwise None.
     """
 
     def is_exe(fpath: str) -> bool:
@@ -39,7 +39,6 @@ def which_program(program: str) -> Optional[str]:
                     return candidate
     return None
 
-
 class TimeStamper:
     """
     Thread-safe time stamper to generate unique timestamps.
@@ -55,7 +54,7 @@ class TimeStamper:
         Generates a unique timestamp.
 
         Returns:
-            str: A unique timestamp.
+            A unique timestamp.
         """
         with self.lock:
             ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -73,7 +72,7 @@ def safe_remove(filename: Optional[str]) -> None:
     Safely removes a file if it exists.
 
     Args:
-        filename (Optional[str]): Path to the file.
+        filename: Path to the file.
     """
     if filename and os.path.isfile(filename):
         try:
@@ -90,18 +89,18 @@ def safe_open_file(filename: str, mode: str):
     For read mode, checks that the file exists.
 
     Args:
-        filename (str): Path to the file.
-        mode (str): File open mode.
+        filename: Path to the file.
+        mode: File open mode.
 
     Returns:
-        file: The opened file descriptor.
+        The opened file descriptor.
 
     Raises:
         IOError: If the file does not exist for read mode or invalid mode is provided.
     """
     if "w" in mode:
         safe_remove(filename)
-    elif "r" in mode and not (os.path.isfile(filename) or is_fifo(filename)):
+    elif "r" in mode and not os.path.isfile(filename):
         raise IOError(f"Error: File does not exist: {filename}")
     else:
         raise IOError(f"Error: Invalid mode: {mode}")
@@ -114,7 +113,7 @@ def file_ok(file: Optional[str]) -> bool:
     Checks if a file exists and is not empty.
 
     Args:
-        file (Optional[str]): Path to the file.
+        file: Path to the file.
 
     Returns:
         bool: True if the file exists and is not empty, otherwise False.
@@ -127,7 +126,7 @@ def get_star_version() -> str:
     Gets the version of the STAR binary.
 
     Returns:
-        str: The version of STAR or "Not available" if not found.
+        The version of STAR or "Not available" if not found.
     """
     try:
         proc = subprocess.Popen(
@@ -148,7 +147,7 @@ def get_taggd_count_version() -> str:
     Gets the version of the Taggd binary.
 
     Returns:
-        str: The version of Taggd or "Not available" if not found.
+        The version of Taggd or "Not available" if not found.
     """
     try:
         proc = subprocess.Popen(
@@ -172,7 +171,7 @@ def get_htseq_count_version() -> str:
     Gets the version of the HTSeqCount binary.
 
     Returns:
-        str: The version of HTSeqCount or "Not available" if not found.
+        The version of HTSeqCount or "Not available" if not found.
     """
     try:
         proc = subprocess.Popen(

@@ -1,5 +1,6 @@
+#! /usr/bin/env python
 """ 
-Unit-test the package stats
+Unit-test the package unique_events_parser
 """
 import pytest
 import pysam

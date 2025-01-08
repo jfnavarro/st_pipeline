@@ -5,7 +5,7 @@ This module contains some functions and utilities for SAM/BAM files
 import os
 import math
 import pysam
-from typing import List, Dict, Union
+from typing import List
 
 
 def split_bam(input_bam: str, temp_dir: str, threads: int) -> List[str]:
@@ -19,10 +19,10 @@ def split_bam(input_bam: str, temp_dir: str, threads: int) -> List[str]:
         threads: Number of CPU cores to use for splitting.
 
     Returns:
-        List[str]: List of paths to the split BAM files.
+        List of paths to the split BAM files.
     """
-    pysam.index(input_bam, os.path.join(temp_dir, f'{input_bam}.bai'))
-    input_bamfile = pysam.AlignmentFile(input_bam, mode='rb')
+    pysam.index(input_bam, os.path.join(temp_dir, f"{input_bam}.bai"))
+    input_bamfile = pysam.AlignmentFile(input_bam, mode="rb")
     assert input_bamfile.check_index()
 
     output_file_names = {
@@ -39,7 +39,6 @@ def split_bam(input_bam: str, temp_dir: str, threads: int) -> List[str]:
     reads_per_part = math.ceil(total_read_count / threads)
     read_counter = 0
     part = 0
-
     for record in input_bamfile.fetch(until_eof=True):
         output_bamfiles[part].write(record)
         read_counter += 1
@@ -48,7 +47,7 @@ def split_bam(input_bam: str, temp_dir: str, threads: int) -> List[str]:
             read_counter = 0
 
     input_bamfile.close()
-    return list(output_file_names.values())
+    return output_file_names.values()
 
 
 def convert_to_AlignedSegment(
@@ -59,23 +58,23 @@ def convert_to_AlignedSegment(
     barcode information as tags.
 
     Args:
-        header (str): Header information for the segment.
-        sequence (str): DNA/RNA sequence.
-        quality (str): Base calling quality values.
-        barcode_sequence (str): Barcode sequence.
-        umi_sequence (str): Unique molecular identifier sequence.
+        header: Header information for the segment.
+        sequence: DNA/RNA sequence.
+        quality: Base calling quality values.
+        barcode_sequence: Barcode sequence.
+        umi_sequence: Unique molecular identifier sequence.
 
     Returns:
-        pysam.AlignedSegment: A new AlignedSegment object with the provided data.
+        A new AlignedSegment object with the provided data.
     """
     aligned_segment = pysam.AlignedSegment()
     aligned_segment.query_name = header.split()[0]
     aligned_segment.query_sequence = sequence
     aligned_segment.query_qualities = pysam.qualitystring_to_array(quality)
     aligned_segment.flag |= pysam.FUNMAP
-    aligned_segment.set_tag('B0', barcode_sequence)
-    aligned_segment.set_tag('B3', umi_sequence)
-    aligned_segment.set_tag('RG', '0')
+    aligned_segment.set_tag("B0", barcode_sequence)
+    aligned_segment.set_tag("B3", umi_sequence)
+    aligned_segment.set_tag("RG", "0")
     return aligned_segment
 
 
@@ -84,25 +83,23 @@ def merge_bam(merged_file_name: str, files_to_merge: List[str], ubam: bool = Fal
     Merges multiple partial BAM files into a single file.
 
     Args:
-        merged_file_name (str): Path to the output merged BAM file.
-        files_to_merge (List[str]): List of paths to the partial BAM files.
-        ubam (bool): Indicates if the files are unaligned BAM (uBAM). Default is False.
+        merged_file_name: Path to the output merged BAM file.
+        files_to_merge: List of paths to the partial BAM files.
+        ubam: Indicates if the files are unaligned BAM (uBAM). Default is False.
 
     Returns:
-        int: Total number of records in the merged BAM file.
+        Total number of records in the merged BAM file.
     """
     assert files_to_merge, "The list of files to merge cannot be empty."
     num_records = 0
 
-    with pysam.AlignmentFile(files_to_merge[0], mode='rb', check_sq=not ubam) as input_bamfile:
+    with pysam.AlignmentFile(files_to_merge[0], mode="rb", check_sq=not ubam) as input_bamfile:
         merged_file = pysam.AlignmentFile(merged_file_name, mode="wb", template=input_bamfile)
-
         for file_name in files_to_merge:
-            with pysam.AlignmentFile(file_name, mode='rb', check_sq=not ubam) as input_file:
+            with pysam.AlignmentFile(file_name, mode="rb", check_sq=not ubam) as input_file:
                 for record in input_file.fetch(until_eof=True):
                     merged_file.write(record)
                     num_records += 1
-
         merged_file.close()
 
     return num_records

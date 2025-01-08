@@ -93,8 +93,8 @@ def main(counts_table_files: List[str], outdir: str, use_log: bool) -> int:
         outdir = os.getcwd()
     outdir = os.path.abspath(outdir)
 
-    print("Output directory {}".format(outdir))
-    print("Input datasets {}".format(" ".join(counts_table_files)))
+    print(f"Output directory {outdir}")
+    print(f"Input datasets {" ".join(counts_table_files)}")
 
     # Parse datasets and sort them by column
     datasets = [(pd.read_table(x,

@@ -27,7 +27,7 @@ def run_command(command: List[str], out: Union[int, IO[bytes]] = subprocess.PIPE
         Exception: If an error occurs during command execution.
     """
     try:
-        print("Running command: {}".format(" ".join(x for x in command).rstrip()))
+        print(f"Running command: {" ".join(x for x in command).rstrip()}")
         proc = subprocess.Popen(
             command,
             stdout=out,
@@ -53,7 +53,7 @@ def main(run_path: str, indexes: List[str], out_path: str) -> int:
         try:
             run_command(["gunzip", "-f", file])
         except Exception as e:
-            print("Error, gunziping FASTQ file {}, {}".format(file, str(e)))
+            print(f"Error, gunziping FASTQ file {file}, {str(e)}")
             return 1
 
     # Second merge the FASTQ files
@@ -66,7 +66,7 @@ def main(run_path: str, indexes: List[str], out_path: str) -> int:
             with open("{}_R2.fastq".format(index), "w") as file2:
                 run_command(["cat"] + r2_files, out=file2)
         except Exception as e:
-            print("Error, merging FASTQ files, {}".format(str(e)))
+            print(f"Error, merging FASTQ files, {str(e)}")
             return 1
 
     # Third gzip everything again
@@ -74,7 +74,7 @@ def main(run_path: str, indexes: List[str], out_path: str) -> int:
         try:
             run_command(["gzip", "-f", file])
         except Exception as e:
-            print("Error, gziping FASTQ file {}, {}".format(file, str(e)))
+            print(f"Error, gziping FASTQ file {file}, {str(e)}")
             return 1
 
     # Move merged FASTQ files to output path

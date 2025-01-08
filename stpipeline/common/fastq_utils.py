@@ -137,17 +137,36 @@ def trim_quality(
         return None, None
 
 
-def check_umi_template(umi, template):
+def check_umi_template(umi: str, template: str) -> bool:
     """
-    Checks that the UMI (molecular barcode) given as input complies
-    with the pattern given in template.
-    Returns True if the UMI complies
-    :param umi: a molecular barcode
-    :param template: a reg-based template with the same
-                    distance of the UMI that should tell how the UMI should be formed
-    :type umi: str
-    :type template: str
-    :return: True if the given molecular barcode fits the pattern given
+    Validates that a UMI (molecular barcode) matches a given template pattern.
+
+    Args:
+        umi: Molecular barcode to validate.
+        template: Regular expression template describing the expected format of the UMI.
+
+    Returns:
+        True if the UMI matches the template, False otherwise.
     """
     p = re.compile(template)
     return p.match(umi) is not None
+
+def has_sufficient_content(sequence: str, chars_to_count: str, threshold: float) -> bool:
+    """
+    Checks if the content of specified characters in a sequence meets or exceeds a given threshold.
+
+    Args:
+        sequence: The sequence to evaluate.
+        chars_to_count: The characters to count (e.g., "AT").
+        threshold: The content threshold as a percentage (0-100).
+
+    Returns:
+       True if the content of specified characters is greater than or equal to the threshold, False otherwise.
+    """
+    if len(sequence) == 0:
+        raise ValueError("The sequence cannot be empty.")
+    if not chars_to_count:
+        raise ValueError("chars_to_count must not be empty.")
+    count = sum(sequence.count(char) for char in chars_to_count)
+    content_percentage = (count / len(sequence)) * 100
+    return content_percentage >= threshold
