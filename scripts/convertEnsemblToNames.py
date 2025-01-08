@@ -29,7 +29,7 @@ def main(st_data_file: str, annotation: str, output_file: str) -> int:
         try:
             gene_map[line["gene_id"]] = line["gene_name"]
         except KeyError as e:
-            print("Error, parsing annotation file, missing key {}".format(e))
+            print(f"Error, parsing annotation file, missing key {e}")
             return 1
     assert (len(gene_map) > 0)
 
@@ -38,14 +38,14 @@ def main(st_data_file: str, annotation: str, output_file: str) -> int:
 
     # Check that the annotation file given was valid
     if len(gene_map) < len(st_data.columns):
-        print("Error, the annotation file given is invalid or does not match the ST data")
+        print(f"Error, the annotation file given is invalid or does not match the ST data")
         return 1
 
     # Checks that there are no duplicated genes ids in the input data
     gene_ids_counter = Counter(st_data.columns)
     for gene_id, count in gene_ids_counter.most_common():
         if count > 1:
-            print("Error, Ensembl ID {} was found {} times in the input matrix.".format(gene_id, count))
+            print(f"Error, Ensembl ID {gene_id} was found {count} times in the input matrix.")
             return 1
 
     # Iterates the genes IDs to get gene names
@@ -62,11 +62,9 @@ def main(st_data_file: str, annotation: str, output_file: str) -> int:
                 # so we keep the Ensembl ID.
                 # We assume input Ensembl ids are unique as we checked this before
                 gene_name = gene_id
-                print("Warning, gene name {} was already matched so the original "
-                                 "Ensembl ID {} will be kept".format(gene_name, gene_id))
+                print(f"Warning, gene name {gene_name} was already matched so the original Ensembl ID {gene_id} will be kept")
         except KeyError:
-            print("Warning, {} was not found in the annotation, "
-                             "so the original Ensembl ID will be kept".format(gene_id))
+            print(f"Warning, {gene_id} was not found in the annotation so the original Ensembl ID will be kept")
             gene_name = gene_id
         adjustedList.append(gene_name)
 

@@ -51,7 +51,7 @@ def main(counts_matrix: str, gene_types_keep: List[str], outfile: str, annotatio
             if gene_types[gene] not in gene_types_keep:
                 genes_drop.append(gene)
         except KeyError:
-            print("Warning, {} was not found in the annotation\n".format(gene))
+            print(f"Warning, {gene} was not found in the annotation")
 
     if len(genes_drop) > 0:
         counts_table.drop(genes_drop, axis=1, inplace=True)

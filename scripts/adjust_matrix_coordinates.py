@@ -40,7 +40,7 @@ def main(counts_matrix: str, coordinates_file: str, update_coordinates: bool, ou
         return 1
 
     if not outfile:
-        outfile = "adjusted_{}".format(os.path.basename(counts_matrix))
+        outfile = f"adjusted_{os.path.basename(counts_matrix)}"
 
     # Get a map of the new coordinates
     new_coordinates = dict()
@@ -70,7 +70,7 @@ def main(counts_matrix: str, coordinates_file: str, update_coordinates: bool, ou
             new_x, new_y = new_coordinates[(x, y)]
             if not update_coordinates:
                 new_x, new_y = x, y
-            new_index_values.append("{0}x{1}".format(new_x, new_y))
+            new_index_values.append(f"{new_x}x{new_y}")
         except KeyError:
             counts_table.drop(index, inplace=True)
 
