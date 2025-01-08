@@ -897,7 +897,9 @@ def createLogger(self):
                                  self.disable_umi,
                                  self.disable_barcode)
                 # update qa_stats
-
+                self.qa_stats.input_reads_reverse = stats["input_reads_reverse"]
+                self.qa_stats.reads_after_trimming_forward  = stats["reads_after_trimming_forward"]
+                self.qa_stats.qa_stats.reads_after_trimming_reverse = stats["reads_after_trimming_reverse"]
             except Exception:
                 raise
 
