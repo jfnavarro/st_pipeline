@@ -27,14 +27,13 @@ def temp_file(tmp_path):
 def test_which_program():
     program = "python"
     result = which_program(program)
-    assert result is not None
-    assert os.path.basename(result) == program
+    assert result is True
 
 
 def test_which_program_not_found():
     program = "nonexistent_program"
     result = which_program(program)
-    assert result is None
+    assert result is False
 
 
 def test_timestamper():

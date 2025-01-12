@@ -110,7 +110,7 @@ def filter_input_data(
     dropped_adaptor = 0
     too_short_after_trimming = 0
 
-    bam_file = pysam.AlignmentFile(out_file, "wb")
+    bam_file = pysam.AlignmentFile(out_file, "wb", header=bam_header)
     if keep_discarded_files:
         out_writer_discarded = dnaio.open(out_file_discarded, mode="w")  # type: ignore
 

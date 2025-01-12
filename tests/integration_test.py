@@ -103,6 +103,7 @@ def setup_pipeline():
     rmtree(outdir, ignore_errors=True)
 
 
+@pytest.fixture
 def test_pipeline_run(setup_pipeline):
     """Test the full pipeline run."""
     data = setup_pipeline
@@ -110,7 +111,7 @@ def test_pipeline_run(setup_pipeline):
     try:
         check_call(
             [
-                "st_pipeline_run.py",
+                "st_pipeline_run",
                 "--verbose",
                 "--no-clean-up",
                 "--star-two-pass-mode",
@@ -139,7 +140,7 @@ def test_pipeline_run(setup_pipeline):
             ]
         )
     except Exception as e:
-        pytest.fail(f"st_pipeline_run.py execution failed: {e}")
+        pytest.fail(f"st_pipeline_run execution failed: {e}")
 
     # Verify output files
     datafile = os.path.join(data["outdir"], "test_stdata.tsv")
@@ -150,17 +151,17 @@ def test_pipeline_run(setup_pipeline):
     assert os.path.exists(readsfile)
     assert os.path.getsize(readsfile) > 1024
     assert os.path.exists(statsfile)
+    return datafile
 
 
-def test_st_qa(setup_pipeline):
-    """Test the st_qa.py."""
-    data = setup_pipeline
-    datafile = os.path.join(data["outdir"], "test_stdata.tsv")
+def test_st_qa(test_pipeline_run):
+    """Test the st_qa."""
+    datafile = test_pipeline_run
 
     try:
-        check_call(["st_qa.py", datafile])
+        check_call(["st_qa", datafile])
     except Exception as e:
-        pytest.fail(f"st_qa.py execution failed: {e}")
+        pytest.fail(f"st_qa execution failed: {e}")
 
     clean_name = os.path.basename(datafile).split(".")[0]
     assert os.path.exists(f"{clean_name}_qa_stats.txt")
@@ -178,15 +179,14 @@ def test_st_qa(setup_pipeline):
     assert os.path.exists(f"{clean_name}_hist_spots_gene_2.pdf")
 
 
-def test_multi_qa(setup_pipeline):
-    """Test the multi_qa.py."""
-    data = setup_pipeline
-    datafile = os.path.join(data["outdir"], "test_stdata.tsv")
+def test_multi_qa(test_pipeline_run):
+    """Test the multi_qa."""
+    datafile = test_pipeline_run
 
     try:
-        check_call(["multi_qa.py", datafile, datafile, datafile, datafile])
+        check_call(["multi_qa", datafile, datafile, datafile, datafile])
     except Exception as e:
-        pytest.fail(f"multi_qa.py execution failed: {e}")
+        pytest.fail(f"multi_qa execution failed: {e}")
 
     assert os.path.exists("violin_plot_reads.pdf")
     assert os.path.exists("violin_plot_genes.pdf")
@@ -194,22 +194,6 @@ def test_multi_qa(setup_pipeline):
     assert os.path.exists("gene_correlations.tsv")
     assert os.path.exists("gene_similarities.tsv")
     assert os.path.exists("pca.pdf")
-
-
-def test_adjust_matrix_coordinates_help():
-    """Test for adjust_matrix_coordinates.py"""
-    try:
-        check_call(["adjust_matrix_coordinates.py", "--help"])
-    except Exception as e:
-        pytest.fail(f"adjust_matrix_coordinates.py failed: {e}")
-
-
-def test_merge_fastq_help():
-    """Test for merge_fastq.py"""
-    try:
-        check_call(["merge_fastq.py", "--help"])
-    except Exception as e:
-        pytest.fail(f"merge_fastq.py failed: {e}")
 
 
 @pytest.fixture
@@ -242,11 +226,11 @@ def setup_test_files(tmp_path):
 def test_adjust_matrix_coordinates(setup_test_files, tmp_path):
     counts_matrix, coordinates_file, outfile = setup_test_files
 
-    # Call the adjust_matrix_coordinates.py script
+    # Call the adjust_matrix_coordinates script
     try:
         check_call(
             [
-                "adjust_matrix_coordinates.py",
+                "adjust_matrix_coordinates",
                 str(counts_matrix),
                 "--coordinates-file",
                 str(coordinates_file),
@@ -256,7 +240,7 @@ def test_adjust_matrix_coordinates(setup_test_files, tmp_path):
             ]
         )
     except Exception as e:
-        pytest.fail(f"adjust_matrix_coordinates.py execution failed: {e}")
+        pytest.fail(f"adjust_matrix_coordinates execution failed: {e}")
 
     # Verify the output file
     assert outfile.exists(), "Output file should be created"
@@ -302,10 +286,10 @@ def test_merge_fastq(setup_fastq_files, tmp_path):
     # Run the script
     try:
         check_call(
-            ["merge_fastq.py" "--run-path", str(run_path), "--out-path", str(out_path), "--identifiers", *identifiers]
+            ["merge_fastq", "--run-path", str(run_path), "--out-path", str(out_path), "--identifiers", *identifiers]
         )
     except Exception as e:
-        pytest.fail(f"merge_fastq.py execution failed: {e}")
+        pytest.fail(f"merge_fastq execution failed: {e}")
 
     # Verify that the merged files are created in the output directory
     for idx in identifiers:
@@ -318,7 +302,7 @@ def test_merge_fastq(setup_fastq_files, tmp_path):
 @pytest.fixture
 def setup_filter_gene_type_data(tmp_path):
     """
-    Fixture to create fake data for the filter_gene_type_matrix.py script.
+    Fixture to create fake data for the filter_gene_type_matrix script.
     """
     # Create a temporary counts matrix file
     counts_matrix = tmp_path / "counts_matrix.tsv"
@@ -332,13 +316,14 @@ def setup_filter_gene_type_data(tmp_path):
 
     # Create a temporary annotation file
     annotation_file = tmp_path / "annotation.gtf"
-    annotation_data = """\
-1	gene_id "gene1"; gene_name "Gene1"; gene_type "protein_coding";
-1	gene_id "gene2"; gene_name "Gene2"; gene_type "lincRNA";
-1	gene_id "gene3"; gene_name "Gene3"; gene_type "protein_coding";
-"""
+    content = (
+        "##gff-version 3\n"
+        "chr1\tsource\tfeature\t100\t200\t.\t+\t.\tgene_id=gene1;gene_name=gene1;gene_type=protein_coding\n"
+        "chr1\tsource\tfeature\t300\t400\t.\t-\t.\tgene_id=gene2;gene_name=gene2;gene_type=lincRNA\n"
+        "chr2\tsource\tfeature\t500\t600\t.\t+\t.\tgene_id=gene3;gene_name=gene3;gene_type=protein_coding\n"
+    )
     with open(annotation_file, "w") as f:
-        f.write(annotation_data)
+        f.write(content)
 
     # Output file path
     outfile = tmp_path / "filtered_counts_matrix.tsv"
@@ -353,7 +338,7 @@ def test_filter_gene_type_matrix(setup_filter_gene_type_data, tmp_path):
     try:
         check_call(
             [
-                "filter_gene_type_matrix.py",
+                "filter_gene_type_matrix",
                 str(counts_matrix),
                 "--annotation",
                 str(annotation_file),
@@ -364,22 +349,22 @@ def test_filter_gene_type_matrix(setup_filter_gene_type_data, tmp_path):
             ]
         )
     except Exception as e:
-        pytest.fail(f"filter_gene_type_matrix.py execution failed: {e}")
+        pytest.fail(f"filter_gene_type_matrix execution failed: {e}")
 
     # Validate the output file
     assert outfile.exists(), "Filtered counts matrix should exist"
     filtered_df = pd.read_csv(outfile, sep="\t", index_col=0)
 
     # Validate the filtered data
-    assert "gene1" in filtered_df.columns, "gene1 should be present in the filtered data"
-    assert "gene3" in filtered_df.columns, "gene3 should be present in the filtered data"
-    assert "gene2" not in filtered_df.columns, "gene2 should be filtered out"
+    assert "gene1" in filtered_df.columns.to_list(), "gene1 should be present in the filtered data"
+    assert "gene3" in filtered_df.columns.to_list(), "gene3 should be present in the filtered data"
+    assert "gene2" not in filtered_df.columns.to_list(), "gene2 should be filtered out"
 
 
 @pytest.fixture
 def setup_convert_ensembl_data(tmp_path):
     """
-    Fixture to create fake data for the convertEnsemblToNames.py script.
+    Fixture to create fake data for the convertEnsemblToNames script.
     """
     # Create a temporary counts matrix file
     counts_matrix = tmp_path / "counts_matrix.tsv"
@@ -393,13 +378,14 @@ def setup_convert_ensembl_data(tmp_path):
 
     # Create a temporary annotation file
     annotation_file = tmp_path / "annotation.gtf"
-    annotation_data = """\
-1	gene_id "ENSG000001"; gene_name "GeneA";
-1	gene_id "ENSG000002"; gene_name "GeneB";
-1	gene_id "ENSG000003"; gene_name "GeneC";
-"""
+    content = (
+        "##gff-version 3\n"
+        "chr1\tsource\tfeature\t100\t200\t.\t+\t.\tgene_id=ENSG000001;gene_name=Gene1\n"
+        "chr1\tsource\tfeature\t300\t400\t.\t-\t.\tgene_id=ENSG000002;gene_name=Gene2\n"
+        "chr2\tsource\tfeature\t500\t600\t.\t+\t.\tgene_id=ENSG000003;gene_name=Gene3\n"
+    )
     with open(annotation_file, "w") as f:
-        f.write(annotation_data)
+        f.write(content)
 
     # Output file path
     output_file = tmp_path / "output_counts_matrix.tsv"
@@ -414,7 +400,7 @@ def test_convert_ensembl_to_names(setup_convert_ensembl_data):
     try:
         check_call(
             [
-                "convertEnsemblToNames.py",
+                "convertEnsemblToNames",
                 str(counts_matrix),
                 "--annotation",
                 str(annotation_file),
@@ -423,16 +409,16 @@ def test_convert_ensembl_to_names(setup_convert_ensembl_data):
             ]
         )
     except Exception as e:
-        pytest.fail(f"convertEnsemblToNames.py execution failed: {e}")
+        pytest.fail(f"convertEnsemblToNames execution failed: {e}")
 
     # Validate the output file
     assert output_file.exists(), "Converted counts matrix should exist"
     converted_df = pd.read_csv(output_file, sep="\t", index_col=0)
 
     # Validate the converted data
-    assert "GeneA" in converted_df.columns, "GeneA should be present in the converted data"
-    assert "GeneB" in converted_df.columns, "GeneB should be present in the converted data"
-    assert "GeneC" in converted_df.columns, "GeneC should be present in the converted data"
-    assert "ENSG000001" not in converted_df.columns, "ENSG000001 should not be present in the converted data"
-    assert "ENSG000002" not in converted_df.columns, "ENSG000002 should not be present in the converted data"
-    assert "ENSG000003" not in converted_df.columns, "ENSG000003 should not be present in the converted data"
+    assert "Gene1" in converted_df.columns.to_list(), "GeneA should be present in the converted data"
+    assert "Gene2" in converted_df.columns.to_list(), "GeneB should be present in the converted data"
+    assert "Gene3" in converted_df.columns.to_list(), "GeneC should be present in the converted data"
+    assert "ENSG000001" not in converted_df.columns.to_list(), "ENSG000001 should not be present in the converted data"
+    assert "ENSG000002" not in converted_df.columns.to_list(), "ENSG000002 should not be present in the converted data"
+    assert "ENSG000003" not in converted_df.columns.to_list(), "ENSG000003 should not be present in the converted data"

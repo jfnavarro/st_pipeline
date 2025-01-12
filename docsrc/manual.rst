@@ -13,7 +13,7 @@ the path to a STAR genome index, the path to a annotation file in GTF
 format and a dataset name.
 
 The ST Pipeline has many parameters, you can see a description of them
-by typing : st_pipeline_run.py --help
+by typing : st_pipeline_run --help
 
 Note that the minimum read length is dependant on the type of kit used, and
 should be adjusted accordingly, i.e. a 150bp kit should have a different

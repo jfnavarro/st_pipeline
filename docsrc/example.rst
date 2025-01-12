@@ -25,7 +25,7 @@ The following is an example of an BASH file to run the ST pipeline.
     EXP=YOUR_EXP_NAME
 
     # Running the pipeline
-    st_pipeline_run.py \
+    st_pipeline_run \
       --output-folder $OUTPUT \
       --ids $ID \
       --ref-map $MAP \

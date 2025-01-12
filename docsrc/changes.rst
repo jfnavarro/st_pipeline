@@ -6,10 +6,13 @@ Changes
 * Refactor code to modern Python (black, mypy, isort)
 * Added Github Actions
 * Added pre-commit hooks
-* Added Docker container
 * Change the build configuration to Poetry
+* Added Docker container
 * Added tox
 * Updated versions of dependencies
+* Perform code optimizations
+* Add test for full coveragge
+* Bump taggd to 0.4.0
 
 **Version 1.8.2**
 * Added annotation (htseq) feature type as parameter

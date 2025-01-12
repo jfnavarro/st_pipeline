@@ -5,7 +5,7 @@ Unit-test the package filter
 import pytest
 import dnaio
 from unittest.mock import Mock, patch
-from stpipeline.common.filter import filter_input_data
+from stpipeline.common.filter import filter_input_data, bam_header
 
 
 def generate_test_fastq(filepath, records):
@@ -86,4 +86,4 @@ def test_filter_input_data(mock_alignment_file, setup_fastq_files, tmp_path):
 
     assert total_reads == 6
     assert remaining_reads < total_reads
-    mock_alignment_file.assert_called_once_with(str(out_file), "wb")
+    mock_alignment_file.assert_called_once_with(str(out_file), "wb", header=bam_header)

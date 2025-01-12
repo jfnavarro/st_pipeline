@@ -1,14 +1,14 @@
 # Spatial Transcriptomics Pipeline
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.9](https://img.shields.io/badge/python-3.9-blue.svg)](https://www.python.org/downloads/release/python-390/)
 [![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/downloads/release/python-310/)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-311/)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-312/)
 [![PyPI version](https://badge.fury.io/py/stpipeline.svg)](https://badge.fury.io/py/stpipeline)
 [![Build Status](https://github.com/jfnavarro/st_pipeline/actions/workflows/dev.yml/badge.svg)](https://github.com/jfnavarro/st_pipeline/actions/workflows/dev)
 
 The ST Pipeline contains the tools and scripts needed to process and analyze the raw
-files generated with Spatial Transcriptomics and Visium raw data in FASTQ format to generate datasets for down-stream analysis.
+files generated with Spatial Transcriptomics and Visium in FASTQ format to generate datasets for down-stream analysis.
 The ST pipeline can also be used to process single cell RNA-seq data as long as a
 file with barcodes identifying each cell is provided (same template as the files in the folder "ids").
 
@@ -22,7 +22,7 @@ The following files/parameters are commonly required :
 - FASTQ files (Read 1 containing the spatial information and the UMI and read 2 containing the genomic sequence)
 - A genome index generated with STAR
 - An annotation file in GTF or GFF3 format (optional when using a transcriptome)
-- The file containing the barcodes and array coordinates (look at the folder "ids" to use it as a reference).
+- A file containing the barcodes and array coordinates (look at the folder "ids" to use it as a reference).
 Basically this file contains 3 columns (BARCODE, X and Y), so if you provide this
 file with barcodes identifying cells (for example), the ST pipeline can be used for single cell data.
 This file is also optional if the data is not barcoded (for example RNA-Seq data).
@@ -30,7 +30,7 @@ This file is also optional if the data is not barcoded (for example RNA-Seq data
 
 The ST pipeline has multiple parameters mostly related to trimming, mapping and annotation
 but generally the default values are good enough. You can see a full
-description of the parameters typing "st_pipeline_run.py --help" after you have installed the ST pipeline.
+description of the parameters typing `st_pipeline_run --help` after you have installed the ST pipeline.
 
 The input FASTQ files can be given in gzip/bzip format as well.
 
@@ -57,9 +57,9 @@ The ST pipeline will also output a log file with useful stats and information.
 
 ## Installation
 
-We recommend you install a virtual environment like Pyenv or Anaconda before you install the pipeline.
+We recommend you install a virtual environment like `pyenv` or `Anaconda` before you install the pipeline.
 
-The ST Pipeline works with python 3.9, 3.10 and 3.11.
+The ST Pipeline works with python 3.10, 3.11 and 3.12.
 
 You can install the ST Pipeline using PyPy:
 
@@ -90,14 +90,20 @@ cd stpipeline
 To install the pipeline type:
 
 ```bash
-python setup.py build
-python setup.py install
+pip install .
+```
+
+You can also use `poetry` to install the pipeline:
+
+```bash
+poetry build
+poetry install
 ```
 
 To see the different options type:
 
 ```bash
-st_pipeline_run.py --help
+st_pipeline_run --help
 ```
 
 ## Testing
@@ -105,8 +111,13 @@ st_pipeline_run.py --help
 To run a test type (make sure you are inside the source folder):
 
 ```bash
-python setup.py test
-python -m unittest testrun.py
+pytest
+```
+
+or
+
+```bash
+poetry run pytest
 ```
 
 ## Requirements
@@ -118,13 +129,6 @@ If you use anaconda you can install STAR with:
 
 ```bash
 conda install -c bioconda star
-```
-
-The ST Pipeline requires `samtools` installed in the system
-If you use anaconda you can install samtools with:
-
-```bash
-conda install -c bioconda samtools openssl=1.0
 ```
 
 The ST Pipeline needs a computer with at least 32GB of RAM (depending on the size of the genome) and 8 cpu cores.
@@ -140,7 +144,7 @@ You can see them in the file `requirements.txt`
 An example run would be:
 
 ```bash
-st_pipeline_run.py --expName test --ids ids_file.txt \
+st_pipeline_run --expName test --ids ids_file.txt \
   --ref-map path_to_index --log-file log_file.txt --output-folder /home/me/results \
   --ref-annotation annotation_file.gtf file1.fastq file2.fastq
 ```
@@ -164,7 +168,7 @@ the output file so it contains gene ids/names instead of Ensembl ids.
 You can use this tool that comes with the ST Pipeline
 
 ```bash
-convertEnsemblToNames.py --annotation path_to_annotation_file --output st_data_updated.tsv st_data.tsv
+convertEnsemblToNames --annotation path_to_annotation_file --output st_data_updated.tsv st_data.tsv
 ```
 
 ## Merge demultiplexed FASTQ files
@@ -173,7 +177,7 @@ If you used different indexes to sequence and need to merge the files
 you can use the script `merge_fastq.py` that comes with the ST Pipeline
 
 ```bash
-merge_fastq.py --run-path path_to_run_folder --out-path path_to_output --identifiers S1 S2 S3 S4
+merge_fastq --run-path path_to_run_folder --out-path path_to_output --identifiers S1 S2 S3 S4
 ```
 
 Where `--identifiers` will be strings that identify each demultiplexed sample.
@@ -185,7 +189,7 @@ to certain gene types (For instance to keep only protein_coding). You can do
 so with the script `filter_gene_type_matrix.py` that comes with the ST Pipeline
 
 ```bash
-filter_gene_type_matrix.py --gene-types-keep protein-coding --annotation path_to_annotation_file stdata.tsv
+filter_gene_type_matrix --gene-types-keep protein-coding --annotation path_to_annotation_file stdata.tsv
 ```
 
 You may include the parameter `--ensembl-ids` if your genes are represented as emsembl ids instead.
@@ -197,7 +201,7 @@ to keep only spots inside the tissue. You can do so with the script `adjust_matr
 that comes with the ST Pipeline
 
 ```bash
-adjust_matrix_coordinates.py --outfile new_stdata.tsv --coordinates-file coordinates.txt stdata.tsv
+adjust_matrix_coordinates --outfile new_stdata.tsv --coordinates-file coordinates.txt stdata.tsv
 ```
 
 Where `coordinates.txt` will be a tab delimited file with 6 columns:
@@ -215,13 +219,13 @@ The ST Pipeline generate useful stats/QC information in the LOG file but if you
 want to obtain more detailed information about the quality of the data, you can run the following script:
 
 ```bash
-st_qa.py stdata.tsv
+st_qa stdata.tsv
 ```
 
 If you want to perform quality stats on multiple datasets you can run:
 
 ```bash
-multi_qa.py stdata1.tsv stadata2.tsv stdata3.tsv stdata4.tsv
+multi_qa stdata1.tsv stadata2.tsv stdata3.tsv stdata4.tsv
 ```
 
 Multi_qa.py generates violing plots, correlation plots/tables and more useful information and

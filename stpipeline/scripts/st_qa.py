@@ -100,7 +100,14 @@ def histogram(
         raise RuntimeError("Failed to create histogram") from e
 
 
-def main(input_data: str) -> int:
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("counts_matrix", help="Matrix with gene counts (genes as columns) in TSV format")
+    args = parser.parse_args()
+    sys.exit(run(args.counts_matrix))
+
+
+def run(input_data: str) -> int:
     # Parse the data
     counts_table = pd.read_table(input_data, sep="\t", header=0, index_col=0)
 
@@ -268,7 +275,4 @@ def main(input_data: str) -> int:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("counts_matrix", help="Matrix with gene counts (genes as columns) in TSV format")
-    args = parser.parse_args()
-    sys.exit(main(args.counts_matrix))
+    main()

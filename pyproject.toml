@@ -4,7 +4,7 @@ version = "2.0.0"
 description = "ST Pipeline: An automated pipeline for spatial mapping of unique transcripts"
 authors = ["Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>"]
 license = "MIT"
-readme = "README_SHORT.md"
+readme = "README.md"
 keywords = ["visium", "analysis", "pipeline", "spatial", "transcriptomics", "toolkit"]
 repository = "https://github.com/jfnavarro/st_pipeline"
 classifiers = [
@@ -22,10 +22,8 @@ classifiers = [
 ]
 include = [
     { path = "README.md" },
-    { path = "README_SHORT.md" },
     { path = "LICENSE" },
-    { path = "doc/**" },
-    { path = "scripts/**" }
+    { path = "doc/**" }
 ]
 
 [tool.poetry.dependencies]
@@ -47,13 +45,13 @@ dnaio = "^1.2.3"
 distance = "^0.1.3"
 
 [tool.poetry.scripts]
-st_qa = "scripts.st_qa:main"
-st_pipeline_run = "scripts.st_pipeline_run:main"
-multi_qa = "scripts.multi_qa:main"
-merge_fastq = "scripts.merge_fastq:main"
-filter_gene_type_matrix = "scripts.filter_gene_type_matrix:main"
-convertEnsemblToNames = "scripts.convertEnsemblToNames:main"
-adjust_matrix_coordinates = "scripts.adjust_matrix_coordinates:main"
+st_qa = "stpipeline.scripts.st_qa:main"
+st_pipeline_run = "stpipeline.scripts.st_pipeline_run:main"
+multi_qa = "stpipeline.scripts.multi_qa:main"
+merge_fastq = "stpipeline.scripts.merge_fastq:main"
+filter_gene_type_matrix = "stpipeline.scripts.filter_gene_type_matrix:main"
+convertEnsemblToNames = "stpipeline.scripts.convertEnsemblToNames:main"
+adjust_matrix_coordinates = "stpipeline.scripts.adjust_matrix_coordinates:main"
 
 [tool.poetry.extras]
 test = [

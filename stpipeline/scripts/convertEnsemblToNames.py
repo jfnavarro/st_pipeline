@@ -18,7 +18,16 @@ from stpipeline.common.gff_reader import gff_lines
 from collections import Counter
 
 
-def main(st_data_file: str, annotation: str, output_file: str) -> int:
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("counts_matrix", help="Matrix with gene counts (genes as columns) in TSV format")
+    parser.add_argument("--output", default="output.tsv", help="Name of the output file, default output.tsv")
+    parser.add_argument("--annotation", required=True, help="Path to the annotation file used to generate the data")
+    args = parser.parse_args()
+    sys.exit(run(args.counts_matrix, args.annotation, args.output))
+
+
+def run(st_data_file: str, annotation: str, output_file: str) -> int:
     if not os.path.isfile(st_data_file) or not os.path.isfile(annotation):
         print("Error, input file(s) not present or invalid format")
         return 1
@@ -80,9 +89,4 @@ def main(st_data_file: str, annotation: str, output_file: str) -> int:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("counts_matrix", help="Matrix with gene counts (genes as columns) in TSV format")
-    parser.add_argument("--output", default="output.tsv", help="Name of the output file, default output.tsv")
-    parser.add_argument("--annotation", required=True, help="Path to the annotation file used to generate the data")
-    args = parser.parse_args()
-    sys.exit(main(args.counts_matrix, args.annotation, args.output))
+    main()

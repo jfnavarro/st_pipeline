@@ -5,39 +5,21 @@ import threading
 from datetime import datetime
 import os
 import subprocess
-from typing import Optional, Generator, IO, Any
+from typing import Optional, IO, Any
+import shutil
 
 
-def which_program(program: str) -> Optional[str]:
+def which_program(program: str) -> bool:
     """
-    Checks if a program exists and is executable.
+    Check if a program is installed and available in the system's PATH.
 
     Args:
-        program: The program name.
+        program: The name of the program to check.
 
     Returns:
-        The full path to the program if found, otherwise None.
+        True if the program is found and executable, False otherwise.
     """
-
-    def is_exe(fpath: str) -> bool:
-        return fpath is not None and os.path.exists(fpath) and os.access(fpath, os.X_OK)
-
-    def ext_candidates(fpath: str) -> Generator[str, None, None]:
-        yield fpath
-        for ext in os.environ.get("PATHEXT", "").split(os.pathsep):
-            yield fpath + ext
-
-    fpath, _ = os.path.split(program)
-    if fpath:
-        if is_exe(program):
-            return program
-    else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            exe_file = os.path.join(path, program)
-            for candidate in ext_candidates(exe_file):
-                if is_exe(candidate):
-                    return candidate
-    return None
+    return shutil.which(program) is not None
 
 
 class TimeStamper:

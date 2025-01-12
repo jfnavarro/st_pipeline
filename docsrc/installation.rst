@@ -10,7 +10,7 @@ We recommend to download and install Anaconda (https://www.anaconda.com/products
 We then create a virtual environment from which we will run the pipeline in.
 Type the following command:
 
-    ``conda create -n stpipeline python=3.9``
+    ``conda create -n stpipeline python=3.10``
 
 The name for the virtual environment that we have just created is specified by
 the -n flag. Here is is called stpipeline, but this can be anything that you want
@@ -46,9 +46,11 @@ Activate the virtual environment (if not already active)
 
 Install the pipeline
 
-    ``python setup.py build``
+    ``pip install .``
 
-    ``python setup.py install``
+or using poetry:
+
+    ``poetry install``
 
 Alternatively, you can simply install the pipeline using PyPy:
 

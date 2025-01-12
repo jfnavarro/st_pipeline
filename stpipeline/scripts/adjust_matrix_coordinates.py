@@ -34,7 +34,24 @@ import os
 import pandas as pd
 
 
-def main(counts_matrix: str, coordinates_file: str, update_coordinates: bool, outfile: str) -> int:
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("counts_matrix", help="Matrix with gene counts (genes as columns) in TSV format")
+    parser.add_argument("--outfile", help="Name of the output file")
+    parser.add_argument(
+        "--update-coordinates",
+        action="store_true",
+        default=False,
+        help="Updates the spot coordinates in the output matrix with the\n"
+        "new coordinates present in the coordinates file",
+    )
+    parser.add_argument("--coordinates-file", required=True, help="New coordinates in a tab delimited file")
+    args = parser.parse_args()
+
+    sys.exit(run(args.counts_matrix, args.coordinates_file, args.update_coordinates, args.outfile))
+
+
+def run(counts_matrix: str, coordinates_file: str, update_coordinates: bool, outfile: str) -> int:
     if not os.path.isfile(counts_matrix) or not os.path.isfile(coordinates_file):
         print("Error, input file(s) not present or invalid format")
         return 1
@@ -87,17 +104,4 @@ def main(counts_matrix: str, coordinates_file: str, update_coordinates: bool, ou
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("counts_matrix", help="Matrix with gene counts (genes as columns) in TSV format")
-    parser.add_argument("--outfile", help="Name of the output file")
-    parser.add_argument(
-        "--update-coordinates",
-        action="store_true",
-        default=False,
-        help="Updates the spot coordinates in the output matrix with the\n"
-        "new coordinates present in the coordinates file",
-    )
-    parser.add_argument("--coordinates-file", required=True, help="New coordinates in a tab delimited file")
-    args = parser.parse_args()
-
-    sys.exit(main(args.counts_matrix, args.coordinates_file, args.update_coordinates, args.outfile))
+    main()

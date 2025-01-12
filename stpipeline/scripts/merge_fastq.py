@@ -37,7 +37,22 @@ def run_command(command: List[str], out: Union[int, IO[bytes]] = subprocess.PIPE
         raise e
 
 
-def main(run_path: str, indexes: List[str], out_path: str) -> int:
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--run-path", required=True, help="Path to the run folder")
+    parser.add_argument("--out-path", required=True, help="Path to the output folder")
+    parser.add_argument(
+        "--identifiers",
+        required=True,
+        nargs="+",
+        type=str,
+        help="List of identifiers for each sample (E.x. S1 S2 S3 S4)",
+    )
+    args = parser.parse_args()
+    sys.exit(run(args.run_path, args.identifiers, args.out_path))
+
+
+def run(run_path: str, indexes: List[str], out_path: str) -> int:
     if not os.path.isdir(run_path) or not os.path.isdir(out_path):
         print("Error, either run_path or out_path folders do not exist")
         return 1
@@ -82,15 +97,4 @@ def main(run_path: str, indexes: List[str], out_path: str) -> int:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--run-path", required=True, help="Path to the run folder")
-    parser.add_argument("--out-path", required=True, help="Path to the output folder")
-    parser.add_argument(
-        "--identifiers",
-        required=True,
-        nargs="+",
-        type=str,
-        help="List of identifiers for each sample (E.x. S1 S2 S3 S4)",
-    )
-    args = parser.parse_args()
-    sys.exit(main(args.run_path, args.identifiers, args.out_path))
+    main()

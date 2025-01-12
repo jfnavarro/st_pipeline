@@ -103,7 +103,21 @@ def create_pca_plot(data: Any, labels: List[str], title: str, outfile: str) -> N
     fig.savefig(outfile, format="pdf", dpi=90)
 
 
-def main(counts_table_files: List[str], outdir: str, use_log: bool) -> int:
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument(
+        "counts_matrix_files", nargs="+", help="One or more matrices with gene counts (genes as columns) in TSV format"
+    )
+    parser.add_argument("--outdir", default=None, help="Path to the output directory")
+    parser.add_argument(
+        "--use-log-scale", action="store_true", default=False, help="Convert counts to log space for the correlation"
+    )
+    args = parser.parse_args()
+
+    sys.exit(run(args.counts_matrix_files, args.outdir, args.use_log_scale))
+
+
+def run(counts_table_files: List[str], outdir: str, use_log: bool) -> int:
     if len(counts_table_files) == 0 or any(not os.path.isfile(f) for f in counts_table_files):
         print("Error, input file(s) not present or invalid format")
         return 1
@@ -206,14 +220,4 @@ def main(counts_table_files: List[str], outdir: str, use_log: bool) -> int:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument(
-        "counts_matrix_files", nargs="+", help="One or more matrices with gene counts (genes as columns) in TSV format"
-    )
-    parser.add_argument("--outdir", default=None, help="Path to the output directory")
-    parser.add_argument(
-        "--use-log-scale", action="store_true", default=False, help="Convert counts to log space for the correlation"
-    )
-    args = parser.parse_args()
-
-    sys.exit(main(args.counts_matrix_files, args.outdir, args.use_log_scale))
+    main()

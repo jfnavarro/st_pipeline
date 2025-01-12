@@ -283,13 +283,13 @@ class Pipeline:
             raise RuntimeError(error)
 
         # Test the presence of the required tools
-        required_scripts = set("STAR")
+        required_scripts = ["STAR"]
         unavailable_scripts = set()
         for script in required_scripts:
-            if which_program(script) is None:
+            if not which_program(script):
                 unavailable_scripts.add(script)
         if len(unavailable_scripts) != 0:
-            error = "Error starting the pipeline.\n" "Required software not found:\t".join(unavailable_scripts)
+            error = f"Error starting the pipeline. Required software not found: {' '.join(required_scripts)}"
             logger.error(error)
             raise RuntimeError(error)
 

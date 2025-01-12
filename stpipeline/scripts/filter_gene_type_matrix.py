@@ -24,7 +24,29 @@ from stpipeline.common.gff_reader import gff_lines
 from typing import List
 
 
-def main(counts_matrix: str, gene_types_keep: List[str], outfile: str, annotation: str, ensembl_ids: bool) -> int:
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("counts_matrix", help="Matrix with gene counts (genes as columns) in TSV format")
+    parser.add_argument("--outfile", help="Name of the output file")
+    parser.add_argument(
+        "--gene-types-keep",
+        required=True,
+        nargs="+",
+        type=str,
+        help="List of Ensembl gene types to keep (E.x protein_coding lincRNA",
+    )
+    parser.add_argument("--annotation", help="The Ensembl annotation file", required=True, type=str)
+    parser.add_argument(
+        "--ensembl-ids",
+        action="store_true",
+        default=False,
+        help="Pass this parameter if the genes in the matrix " "are named with Ensembl Ids instead of gene names",
+    )
+    args = parser.parse_args()
+    sys.exit(run(args.counts_matrix, args.gene_types_keep, args.outfile, args.annotation, args.ensembl_ids))
+
+
+def run(counts_matrix: str, gene_types_keep: List[str], outfile: str, annotation: str, ensembl_ids: bool) -> int:
     if not os.path.isfile(counts_matrix) or not os.path.isfile(annotation):
         print("Error, input file(s) not present or invalid format")
         return 1
@@ -66,22 +88,4 @@ def main(counts_matrix: str, gene_types_keep: List[str], outfile: str, annotatio
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("counts_matrix", help="Matrix with gene counts (genes as columns) in TSV format")
-    parser.add_argument("--outfile", help="Name of the output file")
-    parser.add_argument(
-        "--gene-types-keep",
-        required=True,
-        nargs="+",
-        type=str,
-        help="List of Ensembl gene types to keep (E.x protein_coding lincRNA",
-    )
-    parser.add_argument("--annotation", help="The Ensembl annotation file", required=True, type=str)
-    parser.add_argument(
-        "--ensembl-ids",
-        action="store_true",
-        default=False,
-        help="Pass this parameter if the genes in the matrix " "are named with Ensembl Ids instead of gene names",
-    )
-    args = parser.parse_args()
-    sys.exit(main(args.counts_matrix, args.gene_types_keep, args.outfile, args.annotation, args.ensembl_ids))
+    main()
