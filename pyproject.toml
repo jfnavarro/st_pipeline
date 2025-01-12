@@ -24,7 +24,8 @@ include = [
     { path = "README.md" },
     { path = "README_SHORT.md" },
     { path = "LICENSE" },
-    { path = "doc/**" }
+    { path = "doc/**" },
+    { path = "scripts/**" }
 ]
 
 [tool.poetry.dependencies]

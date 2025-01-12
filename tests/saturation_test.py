@@ -38,6 +38,11 @@ def mock_bam_file(tmp_path):
             segment.flag = 0
             segment.reference_id = 0
             segment.reference_start = i * 10
+            segment.cigar = [(0, len(segment.query_sequence))]  # 0: MATCH
+            segment.set_tag("B1", i)
+            segment.set_tag("B2", i * 2)
+            segment.set_tag("XF", "gene1")
+            segment.set_tag("B3", "UMI1")
             bam_file.write(segment)
     return str(bam_path), 100
 
@@ -95,7 +100,7 @@ def test_compute_saturation_metrics(mock_bam_file, tmp_path):
     saturation_points = [10, 50, 100]
     temp_folder = tmp_path
     gff_filename = tmp_path / "mock.gff"
-    gff_filename.write_text("chr1\tsource\tfeature\t1\t1000\t.\t+\t.\tID=gene1\n")
+    gff_filename.write_text("chr1\tsource\tfeature\t1\t1000\t.\t+\t.\tgene_id=gene1\n")
 
     files, file_names, subsampling = _generate_subsamples(nreads, bam_file, saturation_points, temp_folder)
     _write_subsamples_to_files(files, subsampling, bam_file, saturation_points)

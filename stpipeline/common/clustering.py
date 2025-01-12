@@ -17,14 +17,16 @@ def _breadth_first_search(node: str, adj_list: Dict[str, List[str]]) -> Set[str]
     Performs a breadth-first search (BFS) to find all connected components starting from a node.
     """
     searched = set()
-    found = set(node)
-    queue = set(node)
-    while len(queue) > 0:
-        node = (list(queue))[0]
-        found.update(adj_list[node])
-        queue.update(adj_list[node])
-        searched.add(node)
-        queue.difference_update(searched)
+    queue = {node}
+    found = set(queue)
+    while queue:
+        current = queue.pop()
+        searched.add(current)
+        # Convert neighbors to a set to handle list inputs
+        neighbors = set(adj_list[current]) - searched
+        found.update(neighbors)
+        # Add new neighbors to the queue
+        queue.update(neighbors)
     return found
 
 

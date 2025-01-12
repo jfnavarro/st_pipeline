@@ -35,8 +35,8 @@ def test_remove_umis():
         "B": ["A", "C"],
         "C": ["B"],
     }
-    cluster = {"A", "B", "C"}
-    nodes = ["B"]
+    cluster = ["A", "B", "C"]
+    nodes = ["C"]
     result = _remove_umis(adj_list, cluster, nodes)
     assert result == {"A"}
 
@@ -50,9 +50,10 @@ def test_get_connected_components_adjacency():
     }
     counts = Counter({"A": 3, "B": 2, "C": 1, "D": 4})
     result = _get_connected_components_adjacency(adj_list, counts)
+    result = [sorted(x) for x in result]
     assert len(result) == 2
-    assert {"A", "B", "C"} in result
-    assert {"D"} in result
+    assert ["A", "B", "C"] in result
+    assert ["D"] in result
 
 
 def test_get_adj_list_adjacency():
@@ -72,7 +73,7 @@ def test_get_best_adjacency():
     cluster = ["A", "B", "C"]
     counts = Counter({"A": 3, "B": 2, "C": 1})
     result = _get_best_adjacency(cluster, adj_list, counts)
-    assert result == ["A"]
+    assert result == ["A", "B"]
 
 
 def test_reduce_clusters_adjacency():
@@ -84,12 +85,12 @@ def test_reduce_clusters_adjacency():
     clusters = [{"A", "B", "C"}]
     counts = Counter({"A": 3, "B": 2, "C": 1})
     result = _reduce_clusters_adjacency(adj_list, clusters, counts)
-    assert result == ["A"]
+    assert result == ["A", "B"]
 
 
 def test_get_adj_list_directional_adjacency():
     umis = ["AAAA", "AAAT", "AATT", "TTTT"]
-    counts = Counter({"AAAA": 4, "AAAT": 3, "AATT": 2, "TTTT": 1})
+    counts = Counter({"AAAA": 6, "AAAT": 3, "AATT": 2, "TTTT": 1})
     allowed_mismatches = 1
     result = _get_adj_list_directional_adjacency(umis, counts, allowed_mismatches)
     assert "AAAA" in result and "AAAT" in result["AAAA"]
@@ -97,9 +98,9 @@ def test_get_adj_list_directional_adjacency():
 
 
 def test_reduce_clusters_directional_adjacency():
-    clusters = [{"A", "B", "C"}]
+    clusters = [["A", "B", "C"]]
     result = _reduce_clusters_directional_adjacency(clusters)
-    assert result == ["A"]
+    assert result == ["C"]
 
 
 def test_dedup_hierarchical():

@@ -181,7 +181,7 @@ def _compute_saturation_metrics(
 
         results["reads"].append(stats["reads_after_duplicates_removal"])
         results["genes"].append(stats["genes_found"])
-        results["avg_genes"].append(stats["average_gene_feature"])
+        results["avg_genes"].append(stats["average_genes_feature"])
         results["avg_reads"].append(stats["average_reads_feature"])
 
     return results
