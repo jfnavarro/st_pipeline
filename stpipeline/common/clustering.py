@@ -6,7 +6,7 @@ molecular barcodes (UMIs) sequences by hamming distance
 import numpy as np
 from scipy.cluster.hierarchy import linkage, fcluster  # type: ignore
 from collections import defaultdict
-from stpipeline.common.cdistance import hamming_distance  # type: ignore
+from stpipeline.common.distance import hamming_distance
 import random
 from collections import Counter
 from typing import List, Dict, Set, Any
@@ -42,12 +42,7 @@ def _get_adj_list_adjacency(umis: List[str], allowed_mismatches: int) -> Dict[st
     Constructs an adjacency list where each UMI points to all other UMIs within
     the allowed mismatches.
     """
-    return {
-        umi: [
-            umi2 for umi2 in umis if hamming_distance(umi.encode("UTF-8"), umi2.encode("UTF-8")) <= allowed_mismatches
-        ]
-        for umi in umis
-    }
+    return {umi: [umi2 for umi2 in umis if hamming_distance(umi, umi2) <= allowed_mismatches] for umi in umis}
 
 
 def _get_connected_components_adjacency(adj_list: Dict[str, List[str]], counts: Counter[str]) -> List[List[str]]:
@@ -100,8 +95,7 @@ def _get_adj_list_directional_adjacency(
         umi: [
             umi2
             for umi2 in umis
-            if hamming_distance(umi.encode("UTF-8"), umi2.encode("UTF-8")) <= allowed_mismatches
-            and counts[umi] >= (counts[umi2] * 2) - 1
+            if hamming_distance(umi, umi2) <= allowed_mismatches and counts[umi] >= (counts[umi2] * 2) - 1
         ]
         for umi in umis
     }
@@ -139,14 +133,13 @@ def dedup_hierarchical(molecular_barcodes: List[str], allowed_mismatches: int, m
     if len(molecular_barcodes) == 2:
         return (
             molecular_barcodes
-            if hamming_distance(molecular_barcodes[0].encode("UTF-8"), molecular_barcodes[1].encode("UTF-8"))
-            <= allowed_mismatches
+            if hamming_distance(molecular_barcodes[0], molecular_barcodes[1]) <= allowed_mismatches
             else [random.choice(molecular_barcodes)]
         )
 
     def d(coord: Any) -> int:
         i, j = coord
-        return hamming_distance(molecular_barcodes[i].encode("UTF-8"), molecular_barcodes[j].encode("UTF-8"))  # type: ignore
+        return hamming_distance(molecular_barcodes[i], molecular_barcodes[j])
 
     indices = np.triu_indices(len(molecular_barcodes), 1)
     distance_matrix = np.apply_along_axis(d, 0, indices)
