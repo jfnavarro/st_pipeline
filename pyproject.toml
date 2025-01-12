@@ -118,7 +118,6 @@ exclude = [
     "site-packages",
     "venv",
     "makefile",
-    "tests",
     "docs",
     "docsrc",
     "*.yml",
