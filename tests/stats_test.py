@@ -1,11 +1,12 @@
 #! /usr/bin/env python
-""" 
+"""
 Unit-test the package stats
 """
 import pytest
 import os
 import json
 from stpipeline.common.stats import Stats
+
 
 @pytest.fixture
 def sample_stats():
@@ -31,14 +32,16 @@ def sample_stats():
         max_reads_feature=200,
         min_reads_feature=10,
         average_gene_feature=25.0,
-        average_reads_feature=100.0
+        average_reads_feature=100.0,
     )
+
 
 def test_stats_str(sample_stats):
     stats_str = str(sample_stats)
     assert "input_reads_forward: 1000" in stats_str
     assert "pipeline_version: 1.0" in stats_str
     assert "average_reads_feature: 100.0" in stats_str
+
 
 def test_write_json(sample_stats, tmp_path):
     json_file = tmp_path / "stats.json"
@@ -51,6 +54,7 @@ def test_write_json(sample_stats, tmp_path):
         assert data["input_reads_forward"] == 1000
         assert data["pipeline_version"] == "1.0"
         assert data["average_reads_feature"] == 100.0
+
 
 def test_from_json(tmp_path):
     json_file = tmp_path / "stats.json"
@@ -76,7 +80,7 @@ def test_from_json(tmp_path):
         "max_reads_feature": 200,
         "min_reads_feature": 10,
         "average_gene_feature": 25.0,
-        "average_reads_feature": 100.0
+        "average_reads_feature": 100.0,
     }
 
     with open(json_file, "w") as file:

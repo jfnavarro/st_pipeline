@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-""" 
+"""
 Unit-test the package dataset
 """
 import pytest
@@ -8,6 +8,7 @@ from stpipeline.common.dataset import Transcript, compute_unique_umis, createDat
 from collections import Counter
 from unittest.mock import Mock
 import pysam
+
 
 @pytest.fixture
 def mock_gff_file(tmp_path):
@@ -20,6 +21,7 @@ def mock_gff_file(tmp_path):
     with open(gff_file, "w") as f:
         f.write(gff_content)
     return str(gff_file)
+
 
 @pytest.fixture
 def mock_bam_file(tmp_path):
@@ -41,16 +43,11 @@ def mock_bam_file(tmp_path):
             f.write(segment)
     return str(bam_file)
 
+
 # Test for Transcript Dataclass
 def test_transcript_dataclass():
     transcript = Transcript(
-        chrom="chr1",
-        start=100,
-        end=200,
-        clear_name="test_transcript",
-        mapping_quality=60,
-        strand="+",
-        umi="ATGC"
+        chrom="chr1", start=100, end=200, clear_name="test_transcript", mapping_quality=60, strand="+", umi="ATGC"
     )
 
     assert transcript.chrom == "chr1"
@@ -61,9 +58,11 @@ def test_transcript_dataclass():
     assert transcript.strand == "+"
     assert transcript.umi == "ATGC"
 
+
 # Test for compute_unique_umis
 def mock_group_umi_func(umis: List[str], mismatches: int) -> List[str]:
     return umis[:1]  # Simplified mock implementation for testing
+
 
 def test_compute_unique_umis():
     transcripts = [
@@ -79,6 +78,7 @@ def test_compute_unique_umis():
     assert len(unique_transcripts) == 1
     assert unique_transcripts[0].umi == "UMI1"
 
+
 # Test for createDataset with mocked dependencies
 def test_create_dataset(tmp_path, monkeypatch, mock_bam_file, mock_gff_file):
     # Mock inputs
@@ -88,10 +88,7 @@ def test_create_dataset(tmp_path, monkeypatch, mock_bam_file, mock_gff_file):
     t1 = Transcript("chr1", 100, 200, "t1", 60, "+", "UMI1")
     t2 = Transcript("chr2", 300, 400, "t2", 60, "-", "UMI2")
     # Mock parse_unique_events
-    mock_parse_unique_events = Mock(return_value=[
-        ("gene1", {(10, 10): [t1, t2]}),
-        ("gene2", {(20, 20): [t1, t2]})
-    ])
+    mock_parse_unique_events = Mock(return_value=[("gene1", {(10, 10): [t1, t2]}), ("gene2", {(20, 20): [t1, t2]})])
     monkeypatch.setattr("stpipeline.common.dataset.parse_unique_events", mock_parse_unique_events)
 
     # Mock dedup_hierarchical
@@ -107,7 +104,7 @@ def test_create_dataset(tmp_path, monkeypatch, mock_bam_file, mock_gff_file):
         umi_counting_offset=10,
         disable_umi=False,
         output_template="output",
-        verbose=False
+        verbose=False,
     )
 
     assert stats["genes_found"] == 2

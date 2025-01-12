@@ -1,10 +1,11 @@
 #! /usr/bin/env python
-""" 
+"""
 Unit-test the package unique_events_parser
 """
 import pytest
 import pysam
 from stpipeline.common.unique_events_parser import GeneBuffer, parse_unique_events, Transcript
+
 
 @pytest.fixture
 def mock_gff_file(tmp_path):
@@ -17,6 +18,7 @@ def mock_gff_file(tmp_path):
     with open(gff_file, "w") as f:
         f.write(gff_content)
     return str(gff_file)
+
 
 @pytest.fixture
 def mock_bam_file(tmp_path):
@@ -38,12 +40,14 @@ def mock_bam_file(tmp_path):
             f.write(segment)
     return str(bam_file)
 
+
 def test_compute_gene_end_coordinates(mock_gff_file):
     buffer = GeneBuffer(mock_gff_file)
     assert buffer.gene_end_coordinates["gene1"] == ("chr1", 1000)
     assert buffer.gene_end_coordinates["gene2"] == ("chr1", 2000)
     assert buffer.gene_end_coordinates["gene3"] == ("chr2", 1500)
     assert buffer.gene_end_coordinates["__no_feature"] == (None, -1)
+
 
 def test_add_transcript(mock_gff_file):
     buffer = GeneBuffer(mock_gff_file)
@@ -53,6 +57,7 @@ def test_add_transcript(mock_gff_file):
     assert "gene1" in buffer.buffer
     assert (1, 2) in buffer.buffer["gene1"]
     assert buffer.buffer["gene1"][(1, 2)][0] == transcript
+
 
 def test_check_and_clear_buffer(mock_gff_file):
     buffer = GeneBuffer(mock_gff_file)
@@ -65,6 +70,7 @@ def test_check_and_clear_buffer(mock_gff_file):
     assert cleared_genes[0][0] == "gene1"
     assert buffer.buffer == {}
 
+
 def test_check_and_clear_buffer_no_feature(mock_gff_file):
     buffer = GeneBuffer(mock_gff_file)
     transcript = Transcript("chr1", 100, 200, "read1", 60, "+", "UMI1")
@@ -76,12 +82,14 @@ def test_check_and_clear_buffer_no_feature(mock_gff_file):
     assert cleared_genes[0][0] == "__no_feature"
     assert buffer.buffer == {}
 
+
 def test_get_gene_end_position_ambiguous(mock_gff_file):
     buffer = GeneBuffer(mock_gff_file)
     ambiguous_gene = "__ambiguous[gene1+gene2]"
     chrom, end_position = buffer.get_gene_end_position(ambiguous_gene)
     assert chrom == "chr1"
     assert end_position == 2000
+
 
 def test_parse_unique_events(mock_bam_file, mock_gff_file):
     unique_events = list(parse_unique_events(mock_bam_file, mock_gff_file))
@@ -91,6 +99,7 @@ def test_parse_unique_events(mock_bam_file, mock_gff_file):
     assert gene == "gene1"
     assert len(spots) == 5
     assert spots[(0, 0)][0].clear_name == "read0"
+
 
 def test_parse_unique_events_no_annotation(mock_bam_file):
     unique_events = list(parse_unique_events(mock_bam_file))

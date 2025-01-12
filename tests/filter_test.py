@@ -1,11 +1,12 @@
 #! /usr/bin/env python
-""" 
+"""
 Unit-test the package filter
 """
 import pytest
 import dnaio
 from unittest.mock import Mock, patch
 from stpipeline.common.filter import filter_input_data
+
 
 def generate_test_fastq(filepath, records):
     """
@@ -19,6 +20,7 @@ def generate_test_fastq(filepath, records):
         for header, sequence, quality in records:
             f.write(f"@{header}\n{sequence}\n+\n{quality}\n")
 
+
 @pytest.fixture
 def setup_fastq_files(tmp_path):
     fw_records = [
@@ -27,7 +29,7 @@ def setup_fastq_files(tmp_path):
         ("read3", "GGGGGGGGGGGGGGGGGGGGGGGG", "IIIIIIIIIIIIIIIIIIIIIIII"),
         ("read4", "CCCCCCCCCCCCCCCCCCCCCCCC", "IIIIIIIIIIIIIIIIIIIIIIII"),
         ("read5", "ACTGACTGACTGACTGACTGACTG", "!!!!IIIIIIIIIIIIIIIIIIII"),  # Low-quality UMI
-        ("read6", "ACTGACTGACTGACTGACTGACTG", "!!!!!!!!!!!!!!IIIIIIIIII")  # Too short after trimming
+        ("read6", "ACTGACTGACTGACTGACTGACTG", "!!!!!!!!!!!!!!IIIIIIIIII"),  # Too short after trimming
     ]
     rv_records = [
         ("read1", "ACTGACTGACTGACTGACTGACTG", "IIIIIIIIIIIIIIIIIIIIIIII"),
@@ -35,7 +37,7 @@ def setup_fastq_files(tmp_path):
         ("read3", "GGGGGGGGGGGGGGGGGGGGGGGG", "IIIIIIIIIIIIIIIIIIIIIIII"),
         ("read4", "CCCCCCCCCCCCCCCCCCCCCCCC", "IIIIIIIIIIIIIIIIIIIIIIII"),
         ("read5", "ACTGACTGACTGACTGACTGACTG", "!!!!IIIIIIIIIIIIIIIIIIII"),  # Low-quality UMI
-        ("read6", "ACTGACTGACTGACTGACTGACTG", "!!!!!!!!!!!!!!IIIIIIIIII")  # Too short after trimming
+        ("read6", "ACTGACTGACTGACTGACTGACTG", "!!!!!!!!!!!!!!IIIIIIIIII"),  # Too short after trimming
     ]
     fw_file = tmp_path / "fw.fastq"
     rv_file = tmp_path / "rv.fastq"
@@ -44,6 +46,7 @@ def setup_fastq_files(tmp_path):
     generate_test_fastq(rv_file, rv_records)
 
     return str(fw_file), str(rv_file)
+
 
 @patch("stpipeline.common.filter.pysam.AlignmentFile")
 def test_filter_input_data(mock_alignment_file, setup_fastq_files, tmp_path):
@@ -78,7 +81,7 @@ def test_filter_input_data(mock_alignment_file, setup_fastq_files, tmp_path):
         adaptor_missmatches=2,
         overhang=2,
         disable_umi=False,
-        disable_barcode=False
+        disable_barcode=False,
     )
 
     assert total_reads == 6

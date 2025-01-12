@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-""" 
+"""
 Unit-test the package utils
 """
 import pytest
@@ -13,8 +13,9 @@ from stpipeline.common.utils import (
     file_ok,
     get_star_version,
     get_taggd_count_version,
-    get_htseq_count_version
+    get_htseq_count_version,
 )
+
 
 @pytest.fixture
 def temp_file(tmp_path):
@@ -22,16 +23,19 @@ def temp_file(tmp_path):
     temp.write_text("Temporary file content.")
     return str(temp)
 
+
 def test_which_program():
     program = "python"
     result = which_program(program)
     assert result is not None
     assert os.path.basename(result) == program
 
+
 def test_which_program_not_found():
     program = "nonexistent_program"
     result = which_program(program)
     assert result is None
+
 
 def test_timestamper():
     stamper = TimeStamper()
@@ -39,20 +43,24 @@ def test_timestamper():
     ts2 = stamper.get_timestamp()
     assert ts1 != ts2
 
+
 def test_safe_remove(temp_file):
     assert os.path.exists(temp_file)
     safe_remove(temp_file)
     assert not os.path.exists(temp_file)
+
 
 def test_safe_remove_nonexistent():
     non_existent_file = "non_existent_file.txt"
     safe_remove(non_existent_file)
     assert not os.path.exists(non_existent_file)
 
+
 def test_safe_open_file_read(temp_file):
     with safe_open_file(temp_file, "r") as f:
         content = f.read()
     assert content == "Temporary file content."
+
 
 def test_safe_open_file_write(tmp_path):
     file_path = tmp_path / "test_file.txt"
@@ -62,17 +70,21 @@ def test_safe_open_file_write(tmp_path):
     with open(file_path, "r") as f:
         assert f.read() == "Test content."
 
+
 def test_safe_open_file_invalid_mode():
     with pytest.raises(IOError):
         safe_open_file("invalid_file.txt", "x")
 
+
 def test_file_ok(temp_file):
     assert file_ok(temp_file)
+
 
 def test_file_ok_empty_file(tmp_path):
     empty_file = tmp_path / "empty.txt"
     empty_file.touch()
     assert not file_ok(str(empty_file))
+
 
 def test_get_star_version():
     with patch("subprocess.Popen") as mock_popen:
@@ -81,10 +93,12 @@ def test_get_star_version():
         version = get_star_version()
         assert version == "STAR_2.7.9a"
 
+
 def test_get_star_version_not_found():
     with patch("subprocess.Popen", side_effect=FileNotFoundError):
         version = get_star_version()
         assert version == "Not available"
+
 
 def test_get_taggd_count_version():
     with patch("subprocess.Popen") as mock_popen:
@@ -93,10 +107,12 @@ def test_get_taggd_count_version():
         version = get_taggd_count_version()
         assert version == "1.0.0"
 
+
 def test_get_taggd_count_version_not_found():
     with patch("subprocess.Popen", side_effect=FileNotFoundError):
         version = get_taggd_count_version()
         assert version == "Not available"
+
 
 def test_get_htseq_count_version():
     with patch("subprocess.Popen") as mock_popen:
@@ -104,6 +120,7 @@ def test_get_htseq_count_version():
         mock_popen.return_value.returncode = 0
         version = get_htseq_count_version()
         assert version == "0.11.3"
+
 
 def test_get_htseq_count_version_not_found():
     with patch("subprocess.Popen", side_effect=FileNotFoundError):

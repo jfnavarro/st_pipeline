@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-""" 
+"""
 Unit-test the package fastq_utils
 """
 import pytest
@@ -8,8 +8,9 @@ from stpipeline.common.fastq_utils import (
     quality_trim_index,
     trim_quality,
     check_umi_template,
-    has_sufficient_content
+    has_sufficient_content,
 )
+
 
 # Test for remove_adaptor
 def test_remove_adaptor():
@@ -29,6 +30,7 @@ def test_remove_adaptor():
     trimmed_seq, trimmed_qual = remove_adaptor(sequence, quality, "TAGCTT", missmatches=1)
     assert trimmed_seq == "AGCT"
     assert trimmed_qual == "FFFF"
+
 
 def test_quality_trim_index_basic():
     sequence = "AGCTTAGCTTAGCTA"
@@ -93,6 +95,7 @@ def test_trim_quality_low_quality_g():
     assert trimmed_seq == "AGCTTA"
     assert trimmed_qual == "FFFFFF"
 
+
 def test_trim_quality_short():
     min_qual = 20
     min_length = 10
@@ -102,6 +105,7 @@ def test_trim_quality_short():
     assert trimmed_seq is None
     assert trimmed_qual is None
 
+
 # Test for check_umi_template
 def test_check_umi_template():
     umi = "ACGT1234"
@@ -110,6 +114,7 @@ def test_check_umi_template():
 
     umi = "ACGT12"
     assert check_umi_template(umi, template) is False
+
 
 # Test for has_sufficient_content
 def test_has_sufficient_content():

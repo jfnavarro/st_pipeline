@@ -1,6 +1,5 @@
-
 #! /usr/bin/env python
-""" 
+"""
 Unit-test the package mapping
 """
 import subprocess
@@ -19,11 +18,11 @@ def test_alignReads():
         % of reads unmapped: too short 5
     """
 
-    with patch("subprocess.Popen") as mock_popen, \
-         patch("stpipeline.core.mapping.file_ok", return_value=True), \
-         patch("stpipeline.core.mapping.shutil.move") as mock_shutil_move, \
-         patch("stpipeline.core.mapping.open", mock_open(read_data=mock_log_content)) as mock_open_file:
-
+    with patch("subprocess.Popen") as mock_popen, patch("stpipeline.core.mapping.file_ok", return_value=True), patch(
+        "stpipeline.core.mapping.shutil.move"
+    ) as mock_shutil_move, patch(
+        "stpipeline.core.mapping.open", mock_open(read_data=mock_log_content)
+    ) as mock_open_file:
         # Mock the subprocess to simulate STAR execution
         mock_process = MagicMock()
         mock_process.communicate.return_value = (b"", b"")
@@ -51,7 +50,7 @@ def test_alignReads():
             min_length=50,
             include_non_mapped=True,
             star_genome_loading="NoSharedMemory",
-            star_sort_mem_limit=64000000
+            star_sort_mem_limit=64000000,
         )
 
         # Assertions for subprocess call
@@ -60,30 +59,57 @@ def test_alignReads():
 
         expected_args = [
             "STAR",
-            "--genomeDir", "ref",
-            "--readFilesIn", "test.bam",
-            "--outFileNamePrefix", "output/",
-            "--clip3pNbases", "10",
-            "--clip5pNbases", "10",
-            "--runThreadN", "4",
-            "--outFilterType", "Normal",
-            "--outSAMtype", "BAM", "SortedByCoordinate",
-            "--alignEndsType", "Local",
-            "--outSAMorder", "Paired",
-            "--outSAMprimaryFlag", "OneBestScore",
-            "--outFilterMultimapNmax", "20",
-            "--alignIntronMin", "20",
-            "--alignIntronMax", "1000",
-            "--outFilterMatchNmin", "50",
-            "--genomeLoad", "NoSharedMemory",
-            "--limitBAMsortRAM", "64000000",
-            "--readFilesType", "SAM", "SE",
-            "--readFilesCommand", "samtools", "view", "-h",
-            "--twopassMode", "Basic",
-            "--outSAMunmapped", "Within"
+            "--genomeDir",
+            "ref",
+            "--readFilesIn",
+            "test.bam",
+            "--outFileNamePrefix",
+            "output/",
+            "--clip3pNbases",
+            "10",
+            "--clip5pNbases",
+            "10",
+            "--runThreadN",
+            "4",
+            "--outFilterType",
+            "Normal",
+            "--outSAMtype",
+            "BAM",
+            "SortedByCoordinate",
+            "--alignEndsType",
+            "Local",
+            "--outSAMorder",
+            "Paired",
+            "--outSAMprimaryFlag",
+            "OneBestScore",
+            "--outFilterMultimapNmax",
+            "20",
+            "--alignIntronMin",
+            "20",
+            "--alignIntronMax",
+            "1000",
+            "--outFilterMatchNmin",
+            "50",
+            "--genomeLoad",
+            "NoSharedMemory",
+            "--limitBAMsortRAM",
+            "64000000",
+            "--readFilesType",
+            "SAM",
+            "SE",
+            "--readFilesCommand",
+            "samtools",
+            "view",
+            "-h",
+            "--twopassMode",
+            "Basic",
+            "--outSAMunmapped",
+            "Within",
         ]
 
-        mock_popen.assert_called_once_with(expected_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=False)
+        mock_popen.assert_called_once_with(
+            expected_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=False
+        )
 
         # Ensure the log file was read
         mock_open_file.assert_called_once_with("output/Log.final.out", "r")
@@ -91,11 +117,11 @@ def test_alignReads():
         # Log file parsing validation
         assert total_reads == 5090
 
-def test_barcodeDemultiplexing():
-    with patch("subprocess.Popen") as mock_popen, \
-         patch("os.path.isfile", return_value=True), \
-         patch("stpipeline.core.mapping.file_ok", return_value=True):
 
+def test_barcodeDemultiplexing():
+    with patch("subprocess.Popen") as mock_popen, patch("os.path.isfile", return_value=True), patch(
+        "stpipeline.core.mapping.file_ok", return_value=True
+    ):
         mock_process = MagicMock()
         mock_process.communicate.return_value = (b"Total reads: 100\nTotal reads written: 80", b"")
         mock_process.returncode = 0
@@ -112,27 +138,39 @@ def test_barcodeDemultiplexing():
             taggd_trim_sequences=[1, 2, 3],
             cores=4,
             outputFilePrefix="output/test",
-            keep_discarded_files=False
+            keep_discarded_files=False,
         )
 
         expected_args = [
             "taggd_demultiplex.py",
-            "--max-edit-distance", "1",
-            "--k", "8",
-            "--barcode-tag", "B0",
-            "--homopolymer-filter", "0",
-            "--subprocesses", "4",
-            "--metric", "Levenshtein",
-            "--overhang", "2",
-            "--trim-sequences", "1", "2", "3",
+            "--max-edit-distance",
+            "1",
+            "--k",
+            "8",
+            "--barcode-tag",
+            "B0",
+            "--homopolymer-filter",
+            "0",
+            "--subprocesses",
+            "4",
+            "--metric",
+            "Levenshtein",
+            "--overhang",
+            "2",
+            "--trim-sequences",
+            "1",
+            "2",
+            "3",
             "--multiple-hits-keep-one",
             "--no-unmatched-output",
             "--no-ambiguous-output",
             "--no-results-output",
             "barcodes.tsv",
             "reads.bam",
-            "output/test"
+            "output/test",
         ]
 
-        mock_popen.assert_called_once_with(expected_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=False)
+        mock_popen.assert_called_once_with(
+            expected_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=False
+        )
         assert total_reads == 80

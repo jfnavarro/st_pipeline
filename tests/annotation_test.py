@@ -1,13 +1,13 @@
 #! /usr/bin/env python
-""" 
+"""
 Unit-test the package annotation
 """
 import pytest
 import os
 import pysam
-from unittest.mock import patch, Mock
 from stpipeline.core.annotation import invert_strand, count_reads_in_features, annotateReads
 import HTSeq
+
 
 @pytest.fixture
 def mock_gff_file(tmp_path):
@@ -20,6 +20,7 @@ def mock_gff_file(tmp_path):
     with open(gff_file, "w") as f:
         f.write(gff_content)
     return str(gff_file)
+
 
 @pytest.fixture
 def mock_bam_file(tmp_path):
@@ -47,6 +48,7 @@ def mock_bam_file(tmp_path):
             f.write(segment)
     return str(bam_file)
 
+
 def test_invert_strand():
     iv = HTSeq.GenomicInterval("chr1", 0, 1000, "+")
     inverted = invert_strand(iv)
@@ -59,6 +61,7 @@ def test_invert_strand():
     with pytest.raises(ValueError):
         iv = HTSeq.GenomicInterval("chr1", 0, 1000, ".")
         invert_strand(iv)
+
 
 def test_count_reads_in_features(mock_bam_file, mock_gff_file, tmp_path):
     output_file = tmp_path / "output.bam"
@@ -82,6 +85,7 @@ def test_count_reads_in_features(mock_bam_file, mock_gff_file, tmp_path):
     assert annotated_count > 0
     assert os.path.exists(output_file)
     assert os.path.exists(discarded_file)
+
 
 def test_annotate_reads(mock_bam_file, mock_gff_file, tmp_path):
     output_file = tmp_path / "output.bam"

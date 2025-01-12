@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-""" 
+"""
 Unit-test the package sam_utils
 """
 import pytest
@@ -32,6 +32,7 @@ def mock_bam_files(tmp_path):
 
     return bam_files
 
+
 @pytest.fixture
 def mock_bam_file_for_split(tmp_path):
     """Creates a mock BAM file for testing split_bam."""
@@ -51,6 +52,7 @@ def mock_bam_file_for_split(tmp_path):
             f.write(segment)
 
     return str(bam_file)
+
 
 def test_split_bam(mock_bam_file_for_split, tmp_path):
     """Test the split_bam function with a mocked BAM file."""
@@ -94,6 +96,7 @@ def test_convert_to_aligned_segment(mock_alignment_file):
     assert aligned_segment.query_qualities.tolist() == [40] * len(sequence)
     assert aligned_segment.get_tag("B0") == barcode_sequence
     assert aligned_segment.get_tag("B3") == umi_sequence
+
 
 def test_merge_bam(mock_bam_files, tmp_path):
     merged_file = tmp_path / "merged.bam"

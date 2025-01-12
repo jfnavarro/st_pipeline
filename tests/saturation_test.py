@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-""" 
+"""
 Unit-test the package saturation
 """
 import pytest
@@ -11,8 +11,9 @@ from stpipeline.common.saturation import (
     _generate_subsamples,
     _write_subsamples_to_files,
     _compute_saturation_metrics,
-    _cleanup_files
+    _cleanup_files,
 )
+
 
 @pytest.fixture
 def mock_bam_file(tmp_path):
@@ -26,7 +27,9 @@ def mock_bam_file(tmp_path):
         Path to the mock BAM file and number of reads.
     """
     bam_path = tmp_path / "mock.bam"
-    with pysam.AlignmentFile(bam_path, "wb", header={"HD": {"VN": "1.0"}, "SQ": [{"LN": 1000, "SN": "chr1"}]}) as bam_file:
+    with pysam.AlignmentFile(
+        bam_path, "wb", header={"HD": {"VN": "1.0"}, "SQ": [{"LN": 1000, "SN": "chr1"}]}
+    ) as bam_file:
         for i in range(100):
             segment = pysam.AlignedSegment()
             segment.query_name = f"read{i}"
@@ -38,6 +41,7 @@ def mock_bam_file(tmp_path):
             bam_file.write(segment)
     return str(bam_path), 100
 
+
 def test_determine_saturation_points():
     nreads = 10000
     saturation_points = [100, 500, 1000, 20000]
@@ -48,6 +52,7 @@ def test_determine_saturation_points():
     points = _determine_saturation_points(nreads, None)
     assert len(points) > 0
     assert all(p < nreads for p in points)
+
 
 def test_generate_subsamples(mock_bam_file, tmp_path):
     bam_file, nreads = mock_bam_file
@@ -66,6 +71,7 @@ def test_generate_subsamples(mock_bam_file, tmp_path):
     for file in files.values():
         file.close()
 
+
 def test_write_subsamples_to_files(mock_bam_file, tmp_path):
     bam_file, nreads = mock_bam_file
     saturation_points = [10, 50, 100]
@@ -83,6 +89,7 @@ def test_write_subsamples_to_files(mock_bam_file, tmp_path):
     for file_name in file_names.values():
         os.remove(file_name)
 
+
 def test_compute_saturation_metrics(mock_bam_file, tmp_path):
     bam_file, nreads = mock_bam_file
     saturation_points = [10, 50, 100]
@@ -98,12 +105,19 @@ def test_compute_saturation_metrics(mock_bam_file, tmp_path):
             "reads_after_duplicates_removal": 10,
             "genes_found": 5,
             "average_gene_feature": 2.5,
-            "average_reads_feature": 1.0
+            "average_reads_feature": 1.0,
         }
 
         results = _compute_saturation_metrics(
-            file_names, saturation_points, str(gff_filename), "AdjacentBi",
-            True, 10, False, str(temp_folder), "test_exp"
+            file_names,
+            saturation_points,
+            str(gff_filename),
+            "AdjacentBi",
+            True,
+            10,
+            False,
+            str(temp_folder),
+            "test_exp",
         )
 
         assert len(results["reads"]) == len(saturation_points)
@@ -112,6 +126,7 @@ def test_compute_saturation_metrics(mock_bam_file, tmp_path):
     # Cleanup
     for file_name in file_names.values():
         os.remove(file_name)
+
 
 def test_cleanup_files(tmp_path):
     temp_files = [tmp_path / f"temp_file_{i}.bam" for i in range(5)]
