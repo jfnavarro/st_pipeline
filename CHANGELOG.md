@@ -81,8 +81,8 @@ file is present
 
 ## Version 1.4.5
 * Added extra scripts:
-	- merge_bcl : merge BCL files based in patterns
-	- filter_gene_type_matrix : filter gene in output data based on Ensembl gene types
+    - merge_bcl : merge BCL files based in patterns
+    - filter_gene_type_matrix : filter gene in output data based on Ensembl gene types
 * Bumped Pysam and HTSeq
 
 ## Version 1.4.1
@@ -176,7 +176,7 @@ file is present
 * Fixed small bug in the parsing of the umi quality parameter
 
 ## Version 1.0.0
-* Added option to check for UMI quality 
+* Added option to check for UMI quality
 * Optimized the UMI template check code
 * Optimized how the unique molecules are counted
 * Better stats for the quality filter step
@@ -266,7 +266,7 @@ file is present
 ## Version 0.7.5
 * Fixed a small bug
 
-## Version 0.7.4 
+## Version 0.7.4
 * Added some memory improvements
 
 ## Version 0.7.3
@@ -411,7 +411,7 @@ when using molecular barcodes
 * Update taggd version
 
 ## Version 0.4.3
-* Small improvements with error checking and log in the mapping 
+* Small improvements with error checking and log in the mapping
 * Fixed a bug that would remove the file after filtering annoted reads
 * Make the sorting by name instead by position due to a bug in htseq-count
 
@@ -460,7 +460,7 @@ when using molecular barcodes
 
 ## Version 0.3.2
 * Outputted reads JSON now only has the portion of the read that was used to map
-* Cutadapt is integrated but only using the quality trimming for now 
+* Cutadapt is integrated but only using the quality trimming for now
 * Internal refactoring and optimizations
 
 ## Version 0.3.1
@@ -476,7 +476,7 @@ when using molecular barcodes
 * Ensure unit-test remove tmp files when failing
 * Add better error handling
 * Add unit-test for Molecular Barcodes
-* Add Molecular Barcodes functionality 
+* Add Molecular Barcodes functionality
 * General refactor and clean up
 * Add invoke options (clean, build, install)
 * Fix an important bug in createDatasets that caused incorrect

@@ -1,4 +1,4 @@
-""" 
+"""
 This module contains routines to create
 a ST dataset and some statistics. The dataset
 will contain several files with the ST data in different
@@ -9,42 +9,22 @@ import random
 import numpy as np
 from collections import defaultdict
 import pandas as pd
-from .clustering import dedup_hierarchical, dedup_adj, dedup_dir_adj
-from .unique_events_parser import parse_unique_events
+from stpipeline.common.clustering import dedup_hierarchical, dedup_adj, dedup_dir_adj
+from stpipeline.common.unique_events_parser import parse_unique_events
+from stpipeline.common.transcript import Transcript
 import logging
-from typing import List, Tuple, Callable, Dict, Any
-from dataclasses import dataclass
+from typing import List, Optional, Callable, Dict, Any
+
 
 logger = logging.getLogger("STPipeline")
 
-@dataclass
-class Transcript:
-    """
-    Represents a transcript with associated genomic and metadata information.
 
-    Attributes:
-        chrom (str): Chromosome name.
-        start (int): Start position of the transcript.
-        end (int): End position of the transcript.
-        clear_name (str): Clear name of the transcript.
-        mapping_quality (int): Mapping quality score.
-        strand (str): Strand information ('+' or '-').
-        umi (str): Unique Molecular Identifier (UMI).
-    """
-    chrom: str
-    start: int
-    end: int
-    clear_name: str
-    mapping_quality: int
-    strand: str
-    umi: str
-    
 def compute_unique_umis(
     transcripts: List[Transcript],
     umi_counting_offset: int,
     umi_allowed_mismatches: int,
-    group_umi_func: Callable[[List[str], int], List[str]]
-) -> List[Tuple]:
+    group_umi_func: Callable[[List[str], int], List[str]],
+) -> List[Transcript]:
     """
     Computes unique UMIs from a list of transcripts, grouping them by genomic coordinates and strand.
 
@@ -71,14 +51,14 @@ def compute_unique_umis(
         grouped_transcripts[current.umi].append(current)
         if abs(current.start - nextone.start) > umi_counting_offset or current.strand != nextone.strand:
             # A new group has been reached (strand, start-pos, offset)
-            unique_umis = group_umi_func(grouped_transcripts.keys(), umi_allowed_mismatches)
+            unique_umis = group_umi_func(list(grouped_transcripts.keys()), umi_allowed_mismatches)
             unique_transcripts += [random.choice(grouped_transcripts[u_umi]) for u_umi in unique_umis]
             grouped_transcripts = defaultdict(list)
 
     # Process the last group
     lastone = sorted_transcripts[num_transcripts - 1]
     grouped_transcripts[lastone.umi].append(lastone)
-    unique_umis = group_umi_func(grouped_transcripts.keys(), umi_allowed_mismatches)
+    unique_umis = group_umi_func(list(grouped_transcripts.keys()), umi_allowed_mismatches)
     unique_transcripts += [random.choice(grouped_transcripts[u_umi]) for u_umi in unique_umis]
 
     return unique_transcripts
@@ -86,14 +66,14 @@ def compute_unique_umis(
 
 def createDataset(
     input_file: str,
-    gff_filename: str = None,
+    output_folder: str,
+    gff_filename: Optional[str] = None,
     umi_cluster_algorithm: str = "AdjacentBi",
     umi_allowed_mismatches: int = 1,
     umi_counting_offset: int = 250,
     disable_umi: bool = False,
-    output_folder: str = None,
-    output_template: str = None,
-    verbose: bool = True
+    output_template: Optional[str] = None,
+    verbose: bool = True,
 ) -> Dict[str, Any]:
     """
     Parses an annotated and demultiplexed BAM file with reads, it groups them by gene-barcode
@@ -102,12 +82,12 @@ def createDataset(
 
     Args:
         input_file: Path to the BAM file containing annotated-demultiplexed records.
+        output_folder: Directory for output files.
         gff_filename: Annotation reference file. Defaults to None.
         umi_cluster_algorithm : Algorithm for clustering UMIs. Defaults to "hierarchical".
         umi_allowed_mismatches: Allowed mismatches for UMI deduplication. Defaults to 1.
         umi_counting_offset: Offset for grouping transcripts by position. Defaults to 250.
         disable_umi: Disables UMI deduplication if True. Defaults to False.
-        output_folder: Directory for output files. Defaults to None.
         output_template: Template for output file names. Defaults to None.
         verbose: Enables verbose logging if True. Defaults to True.
 
@@ -131,11 +111,9 @@ def createDataset(
     discarded_reads = 0
 
     # Obtain the appropriate UMI clustering function
-    group_umi_func = {
-        "hierarchical": dedup_hierarchical,
-        "Adjacent": dedup_adj,
-        "AdjacentBi": dedup_dir_adj
-    }.get(umi_cluster_algorithm)
+    group_umi_func = {"hierarchical": dedup_hierarchical, "Adjacent": dedup_adj, "AdjacentBi": dedup_dir_adj}.get(
+        umi_cluster_algorithm
+    )
 
     if not group_umi_func:
         error = f"Error creating dataset. Incorrect clustering algorithm {umi_cluster_algorithm}"
@@ -160,13 +138,14 @@ def createDataset(
 
                 # Compute unique transcripts based on UMI, strand, and start position
                 unique_transcripts = (
-                    compute_unique_umis(transcripts, umi_counting_offset, umi_allowed_mismatches, group_umi_func)
-                    if not disable_umi else transcripts
+                    compute_unique_umis(transcripts, umi_counting_offset, umi_allowed_mismatches, group_umi_func)  # type: ignore
+                    if not disable_umi
+                    else transcripts
                 )
 
                 unique_transcripts_count = len(unique_transcripts)
                 assert 0 < unique_transcripts_count <= transcripts_count
-                discarded_reads += (transcripts_count - unique_transcripts_count)
+                discarded_reads += transcripts_count - unique_transcripts_count
                 unique_transcripts_by_spot[f"{x}x{y}"] = unique_transcripts_count
 
                 # Write unique transcripts to the BED file
@@ -190,13 +169,13 @@ def createDataset(
     counts_table = pd.DataFrame(list_row_values, index=list_indexes).fillna(0).T
 
     # Write the counts DataFrame to a TSV file
-    counts_table.to_csv(os.path.join(output_folder, filenameDataFrame), sep="\t", na_rep=0)
+    counts_table.to_csv(os.path.join(output_folder, filenameDataFrame), sep="\t", na_rep=0)  # type: ignore
 
     # Compute statistics for the dataset
     total_spots, number_genes = counts_table.shape
     total_reads = np.sum(counts_table.values, dtype=np.int32)
-    aggregated_spot_counts = counts_table.sum(axis=1).values
-    aggregated_gene_counts = (counts_table != 0).sum(axis=1).values
+    aggregated_spot_counts = counts_table.sum(axis=1)
+    aggregated_gene_counts = (counts_table != 0).sum(axis=1)
 
     stats_dict = {}
     stats_dict["max_genes_feature"] = aggregated_gene_counts.max()
@@ -217,14 +196,14 @@ def createDataset(
         logger.info(f"Number of reads present: {total_reads}")
         logger.info(f"Number of unique events (gene-spot) present: {total_record}")
         logger.info(f"Number of unique genes present: {number_genes}")
-        logger.info(f"Max number of genes over all spots: {stats_dict["max_genes_feature"]}")
-        logger.info(f"Min number of genes over all spots: {stats_dict["min_genes_feature"]}")
-        logger.info(f"Max number of reads over all spots: {stats_dict["max_reads_feature"]}")
-        logger.info(f"Min number of reads over all spots: {stats_dict["min_reads_feature"]}")
-        logger.info(f"Average number genes per spot: {stats_dict["average_genes_feature"]}")
-        logger.info(f"Average number reads per spot: {stats_dict["average_reads_feature"]}")
-        logger.info(f"Std. number genes per spot: {stats_dict["std_reads_feature"]}")
-        logger.info(f"Std. number reads per spot: {stats_dict["std_genes_feature"]}")
+        logger.info(f"Max number of genes over all spots: {stats_dict['max_genes_feature']}")
+        logger.info(f"Min number of genes over all spots: {stats_dict['min_genes_feature']}")
+        logger.info(f"Max number of reads over all spots: {stats_dict['max_reads_feature']}")
+        logger.info(f"Min number of reads over all spots: {stats_dict['min_reads_feature']}")
+        logger.info(f"Average number genes per spot: {stats_dict['average_genes_feature']}")
+        logger.info(f"Average number reads per spot: {stats_dict['average_reads_feature']}")
+        logger.info(f"Std. number genes per spot: {stats_dict['std_genes_feature']}")
+        logger.info(f"Std. number reads per spot: {stats_dict['std_reads_feature']}")
         logger.info(f"Number of discarded reads (possible duplicates): {discarded_reads}")
 
     return stats_dict

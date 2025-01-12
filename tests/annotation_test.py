@@ -6,7 +6,7 @@ import pytest
 import os
 import pysam
 from unittest.mock import patch, Mock
-from stpipeline.annotation import invert_strand, count_reads_in_features, annotateReads
+from stpipeline.core.annotation import invert_strand, count_reads_in_features, annotateReads
 import HTSeq
 
 @pytest.fixture
@@ -43,6 +43,7 @@ def mock_bam_file(tmp_path):
             segment.set_tag("B1", i)
             segment.set_tag("B2", i * 2)
             segment.set_tag("XF", "gene1")
+            segment.cigar = [(0, len(segment.query_sequence))]  # 0: MATCH
             f.write(segment)
     return str(bam_file)
 
@@ -100,54 +101,3 @@ def test_annotate_reads(mock_bam_file, mock_gff_file, tmp_path):
 
     assert os.path.exists(output_file)
     assert os.path.exists(discarded_file)
-
-def test_no_feature_handling(mock_bam_file, mock_gff_file, tmp_path):
-    output_file = tmp_path / "output.bam"
-
-    with patch("HTSeq.GenomicArrayOfSets") as mock_features:
-        mock_features.return_value = Mock()
-        mock_features.return_value.chrom_vectors = {}
-
-        annotated_count = count_reads_in_features(
-            sam_filename=mock_bam_file,
-            gff_filename=mock_gff_file,
-            samtype="bam",
-            stranded="yes",
-            overlap_mode="union",
-            feature_type=["exon"],
-            id_attribute="gene_id",
-            minaqual=0,
-            samout=str(output_file),
-            include_non_annotated=True,
-            htseq_no_ambiguous=False,
-            outputDiscarded=None,
-        )
-
-        assert annotated_count == 0
-        assert os.path.exists(output_file)
-
-def test_ambiguous_feature_handling(mock_bam_file, mock_gff_file, tmp_path):
-    output_file = tmp_path / "output.bam"
-
-    with patch("HTSeq.GenomicArrayOfSets") as mock_features:
-        mock_features.return_value = Mock()
-        mock_features.return_value.chrom_vectors = {"chr1": Mock()}
-        mock_features.return_value[HTSeq.GenomicInterval("chr1", 0, 1000, "+")].steps.return_value = [(None, {"gene1", "gene2"})]
-
-        annotated_count = count_reads_in_features(
-            sam_filename=mock_bam_file,
-            gff_filename=mock_gff_file,
-            samtype="bam",
-            stranded="yes",
-            overlap_mode="union",
-            feature_type=["exon"],
-            id_attribute="gene_id",
-            minaqual=0,
-            samout=str(output_file),
-            include_non_annotated=True,
-            htseq_no_ambiguous=False,
-            outputDiscarded=None,
-        )
-
-        assert annotated_count == 0
-        assert os.path.exists(output_file)

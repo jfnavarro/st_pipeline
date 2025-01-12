@@ -5,16 +5,14 @@ import os
 import pysam
 import logging
 import dnaio
-from .fastq_utils import trim_quality, remove_adaptor, check_umi_template, has_sufficient_content
-from .sam_utils import convert_to_AlignedSegment
+from stpipeline.common.fastq_utils import trim_quality, remove_adaptor, check_umi_template, has_sufficient_content
+from stpipeline.common.sam_utils import convert_to_AlignedSegment
 from typing import Optional, Tuple
 
 logger = logging.getLogger("STPipeline")
 
-bam_header = {
-        "HD": {"VN": "1.5", "SO": "unsorted"},
-        "RG": [{"ID": "0", "SM" : "unknown_sample", "PL" : "ILLUMINA" }]
-    }
+bam_header = {"HD": {"VN": "1.5", "SO": "unsorted"}, "RG": [{"ID": "0", "SM": "unknown_sample", "PL": "ILLUMINA"}]}
+
 
 def filter_input_data(
     fw_file: str,
@@ -41,7 +39,7 @@ def filter_input_data(
     adaptor_missmatches: int,
     overhang: int,
     disable_umi: bool,
-    disable_barcode: bool
+    disable_barcode: bool,
 ) -> Tuple[int, int]:
     """
     Handles input read filtering and quality trimming for sequencing data (paired FASTQ files).
@@ -114,7 +112,7 @@ def filter_input_data(
 
     bam_file = pysam.AlignmentFile(out_file, "wb")
     if keep_discarded_files:
-        out_writer_discarded = dnaio.open(out_file_discarded, mode="w")
+        out_writer_discarded = dnaio.open(out_file_discarded, mode="w")  # type: ignore
 
     with dnaio.open(fw_file, rv_file) as reader:
         for r1, r2 in reader:
@@ -124,16 +122,11 @@ def filter_input_data(
             discard_read = False
             total_reads += 1
 
-            if not sequence_fw or not sequence_rv:
-                error = "Error doing quality trimming. The input files are not of the same length."
-                logger.error(error)
-                break
-
             if header_fw.split()[0] != header_rv.split()[0]:
                 logger.warning(f"Pair reads found with different names {header_fw} and {header_rv}.")
 
             if not disable_barcode:
-                barcode = sequence_fw[max(0, start_position - overhang):(start_position + barcode_length + overhang)]
+                barcode = sequence_fw[max(0, start_position - overhang) : (start_position + barcode_length + overhang)]
             else:
                 barcode = None
 
@@ -150,11 +143,19 @@ def filter_input_data(
             else:
                 umi_seq = None
 
-            if not discard_read and filter_AT_content > 0 and has_sufficient_content(sequence_rv, "AT", filter_AT_content):
+            if (
+                not discard_read
+                and filter_AT_content > 0
+                and has_sufficient_content(sequence_rv, "AT", filter_AT_content)
+            ):
                 dropped_AT += 1
                 discard_read = True
 
-            if not discard_read and filter_GC_content > 0 and has_sufficient_content(sequence_rv, "GC", filter_GC_content):
+            if (
+                not discard_read
+                and filter_GC_content > 0
+                and has_sufficient_content(sequence_rv, "GC", filter_GC_content)
+            ):
                 dropped_GC += 1
                 discard_read = True
 
@@ -181,11 +182,7 @@ def filter_input_data(
                     discard_read = True
 
             if not discard_read:
-                bam_file.write(
-                    convert_to_AlignedSegment(
-                        header_rv, sequence_rv, quality_rv, barcode, umi_seq
-                    )
-                )
+                bam_file.write(convert_to_AlignedSegment(header_rv, sequence_rv, quality_rv, barcode, umi_seq))
             elif keep_discarded_files:
                 out_writer_discarded.write(dnaio.SequenceRecord(header_rv, orig_sequence_rv, orig_quality_rv))
 
@@ -193,7 +190,9 @@ def filter_input_data(
     if keep_discarded_files:
         out_writer_discarded.close()
 
-    dropped_rv = dropped_umi + dropped_umi_template + dropped_AT + dropped_GC + dropped_adaptor + too_short_after_trimming
+    dropped_rv = (
+        dropped_umi + dropped_umi_template + dropped_AT + dropped_GC + dropped_adaptor + too_short_after_trimming
+    )
     logger.info(f"Trimming stats total reads (pair): {total_reads}")
     logger.info(f"Trimming stats {dropped_rv} reads have been dropped!")
     logger.info(f"Trimming stats you just lost about {(dropped_rv / total_reads):.2%} of your data")

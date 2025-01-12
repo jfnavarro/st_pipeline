@@ -3,8 +3,6 @@
 Unit-test the package filter
 """
 import pytest
-import os
-import pysam
 import dnaio
 from unittest.mock import Mock, patch
 from stpipeline.common.filter import filter_input_data
@@ -29,7 +27,7 @@ def setup_fastq_files(tmp_path):
         ("read3", "GGGGGGGGGGGGGGGGGGGGGGGG", "IIIIIIIIIIIIIIIIIIIIIIII"),
         ("read4", "CCCCCCCCCCCCCCCCCCCCCCCC", "IIIIIIIIIIIIIIIIIIIIIIII"),
         ("read5", "ACTGACTGACTGACTGACTGACTG", "!!!!IIIIIIIIIIIIIIIIIIII"),  # Low-quality UMI
-        ("read6", "ACTGACTGACTG", "IIIIIIIIIII")  # Too short after trimming
+        ("read6", "ACTGACTGACTGACTGACTGACTG", "!!!!!!!!!!!!!!IIIIIIIIII")  # Too short after trimming
     ]
     rv_records = [
         ("read1", "ACTGACTGACTGACTGACTGACTG", "IIIIIIIIIIIIIIIIIIIIIIII"),
@@ -37,7 +35,7 @@ def setup_fastq_files(tmp_path):
         ("read3", "GGGGGGGGGGGGGGGGGGGGGGGG", "IIIIIIIIIIIIIIIIIIIIIIII"),
         ("read4", "CCCCCCCCCCCCCCCCCCCCCCCC", "IIIIIIIIIIIIIIIIIIIIIIII"),
         ("read5", "ACTGACTGACTGACTGACTGACTG", "!!!!IIIIIIIIIIIIIIIIIIII"),  # Low-quality UMI
-        ("read6", "ACTGACTGACTG", "IIIIIIIIIII")  # Too short after trimming
+        ("read6", "ACTGACTGACTGACTGACTGACTG", "!!!!!!!!!!!!!!IIIIIIIIII")  # Too short after trimming
     ]
     fw_file = tmp_path / "fw.fastq"
     rv_file = tmp_path / "rv.fastq"
@@ -47,29 +45,11 @@ def setup_fastq_files(tmp_path):
 
     return str(fw_file), str(rv_file)
 
-@patch("your_module_name.pysam.AlignmentFile")
-@patch("your_module_name.dnaio.open")
-def test_filter_input_data(mock_dnaio_open, mock_alignment_file, setup_fastq_files, tmp_path):
+@patch("stpipeline.common.filter.pysam.AlignmentFile")
+def test_filter_input_data(mock_alignment_file, setup_fastq_files, tmp_path):
     fw_file, rv_file = setup_fastq_files
     out_file = tmp_path / "output.bam"
     out_file_discarded = tmp_path / "discarded.fastq"
-
-    # Mock dnaio.open to return iterables for reads
-    mock_dnaio_open.return_value.__enter__.return_value = zip([
-        Mock(name="read1", sequence="ACTGACTGACTGACTGACTGACTG", qualities="IIIIIIIIIIIIIIIIIIIIIIII"),
-        Mock(name="read2", sequence="TTTTTTTTTTTTTTTTTTTTTTTT", qualities="IIIIIIIIIIIIIIIIIIIIIIII"),
-        Mock(name="read3", sequence="GGGGGGGGGGGGGGGGGGGGGGGG", qualities="IIIIIIIIIIIIIIIIIIIIIIII"),
-        Mock(name="read4", sequence="CCCCCCCCCCCCCCCCCCCCCCCC", qualities="IIIIIIIIIIIIIIIIIIIIIIII"),
-        Mock(name="read5", sequence="ACTGACTGACTGACTGACTGACTG", qualities="!!!!IIIIIIIIIIIIIIIIIIII"),
-        Mock(name="read6", sequence="ACTGACTGACTG", qualities="IIIIIIIIIII"),
-    ], [
-        Mock(name="read1", sequence="ACTGACTGACTGACTGACTGACTG", qualities="IIIIIIIIIIIIIIIIIIIIIIII"),
-        Mock(name="read2", sequence="TTTTTTTTTTTTTTTTTTTTTTTT", qualities="IIIIIIIIIIIIIIIIIIIIIIII"),
-        Mock(name="read3", sequence="GGGGGGGGGGGGGGGGGGGGGGGG", qualities="IIIIIIIIIIIIIIIIIIIIIIII"),
-        Mock(name="read4", sequence="CCCCCCCCCCCCCCCCCCCCCCCC", qualities="IIIIIIIIIIIIIIIIIIIIIIII"),
-        Mock(name="read5", sequence="ACTGACTGACTGACTGACTGACTG", qualities="!!!!IIIIIIIIIIIIIIIIIIII"),
-        Mock(name="read6", sequence="ACTGACTGACTG", qualities="IIIIIIIIIII"),
-    ])
 
     mock_alignment_file.return_value.__enter__.return_value = Mock()
 
@@ -104,4 +84,3 @@ def test_filter_input_data(mock_dnaio_open, mock_alignment_file, setup_fastq_fil
     assert total_reads == 6
     assert remaining_reads < total_reads
     mock_alignment_file.assert_called_once_with(str(out_file), "wb")
-    mock_dnaio_open.assert_called_with(fw_file, rv_file)

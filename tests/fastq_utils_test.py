@@ -3,7 +3,7 @@
 Unit-test the package fastq_utils
 """
 import pytest
-from your_module_name import (
+from stpipeline.common.fastq_utils import (
     remove_adaptor,
     quality_trim_index,
     trim_quality,
@@ -15,10 +15,10 @@ from your_module_name import (
 def test_remove_adaptor():
     sequence = "AGCTTAGCTTAGCTA"
     quality = "FFFFFFFFFFFFFFF"
-    adaptor = "TAGCTA"
-    trimmed_seq, trimmed_qual = remove_adaptor(sequence, quality, adaptor)
-    assert trimmed_seq == "AGCTT"
-    assert trimmed_qual == "FFFFF"
+    adaptor = "TAGCTT"
+    trimmed_seq, trimmed_qual = remove_adaptor(sequence, quality, adaptor, missmatches=0)
+    assert trimmed_seq == "AGCT"
+    assert trimmed_qual == "FFFF"
 
     # Test no adaptor found
     trimmed_seq, trimmed_qual = remove_adaptor(sequence, quality, "GATTACA")
@@ -30,28 +30,72 @@ def test_remove_adaptor():
     assert trimmed_seq == "AGCT"
     assert trimmed_qual == "FFFF"
 
-# Test for quality_trim_index
-def test_quality_trim_index():
-    bases = "AGCTTAGCTTAGCTA"
-    qualities = "FFFFFFFFFFFFFFF"
-    cutoff = 20
-    index = quality_trim_index(bases, qualities, cutoff)
-    assert index == len(bases)  # No trimming needed for high-quality bases
-
-    qualities = "FFFFF####FFFFFF"
-    index = quality_trim_index(bases, qualities, cutoff)
-    assert index == 5  # Trimming occurs at the first low-quality base
-
-# Test for trim_quality
-def test_trim_quality():
+def test_quality_trim_index_basic():
     sequence = "AGCTTAGCTTAGCTA"
-    quality = "FFFFFFFFFFFFFFF"
+    quality = "FFFFFFFFFFFFFFF"  # ASCII 'F' -> Phred score 40
+    cutoff = 20
+    result = quality_trim_index(sequence, quality, cutoff)
+    assert result == len(sequence)  # No trimming, all bases are high quality
+
+
+def test_quality_trim_index_trimming():
+    sequence = "AGCTTAGCTTAGCTA"
+    quality = "FFFFFF!!!!!!!!!"  # Phred scores: 'F' (40), '!' (0)
+    cutoff = 20
+    result = quality_trim_index(sequence, quality, cutoff)
+    assert result == 6  # Trims after the first 6 high-quality bases
+
+
+def test_quality_trim_index_low_quality_g():
+    sequence = "AGCTTAGCTTGGA"
+    quality = "FFFFFF!!!!!!"  # Phred scores: 'F' (40), '!' (0)
+    cutoff = 20
+    result = quality_trim_index(sequence, quality, cutoff)
+    assert result == 6  # Trims after the first 6 high-quality bases
+
+
+def test_trim_quality_basic():
+    sequence = "AGCTTAGCTTAGCTA"
+    quality = "FFFFFFFFFFFFFFF"  # All high quality
     min_qual = 20
     min_length = 10
-
     trimmed_seq, trimmed_qual = trim_quality(sequence, quality, min_qual, min_length)
-    assert trimmed_seq == "AGCTTAGCTT"
-    assert trimmed_qual == "FFFFFFFFFF"
+    assert trimmed_seq == "AGCTTAGCTTAGCTA"
+    assert trimmed_qual == "FFFFFFFFFFFFFFF"
+
+
+def test_trim_quality_trimming():
+    sequence = "AGCTTAGCTTAGCTA"
+    quality = "FFFFFF!!!!!!!!!"  # Low-quality bases at the end
+    min_qual = 20
+    min_length = 5
+    trimmed_seq, trimmed_qual = trim_quality(sequence, quality, min_qual, min_length)
+    assert trimmed_seq == "AGCTTA"
+    assert trimmed_qual == "FFFFFF"
+
+
+def test_trim_quality_below_min_length():
+    sequence = "AGCTTAGCTTAGCTA"
+    quality = "FFFFFF!!!!!!!!!"  # Low-quality bases at the end
+    min_qual = 20
+    min_length = 10
+    trimmed_seq, trimmed_qual = trim_quality(sequence, quality, min_qual, min_length)
+    assert trimmed_seq is None
+    assert trimmed_qual is None
+
+
+def test_trim_quality_low_quality_g():
+    sequence = "AGCTTAGCTTGGA"
+    quality = "FFFFFF!!!!!!"  # Phred scores: 'F' (40), '!' (0)
+    min_qual = 20
+    min_length = 5
+    trimmed_seq, trimmed_qual = trim_quality(sequence, quality, min_qual, min_length)
+    assert trimmed_seq == "AGCTTA"
+    assert trimmed_qual == "FFFFFF"
+
+def test_trim_quality_short():
+    min_qual = 20
+    min_length = 10
 
     # Test with sequence shorter than min_length
     trimmed_seq, trimmed_qual = trim_quality("AGCTT", "FFFFF", min_qual, min_length)

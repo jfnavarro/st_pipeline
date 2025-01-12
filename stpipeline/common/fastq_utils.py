@@ -1,4 +1,4 @@
-""" 
+"""
 This module contains some specific functions for
 to parse and modify FASTQ files
 """
@@ -6,12 +6,8 @@ import re
 import regex
 from typing import Tuple, Union
 
-def remove_adaptor(
-    sequence: str,
-    quality: str,
-    adaptor: str,
-    missmatches: int = 2
-) -> Tuple[str, str]:
+
+def remove_adaptor(sequence: str, quality: str, adaptor: str, missmatches: int = 2) -> Tuple[str, str]:
     """
     Trims a given adaptor sequence from a FASTQ read if it is found.
 
@@ -34,11 +30,7 @@ def remove_adaptor(
         if missmatches == 0:
             pos = sequence.find(adaptor)
         else:
-            candidates = regex.findall(
-                rf'(?:{adaptor}){{s<={missmatches}}}',
-                sequence,
-                overlapped=False
-            )
+            candidates = regex.findall(rf"(?:{adaptor}){{s<={missmatches}}}", sequence, overlapped=False)
             if candidates:
                 local_seq = candidates[0]
                 local_pos = 0
@@ -53,7 +45,8 @@ def remove_adaptor(
         else:
             return sequence, quality
     except Exception as e:
-        raise RuntimeError(f"Failed to trim adaptor: {e}")
+        raise RuntimeError("Failed to trim adaptor") from e
+
 
 def quality_trim_index(bases: str, qualities: str, cutoff: int, base: int = 33) -> int:
     """
@@ -87,7 +80,7 @@ def quality_trim_index(bases: str, qualities: str, cutoff: int, base: int = 33) 
     max_i = len(qualities)
     for i in reversed(range(max_i)):
         q = ord(qualities[i]) - base
-        if bases[i] == 'G':
+        if bases[i] == "G":
             q = cutoff - 1
         s += cutoff - q
         if s < 0:
@@ -99,16 +92,12 @@ def quality_trim_index(bases: str, qualities: str, cutoff: int, base: int = 33) 
 
 
 def trim_quality(
-    sequence: str,
-    quality: str,
-    min_qual: int = 20,
-    min_length: int = 30,
-    phred: int = 33
+    sequence: str, quality: str, min_qual: int = 20, min_length: int = 30, phred: int = 33
 ) -> Tuple[Union[str, None], Union[str, None]]:
     """
     Quality trims a FASTQ read using a BWA-like approach.
 
-    The function trims a nucleotide sequence and its quality scores based on a minimum quality threshold. 
+    The function trims a nucleotide sequence and its quality scores based on a minimum quality threshold.
     If the trimmed sequence is shorter than a minimum length, it returns None.
 
     Args:
@@ -119,7 +108,7 @@ def trim_quality(
         phred: Phred encoding format for quality scores (33 or 64). Defaults to 33.
 
     Returns:
-        A tuple containing the trimmed sequence and quality scores, 
+        A tuple containing the trimmed sequence and quality scores,
         or (None, None) if trimming results in a sequence shorter than `min_length`.
     """
     if len(sequence) < min_length:
@@ -150,6 +139,7 @@ def check_umi_template(umi: str, template: str) -> bool:
     """
     p = re.compile(template)
     return p.match(umi) is not None
+
 
 def has_sufficient_content(sequence: str, chars_to_count: str, threshold: float) -> bool:
     """

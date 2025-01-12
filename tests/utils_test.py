@@ -3,6 +3,7 @@
 Unit-test the package utils
 """
 import pytest
+from unittest.mock import patch
 import os
 from stpipeline.common.utils import (
     which_program,
@@ -106,4 +107,5 @@ def test_get_htseq_count_version():
 
 def test_get_htseq_count_version_not_found():
     with patch("subprocess.Popen", side_effect=FileNotFoundError):
-        version = get_htseq_count_version(
+        version = get_htseq_count_version()
+        assert version == "Not available"

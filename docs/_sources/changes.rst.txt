@@ -61,9 +61,9 @@ Changes
 **Version 1.4.5**
 
 * Added extra scripts:
-	- merge_bcl : merge BCL files based in patterns
-	- filter_gene_type_matrix : filter gene in output data based on Ensembl gene types
-* Bumped Pysam and HTSeq 
+    - merge_bcl : merge BCL files based in patterns
+    - filter_gene_type_matrix : filter gene in output data based on Ensembl gene types
+* Bumped Pysam and HTSeq
 
 **Version 1.4.1**
 

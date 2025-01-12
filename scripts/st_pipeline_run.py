@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-""" 
+"""
 ST Pipeline is a tool to process Spatial Transcriptomics raw datasets (FASTQ).
 The raw data is filtered, aligned to a genome, annotated to a reference,
 demultiplexed by array coordinates and then aggregated by counts
@@ -27,8 +27,7 @@ def main() -> int:
     pipeline = Pipeline()
 
     # Create a parser
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 
     # Parse parameters, sanity check and run the pipeline
     try:
@@ -43,7 +42,7 @@ def main() -> int:
         pipeline.createLogger()
         print("ST Pipeline, logger created")
 
-        # Sanity check
+        # Sanity check
         pipeline.sanityCheck()
         print("ST Pipeline, sanity check passed. Starting the run...")
 
@@ -56,6 +55,8 @@ def main() -> int:
         return 1
     finally:
         pipeline.clean_filenames()
+
+    return 0
 
 
 if __name__ == "__main__":

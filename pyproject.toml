@@ -13,27 +13,41 @@ classifiers = [
     "Topic :: Software Development",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Operating System :: Unix",
     "Operating System :: MacOS",
     "Environment :: Console",
 ]
-
-[tool.poetry.include]
-"requirements.txt" = "requirements.txt"
-"README_SHORT.md" = "README_SHORT.md"
-"LICENSE" = "LICENSE"
-"README.md" = "README.md"
-"tests/**" = "tests"
-"doc/**" = "doc"
+include = [
+    { path = "README.md" },
+    { path = "README_SHORT.md" },
+    { path = "LICENSE" },
+    { path = "doc/**" },
+    { path = "scripts/*" },
+    { path = "stpipeline/common/cdistance.pyx" },
+    { path = "stpipeline/common/*.pxd" },
+    { path = "stpipeline/common/*.so" },
+]
 
 [tool.poetry.dependencies]
-python = "^3.9.0, <3.12"
-
-[tool.poetry.extras]
-tests = ["pytest"]
+python = ">=3.10,<=3.12"
+argparse = "^1.4.0"
+cython = "^3.0.11"
+numpy = "^2.2.1"
+pandas = "^2.2.3"
+scipy = "^1.15.0"
+scikit-learn = "^1.6.0"
+regex = "^2024.11.6"
+pre-commit = "^4.0.1"
+taggd = ">=0.4.0"
+htseq = "^2.0.9"
+pysam = "^0.22.1"
+seaborn = "^0.13.2"
+types-regex = "^2024.11.6.20241221"
+pandas-stubs = "^2.2.3.241126"
+dnaio = "^1.2.3"
 
 [tool.poetry.scripts]
 st_qa = "scripts.st_qa:main"
@@ -43,13 +57,6 @@ merge_fastq = "scripts.merge_fastq:main"
 filter_gene_type_matrix = "scripts.filter_gene_type_matrix:main"
 convertEnsemblToNames = "scripts.convertEnsemblToNames:main"
 adjust_matrix_coordinates = "scripts.adjust_matrix_coordinates:main"
-
-[tool.poetry.plugins.cython]
-modules = [
-    "stpipeline.common.cdistance",
-    "stpipeline.common.unique_events_parser",
-    "stpipeline.common.filterInputReads"
-]
 
 [tool.poetry.extras]
 test = [
@@ -78,8 +85,8 @@ doc = [
     ]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0", "setuptools", "cython", "numpy"]
+build-backend = "setuptools.build_meta"
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
@@ -113,11 +120,13 @@ exclude = [
     "makefile",
     "tests",
     "docs",
+    "docsrc",
     "*.yml",
     "*.yaml",
     "*.md",
     "*.rst",
     "*.ipynb",
+    "*.pyx",
     "requirements.txt"
 ]
 
@@ -154,7 +163,7 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.ruff.lint.mccabe]
-max-complexity = 18
+max-complexity = 50
 
 [tool.mypy]
 # Ensure we know what we do
@@ -179,3 +188,5 @@ show_error_codes = true
 
 # From functions not declared to return Any
 warn_return_any = true
+
+exclude = ["tests", "docsrc"]

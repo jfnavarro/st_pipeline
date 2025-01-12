@@ -1,4 +1,4 @@
-""" 
+"""
 This module contains a modified version of htseq-count
 with modifications and improvements to perform annotation
 of ST mapped reads (BAM file).
@@ -7,14 +7,17 @@ import logging
 import os
 from typing import Optional, List
 import pysam
-from stpipeline.common.utils import fileOk
-import HTSeq
+from stpipeline.common.utils import file_ok
+import HTSeq  # type: ignore
+
 
 class UnknownChrom(Exception):
     """
     Exception raised for unknown chromosome errors.
     """
+
     pass
+
 
 def invert_strand(iv: HTSeq.GenomicInterval) -> HTSeq.GenomicInterval:
     """
@@ -38,6 +41,7 @@ def invert_strand(iv: HTSeq.GenomicInterval) -> HTSeq.GenomicInterval:
         raise ValueError("Illegal strand")
     return iv2
 
+
 def count_reads_in_features(
     sam_filename: str,
     gff_filename: str,
@@ -50,7 +54,7 @@ def count_reads_in_features(
     samout: str,
     include_non_annotated: bool,
     htseq_no_ambiguous: bool,
-    outputDiscarded: Optional[str]
+    outputDiscarded: Optional[str],
 ) -> int:
     """
     Counts reads in features using a modified version of HTSeq.
@@ -77,41 +81,45 @@ def count_reads_in_features(
         ValueError: If an invalid overlap mode or strand information is encountered.
     """
     # Set up filters
-    count_reads_in_features.filter_htseq = ["__too_low_aQual", "__not_aligned"]
+    filter_htseq = ["__too_low_aQual", "__not_aligned"]
     if not include_non_annotated:
-        count_reads_in_features.filter_htseq.append("__no_feature")
-    count_reads_in_features.filter_htseq_no_ambiguous = htseq_no_ambiguous
+        filter_htseq.append("__no_feature")
+    filter_htseq_no_ambiguous = htseq_no_ambiguous
 
     # Open SAM/BAM output file
     flag_write = "wb" if samtype == "bam" else "wh"
     flag_read = "rb" if samtype == "bam" else "r"
-    saminfile = pysam.AlignmentFile(sam_filename, flag_read)
-    count_reads_in_features.samoutfile = pysam.AlignmentFile(samout, flag_write, template=saminfile)
+    saminfile = pysam.AlignmentFile(sam_filename, flag_read)  # type: ignore
+    samoutfile = pysam.AlignmentFile(samout, flag_write, template=saminfile)  # type: ignore
     if outputDiscarded is not None:
-        count_reads_in_features.samdiscarded = pysam.AlignmentFile(outputDiscarded, flag_write, template=saminfile)
+        samdiscarded = pysam.AlignmentFile(outputDiscarded, flag_write, template=saminfile)  # type: ignore
     saminfile.close()
 
     # Counter for annotated records
-    count_reads_in_features.annotated = 0
+    annotated = 0
 
     def write_to_samout(read: HTSeq.SAM_Alignment, assignment: str) -> None:
         """
         Writes a read and its assignment to the SAM output file.
         """
-        sam_record = read.to_pysam_AlignedSegment(count_reads_in_features.samoutfile)
+        sam_record = read.to_pysam_AlignedSegment(samoutfile)
         sam_record.set_tag("XF", assignment, "Z")
-        if read is not None and assignment not in count_reads_in_features.filter_htseq and not (
-            count_reads_in_features.filter_htseq_no_ambiguous and "__ambiguous" in assignment
+        if (
+            read is not None
+            and assignment not in filter_htseq
+            and not (filter_htseq_no_ambiguous and "__ambiguous" in assignment)
         ):
-            count_reads_in_features.samoutfile.write(sam_record)
-            count_reads_in_features.annotated += 1
+            samoutfile.write(sam_record)
         elif outputDiscarded is not None:
-            count_reads_in_features.samdiscarded.write(sam_record)
+            samdiscarded.write(sam_record)
 
     # Load features
     features = HTSeq.GenomicArrayOfSets("auto", stranded != "no")
     counts = {}
     gff = HTSeq.GFF_Reader(gff_filename)
+
+    if feature_type is None:
+        feature_type = ["exon"]
 
     for f in gff:
         if f.type in feature_type:
@@ -145,7 +153,7 @@ def count_reads_in_features(
         else:
             iv_seq = (invert_strand(co.ref_iv) for co in r.cigar if co.type in ["M", "=", "X"] and co.size > 0)
 
-        fs = set()
+        fs = set()  # type: ignore
         for iv in iv_seq:
             if iv.chrom not in features.chrom_vectors:
                 write_to_samout(r, "__no_feature")
@@ -157,14 +165,17 @@ def count_reads_in_features(
             write_to_samout(r, "__no_feature")
         elif len(fs) > 1:
             write_to_samout(r, f"__ambiguous[{'+'.join(fs)}]")
+            annotated += 1
         else:
             write_to_samout(r, list(fs)[0])
+            annotated += 1
 
-    count_reads_in_features.samoutfile.close()
+    samoutfile.close()
     if outputDiscarded is not None:
-        count_reads_in_features.samdiscarded.close()
+        samdiscarded.close()
 
-    return count_reads_in_features.annotated
+    return annotated
+
 
 def annotateReads(
     mappedReads: str,
@@ -175,7 +186,7 @@ def annotateReads(
     strandness: str,
     htseq_no_ambiguous: bool,
     include_non_annotated: bool,
-    feature_types: List[str] = ["exon"]
+    feature_types: List[str],
 ) -> int:
     """
     Annotates a BAM file with mapped reads using HTSeq and writes annotated records to a file.
@@ -202,25 +213,29 @@ def annotateReads(
     if not os.path.isfile(mappedReads):
         raise RuntimeError(f"Input file not found: {mappedReads}")
 
+    if feature_types is None:
+        feature_types = ["exon"]
     try:
-        annotated = count_reads_in_features(mappedReads,
-                                            gtfFile,
-                                            "bam",  # Type BAM for files
-                                            strandness,  # Strand yes/no/reverse
-                                            mode,  # intersection_nonempty, union, intersection_strict
-                                            feature_types,  # feature types in GFF
-                                            "gene_id",  # gene_id or gene_name
-                                            0,  # Min quality score
-                                            outputFile,
-                                            include_non_annotated,
-                                            htseq_no_ambiguous,
-                                            outputDiscarded)
+        annotated = count_reads_in_features(
+            mappedReads,
+            gtfFile,
+            "bam",  # Type BAM for files
+            strandness,  # Strand yes/no/reverse
+            mode,  # intersection_nonempty, union, intersection_strict
+            feature_types,  # feature types in GFF
+            "gene_id",  # gene_id or gene_name
+            0,  # Min quality score
+            outputFile,
+            include_non_annotated,
+            htseq_no_ambiguous,
+            outputDiscarded,
+        )
     except Exception as e:
         error = "Error during annotation. HTSEQ execution failed"
         logger.error(error)
         raise e
 
-    if not fileOk(outputFile) or annotated == 0:
+    if not file_ok(outputFile) or annotated == 0:
         error = f"Error during annotation. Output file not present or empty {outputFile}"
         logger.error(error)
         raise RuntimeError(error)

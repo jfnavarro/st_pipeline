@@ -72,7 +72,7 @@ Alternatively, you can build the ST Pipeline yourself:
 First clone the repository:
 
 ```bash
-git clone <stpipeline repository> 
+git clone <stpipeline repository>
 ```
 
 or download a tar/zip from the releases section and unzip it:
@@ -141,8 +141,8 @@ An example run would be:
 
 ```bash
 st_pipeline_run.py --expName test --ids ids_file.txt \
-  --ref-map path_to_index --log-file log_file.txt --output-folder /home/me/results \ 
-  --ref-annotation annotation_file.gtf file1.fastq file2.fastq 
+  --ref-map path_to_index --log-file log_file.txt --output-folder /home/me/results \
+  --ref-annotation annotation_file.gtf file1.fastq file2.fastq
 ```
 
 ## Visium
@@ -160,7 +160,7 @@ To process Visium datasets it is recommended to use these options:
 ## Emsembl ids
 
 If you used an Ensembl annotation file and you would like change
-the output file so it contains gene ids/names instead of Ensembl ids. 
+the output file so it contains gene ids/names instead of Ensembl ids.
 You can use this tool that comes with the ST Pipeline
 
 ```bash
@@ -176,7 +176,7 @@ you can use the script `merge_fastq.py` that comes with the ST Pipeline
 merge_fastq.py --run-path path_to_run_folder --out-path path_to_output --identifiers S1 S2 S3 S4
 ```
 
-Where `--identifiers` will be strings that identify each demultiplexed sample. 
+Where `--identifiers` will be strings that identify each demultiplexed sample.
 
 ## Filter out genes by gene type
 
@@ -239,7 +239,7 @@ in the folder called "data".
 
 ## License
 
-The ST pipeline is open source under the MIT license which means that you can use it, 
+The ST pipeline is open source under the MIT license which means that you can use it,
 change it and re-distribute but you must always refer to our license (see LICENSE and AUTHORS).
 
 ## Reference

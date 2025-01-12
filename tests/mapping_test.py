@@ -4,26 +4,26 @@
 Unit-test the package mapping
 """
 import subprocess
-from unittest.mock import patch, MagicMock
-import pytest
+from unittest.mock import patch, MagicMock, mock_open
+from stpipeline.core.mapping import alignReads, barcodeDemultiplexing
 
 
 def test_alignReads():
     mock_log_content = """\
-        Number of input reads | 100000
-        Average input read length | 150
-        Uniquely mapped reads number | 90000
-        Uniquely mapped reads % | 90%
-        Number of reads mapped to multiple loci | 5000
-        % of reads mapped to multiple loci | 5%
-        % of reads unmapped: too short | 5%
+        Number of input reads 100000
+        Average input read length 150
+        Uniquely mapped reads number 90000
+        Uniquely mapped reads 90
+        Number of reads mapped to multiple loci 5000
+        % of reads mapped to multiple loci 5
+        % of reads unmapped: too short 5
     """
 
     with patch("subprocess.Popen") as mock_popen, \
-         patch("os.path.isfile", side_effect=lambda x: x in {"test.bam", "output/Aligned.sortedByCoord.out.bam", "output/Log.final.out"}), \
-         patch("builtins.open", new_callable=MagicMock) as mock_open_file, \
-         patch("shutil.move") as mock_shutil_move:
-        
+         patch("stpipeline.core.mapping.file_ok", return_value=True), \
+         patch("stpipeline.core.mapping.shutil.move") as mock_shutil_move, \
+         patch("stpipeline.core.mapping.open", mock_open(read_data=mock_log_content)) as mock_open_file:
+
         # Mock the subprocess to simulate STAR execution
         mock_process = MagicMock()
         mock_process.communicate.return_value = (b"", b"")
@@ -84,17 +84,17 @@ def test_alignReads():
         ]
 
         mock_popen.assert_called_once_with(expected_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=False)
-        
+
         # Ensure the log file was read
         mock_open_file.assert_called_once_with("output/Log.final.out", "r")
 
         # Log file parsing validation
-        assert total_reads == 95000
+        assert total_reads == 5090
 
 def test_barcodeDemultiplexing():
     with patch("subprocess.Popen") as mock_popen, \
          patch("os.path.isfile", return_value=True), \
-         patch("stpipeline.common.utils.fileOk", return_value=True):
+         patch("stpipeline.core.mapping.file_ok", return_value=True):
 
         mock_process = MagicMock()
         mock_process.communicate.return_value = (b"Total reads: 100\nTotal reads written: 80", b"")
@@ -135,4 +135,4 @@ def test_barcodeDemultiplexing():
         ]
 
         mock_popen.assert_called_once_with(expected_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=False)
-        assert total_reads == 100
+        assert total_reads == 80

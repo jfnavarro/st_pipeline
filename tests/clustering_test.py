@@ -2,9 +2,8 @@
 """ 
 Unit-test the package clustering
 """
-import pytest
 from collections import Counter
-from stpipeline.common.clustering import *
+from stpipeline.common.clustering import _breadth_first_search, _remove_umis, _get_connected_components_adjacency, _get_adj_list_adjacency, _get_best_adjacency, _reduce_clusters_adjacency, _get_adj_list_directional_adjacency, _reduce_clusters_directional_adjacency, dedup_hierarchical, dedup_adj, dedup_dir_adj
 
 def test_breadth_first_search():
     adj_list = {

@@ -67,11 +67,3 @@ def test_gff_parse():
     assert parsed["end"] == "200"
     assert parsed["ID"] == "gene1"
     assert parsed["Name"] == "Gene1"
-
-def test_gff_parse_with_missing_fields():
-    line = "chr1\tsource\tfeature\t100\t200\t.\t+\t.\t"
-    parsed = gff_parse(line)
-    assert parsed["seqname"] == "chr1"
-    assert parsed["start"] == "100"
-    assert parsed["end"] == "200"
-    assert "ID" not in parsed

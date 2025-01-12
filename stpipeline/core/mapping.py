@@ -1,4 +1,4 @@
-""" 
+"""
 This module contains functions related to sequence alignment and barcode
 demultiplexing in the ST pipeline
 """
@@ -7,9 +7,10 @@ import shutil
 import subprocess
 import logging
 from typing import Optional, List
-from stpipeline.common.utils import fileOk
+from stpipeline.common.utils import file_ok
 
 logger = logging.getLogger("STPipeline")
+
 
 def alignReads(
     reverse_reads: str,
@@ -28,7 +29,7 @@ def alignReads(
     min_length: int,
     include_non_mapped: bool,
     star_genome_loading: str,
-    star_sort_mem_limit: int
+    star_sort_mem_limit: int,
 ) -> int:
     """
     Perform sequence alignment using STAR.
@@ -61,7 +62,7 @@ def alignReads(
         OSError: If STAR executable is not found.
     """
 
-    if not os.path.isfile(reverse_reads):
+    if not file_ok(reverse_reads):
         error = f"Error mapping with STAR, input file not present {reverse_reads}\n"
         logger.error(error)
         raise RuntimeError(error)
@@ -70,13 +71,9 @@ def alignReads(
     tmpOutputFile = "Aligned.sortedByCoord.out.bam"
     log_final = "Log.final.out"
 
-    if outputFolder is not None and os.path.isdir(outputFolder):
+    if outputFolder is not None:
         tmpOutputFile = os.path.join(outputFolder, tmpOutputFile)
-        log_std = os.path.join(outputFolder, log_std)
-        log = os.path.join(outputFolder, log)
-        log_sj = os.path.join(outputFolder, log_sj)
         log_final = os.path.join(outputFolder, log_final)
-        log_progress = os.path.join(outputFolder, log_progress)
 
     multi_map_number = 1 if disable_multimap else 20  # 10 is the STAR default
     alignment_mode = "EndToEnd" if diable_softclipping else "Local"
@@ -84,25 +81,48 @@ def alignReads(
     # Prepare STAR command arguments
     args = [
         "STAR",
-        "--genomeDir", ref_map,
-        "--readFilesIn", reverse_reads,
-        "--outFileNamePrefix", f"{outputFolder}{os.sep}",
-        "--clip3pNbases", str(invTrimReverse),
-        "--clip5pNbases", str(trimReverse),
-        "--runThreadN", str(max(cores, 1)),
-        "--outFilterType", "Normal",
-        "--outSAMtype", "BAM", "SortedByCoordinate",
-        "--alignEndsType", alignment_mode,
-        "--outSAMorder", "Paired",
-        "--outSAMprimaryFlag", "OneBestScore",
-        "--outFilterMultimapNmax", str(multi_map_number),
-        "--alignIntronMin", str(min_intron_size),
-        "--alignIntronMax", str(max_intron_size),
-        "--outFilterMatchNmin", str(min_length),
-        "--genomeLoad", star_genome_loading,
-        "--limitBAMsortRAM", str(star_sort_mem_limit),
-		"--readFilesType", "SAM", "SE",  # Input in BAM format
-		"--readFilesCommand", "samtools", "view", "-h"
+        "--genomeDir",
+        ref_map,
+        "--readFilesIn",
+        reverse_reads,
+        "--outFileNamePrefix",
+        f"{outputFolder}{os.sep}",
+        "--clip3pNbases",
+        str(invTrimReverse),
+        "--clip5pNbases",
+        str(trimReverse),
+        "--runThreadN",
+        str(max(cores, 1)),
+        "--outFilterType",
+        "Normal",
+        "--outSAMtype",
+        "BAM",
+        "SortedByCoordinate",
+        "--alignEndsType",
+        alignment_mode,
+        "--outSAMorder",
+        "Paired",
+        "--outSAMprimaryFlag",
+        "OneBestScore",
+        "--outFilterMultimapNmax",
+        str(multi_map_number),
+        "--alignIntronMin",
+        str(min_intron_size),
+        "--alignIntronMax",
+        str(max_intron_size),
+        "--outFilterMatchNmin",
+        str(min_length),
+        "--genomeLoad",
+        star_genome_loading,
+        "--limitBAMsortRAM",
+        str(star_sort_mem_limit),
+        "--readFilesType",
+        "SAM",
+        "SE",  # Input in BAM format
+        "--readFilesCommand",
+        "samtools",
+        "view",
+        "-h",
     ]
 
     if twopassMode:
@@ -117,9 +137,7 @@ def alignReads(
         args += ["--outSAMunmapped", "None"]
 
     try:
-        proc = subprocess.Popen(
-            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=False
-        )
+        proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=False)
         _, errmsg = proc.communicate()
 
         if proc.returncode != 0:
@@ -129,7 +147,7 @@ def alignReads(
         logger.error("Error mapping with STAR\n Executable not found.")
         raise e
 
-    if not fileOk(tmpOutputFile):
+    if not file_ok(tmpOutputFile):
         error = f"Error mapping with STAR. Output file not present {tmpOutputFile}\n"
         logger.error(error)
         raise RuntimeError(error)
@@ -137,13 +155,13 @@ def alignReads(
     # Rename output file
     shutil.move(tmpOutputFile, outputFile)
 
-    if not os.path.isfile(log_final):
+    uniquely_mapped = 0
+    multiple_mapped = 0
+    if not file_ok(log_final):
         logger.warning("Log output file from STAR is not present")
     else:
         logger.info("Mapping stats:")
         logger.info("Mapping stats are computed from all the pair reads present in the raw files")
-        uniquely_mapped = 0
-        multiple_mapped = 0
         with open(log_final, "r") as star_log:
             for line in star_log:
                 if "Uniquely mapped reads" in line:
@@ -158,6 +176,7 @@ def alignReads(
 
     return uniquely_mapped + multiple_mapped
 
+
 def barcodeDemultiplexing(
     reads: str,
     idFile: str,
@@ -169,7 +188,7 @@ def barcodeDemultiplexing(
     taggd_trim_sequences: Optional[List[int]],
     cores: int,
     outputFilePrefix: str,
-    keep_discarded_files: bool = False
+    keep_discarded_files: bool = False,
 ) -> int:
     """
     Perform demultiplexing using Taggd.
@@ -214,16 +233,23 @@ def barcodeDemultiplexing(
 
     args = [
         "taggd_demultiplex.py",
-        "--max-edit-distance", str(mismatches),
-        "--k", str(kmer),
-        "--barcode-tag", "B0", # if input is BAM we tell taggd which tag contains the barcode
-        "--homopolymer-filter", "0",
-        "--subprocesses", str(cores),
-        "--metric", taggd_metric,
-        "--overhang", str(over_hang if taggd_metric != "Hamming" else 0),
+        "--max-edit-distance",
+        str(mismatches),
+        "--k",
+        str(kmer),
+        "--barcode-tag",
+        "B0",  # if input is BAM we tell taggd which tag contains the barcode
+        "--homopolymer-filter",
+        "0",
+        "--subprocesses",
+        str(cores),
+        "--metric",
+        taggd_metric,
+        "--overhang",
+        str(over_hang if taggd_metric != "Hamming" else 0),
     ]
     # --use-samtools-merge Could be added to merge using samtools instead of pysam WIP on taggd
-    
+
     if taggd_trim_sequences:
         args += ["--trim-sequences"] + list(map(str, taggd_trim_sequences))
 
@@ -236,9 +262,7 @@ def barcodeDemultiplexing(
     args += [idFile, reads, outputFilePrefix]
 
     try:
-        proc = subprocess.Popen(
-            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=False
-        )
+        proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=False)
         stdout, errmsg = proc.communicate()
 
         if proc.returncode != 0:
@@ -249,7 +273,7 @@ def barcodeDemultiplexing(
         raise e
 
     outputFile = f"{outputFilePrefix}_matched{os.path.splitext(reads)[1].lower()}"
-    if not fileOk(outputFile):
+    if not file_ok(outputFile):
         error = f"Error demultiplexing with Taggd. Output file not present {outputFile}\n"
         logger.error(error)
         raise RuntimeError(error)
@@ -262,12 +286,12 @@ def barcodeDemultiplexing(
             "Imperfect Matches",
             "Ambiguous matches:",
             "Non-unique ambiguous matches:",
-            "Unmatched:"
+            "Unmatched:",
         ]
-        if any([x in line for x in tokens]):
+        if any(x in line for x in tokens):
             logger.info(line)
         if "Total reads written:" in line:
             logger.info(line)
-            reads_after_demultiplexing = line.split()[-1]
+            reads_after_demultiplexing = int(line.split()[-1])
 
     return reads_after_demultiplexing

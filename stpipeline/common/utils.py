@@ -1,11 +1,11 @@
-""" 
+"""
 This file contains some general utilities
 """
 import threading
 from datetime import datetime
 import os
 import subprocess
-from typing import Optional
+from typing import Optional, Generator, IO, Any
 
 
 def which_program(program: str) -> Optional[str]:
@@ -20,9 +20,9 @@ def which_program(program: str) -> Optional[str]:
     """
 
     def is_exe(fpath: str) -> bool:
-        return fpath and os.path.exists(fpath) and os.access(fpath, os.X_OK)
+        return fpath is not None and os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
-    def ext_candidates(fpath: str):
+    def ext_candidates(fpath: str) -> Generator[str, None, None]:
         yield fpath
         for ext in os.environ.get("PATHEXT", "").split(os.pathsep):
             yield fpath + ext
@@ -39,12 +39,13 @@ def which_program(program: str) -> Optional[str]:
                     return candidate
     return None
 
+
 class TimeStamper:
     """
     Thread-safe time stamper to generate unique timestamps.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.lock = threading.Lock()
         self.prev: Optional[str] = None
         self.count: int = 0
@@ -81,7 +82,7 @@ def safe_remove(filename: Optional[str]) -> None:
             print(f"Error removing file {filename}: {e}")
 
 
-def safe_open_file(filename: str, mode: str):
+def safe_open_file(filename: str, mode: str) -> IO[Any]:
     """
     Safely opens a file.
 
@@ -98,12 +99,12 @@ def safe_open_file(filename: str, mode: str):
     Raises:
         IOError: If the file does not exist for read mode or invalid mode is provided.
     """
+    if mode not in ["w", "r"]:
+        raise IOError(f"Error: Invalid mode: {mode}")
     if "w" in mode:
         safe_remove(filename)
     elif "r" in mode and not os.path.isfile(filename):
         raise IOError(f"Error: File does not exist: {filename}")
-    else:
-        raise IOError(f"Error: Invalid mode: {mode}")
 
     return open(filename, mode)
 
@@ -116,9 +117,9 @@ def file_ok(file: Optional[str]) -> bool:
         file: Path to the file.
 
     Returns:
-        bool: True if the file exists and is not empty, otherwise False.
+        True if the file exists and is not empty, otherwise False.
     """
-    return bool(file) and os.path.isfile(file) and os.path.getsize(file) > 0
+    return file is not None and os.path.isfile(file) and os.path.getsize(file) > 0
 
 
 def get_star_version() -> str:
@@ -130,11 +131,7 @@ def get_star_version() -> str:
     """
     try:
         proc = subprocess.Popen(
-            ["STAR", "--version"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=False,
-            close_fds=True
+            ["STAR", "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, close_fds=True
         )
         stdout, _ = proc.communicate()
         return stdout.decode().strip()
@@ -151,11 +148,7 @@ def get_taggd_count_version() -> str:
     """
     try:
         proc = subprocess.Popen(
-            ["pip", "show", "taggd"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=False,
-            close_fds=True
+            ["pip", "show", "taggd"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, close_fds=True
         )
         stdout, _ = proc.communicate()
         for line in stdout.decode().splitlines():
@@ -175,11 +168,7 @@ def get_htseq_count_version() -> str:
     """
     try:
         proc = subprocess.Popen(
-            ["pip", "show", "htseq"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=False,
-            close_fds=True
+            ["pip", "show", "htseq"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, close_fds=True
         )
         stdout, _ = proc.communicate()
         for line in stdout.decode().splitlines():

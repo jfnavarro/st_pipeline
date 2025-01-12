@@ -7,11 +7,13 @@ import json
 from dataclasses import dataclass, asdict, field
 from typing import List
 
+
 @dataclass
 class Stats:
     """
     Stats collects information and statistics for use in the ST pipeline.
     """
+
     input_reads_forward: int = 0
     input_reads_reverse: int = 0
     reads_after_trimming_forward: int = 0
@@ -42,10 +44,7 @@ class Stats:
         Returns:
             str: A formatted string of all stats attributes.
         """
-        return "\n".join(
-            f"{field_name}: {getattr(self, field_name)}"
-            for field_name in self.__dataclass_fields__
-        )
+        return "\n".join(f"{field_name}: {getattr(self, field_name)}" for field_name in self.__dataclass_fields__)
 
     def write_json(self, filename: str) -> None:
         """

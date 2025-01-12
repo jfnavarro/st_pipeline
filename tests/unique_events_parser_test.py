@@ -30,6 +30,7 @@ def mock_bam_file(tmp_path):
             segment.flag = 0
             segment.reference_id = 0
             segment.reference_start = i * 100
+            segment.cigar = [(0, len(segment.query_sequence))]  # 0: MATCH
             segment.set_tag("B1", i)
             segment.set_tag("B2", i * 2)
             segment.set_tag("XF", "gene1")
@@ -44,8 +45,8 @@ def test_compute_gene_end_coordinates(mock_gff_file):
     assert buffer.gene_end_coordinates["gene3"] == ("chr2", 1500)
     assert buffer.gene_end_coordinates["__no_feature"] == (None, -1)
 
-def test_add_transcript():
-    buffer = GeneBuffer(None)
+def test_add_transcript(mock_gff_file):
+    buffer = GeneBuffer(mock_gff_file)
     transcript = Transcript("chr1", 100, 200, "read1", 60, "+", "UMI1")
     buffer.add_transcript("gene1", (1, 2), transcript, 100)
 
@@ -53,19 +54,19 @@ def test_add_transcript():
     assert (1, 2) in buffer.buffer["gene1"]
     assert buffer.buffer["gene1"][(1, 2)][0] == transcript
 
-def test_check_and_clear_buffer():
-    buffer = GeneBuffer(None)
+def test_check_and_clear_buffer(mock_gff_file):
+    buffer = GeneBuffer(mock_gff_file)
     transcript = Transcript("chr1", 100, 200, "read1", 60, "+", "UMI1")
     buffer.add_transcript("gene1", (1, 2), transcript, 100)
     buffer.last_position = 300
 
-    cleared_genes = list(buffer.check_and_clear_buffer())
+    cleared_genes = list(buffer.check_and_clear_buffer(empty=True))
     assert len(cleared_genes) == 1
     assert cleared_genes[0][0] == "gene1"
     assert buffer.buffer == {}
 
-def test_check_and_clear_buffer_no_feature():
-    buffer = GeneBuffer(None)
+def test_check_and_clear_buffer_no_feature(mock_gff_file):
+    buffer = GeneBuffer(mock_gff_file)
     transcript = Transcript("chr1", 100, 200, "read1", 60, "+", "UMI1")
     buffer.add_transcript("__no_feature", (1, 2), transcript, 100)
     buffer.last_position = 300
@@ -89,4 +90,13 @@ def test_parse_unique_events(mock_bam_file, mock_gff_file):
     gene, spots = unique_events[0]
     assert gene == "gene1"
     assert len(spots) == 5
-    assert spots[(0, 0)][0].query_name == "read0"
+    assert spots[(0, 0)][0].clear_name == "read0"
+
+def test_parse_unique_events_no_annotation(mock_bam_file):
+    unique_events = list(parse_unique_events(mock_bam_file))
+
+    assert len(unique_events) == 1
+    gene, spots = unique_events[0]
+    assert gene == "gene1"
+    assert len(spots) == 5
+    assert spots[(0, 0)][0].clear_name == "read0"

@@ -224,4 +224,3 @@ Author Jose Fernandez Navarro <jc.fernandez.navaro@gmail.com>
   --transcriptome       Use a transcriptome instead of a genome, the gene tag
                         will be obtained from the transcriptome file
   --version             show program's version number and exit
-

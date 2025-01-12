@@ -5,7 +5,7 @@ Unit-test the package stats
 import pytest
 import os
 import json
-from your_module_name import Stats
+from stpipeline.common.stats import Stats
 
 @pytest.fixture
 def sample_stats():

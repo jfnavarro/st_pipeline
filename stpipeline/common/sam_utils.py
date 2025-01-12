@@ -1,4 +1,4 @@
-""" 
+"""
 This module contains some functions and utilities for SAM/BAM files
 """
 
@@ -21,14 +21,11 @@ def split_bam(input_bam: str, temp_dir: str, threads: int) -> List[str]:
     Returns:
         List of paths to the split BAM files.
     """
-    pysam.index(input_bam, os.path.join(temp_dir, f"{input_bam}.bai"))
+    pysam.index(input_bam, os.path.join(temp_dir, f"{input_bam}.bai"))  # type: ignore
     input_bamfile = pysam.AlignmentFile(input_bam, mode="rb")
     assert input_bamfile.check_index()
 
-    output_file_names = {
-        part: os.path.join(temp_dir, f"{input_bam}.part_{part}.bam")
-        for part in range(threads)
-    }
+    output_file_names = {part: os.path.join(temp_dir, f"{input_bam}.part_{part}.bam") for part in range(threads)}
 
     output_bamfiles = {
         part: pysam.AlignmentFile(file_name, mode="wb", template=input_bamfile)
@@ -47,7 +44,7 @@ def split_bam(input_bam: str, temp_dir: str, threads: int) -> List[str]:
             read_counter = 0
 
     input_bamfile.close()
-    return output_file_names.values()
+    return list(output_file_names.values())
 
 
 def convert_to_AlignedSegment(

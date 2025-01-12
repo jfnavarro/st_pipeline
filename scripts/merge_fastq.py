@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-""" 
+"""
 Script that merges the FASTQ files present in an Illumina run folder path.
 The script merges the FASTQ files based on the identifiers (typically indexes) given
 as input (one identifier to each sample) and puts the merged files in the given output folder.
@@ -15,6 +15,7 @@ import shutil
 import subprocess
 from typing import List, Union, IO
 
+
 def run_command(command: List[str], out: Union[int, IO[bytes]] = subprocess.PIPE) -> None:
     """
     Executes a shell command and prints its stdout and stderr.
@@ -27,14 +28,8 @@ def run_command(command: List[str], out: Union[int, IO[bytes]] = subprocess.PIPE
         Exception: If an error occurs during command execution.
     """
     try:
-        print(f"Running command: {" ".join(x for x in command).rstrip()}")
-        proc = subprocess.Popen(
-            command,
-            stdout=out,
-            stderr=subprocess.PIPE,
-            close_fds=True,
-            shell=False
-        )
+        print(f"Running command: {' '.join(x for x in command).rstrip()}")
+        proc = subprocess.Popen(command, stdout=out, stderr=subprocess.PIPE, close_fds=True, shell=False)
         stdout, errmsg = proc.communicate()
         print(stdout)
         print(errmsg)
@@ -53,7 +48,7 @@ def main(run_path: str, indexes: List[str], out_path: str) -> int:
         try:
             run_command(["gunzip", "-f", file])
         except Exception as e:
-            print(f"Error, gunziping FASTQ file {file}, {str(e)}")
+            print(f"Error, gunziping FASTQ file {file}, {e}")
             return 1
 
     # Second merge the FASTQ files
@@ -62,11 +57,11 @@ def main(run_path: str, indexes: List[str], out_path: str) -> int:
         r2_files = sorted(glob.glob("*{}*R2*.fastq".format(index)))
         try:
             with open("{}_R1.fastq".format(index), "w") as file1:
-                run_command(["cat"] + r1_files, out=file1)
+                run_command(["cat"] + r1_files, out=file1)  # type: ignore
             with open("{}_R2.fastq".format(index), "w") as file2:
-                run_command(["cat"] + r2_files, out=file2)
+                run_command(["cat"] + r2_files, out=file2)  # type: ignore
         except Exception as e:
-            print(f"Error, merging FASTQ files, {str(e)}")
+            print(f"Error, merging FASTQ files, {e}")
             return 1
 
     # Third gzip everything again
@@ -74,7 +69,7 @@ def main(run_path: str, indexes: List[str], out_path: str) -> int:
         try:
             run_command(["gzip", "-f", file])
         except Exception as e:
-            print(f"Error, gziping FASTQ file {file}, {str(e)}")
+            print(f"Error, gziping FASTQ file {file}, {e}")
             return 1
 
     # Move merged FASTQ files to output path
@@ -83,13 +78,19 @@ def main(run_path: str, indexes: List[str], out_path: str) -> int:
             for file in glob.glob("{}_R*".format(index)):
                 shutil.move(file, out_path)
 
+    return 0
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--run-path", required=True, help="Path to the run folder")
     parser.add_argument("--out-path", required=True, help="Path to the output folder")
-    parser.add_argument("--identifiers", required=True, nargs='+', type=str,
-                        help="List of identifiers for each sample (E.x. S1 S2 S3 S4)")
+    parser.add_argument(
+        "--identifiers",
+        required=True,
+        nargs="+",
+        type=str,
+        help="List of identifiers for each sample (E.x. S1 S2 S3 S4)",
+    )
     args = parser.parse_args()
     sys.exit(main(args.run_path, args.identifiers, args.out_path))

@@ -6,15 +6,17 @@ repos:
   - id: remove-crlf
   - id: forbid-tabs
     exclude_types: [csv, tsv]
-    exclude: makefile
+    exclude: ^(tests/|makefile)
   - id: remove-tabs
     exclude_types: [csv, tsv]
-    exclude: makefile
+    exclude: ^(tests/|makefile)
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.1.0
   hooks:
   - id: trailing-whitespace
+    exclude: ^tests
   - id: end-of-file-fixer
+    exclude: ^tests
   - id: check-merge-conflict
   - id: pretty-format-json
     args: [--autofix]
@@ -36,7 +38,7 @@ repos:
   - id: mypy
     name: mypy
     entry: mypy
-    exclude: ^tests
+    exclude: ^(tests/|docsrc/)
     language: python
     types: [python]
     require_serial: true
