@@ -36,7 +36,9 @@ jobs:
         pip install poetry
 
     - name: test
-      run: pytest
+      run: |
+        poetry install
+        poetry run pytest
 
   publish_dev_build:
     # if test failed, we should not publish
