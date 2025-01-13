@@ -27,7 +27,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<=3.12"
+python = ">=3.10,<3.13"
 argparse = "^1.4.0"
 numpy = "^2.2.1"
 pandas = "^2.2.3"
