@@ -2,8 +2,11 @@
 """
 Unit-test the package filter
 """
-import pytest
+
 import gzip
+
+import pytest
+
 from stpipeline.common.gff_reader import gff_lines, gff_parse
 
 

@@ -3,12 +3,14 @@ This module defines the GeneBuffer class and the parse_unique_events function.
 """
 
 import logging
-import pysam
 import operator
+import os
+from typing import Dict, Generator, List, Optional, Tuple
+
+import pysam
+
 from stpipeline.common.gff_reader import gff_lines
 from stpipeline.common.transcript import Transcript
-from typing import Dict, Generator, Optional, Tuple, List
-import os
 
 logger = logging.getLogger("STPipeline")
 

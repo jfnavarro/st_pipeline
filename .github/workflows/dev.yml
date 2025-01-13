@@ -33,10 +33,10 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install tox tox-gh-actions poetry
+        pip install poetry
 
-    - name: test with tox
-      run: tox
+    - name: test
+      run: pytest
 
   publish_dev_build:
     # if test failed, we should not publish
@@ -54,7 +54,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install poetry tox tox-gh-actions
+        pip install poetry
 
     - name: build documentation
       run: |

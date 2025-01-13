@@ -2,9 +2,11 @@
 """
 Unit-test the package unique_events_parser
 """
-import pytest
+
 import pysam
-from stpipeline.common.unique_events_parser import GeneBuffer, parse_unique_events, Transcript
+import pytest
+
+from stpipeline.common.unique_events_parser import GeneBuffer, Transcript, parse_unique_events
 
 
 @pytest.fixture

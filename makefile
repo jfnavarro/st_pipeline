@@ -1,4 +1,4 @@
-sources = geomxaggregation
+sources = stpipeline
 
 .PHONY: test format lint unittest coverage pre-commit clean
 test: format lint unittest

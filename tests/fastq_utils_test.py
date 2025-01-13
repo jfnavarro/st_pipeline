@@ -2,13 +2,15 @@
 """
 Unit-test the package fastq_utils
 """
+
 import pytest
+
 from stpipeline.common.fastq_utils import (
-    remove_adaptor,
-    quality_trim_index,
-    trim_quality,
     check_umi_template,
     has_sufficient_content,
+    quality_trim_index,
+    remove_adaptor,
+    trim_quality,
 )
 
 

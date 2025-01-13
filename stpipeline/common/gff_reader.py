@@ -1,9 +1,10 @@
 """
 A simple module to parse a GFF/GTF file and query it
 """
+
 import gzip
 import re
-from typing import Generator, Optional, Union, Dict, Any, List
+from typing import Any, Dict, Generator, List, Optional, Union
 
 # Code snipped from:
 # https://gist.github.com/slowkow/8101481

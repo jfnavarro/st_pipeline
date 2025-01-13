@@ -2,11 +2,13 @@
 This module contains functions related to sequence alignment and barcode
 demultiplexing in the ST pipeline
 """
+
+import logging
 import os
 import shutil
 import subprocess
-import logging
-from typing import Optional, List
+from typing import List, Optional
+
 from stpipeline.common.utils import file_ok
 
 logger = logging.getLogger("STPipeline")
@@ -164,11 +166,11 @@ def alignReads(
         logger.info("Mapping stats are computed from all the pair reads present in the raw files")
         with open(log_final, "r") as star_log:
             for line in star_log:
-                if "Uniquely mapped reads" in line:
+                if "Uniquely mapped reads number" in line:
                     uniquely_mapped = int(str(line).rstrip().split()[-1])
                     logger.info(line.strip())
                 elif "Number of reads mapped to multiple loci" in line:
-                    multiple_mapped = int(str(line).rstrip().split()[-1])
+                    multiple_mapped += int(str(line).rstrip().split()[-1])
                     logger.info(str(line).rstrip())
                 elif "% of reads mapped to multiple loci" in line or "% of reads unmapped: too short" in line:
                     logger.info(str(line).rstrip())
@@ -226,13 +228,12 @@ def barcodeDemultiplexing(
     # --seed
     # --overhang additional flanking bases around read barcode to allow
     # --estimate-min-edit-distance is set estimate the min edit distance among true barcodes
-    # --no-offset-speedup turns off speed up,
-    #  it might yield more hits (exactly as findIndexes)
-    # --homopolymer-filter if set excludes reads where barcode
+    # --no-offset-speedup turns off speed up, it might yield more hits (exactly as findIndexes)
+    # --homopolymer-filter if set excludes reads where the barcode
     #  contains a homolopymer of the given length (0 no filter), default 8
 
     args = [
-        "taggd_demultiplex.py",
+        "taggd_demultiplex",
         "--max-edit-distance",
         str(mismatches),
         "--k",
@@ -248,7 +249,6 @@ def barcodeDemultiplexing(
         "--overhang",
         str(over_hang if taggd_metric != "Hamming" else 0),
     ]
-    # --use-samtools-merge Could be added to merge using samtools instead of pysam WIP on taggd
 
     if taggd_trim_sequences:
         args += ["--trim-sequences"] + list(map(str, taggd_trim_sequences))

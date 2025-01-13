@@ -3,8 +3,9 @@ This shared object is used to collect
 different statistics and QA parameters for
 the pipeline run.
 """
+
 import json
-from dataclasses import dataclass, asdict, field
+from dataclasses import asdict, dataclass, field
 from typing import List
 
 

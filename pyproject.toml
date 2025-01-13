@@ -63,7 +63,8 @@ dev = [
     "tox",
     "pre-commit",
     "toml",
-    "ruff"
+    "ruff",
+    "isort"
     ]
 
 doc = [

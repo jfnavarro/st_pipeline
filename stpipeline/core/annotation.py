@@ -3,12 +3,15 @@ This module contains a modified version of htseq-count
 with modifications and improvements to perform annotation
 of ST mapped reads (BAM file).
 """
+
 import logging
 import os
-from typing import Optional, List
-import pysam
-from stpipeline.common.utils import file_ok
+from typing import List, Optional
+
 import HTSeq  # type: ignore
+import pysam
+
+from stpipeline.common.utils import file_ok
 
 
 class UnknownChrom(Exception):

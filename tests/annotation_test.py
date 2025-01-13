@@ -2,11 +2,14 @@
 """
 Unit-test the package annotation
 """
-import pytest
+
 import os
-import pysam
-from stpipeline.core.annotation import invert_strand, count_reads_in_features, annotateReads
+
 import HTSeq
+import pysam
+import pytest
+
+from stpipeline.core.annotation import annotateReads, count_reads_in_features, invert_strand
 
 
 @pytest.fixture

@@ -17,8 +17,9 @@ by typing : st_pipeline_run.py --help
 @Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
 
-import sys
 import argparse
+import sys
+
 from stpipeline.core.pipeline import Pipeline
 
 

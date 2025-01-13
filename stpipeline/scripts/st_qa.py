@@ -8,15 +8,17 @@ where it is run.
 
 @Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
+
+import argparse
+import os.path
+import sys
 from typing import List
-import pandas as pd
+
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-import os.path
-import argparse
-import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns  # type: ignore
-import sys
 
 
 def scatter_plot(
@@ -103,11 +105,22 @@ def histogram(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("counts_matrix", help="Matrix with gene counts (genes as columns) in TSV format")
+    parser.add_argument("--outdir", default=None, help="Path to the output directory")
     args = parser.parse_args()
-    sys.exit(run(args.counts_matrix))
+    sys.exit(run(args.counts_matrix, args.outdir))
 
 
-def run(input_data: str) -> int:
+def run(input_data: str, outdir: str) -> int:
+    if not os.path.isfile(input_data):
+        raise RuntimeError("Error, input file not present or invalid format")
+
+    if outdir is None or not os.path.isdir(outdir):
+        outdir = os.getcwd()
+    outdir = os.path.abspath(outdir)
+
+    print(f"Output directory {outdir}")
+    print(f"Input dataset {input_data}")
+
     # Parse the data
     counts_table = pd.read_table(input_data, sep="\t", header=0, index_col=0)
 
@@ -118,8 +131,8 @@ def run(input_data: str) -> int:
     total_barcodes = len(counts_table.index)
     total_transcripts = np.sum(counts_table.values, dtype=np.int32)
     number_genes = len(counts_table.columns)
-    max_count = counts_table.max()
-    min_count = counts_table.min()
+    max_count = counts_table.max().max()
+    min_count = counts_table.min().min()
     aggregated_spot_counts = counts_table.sum(axis=1).to_numpy()
     aggregated_gene_counts = (counts_table > 0).sum(axis=1).to_numpy()
     aggregated_gene_counts_1 = (counts_table > 1).sum(axis=1).to_numpy()
@@ -142,7 +155,7 @@ def run(input_data: str) -> int:
         nbins=20,
         xlabel="#Reads",
         ylabel="#Spots",
-        output=input_name + "_hist_reads_spot.pdf",
+        output=os.path.join(outdir, input_name + "_hist_reads_spot.pdf"),
         title="Reads per spot",
     )
     histogram(
@@ -150,7 +163,7 @@ def run(input_data: str) -> int:
         nbins=20,
         xlabel="#Genes",
         ylabel="#Spots",
-        output=input_name + "_hist_genes_spot.pdf",
+        output=os.path.join(outdir, input_name + "_hist_genes_spot.pdf"),
         title="Genes per spot (>0)",
     )
     histogram(
@@ -158,7 +171,7 @@ def run(input_data: str) -> int:
         nbins=20,
         xlabel="#Genes",
         ylabel="#Spots",
-        output=input_name + "_hist_genes_spots_1.pdf",
+        output=os.path.join(outdir, input_name + "_hist_genes_spots_1.pdf"),
         title="Genes per spot (>1)",
     )
     histogram(
@@ -166,7 +179,7 @@ def run(input_data: str) -> int:
         nbins=20,
         xlabel="#Genes",
         ylabel="#Spots",
-        output=input_name + "_hist_genes_spots_2.pdf",
+        output=os.path.join(outdir, input_name + "_hist_genes_spots_2.pdf"),
         title="Genes per spot (>2)",
     )
     histogram(
@@ -174,7 +187,7 @@ def run(input_data: str) -> int:
         nbins=20,
         xlabel="#Spots",
         ylabel="#Genes",
-        output=input_name + "_hist_spots_gene.pdf",
+        output=os.path.join(outdir, input_name + "_hist_spots_gene.pdf"),
         title="Spots per gene (>0)",
     )
     histogram(
@@ -182,7 +195,7 @@ def run(input_data: str) -> int:
         nbins=20,
         xlabel="#Spots",
         ylabel="#Genes",
-        output=input_name + "_hist_spots_gene_1.pdf",
+        output=os.path.join(outdir, input_name + "_hist_spots_gene_1.pdf"),
         title="Spots per gene (>1)",
     )
     histogram(
@@ -190,7 +203,7 @@ def run(input_data: str) -> int:
         nbins=20,
         xlabel="#Spots",
         ylabel="#Genes",
-        output=input_name + "_hist_spots_gene_2.pdf",
+        output=os.path.join(outdir, input_name + "_hist_spots_gene_2.pdf"),
         title="Spots per gene (>2)",
     )
     plt.clf()
@@ -198,23 +211,23 @@ def run(input_data: str) -> int:
     # Generate density plots
     sns.displot(aggregated_gene_counts, kind="kde", label="Counts > 0")
     sns.displot(aggregated_gene_counts_1, kind="kde", label="Counts > 1")
-    sns_plot = sns.displot(aggregated_gene_counts_2, axlabel="#Genes", kind="kde", label="Counts > 2")
-    fig = sns_plot.get_figure()
-    fig.savefig(input_name + "_density_genes_by_spot.pdf")
+    sns_plot = sns.displot(aggregated_gene_counts_2, kind="kde", label="Counts > 2")
+    fig = sns_plot._figure
+    fig.savefig(os.path.join(outdir, input_name + "_density_genes_by_spot.pdf"))
     plt.clf()
 
     sns.displot(aggregated_gene_gene_counts, kind="kde", label="Counts > 0")
     sns.displot(aggregated_gene_gene_counts_1, kind="kde", label="Counts > 1")
-    sns_plot = sns.displot(aggregated_gene_gene_counts_2, axlabel="#Spots", kind="kde", label="Counts > 2")
-    fig = sns_plot.get_figure()
-    fig.savefig(input_name + "_density_spots_by_gene.pdf")
+    sns_plot = sns.displot(aggregated_gene_gene_counts_2, kind="kde", label="Counts > 2")
+    fig = sns_plot._figure
+    fig.savefig(os.path.join(outdir, input_name + "_density_spots_by_gene.pdf"))
     plt.clf()
 
     sns.scatterplot(x=aggregated_spot_counts, y=aggregated_gene_counts, label="Gene counts >0")
     sns.scatterplot(x=aggregated_spot_counts, y=aggregated_gene_counts_1, label="Gene counts >1")
     sns_plot = sns.scatterplot(x=aggregated_spot_counts, y=aggregated_gene_counts_2, label="Gene counts >2")
-    fig = sns_plot.get_figure()
-    fig.savefig(input_name + "_scatter_reads_vs_genes.pdf")
+    fig = sns_plot.figure
+    fig.savefig(os.path.join(outdir, input_name + "_scatter_reads_vs_genes.pdf"))
     plt.clf()
 
     # sns_plot = sns.jointplot(x=aggregated_spot_counts,
@@ -240,7 +253,7 @@ def run(input_data: str) -> int:
     ]
     # Print stats to stdout and a file
     print("".join(qa_stats))
-    with open("{}_qa_stats.txt".format(input_name), "a") as outfile:
+    with open(os.path.join(outdir, f"{input_name}_qa_stats.txt"), "a") as outfile:
         outfile.write("".join(qa_stats))
 
     # Generate scatter plots
@@ -258,7 +271,7 @@ def run(input_data: str) -> int:
         colors=aggregated_spot_counts,
         xlabel="X",
         ylabel="Y",
-        output=input_name + "_heatmap_counts.pdf",
+        output=os.path.join(outdir, input_name + "_heatmap_counts.pdf"),
         title="Heatmap expression",
     )
     scatter_plot(
@@ -267,7 +280,7 @@ def run(input_data: str) -> int:
         colors=aggregated_gene_counts,
         xlabel="X",
         ylabel="Y",
-        output=input_name + "_heatmap_genes.pdf",
+        output=os.path.join(outdir, input_name + "_heatmap_genes.pdf"),
         title="Heatmap genes",
     )
 

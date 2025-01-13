@@ -29,8 +29,9 @@ can be changed to the adjusted new coordinates (array).
 """
 
 import argparse
-import sys
 import os
+import sys
+
 import pandas as pd
 
 

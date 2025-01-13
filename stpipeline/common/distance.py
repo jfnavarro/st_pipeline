@@ -1,6 +1,7 @@
 """
 Module for distance metrics.
 """
+
 import distance  # type: ignore
 
 

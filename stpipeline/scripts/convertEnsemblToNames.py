@@ -11,11 +11,13 @@ the ST Pipeline.
 """
 
 import argparse
-import sys
-import pandas as pd
 import os
-from stpipeline.common.gff_reader import gff_lines
+import sys
 from collections import Counter
+
+import pandas as pd
+
+from stpipeline.common.gff_reader import gff_lines
 
 
 def main() -> None:

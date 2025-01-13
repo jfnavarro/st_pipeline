@@ -2,16 +2,19 @@
 """
 Unit-test the package saturation
 """
-import pytest
+
 import os
-import pysam
 from unittest.mock import patch
+
+import pysam
+import pytest
+
 from stpipeline.common.saturation import (
+    _cleanup_files,
+    _compute_saturation_metrics,
     _determine_saturation_points,
     _generate_subsamples,
     _write_subsamples_to_files,
-    _compute_saturation_metrics,
-    _cleanup_files,
 )
 
 

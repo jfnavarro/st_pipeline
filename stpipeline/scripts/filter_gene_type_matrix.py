@@ -17,11 +17,13 @@ The script needs to be given an annotation file in GFF format.
 """
 
 import argparse
-import sys
 import os
-import pandas as pd
-from stpipeline.common.gff_reader import gff_lines
+import sys
 from typing import List
+
+import pandas as pd
+
+from stpipeline.common.gff_reader import gff_lines
 
 
 def main() -> None:

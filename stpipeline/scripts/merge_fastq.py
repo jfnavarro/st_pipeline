@@ -8,12 +8,12 @@ as input (one identifier to each sample) and puts the merged files in the given 
 """
 
 import argparse
-import sys
-import os
 import glob
+import os
 import shutil
 import subprocess
-from typing import List, Union, IO
+import sys
+from typing import IO, List, Union
 
 
 def run_command(command: List[str], out: Union[int, IO[bytes]] = subprocess.PIPE) -> None:

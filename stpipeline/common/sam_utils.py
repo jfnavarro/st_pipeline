@@ -2,10 +2,11 @@
 This module contains some functions and utilities for SAM/BAM files
 """
 
-import os
 import math
-import pysam
+import os
 from typing import List
+
+import pysam
 
 
 def split_bam(input_bam: str, temp_dir: str, threads: int) -> List[str]:

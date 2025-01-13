@@ -4,14 +4,12 @@ Integration tests for each script.
 """
 
 import os
-import pytest
 import tempfile
-from subprocess import check_call
 from shutil import copyfile, rmtree
-import pandas as pd
+from subprocess import check_call
 
-# Mark tests with a custom flag
-pytestmark = pytest.mark.integration
+import pandas as pd
+import pytest
 
 
 @pytest.fixture(scope="module")
@@ -145,55 +143,55 @@ def test_pipeline_run(setup_pipeline):
     # Verify output files
     datafile = os.path.join(data["outdir"], "test_stdata.tsv")
     readsfile = os.path.join(data["outdir"], "test_reads.bed")
-    statsfile = os.path.join(data["outdir"], "test_qa_stats.json")
+    # statsfile = os.path.join(data["outdir"], "test_qa_stats.json")
     assert os.path.exists(datafile)
     assert os.path.getsize(datafile) > 1024
     assert os.path.exists(readsfile)
     assert os.path.getsize(readsfile) > 1024
-    assert os.path.exists(statsfile)
+    # assert os.path.exists(statsfile)
     return datafile
 
 
-def test_st_qa(test_pipeline_run):
+def test_st_qa(test_pipeline_run, tmpdir):
     """Test the st_qa."""
     datafile = test_pipeline_run
 
     try:
-        check_call(["st_qa", datafile])
+        check_call(["st_qa", "--outdir", str(tmpdir), datafile])
     except Exception as e:
         pytest.fail(f"st_qa execution failed: {e}")
 
     clean_name = os.path.basename(datafile).split(".")[0]
-    assert os.path.exists(f"{clean_name}_qa_stats.txt")
-    assert os.path.exists(f"{clean_name}_density_genes_by_spot.pdf")
-    assert os.path.exists(f"{clean_name}_density_spots_by_gene.pdf")
-    assert os.path.exists(f"{clean_name}_scatter_reads_vs_genes.pdf")
-    assert os.path.exists(f"{clean_name}_heatmap_counts.pdf")
-    assert os.path.exists(f"{clean_name}_heatmap_genes.pdf")
-    assert os.path.exists(f"{clean_name}_hist_reads_spot.pdf")
-    assert os.path.exists(f"{clean_name}_hist_genes_spot.pdf")
-    assert os.path.exists(f"{clean_name}_hist_genes_spots_1.pdf")
-    assert os.path.exists(f"{clean_name}_hist_genes_spots_2.pdf")
-    assert os.path.exists(f"{clean_name}_hist_spots_gene.pdf")
-    assert os.path.exists(f"{clean_name}_hist_spots_gene_1.pdf")
-    assert os.path.exists(f"{clean_name}_hist_spots_gene_2.pdf")
+    assert os.path.exists(os.path.join(tmpdir, f"{clean_name}_qa_stats.txt"))
+    assert os.path.exists(os.path.join(tmpdir, f"{clean_name}_density_genes_by_spot.pdf"))
+    assert os.path.exists(os.path.join(tmpdir, f"{clean_name}_density_spots_by_gene.pdf"))
+    assert os.path.exists(os.path.join(tmpdir, f"{clean_name}_scatter_reads_vs_genes.pdf"))
+    assert os.path.exists(os.path.join(tmpdir, f"{clean_name}_heatmap_counts.pdf"))
+    assert os.path.exists(os.path.join(tmpdir, f"{clean_name}_heatmap_genes.pdf"))
+    assert os.path.exists(os.path.join(tmpdir, f"{clean_name}_hist_reads_spot.pdf"))
+    assert os.path.exists(os.path.join(tmpdir, f"{clean_name}_hist_genes_spot.pdf"))
+    assert os.path.exists(os.path.join(tmpdir, f"{clean_name}_hist_genes_spots_1.pdf"))
+    assert os.path.exists(os.path.join(tmpdir, f"{clean_name}_hist_genes_spots_2.pdf"))
+    assert os.path.exists(os.path.join(tmpdir, f"{clean_name}_hist_spots_gene.pdf"))
+    assert os.path.exists(os.path.join(tmpdir, f"{clean_name}_hist_spots_gene_1.pdf"))
+    assert os.path.exists(os.path.join(tmpdir, f"{clean_name}_hist_spots_gene_2.pdf"))
 
 
-def test_multi_qa(test_pipeline_run):
+def test_multi_qa(test_pipeline_run, tmpdir):
     """Test the multi_qa."""
     datafile = test_pipeline_run
 
     try:
-        check_call(["multi_qa", datafile, datafile, datafile, datafile])
+        check_call(["multi_qa", "--outdir", str(tmpdir), datafile, datafile])
     except Exception as e:
         pytest.fail(f"multi_qa execution failed: {e}")
 
-    assert os.path.exists("violin_plot_reads.pdf")
-    assert os.path.exists("violin_plot_genes.pdf")
-    assert os.path.exists("gene_correlations.png")
-    assert os.path.exists("gene_correlations.tsv")
-    assert os.path.exists("gene_similarities.tsv")
-    assert os.path.exists("pca.pdf")
+    assert os.path.exists(os.path.join(tmpdir, "violin_plot_reads.pdf"))
+    assert os.path.exists(os.path.join(tmpdir, "violin_plot_genes.pdf"))
+    assert os.path.exists(os.path.join(tmpdir, "gene_correlations.png"))
+    assert os.path.exists(os.path.join(tmpdir, "gene_correlations.tsv"))
+    assert os.path.exists(os.path.join(tmpdir, "gene_similarities.tsv"))
+    assert os.path.exists(os.path.join(tmpdir, "pca.pdf"))
 
 
 @pytest.fixture

@@ -2,11 +2,14 @@
 """
 Unit-test the package sam_utils
 """
-import pytest
+
 import os
-import pysam
 from unittest.mock import Mock, patch
-from stpipeline.common.sam_utils import split_bam, convert_to_AlignedSegment, merge_bam
+
+import pysam
+import pytest
+
+from stpipeline.common.sam_utils import convert_to_AlignedSegment, merge_bam, split_bam
 
 
 @pytest.fixture

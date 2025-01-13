@@ -2,12 +2,15 @@
 """
 Unit-test the package dataset
 """
-import pytest
-from typing import List
-from stpipeline.common.dataset import Transcript, compute_unique_umis, createDataset
+
 from collections import Counter
+from typing import List
 from unittest.mock import Mock
+
 import pysam
+import pytest
+
+from stpipeline.common.dataset import Transcript, compute_unique_umis, createDataset
 
 
 @pytest.fixture

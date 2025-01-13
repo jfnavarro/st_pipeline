@@ -2,9 +2,12 @@
 """
 Unit-test the package stats
 """
-import pytest
-import os
+
 import json
+import os
+
+import pytest
+
 from stpipeline.common.stats import Stats
 
 

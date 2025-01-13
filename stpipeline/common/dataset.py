@@ -4,17 +4,19 @@ a ST dataset and some statistics. The dataset
 will contain several files with the ST data in different
 formats
 """
+
+import logging
 import os
 import random
-import numpy as np
 from collections import defaultdict
-import pandas as pd
-from stpipeline.common.clustering import dedup_hierarchical, dedup_adj, dedup_dir_adj
-from stpipeline.common.unique_events_parser import parse_unique_events
-from stpipeline.common.transcript import Transcript
-import logging
-from typing import List, Optional, Callable, Dict, Any
+from typing import Any, Callable, Dict, List, Optional
 
+import numpy as np
+import pandas as pd
+
+from stpipeline.common.clustering import dedup_adj, dedup_dir_adj, dedup_hierarchical
+from stpipeline.common.transcript import Transcript
+from stpipeline.common.unique_events_parser import parse_unique_events
 
 logger = logging.getLogger("STPipeline")
 

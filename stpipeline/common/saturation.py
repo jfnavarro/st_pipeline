@@ -3,15 +3,18 @@ This module contains routines
 to compute saturation points on a
 set of annotated reads in BAM/SAM format
 """
-import pysam
-import random
+
+import logging
 import math
 import os
+import random
 from collections import defaultdict
-import logging
+from typing import Dict, List, Optional, Tuple
+
+import pysam
+
 from stpipeline.common.dataset import createDataset
 from stpipeline.common.utils import safe_remove
-from typing import List, Dict, Optional, Tuple
 
 logger = logging.getLogger("STPipeline")
 

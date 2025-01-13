@@ -3,13 +3,14 @@ This module contains some functions to cluster
 molecular barcodes (UMIs) sequences by hamming distance
 """
 
-import numpy as np
-from scipy.cluster.hierarchy import linkage, fcluster  # type: ignore
-from collections import defaultdict
-from stpipeline.common.distance import hamming_distance
 import random
-from collections import Counter
-from typing import List, Dict, Set, Any
+from collections import Counter, defaultdict
+from typing import Any, Dict, List, Set
+
+import numpy as np
+from scipy.cluster.hierarchy import fcluster, linkage  # type: ignore
+
+from stpipeline.common.distance import hamming_distance
 
 
 def _breadth_first_search(node: str, adj_list: Dict[str, List[str]]) -> Set[str]:

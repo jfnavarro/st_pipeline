@@ -2,19 +2,21 @@
 """
 Unit-test the package clustering
 """
+
 from collections import Counter
+
 from stpipeline.common.clustering import (
     _breadth_first_search,
-    _remove_umis,
-    _get_connected_components_adjacency,
     _get_adj_list_adjacency,
-    _get_best_adjacency,
-    _reduce_clusters_adjacency,
     _get_adj_list_directional_adjacency,
+    _get_best_adjacency,
+    _get_connected_components_adjacency,
+    _reduce_clusters_adjacency,
     _reduce_clusters_directional_adjacency,
-    dedup_hierarchical,
+    _remove_umis,
     dedup_adj,
     dedup_dir_adj,
+    dedup_hierarchical,
 )
 
 

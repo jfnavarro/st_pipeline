@@ -2,18 +2,21 @@
 """
 Unit-test the package utils
 """
-import pytest
-from unittest.mock import patch
+
 import os
+from unittest.mock import patch
+
+import pytest
+
 from stpipeline.common.utils import (
-    which_program,
     TimeStamper,
-    safe_remove,
-    safe_open_file,
     file_ok,
+    get_htseq_count_version,
     get_star_version,
     get_taggd_count_version,
-    get_htseq_count_version,
+    safe_open_file,
+    safe_remove,
+    which_program,
 )
 
 

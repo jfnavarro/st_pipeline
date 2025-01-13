@@ -18,15 +18,16 @@ The tool generates:
 """
 
 import argparse
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import pandas as pd
-import numpy as np
-from scipy.stats.stats import pearsonr  # type: ignore
-from sklearn.decomposition import PCA  # type: ignore
 import os
 import sys
-from typing import List, Any
+from typing import Any, List
+
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from scipy.stats.stats import pearsonr  # type: ignore
+from sklearn.decomposition import PCA  # type: ignore
 
 color_map = [
     "red",
@@ -139,24 +140,36 @@ def run(counts_table_files: List[str], outdir: str, use_log: bool) -> int:
         for x in counts_table_files
     ]
 
-    # Common genes
+    # Common genes and all genes
     common_genes = set(datasets[0][0].columns)
     all_genes = set(datasets[0][0].columns)
     for dataset, _ in datasets[1:]:
-        common_genes = common_genes.intersection(set(dataset.columns))
-        all_genes = all_genes.union(set(dataset.columns))
+        common_genes &= set(dataset.columns)
+        all_genes |= set(dataset.columns)
 
-    # Compute violin plots data
+    genes_counts = pd.DataFrame(index=pd.Index([x[1] for x in datasets]), columns=pd.Index(all_genes))
+    genes_counts.fillna(0, inplace=True)
     violin_data_reads = []
     violin_data_genes = []
     violin_data_pos = []
-    genes_counts = pd.DataFrame(index=pd.Index([x[1] for x in datasets]), columns=pd.Index(all_genes))
-    genes_counts.fillna(0, inplace=True)
     for i, (dataset, name) in enumerate(datasets):
-        violin_data_reads.append(dataset.sum(axis=1).to_list())
-        violin_data_genes.append((dataset > 0).sum(axis=1).to_list())
+        # Append sum of read counts per row
+        violin_data_reads.append(dataset.sum(axis=1).tolist())
+        # Append the count of genes with non-zero values
+        violin_data_genes.append((dataset > 0).sum(axis=1).tolist())
+        # Keep track of the position for plotting
         violin_data_pos.append(i + 1)
-        genes_counts.loc[name, dataset.columns] = dataset.sum(axis=0)
+        # Update gene counts for the dataset
+        # Add rows for dataset names
+        if name not in genes_counts.index:
+            genes_counts.loc[name] = 0
+        # Ensure all dataset columns exist in genes_counts
+        missing_cols = set(dataset.columns) - set(genes_counts.columns)
+        for col in missing_cols:
+            genes_counts[col] = 0
+        # Assign dataset sums to the genes_counts DataFrame
+        genes_counts.loc[name, dataset.columns] = dataset.sum(axis=0).values
+
     genes_counts.fillna(0, inplace=True)
 
     # Create the violin plots
@@ -201,10 +214,10 @@ def run(counts_table_files: List[str], outdir: str, use_log: bool) -> int:
         for j, (d2, n2) in enumerate(datasets):
             genes_2 = set(d2.columns)
             common_to_d2 = (n_genes_1 - len(genes_1 - genes_2)) / n_genes_1
-            common_d1_d2 = genes_1.intersection(genes_2)
-            sum_counts_1 = d1.loc[:, common_d1_d2].sum(axis=0)  # type: ignore
+            common_d1_d2 = list(genes_1.intersection(genes_2))
+            sum_counts_1 = d1.loc[:, common_d1_d2].sum(axis=0)
             sum_counts_1 = np.log(sum_counts_1) if use_log else sum_counts_1
-            sum_counts_2 = d2.loc[:, common_d1_d2].sum(axis=0)  # type: ignore
+            sum_counts_2 = d2.loc[:, common_d1_d2].sum(axis=0)
             sum_counts_2 = np.log(sum_counts_2) if use_log else sum_counts_2
             genes_similarities.loc[n1, n2] = common_to_d2
             genes_correlations.loc[n1, n2] = pearsonr(sum_counts_1, sum_counts_2)[0]

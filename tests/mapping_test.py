@@ -2,8 +2,10 @@
 """
 Unit-test the package mapping
 """
+
 import subprocess
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import MagicMock, mock_open, patch
+
 from stpipeline.core.mapping import alignReads, barcodeDemultiplexing
 
 
@@ -18,11 +20,12 @@ def test_alignReads():
         % of reads unmapped: too short 5
     """
 
-    with patch("subprocess.Popen") as mock_popen, patch("stpipeline.core.mapping.file_ok", return_value=True), patch(
-        "stpipeline.core.mapping.shutil.move"
-    ) as mock_shutil_move, patch(
-        "stpipeline.core.mapping.open", mock_open(read_data=mock_log_content)
-    ) as mock_open_file:
+    with (
+        patch("subprocess.Popen") as mock_popen,
+        patch("stpipeline.core.mapping.file_ok", return_value=True),
+        patch("stpipeline.core.mapping.shutil.move") as mock_shutil_move,
+        patch("stpipeline.core.mapping.open", mock_open(read_data=mock_log_content)) as mock_open_file,
+    ):
         # Mock the subprocess to simulate STAR execution
         mock_process = MagicMock()
         mock_process.communicate.return_value = (b"", b"")
@@ -115,12 +118,14 @@ def test_alignReads():
         mock_open_file.assert_called_once_with("output/Log.final.out", "r")
 
         # Log file parsing validation
-        assert total_reads == 5090
+        assert total_reads == 95000
 
 
 def test_barcodeDemultiplexing():
-    with patch("subprocess.Popen") as mock_popen, patch("os.path.isfile", return_value=True), patch(
-        "stpipeline.core.mapping.file_ok", return_value=True
+    with (
+        patch("subprocess.Popen") as mock_popen,
+        patch("os.path.isfile", return_value=True),
+        patch("stpipeline.core.mapping.file_ok", return_value=True),
     ):
         mock_process = MagicMock()
         mock_process.communicate.return_value = (b"Total reads: 100\nTotal reads written: 80", b"")
@@ -142,7 +147,7 @@ def test_barcodeDemultiplexing():
         )
 
         expected_args = [
-            "taggd_demultiplex.py",
+            "taggd_demultiplex",
             "--max-edit-distance",
             "1",
             "--k",

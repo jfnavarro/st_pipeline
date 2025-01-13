@@ -1,12 +1,13 @@
 """
 This file contains some general utilities
 """
-import threading
-from datetime import datetime
+
 import os
-import subprocess
-from typing import Optional, IO, Any
 import shutil
+import subprocess
+import threading
+import time
+from typing import IO, Any, Optional
 
 
 def which_program(program: str) -> bool:
@@ -24,29 +25,30 @@ def which_program(program: str) -> bool:
 
 class TimeStamper:
     """
-    Thread-safe time stamper to generate unique timestamps.
+    Thread-safe time stamper to generate unique numeric timestamps.
     """
 
     def __init__(self) -> None:
         self.lock = threading.Lock()
-        self.prev: Optional[str] = None
+        self.prev: Optional[float] = None
         self.count: int = 0
 
-    def get_timestamp(self) -> str:
+    def get_timestamp(self) -> float:
         """
-        Generates a unique timestamp.
+        Generates a unique numeric timestamp.
 
         Returns:
-            A unique timestamp.
+            A unique timestamp as a float.
         """
         with self.lock:
-            ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+            ts = time.time()  # Get Unix timestamp as a float
             if ts == self.prev:
-                ts += f".{self.count:04d}"
                 self.count += 1
+                # Add a small delta to make the timestamp unique
+                ts += self.count * 1e-6
             else:
                 self.prev = ts
-                self.count = 1
+                self.count = 0
         return ts
 
 

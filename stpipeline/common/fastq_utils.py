@@ -2,9 +2,11 @@
 This module contains some specific functions for
 to parse and modify FASTQ files
 """
+
 import re
-import regex
 from typing import Tuple, Union
+
+import regex
 
 
 def remove_adaptor(sequence: str, quality: str, adaptor: str, missmatches: int = 2) -> Tuple[str, str]:

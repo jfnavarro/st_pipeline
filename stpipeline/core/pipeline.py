@@ -6,32 +6,34 @@ to parse the input parameters, generate the input parameters,
 do sanity check and ultimately run the pipeline.
 """
 
+import argparse
+import inspect
+import logging
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+import pysam
+from taggd.io.barcode_utils import read_barcode_file  # type: ignore
+
+from stpipeline.common.dataset import createDataset
+from stpipeline.common.filter import filter_input_data
+from stpipeline.common.saturation import compute_saturation
+from stpipeline.common.stats import Stats
 from stpipeline.common.utils import (
+    TimeStamper,
+    get_htseq_count_version,
+    get_star_version,
+    get_taggd_count_version,
     safe_remove,
     which_program,
-    get_htseq_count_version,
-    get_taggd_count_version,
-    get_star_version,
-    TimeStamper,
 )
-from stpipeline.core.mapping import alignReads, barcodeDemultiplexing
 from stpipeline.core.annotation import annotateReads
-from stpipeline.common.dataset import createDataset
-from stpipeline.common.saturation import compute_saturation
+from stpipeline.core.mapping import alignReads, barcodeDemultiplexing
 from stpipeline.version import version_number
-from taggd.io.barcode_utils import read_barcode_file  # type: ignore
-from stpipeline.common.filter import filter_input_data
-from stpipeline.common.stats import Stats
-import logging
-import argparse
-import sys
-import shutil
-import os
-import tempfile
-import subprocess
-import pysam
-import inspect
-import re
 
 FILENAMES = {
     "mapped": "mapped.bam",
@@ -863,13 +865,13 @@ class Pipeline:
             self.saturation_points = [int(p) for p in options.saturation_points]  # type: ignore
         # Assign class parameters to the QA stats object
         attributes = inspect.getmembers(self, lambda a: not (inspect.isroutine(a)))
-        attributes_filtered = [a for a in attributes if not (a[0].startswith("__") and a[0].endswith("__"))]
+        attributes_filtered = {a[0]: a[1] for a in attributes if not (a[0].startswith("__") and a[0].endswith("__"))}
         # Assign general parameters to the qa_stats object
         self.qa_stats.input_parameters = attributes_filtered  # type: ignore
-        self.qa_stats.annotation_tool = "htseq-count {}".format(get_htseq_count_version())
-        self.qa_stats.demultiplex_tool = "Taggd {}".format(get_taggd_count_version())
+        self.qa_stats.annotation_tool = f"htseq-count {get_htseq_count_version()}"
+        self.qa_stats.demultiplex_tool = f"Taggd {get_taggd_count_version()}"
         self.qa_stats.pipeline_version = version_number
-        self.qa_stats.mapper_tool = get_star_version()
+        self.qa_stats.mapper_tool = f"STAR {get_star_version()}"
 
     def createLogger(self) -> None:
         """
@@ -1251,6 +1253,7 @@ class Pipeline:
                 self.qa_stats.max_reads_feature = stats["max_reads_feature"]  # type: ignore
                 self.qa_stats.min_reads_feature = stats["min_reads_feature"]  # type: ignore
                 self.qa_stats.average_reads_feature = stats["average_reads_feature"]  # type: ignore
+                self.qa_stats.average_genes_feature = stats["average_genes_feature"]  # type: ignore
                 self.qa_stats.std_reads_feature = stats["std_reads_feature"]  # type: ignore
                 self.qa_stats.std_genes_feature = stats["std_genes_feature"]  # type: ignore
                 self.qa_stats.reads_after_duplicates_removal = stats["reads_after_duplicates_removal"]  # type: ignore
@@ -1265,8 +1268,8 @@ class Pipeline:
         # =================================================================
         # Write stats to JSON
         print(self.qa_stats)
-        self.qa_stats.write_json(os.path.join(self.output_folder, self.expName + "_qa_stats.json"))  # type: ignore
+        # self.qa_stats.write_json(os.path.join(self.output_folder, self.expName + "_qa_stats.json"))  # type: ignore
 
         finish_exe_time = globaltime.get_timestamp()
-        total_exe_time = finish_exe_time - start_exe_time  # type: ignore
+        total_exe_time = finish_exe_time - start_exe_time
         logger.info(f"Total Execution Time: {total_exe_time}")

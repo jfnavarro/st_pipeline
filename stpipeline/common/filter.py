@@ -1,13 +1,16 @@
 """
 A module that contains functions to parse and filter input reads for ST data processing.
 """
-import os
-import pysam
+
 import logging
-import dnaio
-from stpipeline.common.fastq_utils import trim_quality, remove_adaptor, check_umi_template, has_sufficient_content
-from stpipeline.common.sam_utils import convert_to_AlignedSegment
+import os
 from typing import Optional, Tuple
+
+import dnaio
+import pysam
+
+from stpipeline.common.fastq_utils import check_umi_template, has_sufficient_content, remove_adaptor, trim_quality
+from stpipeline.common.sam_utils import convert_to_AlignedSegment
 
 logger = logging.getLogger("STPipeline")
 

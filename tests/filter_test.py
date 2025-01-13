@@ -2,10 +2,13 @@
 """
 Unit-test the package filter
 """
-import pytest
-import dnaio
+
 from unittest.mock import Mock, patch
-from stpipeline.common.filter import filter_input_data, bam_header
+
+import dnaio
+import pytest
+
+from stpipeline.common.filter import bam_header, filter_input_data
 
 
 def generate_test_fastq(filepath, records):
