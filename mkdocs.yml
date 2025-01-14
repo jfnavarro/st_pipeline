@@ -1,0 +1,70 @@
+site_name: ST Pipeline
+site_url: https://github.com/jfnavarro/st_pipeline
+repo_url: https://github.com/jfnavarro/st_pipeline
+repo_name: jfnavarro/st_pipeline
+#strict: true
+nav:
+- Home: index.md
+- Installation: installation.md
+- Usage: usage.md
+- Modules: api.md
+- Contributing: contributing.md
+- Changelog: changelog.md
+theme:
+  name: material
+  language: en
+  #logo: assets/logo.png
+  palette:
+    scheme: preference
+    primary: indigo
+    accent: indigo
+  features:
+  - navigation.indexes
+  - navigation.instant
+  - navigation.tabs.sticky
+markdown_extensions:
+- pymdownx.emoji:
+    emoji_index: !!python/name:material.extensions.emoji.twemoji
+    emoji_generator: !!python/name:material.extensions.emoji.to_svg
+- pymdownx.critic
+- pymdownx.caret
+- pymdownx.mark
+- pymdownx.tilde
+- pymdownx.tabbed
+- attr_list
+- pymdownx.arithmatex:
+    generic: true
+- pymdownx.highlight:
+    linenums: false
+- pymdownx.superfences
+- pymdownx.inlinehilite
+- pymdownx.details
+- admonition
+- toc:
+    baselevel: 2
+    permalink: true
+    slugify: !!python/object/apply:pymdownx.slugs.slugify {kwds: {case: lower}}
+- meta
+plugins:
+- include-markdown
+- search:
+    lang: en
+- mkdocstrings:
+    default_handler: python
+    handlers:
+      python:
+        rendering:
+          show_source: true
+watch:
+- stpipeline
+extra:
+  social:
+  - icon: fontawesome/brands/github
+    link: https://github.com/jfnavarro/st_pipeline
+    name: Github
+  - icon: material/email
+    link: mailto:jc.fernandez.navarro@gmail.com
+# uncomment the following and put your google tracking id below to enable GA
+#google_analytics:
+#  - UA-xxx
+#  - auto

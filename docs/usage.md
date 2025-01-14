@@ -1,39 +1,39 @@
-Manual
-------
+# Usage
 
-ST Pipeline is a tool to process the Spatial Transcriptomics and Visium data.
-The data is filtered, aligned to a genome, annotated to a reference,
-demultiplexed by array coordinates and then aggregated by counts
-that are not duplicates using the Unique Molecular Indentifiers.
-The output contains the counts matrix and a log file with useful
-stats in information.
+## Input format
 
-The ST Pipeline requires two FASTQ files, an IDs files (BARCODE, X, Y),
-the path to a STAR genome index, the path to a annotation file in GTF
-format and a dataset name.
+The following files/parameters are commonly required:
 
-The ST Pipeline has many parameters, you can see a description of them
-by typing : st_pipeline_run --help
+- FASTQ files (Read 1 containing the barcode and the UMI and read 2 containing the genomic sequence)
+- A genome index generated with STAR
+- An annotation file in GTF or GFF3 format (optional when using a transcriptome)
+- A file containing the barcodes and array coordinates (look at the folder "ids" to use it as a reference).
+Basically this file contains 3 columns (BARCODE, X and Y), so if you provide this
+file with barcodes identifying cells (for example), the ST pipeline can be used for single cell data.
+This file is also optional if the data is not barcoded (for example RNA-Seq data).
+- A name for the dataset
+
+The ST pipeline has multiple parameters mostly related to trimming, mapping, demultiplexing and annotation
+but generally the default values are good enough.
+
+The input FASTQ files can be given in gzip/bzip format as well.
 
 Note that the minimum read length is dependant on the type of kit used, and
 should be adjusted accordingly, i.e. a 150bp kit should have a different
 minimum read length than a 75bp kit.
 
-Soft clipping is also not recommended when using the 75bp kit, due to the
-shorter length.
+Soft clipping is also not recommended when using the 75bp kit, due to the shorter length.
 
 The UMI filter can be used for array batches 1000L6 and earlier. It is
 not recommended to use it for array batches 1000L7 and newer as the UMI in
 these arrays is fully randomised.
 
-Author Jose Fernandez Navarro <jc.fernandez.navaro@gmail.com>
+The output of the ST Pipeline is a counts matrix (TSV) and a log file with status and useful information.
 
+You can see a full description of the parameters typing `st_pipeline_run --help` after you have installed the ST pipeline.
 
-``st_pipeline_run.py [options] fastq_files fastq_files``
-
-**positional arguments**
-
-.. code-block:: bash
+```console
+st_pipeline_run [options] fastq_file_fw fastq_file_rv
 
   fastq_file_fw
     Read_1 containing the spatial barcodes and UMIs for each sequence.
@@ -41,10 +41,6 @@ Author Jose Fernandez Navarro <jc.fernandez.navaro@gmail.com>
   fastq_file_rv
     Read_2 containing the gene sequence corresponding to the sequence in
     Read_1.
-
-**optional arguments**
-
-.. code-block:: bash
 
   -h, --help            show this help message and exit
   --ids [FILE]          Path to the file containing the map of barcodes to the
@@ -234,3 +230,96 @@ Author Jose Fernandez Navarro <jc.fernandez.navaro@gmail.com>
                         of a genome, the gene tag will be obtained from the
                         transcriptome file
   --version             show program's version number and exit
+```
+
+## Example
+
+An example run would be:
+
+```bash
+st_pipeline_run --expName test --ids ids_file.txt \
+  --ref-map path_to_index --htseq-no-ambiguous --log-file log_file.txt --output-folder /home/me/results \
+  --ref-annotation annotation_file.gtf --contaminant-index path_to_cont_index file1.fastq file2.fastq
+```
+
+## Visium
+
+To process Visium datasets it is recommended to use these options:
+
+```console
+--demultiplexing-mismatches 1
+--demultiplexing-kmer 4
+--umi-allowed-mismatches 2
+--umi-start-position 16
+--umi-end-position 28
+```
+
+## Emsembl ids
+
+If you used an Ensembl annotation file and you would like change
+the output file so it contains gene ids/names instead of Ensembl ids.
+You can use this tool that comes with the ST Pipeline
+
+```bash
+convertEnsemblToNames --annotation path_to_annotation_file --output st_data_updated.tsv st_data.tsv
+```
+
+## Merge demultiplexed FASTQ files
+
+If you used different indexes to sequence and need to merge the files
+you can use the script `merge_fastq.py` that comes with the ST Pipeline
+
+```bash
+merge_fastq --run-path path_to_run_folder --out-path path_to_output --identifiers S1 S2 S3 S4
+```
+
+Where `--identifiers` will be strings that identify each demultiplexed sample.
+
+## Filter out genes by gene type
+
+If you want to remove from the dataset (matrix in TSV) genes corresponding
+to certain gene types (For instance to keep only protein_coding). You can do
+so with the script `filter_gene_type_matrix.py` that comes with the ST Pipeline
+
+```bash
+filter_gene_type_matrix --gene-types-keep protein-coding --annotation path_to_annotation_file stdata.tsv
+```
+
+You may include the parameter `--ensembl-ids` if your genes are represented as emsembl ids instead.
+
+## Remove spots from dataset
+
+If you want to remove spots from a dataset (matrix in TSV) for instance
+to keep only spots inside the tissue. You can do so with the script `adjust_matrix_coordinates.py`
+that comes with the ST Pipeline
+
+```bash
+adjust_matrix_coordinates --outfile new_stdata.tsv --coordinates-file coordinates.txt stdata.tsv
+```
+
+Where `coordinates.txt` will be a tab delimited file with 6 columns:
+
+```console
+orig_x orig_y new_x new_y new_pixel_x new_pixel_y
+```
+
+Only spots whose coordinates in the file will be kept and then optionally you
+can update the coordinates in the matrix choosing for the new array or pixel coordinates.
+
+## Quality stats
+
+The ST Pipeline generate useful stats/QC information in the LOG file but if you
+want to obtain more detailed information about the quality of the data, you can run the following script:
+
+```bash
+st_qa stdata.tsv
+```
+
+If you want to perform quality stats on multiple datasets you can run:
+
+```bash
+multi_qa stdata1.tsv stadata2.tsv stdata3.tsv stdata4.tsv
+```
+
+Multi_qa.py generates violing plots, correlation plots/tables and more useful information and
+it allows to log the counts for the correlation.

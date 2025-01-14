@@ -6,11 +6,12 @@
 * Added pre-commit hooks
 * Change the build configuration to Poetry
 * Added Docker container
-* Added tox
+* Changed tests to pytest
 * Updated versions of dependencies
 * Perform code optimizations
-* Add test for full coveragge
+* Addded tests for full coveragge
 * Bump taggd to 0.4.0
+* Changed documentation
 
 ## Version 1.8.2
 * Added annotation (htseq) feature type as parameter

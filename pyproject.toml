@@ -73,7 +73,6 @@ doc = [
     "mkdocs-material",
     "mkdocstrings",
     "mkdocstrings-python",
-    "mkdocs-material-extension",
     "mkdocs-autorefs",
     "mike",
     "setuptools",
