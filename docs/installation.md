@@ -53,7 +53,7 @@ Install the package:
 poetry install
 ```
 
-Now you can run ST Pipeline:
+Now you can run the ST Pipeline:
 
 ``` console
 poetry run st_pipeline_run --help
@@ -70,7 +70,7 @@ Install the package:
 pip install .
 ```
 
-You can also use the official PYPY repositories:
+You can also use the official PyPy repositories:
 
 ``` console
 pip install stpipeline
@@ -95,7 +95,7 @@ docker buildx build --platform linux/amd64 -t stpipeline .
 
 Then, you can run ST Pipeline using Docker:
 
-To run `ST Pipeline` command:
+To run `ST Pipeline` commands:
 
 ``` console
 docker run --rm stpipeline st_pipeline_run --help
@@ -109,7 +109,7 @@ or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) installed in your
 First, create the environment:
 
 ``` console
-conda env create -f environment.yml
+conda env create -n stpipeline python=3.10
 ```
 
 Then, activate the environment:

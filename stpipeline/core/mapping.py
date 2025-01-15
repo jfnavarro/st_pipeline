@@ -191,6 +191,7 @@ def barcodeDemultiplexing(
     cores: int,
     outputFilePrefix: str,
     keep_discarded_files: bool = False,
+    taggd_chunk_size: int = 10000,
 ) -> int:
     """
     Perform demultiplexing using Taggd.
@@ -207,6 +208,7 @@ def barcodeDemultiplexing(
         cores: Number of subprocesses for Taggd.
         outputFilePrefix: Prefix for output files.
         keep_discarded_files: If True, generate files for unmatched reads.
+        taggd_chunk_size: Number of reads to process in each thread.
 
     Returns:
         The total number of reads demultiplexed.
@@ -230,6 +232,7 @@ def barcodeDemultiplexing(
     # --estimate-min-edit-distance is set estimate the min edit distance among true barcodes
     # --no-offset-speedup turns off speed up, it might yield more hits (exactly as findIndexes)
     # --homopolymer-filter if set excludes reads where the barcode
+    # --chunk-size number of reads to use in each thread for parallel processing
     #  contains a homolopymer of the given length (0 no filter), default 8
 
     args = [
@@ -246,6 +249,8 @@ def barcodeDemultiplexing(
         str(cores),
         "--metric",
         taggd_metric,
+        "--chunk-size",
+        str(taggd_chunk_size),
         "--overhang",
         str(over_hang if taggd_metric != "Hamming" else 0),
     ]

@@ -42,7 +42,7 @@ If you are proposing a feature:
 * Explain in detail how it would work.
 * Keep the scope as narrow as possible, to make it easier to implement.
 
-## Get Started!
+## Get Started
 
 Ready to contribute? Here's how to set up `ST Pipeline` for local development.
 
@@ -167,3 +167,5 @@ You can also create the documentation manually by running:
 ``` console
 poetry run mkdocs build
 ```
+
+## Publish package (TODO)

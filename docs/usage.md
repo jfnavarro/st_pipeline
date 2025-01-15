@@ -171,6 +171,9 @@ st_pipeline_run [options] fastq_file_fw fastq_file_rv
                         strict}
   --htseq-no-ambiguous  When using htseq-count discard reads annotating
                         ambiguous genes (default False)
+  --htseq-features HTSEQ_FEATURES [HTSEQ_FEATURES ...]
+                        Which feature types to use from the GTF/GFF file in the annotation.
+                        Can be given more than one type (default exon)
   --strandness [STRING]
                         What strandness mode to use when annotating with
                         htseq-count [no, yes(default), reverse]
@@ -254,20 +257,25 @@ To process Visium datasets it is recommended to use these options:
 --umi-end-position 28
 ```
 
-## Emsembl ids
+## Extra tools
+
+The ST Pipeline ships many scripts that will be installed automatically and that
+can be very useful to pre/post process the data and general QC stats and plots.
+
+### Emsembl ids
 
 If you used an Ensembl annotation file and you would like change
 the output file so it contains gene ids/names instead of Ensembl ids.
-You can use this tool that comes with the ST Pipeline
+You can use the script `convertEnsemblToNames` that comes with the ST Pipeline
 
 ```bash
 convertEnsemblToNames --annotation path_to_annotation_file --output st_data_updated.tsv st_data.tsv
 ```
 
-## Merge demultiplexed FASTQ files
+### Merge demultiplexed FASTQ files
 
-If you used different indexes to sequence and need to merge the files
-you can use the script `merge_fastq.py` that comes with the ST Pipeline
+If you used different indexes to sequence and need to merge the fastq files
+you can use the script `merge_fastq` that comes with the ST Pipeline
 
 ```bash
 merge_fastq --run-path path_to_run_folder --out-path path_to_output --identifiers S1 S2 S3 S4
@@ -279,25 +287,27 @@ Where `--identifiers` will be strings that identify each demultiplexed sample.
 
 If you want to remove from the dataset (matrix in TSV) genes corresponding
 to certain gene types (For instance to keep only protein_coding). You can do
-so with the script `filter_gene_type_matrix.py` that comes with the ST Pipeline
+so with the script `filter_gene_type_matrix` that comes with the ST Pipeline
 
 ```bash
 filter_gene_type_matrix --gene-types-keep protein-coding --annotation path_to_annotation_file stdata.tsv
 ```
 
-You may include the parameter `--ensembl-ids` if your genes are represented as emsembl ids instead.
+You may include the parameter `--ensembl-ids` if your genes are represented as Emsembl ids instead.
 
-## Remove spots from dataset
+The value of `--gene-types-keep` must match the annotation file provided.
+
+### Remove spots from dataset
 
 If you want to remove spots from a dataset (matrix in TSV) for instance
-to keep only spots inside the tissue. You can do so with the script `adjust_matrix_coordinates.py`
+to keep only spots inside the tissue. You can do so with the script `adjust_matrix_coordinates`
 that comes with the ST Pipeline
 
 ```bash
 adjust_matrix_coordinates --outfile new_stdata.tsv --coordinates-file coordinates.txt stdata.tsv
 ```
 
-Where `coordinates.txt` will be a tab delimited file with 6 columns:
+Where `coordinates.txt` must be a tab delimited file with 6 columns:
 
 ```console
 orig_x orig_y new_x new_y new_pixel_x new_pixel_y
@@ -306,7 +316,7 @@ orig_x orig_y new_x new_y new_pixel_x new_pixel_y
 Only spots whose coordinates in the file will be kept and then optionally you
 can update the coordinates in the matrix choosing for the new array or pixel coordinates.
 
-## Quality stats
+### Quality stats
 
 The ST Pipeline generate useful stats/QC information in the LOG file but if you
 want to obtain more detailed information about the quality of the data, you can run the following script:
@@ -321,5 +331,5 @@ If you want to perform quality stats on multiple datasets you can run:
 multi_qa stdata1.tsv stadata2.tsv stdata3.tsv stdata4.tsv
 ```
 
-Multi_qa.py generates violing plots, correlation plots/tables and more useful information and
-it allows to log the counts for the correlation.
+`multi_qa` generates violing plots, correlation plots/tables and more useful information and
+it allows to log the counts for the correlation analaysis.

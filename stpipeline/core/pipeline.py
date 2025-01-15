@@ -118,6 +118,7 @@ class Pipeline:
         self.taggd_metric = "Subglobal"
         self.taggd_multiple_hits_keep_one = False
         self.taggd_trim_sequences = None
+        self.taggd_chunk_size = 10000
         self.adaptor_missmatches = 0
         self.star_genome_loading = "NoSharedMemory"
         self.star_sort_mem_limit = 0
@@ -281,6 +282,11 @@ class Pipeline:
 
         if self.umi_allowed_mismatches > (self.umi_end_position - self.umi_start_position) and not self.disable_umi:
             error = "Error starting the pipeline.\n" "The allowed UMI mismatches is bigger than the UMI size"
+            logger.error(error)
+            raise RuntimeError(error)
+
+        if self.taggd_chunk_size < 100:
+            error = "Error starting the pipeline.\n" "The chunk size for the demultiplexing step is too small"
             logger.error(error)
             raise RuntimeError(error)
 
@@ -622,6 +628,13 @@ class Pipeline:
             "Trimmng sequences can be given several times.",
         )
         parser.add_argument(
+            "--demultiplexing-chunk-size",
+            default=10000,
+            metavar="[INT]",
+            type=int,
+            help="Chunk size for parallel processing (number of reads assigned to each thread) (default: %(default)s)",
+        )
+        parser.add_argument(
             "--htseq-mode",
             default="intersection-nonempty",
             type=str,
@@ -851,6 +864,7 @@ class Pipeline:
         self.taggd_metric = options.demultiplexing_metric
         self.taggd_multiple_hits_keep_one = options.demultiplexing_multiple_hits_keep_one
         self.taggd_trim_sequences = options.demultiplexing_trim_sequences
+        self.taggd_chunk_size = options.demultiplexing_chunk_size
         self.adaptor_missmatches = options.homopolymer_mismatches
         self.star_genome_loading = options.star_genome_loading
         self.star_sort_mem_limit = options.star_sort_mem_limit
@@ -908,7 +922,7 @@ class Pipeline:
                 logger.info("TaggD multiple hits keep one (random) is enabled")
             if self.taggd_trim_sequences is not None:
                 logger.info(f"TaggD trimming from the barcodes: {'-'.join(str(x) for x in self.taggd_trim_sequences)}")
-
+            logger.info(f"TaggD chunk size: {self.taggd_chunk_size }")
         if not self.disable_mapping:
             logger.info(f"Mapping reverse trimming: {self.trimming_rv}")
             logger.info(f"Mapping inverse reverse trimming: {self.inverse_trimming_rv}")
@@ -1147,6 +1161,7 @@ class Pipeline:
                     self.threads,
                     FILENAMES["demultiplexed_prefix"],  # Prefix for output files
                     self.keep_discarded_files,
+                    self.taggd_chunk_size,
                 )
                 # pdate qa_stats
                 self.qa_stats.reads_after_demultiplexing = stats  # type: ignore

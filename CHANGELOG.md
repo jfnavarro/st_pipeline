@@ -4,14 +4,15 @@
 * Refactor code to modern Python (black, mypy, isort)
 * Added Github Actions
 * Added pre-commit hooks
-* Change the build configuration to Poetry
-* Added Docker container
+* Changed the build configuration to Poetry
+* Added a Docker container
 * Changed tests to pytest
 * Updated versions of dependencies
-* Perform code optimizations
-* Addded tests for full coveragge
+* Perform code optimizations and clean ups
+* Added more tests for almost full coveragge
 * Bump taggd to 0.4.0
 * Changed documentation
+* Added --demultiplex-chunk-size option
 
 ## Version 1.8.2
 * Added annotation (htseq) feature type as parameter

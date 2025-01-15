@@ -144,6 +144,7 @@ def test_barcodeDemultiplexing():
             cores=4,
             outputFilePrefix="output/test",
             keep_discarded_files=False,
+            taggd_chunk_size=100,
         )
 
         expected_args = [
@@ -160,6 +161,8 @@ def test_barcodeDemultiplexing():
             "4",
             "--metric",
             "Levenshtein",
+            "--chunk-size",
+            "100",
             "--overhang",
             "2",
             "--trim-sequences",
