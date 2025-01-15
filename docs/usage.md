@@ -165,6 +165,8 @@ st_pipeline_run [options] fastq_file_fw fastq_file_rv
                         having a barcode composed of multiple sequences in the
                         reador when the barcode needs to be trimmed out.
                         Trimmng sequences can be given several times.
+  --demultiplexing-chunk-size [INT]
+                        Chunk size for parallel processing (number of reads assigned to each thread) (default: 10000)
   --htseq-mode [STRING]
                         Mode of annotation when using htseq-count. Modes =
                         {union, intersection-nonempty(default), intersection-

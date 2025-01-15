@@ -8,10 +8,10 @@ the Mus Musculus Ensembl annotation version 86. The annotation file used Mus Mus
 A contaminant genome STAR index was used generated from the Ensembl non coding RNA Mus musculus version 86.
 The IDs file used to demultiplex were the 1000L2 and 1000L5.
 
-The following settings were used:
+The following settings were used (NOTE that the name of the parameters in the example are for version 1.3.1):
 
 ```bash
-st_pipeline_run.py \
+st_pipeline_run \
   --output-folder OUTPUT \
   --ids id.txt \
   --ref-map path_to_genome_index \

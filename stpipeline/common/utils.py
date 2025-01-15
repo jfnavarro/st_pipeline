@@ -52,6 +52,20 @@ class TimeStamper:
         return ts
 
 
+def timestemp_to_str(timestamp: float) -> str:
+    """
+    Convert a time.time() timestamp into a string representation of minutes and seconds.
+
+    Args:
+        timestamp: The timestamp to convert, typically from time.time().
+
+    Returns:
+        A string representing the time in the format "minutes:seconds".
+    """
+    minutes, seconds = divmod(int(timestamp), 60)
+    return f"{minutes}:{seconds:02}"
+
+
 def safe_remove(filename: Optional[str]) -> None:
     """
     Safely removes a file if it exists.
