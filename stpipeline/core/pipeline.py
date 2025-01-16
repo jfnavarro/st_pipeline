@@ -29,7 +29,6 @@ from stpipeline.common.utils import (
     get_star_version,
     get_taggd_count_version,
     safe_remove,
-    timestemp_to_str,
     which_program,
 )
 from stpipeline.core.annotation import annotateReads
@@ -798,7 +797,6 @@ class Pipeline:
     def load_parameters(self, options: argparse.Namespace) -> None:
         """
         Load the input parameters from the argparse object given as parameter
-        :param options: a Argparse object
         """
         self.allowed_missed = options.demultiplexing_mismatches
         self.allowed_kmer = options.demultiplexing_kmer
@@ -1006,7 +1004,7 @@ class Pipeline:
         # START PIPELINE
         # =================================================================
         start_exe_time = globaltime.get_timestamp()
-        logger.info(f"Starting the pipeline: {timestemp_to_str(start_exe_time)}")
+        logger.info(f"Starting the pipeline: {start_exe_time}")
 
         # =================================================================
         # STEP: FILTERING
@@ -1015,7 +1013,7 @@ class Pipeline:
         # Get the barcode length
         barcode_length = len(list(read_barcode_file(self.ids).values())[0].sequence)
         if not self.disable_trimming:
-            logger.info(f"Start filtering raw reads {timestemp_to_str(globaltime.get_timestamp())}")
+            logger.info(f"Start filtering raw reads {globaltime.get_timestamp()}")
             try:
                 stats = filter_input_data(
                     self.fastq_fw,
@@ -1052,12 +1050,12 @@ class Pipeline:
                 raise
 
         # =================================================================
-        # CONDITIONAL STEP: Filter out contaminated reads, e.g. typically bacterial rRNA
+        # CONDITIONAL STEP: Filter out contaminated reads, e.g. rRNA(Optional)
         # =================================================================
         if self.contaminant_index:
             # To remove contaminants sequence we align the reads to the contaminant genome
             # and keep the un-mapped reads
-            logger.info(f"Starting contaminant filter alignment {timestemp_to_str(globaltime.get_timestamp())}")
+            logger.info(f"Starting contaminant filter alignment {globaltime.get_timestamp()}")
             try:
                 # Make the contaminant filter call
                 alignReads(
@@ -1113,7 +1111,7 @@ class Pipeline:
         # STEP: Maps against the genome using STAR
         # =================================================================
         if not self.disable_mapping:
-            logger.info(f"Starting genome alignment {timestemp_to_str(globaltime.get_timestamp())}")
+            logger.info(f"Starting genome alignment {globaltime.get_timestamp()}")
             input_reads = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
             try:
                 # Make the alignment call
@@ -1151,10 +1149,10 @@ class Pipeline:
                 raise
 
         # =================================================================
-        # STEP: DEMULTIPLEX READS Map against the barcodes
+        # STEP: DEMULTIPLEX READS Map against the barcodes (Optional)
         # =================================================================
         if not self.disable_barcode:
-            logger.info(f"Starting barcode demultiplexing {timestemp_to_str(globaltime.get_timestamp())}")
+            logger.info(f"Starting barcode demultiplexing {globaltime.get_timestamp()}")
             try:
                 stats = barcodeDemultiplexing(  # type: ignore
                     FILENAMES["mapped"],
@@ -1185,7 +1183,7 @@ class Pipeline:
                 raise
 
         # =================================================================
-        # STEP: annotate using htseq-count or the transcriptome
+        # STEP: annotate using htseq-count or the transcriptome (Optional)
         # =================================================================
         if not self.disable_annotation:
             input_file = (
@@ -1235,7 +1233,7 @@ class Pipeline:
                 if not self.transcriptome
                 else self.qa_stats.reads_after_demultiplexing
             )
-            logger.info(f"Starting computing saturation points {timestemp_to_str(globaltime.get_timestamp())}")
+            logger.info(f"Starting computing saturation points {globaltime.get_timestamp()}")
             try:
                 compute_saturation(
                     reads,
@@ -1256,7 +1254,7 @@ class Pipeline:
         # STEP: Create dataset and remove duplicates
         # =================================================================
         if os.path.isfile(FILENAMES["annotated"]):
-            logger.info(f"Starting creating dataset {timestemp_to_str(globaltime.get_timestamp())}")
+            logger.info(f"Starting creating dataset {globaltime.get_timestamp()}")
             try:
                 stats = createDataset(  # type: ignore
                     FILENAMES["annotated"],
@@ -1294,4 +1292,4 @@ class Pipeline:
 
         finish_exe_time = globaltime.get_timestamp()
         total_exe_time = finish_exe_time - start_exe_time
-        logger.info(f"Total Execution Time: {timestemp_to_str(total_exe_time)}")
+        logger.info(f"Total Execution Time: {total_exe_time}")

@@ -30,10 +30,10 @@ Basically what the ST pipeline does (default mode) is:
   - Check for AT and GC content
   - Discard reads with a minimum number of bases of that failed any of the checks above
 - Contamimant filter step (e.x. rRNA genome) (Optional)
-- Mapping with STAR step (only read 2) (Optional)
+- Mapping with [STAR](https://github.com/alexdobin/STAR) step (only read 2) (Optional)
 - Demultiplexing with [Taggd](https://github.com/jfnavarro/taggd) step (only read 1) (Optional)
 - Keep reads (read 2) that contain a valid barcode and are correctly mapped
-- Annotate the reads with htseq-count (custom version)
+- Annotate the reads to the reference (Optional)
 - Group annotated reads by barcode (spot position), gene and genomic location (with an offset) to get a read count
 - In the grouping/counting only unique molecules (UMIs) are kept (Optional)
 

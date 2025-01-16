@@ -117,81 +117,89 @@ def filter_input_data(
     if keep_discarded_files:
         out_writer_discarded = dnaio.open(out_file_discarded, mode="w")  # type: ignore
 
-    with dnaio.open(fw_file, rv_file) as reader:
-        for r1, r2 in reader:
-            header_fw, sequence_fw, quality_fw = r1.name, r1.sequence, r1.qualities
-            header_rv, sequence_rv, quality_rv = r2.name, r2.sequence, r2.qualities
-            orig_sequence_rv, orig_quality_rv = sequence_rv, quality_rv
-            discard_read = False
-            total_reads += 1
+    try:
+        with dnaio.open(fw_file, rv_file) as reader:
+            for r1, r2 in reader:
+                header_fw, sequence_fw, quality_fw = r1.name, r1.sequence, r1.qualities
+                header_rv, sequence_rv, quality_rv = r2.name, r2.sequence, r2.qualities
+                discard_read = False
+                total_reads += 1
 
-            if header_fw.split()[0] != header_rv.split()[0]:
-                logger.warning(f"Pair reads found with different names {header_fw} and {header_rv}.")
+                if header_fw.split()[0] != header_rv.split()[0]:
+                    logger.warning(f"Pair reads found with different names {header_fw} and {header_rv}.")
 
-            if not disable_barcode:
-                barcode = sequence_fw[max(0, start_position - overhang) : (start_position + barcode_length + overhang)]
-            else:
-                barcode = None
+                if not disable_barcode:
+                    barcode = sequence_fw[
+                        max(0, start_position - overhang) : (start_position + barcode_length + overhang)
+                    ]
+                else:
+                    barcode = None
 
-            if not disable_umi:
-                umi_seq = sequence_fw[umi_start:umi_end]
-                if umi_filter and not check_umi_template(umi_seq, umi_filter_template):
-                    dropped_umi_template += 1
+                if not disable_umi:
+                    umi_seq = sequence_fw[umi_start:umi_end]
+                    if umi_filter and not check_umi_template(umi_seq, umi_filter_template):
+                        dropped_umi_template += 1
+                        discard_read = True
+
+                    umi_qual = quality_fw[umi_start:umi_end]
+                    if (
+                        not discard_read
+                        and len([b for b in umi_qual if (ord(b) - phred) < min_qual]) > umi_quality_bases
+                    ):
+                        dropped_umi += 1
+                        discard_read = True
+                else:
+                    umi_seq = None
+
+                if (
+                    not discard_read
+                    and filter_AT_content > 0
+                    and has_sufficient_content(sequence_rv, "AT", filter_AT_content)
+                ):
+                    dropped_AT += 1
                     discard_read = True
 
-                umi_qual = quality_fw[umi_start:umi_end]
-                if not discard_read and len([b for b in umi_qual if (ord(b) - phred) < min_qual]) > umi_quality_bases:
-                    dropped_umi += 1
-                    discard_read = True
-            else:
-                umi_seq = None
-
-            if (
-                not discard_read
-                and filter_AT_content > 0
-                and has_sufficient_content(sequence_rv, "AT", filter_AT_content)
-            ):
-                dropped_AT += 1
-                discard_read = True
-
-            if (
-                not discard_read
-                and filter_GC_content > 0
-                and has_sufficient_content(sequence_rv, "GC", filter_GC_content)
-            ):
-                dropped_GC += 1
-                discard_read = True
-
-            if not discard_read:
-                if polyA_min_distance >= 5:
-                    sequence_rv, quality_rv = remove_adaptor(sequence_rv, quality_rv, adaptorA, adaptor_missmatches)
-                if polyT_min_distance >= 5:
-                    sequence_rv, quality_rv = remove_adaptor(sequence_rv, quality_rv, adaptorT, adaptor_missmatches)
-                if polyG_min_distance >= 5:
-                    sequence_rv, quality_rv = remove_adaptor(sequence_rv, quality_rv, adaptorG, adaptor_missmatches)
-                if polyC_min_distance >= 5:
-                    sequence_rv, quality_rv = remove_adaptor(sequence_rv, quality_rv, adaptorC, adaptor_missmatches)
-                if polyN_min_distance >= 5:
-                    sequence_rv, quality_rv = remove_adaptor(sequence_rv, quality_rv, adaptorN, adaptor_missmatches)
-
-                if len(sequence_rv) < min_length:
-                    dropped_adaptor += 1
+                if (
+                    not discard_read
+                    and filter_GC_content > 0
+                    and has_sufficient_content(sequence_rv, "GC", filter_GC_content)
+                ):
+                    dropped_GC += 1
                     discard_read = True
 
-            if not discard_read:
-                sequence_rv, quality_rv = trim_quality(sequence_rv, quality_rv, min_qual, min_length, phred)
-                if not sequence_rv or not quality_rv:
-                    too_short_after_trimming += 1
-                    discard_read = True
+                if not discard_read:
+                    if polyA_min_distance >= 5:
+                        sequence_rv, quality_rv = remove_adaptor(sequence_rv, quality_rv, adaptorA, adaptor_missmatches)
+                    if polyT_min_distance >= 5:
+                        sequence_rv, quality_rv = remove_adaptor(sequence_rv, quality_rv, adaptorT, adaptor_missmatches)
+                    if polyG_min_distance >= 5:
+                        sequence_rv, quality_rv = remove_adaptor(sequence_rv, quality_rv, adaptorG, adaptor_missmatches)
+                    if polyC_min_distance >= 5:
+                        sequence_rv, quality_rv = remove_adaptor(sequence_rv, quality_rv, adaptorC, adaptor_missmatches)
+                    if polyN_min_distance >= 5:
+                        sequence_rv, quality_rv = remove_adaptor(sequence_rv, quality_rv, adaptorN, adaptor_missmatches)
 
-            if not discard_read:
-                bam_file.write(convert_to_AlignedSegment(header_rv, sequence_rv, quality_rv, barcode, umi_seq))
-            elif keep_discarded_files:
-                out_writer_discarded.write(dnaio.SequenceRecord(header_rv, orig_sequence_rv, orig_quality_rv))
+                    if len(sequence_rv) < min_length:
+                        dropped_adaptor += 1
+                        discard_read = True
 
-    bam_file.close()
-    if keep_discarded_files:
-        out_writer_discarded.close()
+                if not discard_read:
+                    sequence_rv, quality_rv = trim_quality(sequence_rv, quality_rv, min_qual, min_length, phred)
+                    if not sequence_rv or not quality_rv:
+                        too_short_after_trimming += 1
+                        discard_read = True
+
+                if not discard_read:
+                    bam_file.write(convert_to_AlignedSegment(header_rv, sequence_rv, quality_rv, barcode, umi_seq))
+                elif keep_discarded_files:
+                    out_writer_discarded.write(dnaio.SequenceRecord(r2.name, r2.sequence, r2.qualities))
+    except Exception as e:
+        logger.error(f"Error during quality trimming: {e}")
+        raise e
+    finally:
+        bam_file.close()
+        if keep_discarded_files:
+            out_writer_discarded.close()
 
     dropped_rv = (
         dropped_umi + dropped_umi_template + dropped_AT + dropped_GC + dropped_adaptor + too_short_after_trimming

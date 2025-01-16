@@ -6,7 +6,7 @@ import os
 import shutil
 import subprocess
 import threading
-import time
+from datetime import datetime
 from typing import IO, Any, Optional
 
 
@@ -30,40 +30,25 @@ class TimeStamper:
 
     def __init__(self) -> None:
         self.lock = threading.Lock()
-        self.prev: Optional[float] = None
+        self.prev: Optional[datetime] = None
         self.count: int = 0
 
-    def get_timestamp(self) -> float:
+    def get_timestamp(self) -> datetime:
         """
         Generates a unique numeric timestamp.
 
         Returns:
-            A unique timestamp as a float.
+            A unique timestamp as a datetime object.
         """
         with self.lock:
-            ts = time.time()  # Get Unix timestamp as a float
+            ts = datetime.now()
             if ts == self.prev:
+                ts += ".%04d" % self.count  # type: ignore
                 self.count += 1
-                # Add a small delta to make the timestamp unique
-                ts += self.count * 1e-6
             else:
                 self.prev = ts
-                self.count = 0
+                self.count = 1
         return ts
-
-
-def timestemp_to_str(timestamp: float) -> str:
-    """
-    Convert a time.time() timestamp into a string representation of minutes and seconds.
-
-    Args:
-        timestamp: The timestamp to convert, typically from time.time().
-
-    Returns:
-        A string representing the time in the format "minutes:seconds".
-    """
-    minutes, seconds = divmod(int(timestamp), 60)
-    return f"{minutes}:{seconds:02}"
 
 
 def safe_remove(filename: Optional[str]) -> None:
