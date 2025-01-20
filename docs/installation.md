@@ -5,11 +5,12 @@ Python 3.10, 3.11 or 3.12 is required.
 ## Requirements
 
 The ST Pipeline requires [STAR][] installed in the system (minimum version 2.5.4 if you use a ST Pipeline version >= 1.6.0).
+The ST Pipeline requires [samtools][] installed in the system.
 
-If you use anaconda you can install STAR with:
+If you use anaconda you can install STAR and samtools with:
 
-```bash
-conda install -c bioconda star
+``` console
+conda install -c bioconda star samtools
 ```
 
 The ST Pipeline needs a computer with at least 32GB of RAM (depending on the size of the genome) and 8 cpu cores.
@@ -131,6 +132,7 @@ st_pipeline_run --help
 ```
 
   [STAR]: https://github.com/alexdobin/STAR
+  [samtools]: https://www.htslib.org/
   [pip]: https://pip.pypa.io
   [Python installation guide]: http://docs.python-guide.org/en/latest/starting/installation/
   [Github repo]: https://github.com/jfnavarro/st_pipeline/

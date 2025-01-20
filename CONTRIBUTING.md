@@ -54,7 +54,7 @@ git clone git@github.com:jfnavarro/st_pipeline.git
 ```
 
 3. Ensure [poetry](https://python-poetry.org/docs/) is installed.
-4. Ensure [STAR](https://github.com/alexdobin/STAR) is installed.
+4. Ensure [STAR](https://github.com/alexdobin/STAR) and [samtools](https://www.htslib.org/) are installed.
 5. Install dependencies and start your virtualenv:
 
 ``` console

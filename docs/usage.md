@@ -241,7 +241,7 @@ st_pipeline_run [options] fastq_file_fw fastq_file_rv
 
 An example run would be:
 
-```bash
+```console
 st_pipeline_run --expName test --ids ids_file.txt \
   --ref-map path_to_index --htseq-no-ambiguous --log-file log_file.txt --output-folder /home/me/results \
   --ref-annotation annotation_file.gtf --contaminant-index path_to_cont_index file1.fastq file2.fastq
@@ -270,7 +270,7 @@ If you used an Ensembl annotation file and you would like change
 the output file so it contains gene ids/names instead of Ensembl ids.
 You can use the script `convertEnsemblToNames` that comes with the ST Pipeline
 
-```bash
+```console
 convertEnsemblToNames --annotation path_to_annotation_file --output st_data_updated.tsv st_data.tsv
 ```
 
@@ -279,7 +279,7 @@ convertEnsemblToNames --annotation path_to_annotation_file --output st_data_upda
 If you used different indexes to sequence and need to merge the fastq files
 you can use the script `merge_fastq` that comes with the ST Pipeline
 
-```bash
+```console
 merge_fastq --run-path path_to_run_folder --out-path path_to_output --identifiers S1 S2 S3 S4
 ```
 
@@ -291,7 +291,7 @@ If you want to remove from the dataset (matrix in TSV) genes corresponding
 to certain gene types (For instance to keep only protein_coding). You can do
 so with the script `filter_gene_type_matrix` that comes with the ST Pipeline
 
-```bash
+```console
 filter_gene_type_matrix --gene-types-keep protein-coding --annotation path_to_annotation_file stdata.tsv
 ```
 
@@ -305,7 +305,7 @@ If you want to remove spots from a dataset (matrix in TSV) for instance
 to keep only spots inside the tissue. You can do so with the script `adjust_matrix_coordinates`
 that comes with the ST Pipeline
 
-```bash
+```console
 adjust_matrix_coordinates --outfile new_stdata.tsv --coordinates-file coordinates.txt stdata.tsv
 ```
 
@@ -323,13 +323,13 @@ can update the coordinates in the matrix choosing for the new array or pixel coo
 The ST Pipeline generate useful stats/QC information in the LOG file but if you
 want to obtain more detailed information about the quality of the data, you can run the following script:
 
-```bash
+```console
 st_qa stdata.tsv
 ```
 
 If you want to perform quality stats on multiple datasets you can run:
 
-```bash
+```console
 multi_qa stdata1.tsv stadata2.tsv stdata3.tsv stdata4.tsv
 ```
 
