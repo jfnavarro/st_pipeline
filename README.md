@@ -46,7 +46,7 @@ The ST pipeline will also output a log file with useful stats and information.
 
 For users see [install](docs/installation.md)
 
-For developers [contributing](docs/contributing.md)
+For developers [contributing](CONTRIBUTING.md)
 
 ## Usage
 

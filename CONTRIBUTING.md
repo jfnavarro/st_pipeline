@@ -54,7 +54,8 @@ git clone git@github.com:jfnavarro/st_pipeline.git
 ```
 
 3. Ensure [poetry](https://python-poetry.org/docs/) is installed.
-4. Install dependencies and start your virtualenv:
+4. Ensure [STAR](https://github.com/alexdobin/STAR) is installed.
+5. Install dependencies and start your virtualenv:
 
 ``` console
 poetry install -E test -E doc -E dev
@@ -67,7 +68,7 @@ changing the default behaviour in poetry with this command:
 poetry config virtualenvs.create false
 ```
 
-5. Create a branch for local development:
+6. Create a branch for local development:
 
 ``` console
 git checkout -b name-of-your-bugfix-or-feature
@@ -75,14 +76,14 @@ git checkout -b name-of-your-bugfix-or-feature
 
 Now you can make your changes locally.
 
-6. When you're done making changes, check that your changes pass the
+7. When you're done making changes, check that your changes pass the
    tests, including testing other Python versions, with pytest:
 
 ``` console
 poetry run pytest
 ```
 
-7. Commit your changes and push your branch to GitHub:
+8. Commit your changes and push your branch to GitHub:
 
 ``` console
 git add .
@@ -90,7 +91,7 @@ git commit -m "Your detailed description of your changes."
 git push origin name-of-your-bugfix-or-feature
 ```
 
-8. Submit a pull request through the GitHub website.
+9. Submit a pull request through the GitHub website.
 
 ## Pull Request Guidelines
 
@@ -116,35 +117,35 @@ Replace test_your_module.py with the actual name of your test file.
 
 ## Makefile
 
-A `makefile`is included in the repo with the following actions:
+A `makefile` is included in the repo with the following actions:
 
 To run formatting tools
 
-```bash
+``` console
 make format
 ```
 
 To run linting tools
 
-```bash
+``` console
 make lint
 ```
 
 To run the tests
 
-```bash
+``` console
 make unittet
 ```
 
 To run the tests with coverage
 
-```bash
+``` console
 make coverage
 ```
 
 To clean the temporary files and cache
 
-```bash
+``` console
 make clean
 ```
 

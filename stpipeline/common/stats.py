@@ -43,7 +43,7 @@ class Stats:
         Returns a string representation of the Stats object.
 
         Returns:
-            str: A formatted string of all stats attributes.
+            A formatted string of all stats attributes.
         """
         return "\n".join(f"{field_name}: {getattr(self, field_name)}" for field_name in self.__dataclass_fields__)
 
@@ -52,7 +52,7 @@ class Stats:
         Writes the stats to a JSON file.
 
         Args:
-            filename (str): The path to the JSON file to write.
+            filename: The path to the JSON file to write.
         """
         with open(filename, "w") as file:
             json.dump(asdict(self), file, indent=2, separators=(",", ": "))
@@ -63,10 +63,10 @@ class Stats:
         Creates a Stats object from a JSON file.
 
         Args:
-            filename (str): The path to the JSON file to read.
+            filename: The path to the JSON file to read.
 
         Returns:
-            Stats: A Stats object populated with data from the JSON file.
+            A Stats object populated with data from the JSON file.
         """
         with open(filename, "r") as file:
             data = json.load(file)

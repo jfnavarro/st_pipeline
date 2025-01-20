@@ -12,7 +12,7 @@ the path to a STAR genome index, the path to a annotation file in GTF format
 an a dataset name.
 
 The ST Pipeline has many parameters and options, you can see a description of them
-by typing : st_pipeline_run.py --help
+by typing : st_pipeline_run --help
 
 @Author Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
