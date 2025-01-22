@@ -139,6 +139,7 @@ def alignReads(
         args += ["--outSAMunmapped", "None"]
 
     try:
+        logger.debug(f"STAR mapping, running command: {' '.join(args)}")
         proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=False)
         _, errmsg = proc.communicate()
 
@@ -146,11 +147,11 @@ def alignReads(
             logger.error(f"Error mapping with STAR: {errmsg.decode()}")
             raise RuntimeError(f"STAR mapping failed with error: {errmsg.decode()}")
     except OSError as e:
-        logger.error("Error mapping with STAR\n Executable not found.")
+        logger.error("Error mapping with STAR: Executable not found.")
         raise e
 
     if not file_ok(tmpOutputFile):
-        error = f"Error mapping with STAR. Output file not present {tmpOutputFile}\n"
+        error = f"Error mapping with STAR: Output file not present {tmpOutputFile}"
         logger.error(error)
         raise RuntimeError(error)
 
@@ -167,13 +168,13 @@ def alignReads(
         with open(log_final, "r") as star_log:
             for line in star_log:
                 if "Uniquely mapped reads number" in line:
-                    uniquely_mapped = int(str(line).rstrip().split()[-1])
+                    uniquely_mapped = int(line.strip().split()[-1])
                     logger.info(line.strip())
                 elif "Number of reads mapped to multiple loci" in line:
-                    multiple_mapped += int(str(line).rstrip().split()[-1])
-                    logger.info(str(line).rstrip())
+                    multiple_mapped += int(line.strip().split()[-1])
+                    logger.info(line.strip())
                 elif "% of reads mapped to multiple loci" in line or "% of reads unmapped: too short" in line:
-                    logger.info(str(line).rstrip())
+                    logger.info(line.strip())
             logger.info("Total mapped reads: {}".format(uniquely_mapped + multiple_mapped))
 
     return uniquely_mapped + multiple_mapped
@@ -267,6 +268,7 @@ def barcodeDemultiplexing(
     args += [idFile, reads, outputFilePrefix]
 
     try:
+        logger.debug(f"Taggd demultiplexing, running command: {' '.join(args)}")
         proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=False)
         stdout, errmsg = proc.communicate()
 
@@ -274,29 +276,33 @@ def barcodeDemultiplexing(
             logger.error(f"Error demultiplexing with Taggd: {errmsg.decode()}")
             raise RuntimeError(f"Taggd demultiplexing failed with error: {errmsg.decode()}")
     except OSError as e:
-        logger.error("Error demultiplexing with Taggd\n Executable not found.")
+        logger.error("Error demultiplexing with Taggd: Executable not found.")
         raise e
 
     outputFile = f"{outputFilePrefix}_matched{os.path.splitext(reads)[1].lower()}"
     if not file_ok(outputFile):
-        error = f"Error demultiplexing with Taggd. Output file not present {outputFile}\n"
+        error = f"Error demultiplexing with Taggd: Output file not present {outputFile}"
         logger.error(error)
         raise RuntimeError(error)
 
+    # Write log file and collect stats
+    outputLog = f"{outputFilePrefix}_log.txt"
     reads_after_demultiplexing = 0
-    for line in stdout.decode().splitlines():
-        tokens = [
-            "Total reads:",
-            "Perfect Matches:",
-            "Imperfect Matches",
-            "Ambiguous matches:",
-            "Non-unique ambiguous matches:",
-            "Unmatched:",
-        ]
-        if any(x in line for x in tokens):
-            logger.info(line)
-        if "Total reads written:" in line:
-            logger.info(line)
-            reads_after_demultiplexing = int(line.split()[-1])
+    with open(outputLog, "w") as fwrite:
+        for line in stdout.decode().splitlines():
+            fwrite.write(line + "\n")
+            tokens = [
+                "Total reads:",
+                "Perfect Matches:",
+                "Imperfect Matches",
+                "Ambiguous matches:",
+                "Non-unique ambiguous matches:",
+                "Unmatched:",
+            ]
+            if any(x in line for x in tokens):
+                logger.info(line.strip())
+            if "Total reads written:" in line:
+                logger.info(line.strip())
+                reads_after_demultiplexing = int(line.strip().split()[-1])
 
     return reads_after_demultiplexing

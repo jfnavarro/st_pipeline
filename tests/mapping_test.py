@@ -121,9 +121,10 @@ def test_alignReads():
         assert total_reads == 95000
 
 
-def test_barcodeDemultiplexing():
+def test_barcodeDemultiplexing(tmpdir):
     with (
         patch("subprocess.Popen") as mock_popen,
+        patch("stpipeline.core.mapping.open", mock_open()) as mock_open_file,
         patch("os.path.isfile", return_value=True),
         patch("stpipeline.core.mapping.file_ok", return_value=True),
     ):
@@ -142,7 +143,7 @@ def test_barcodeDemultiplexing():
             taggd_multiple_hits_keep_one=True,
             taggd_trim_sequences=[1, 2, 3],
             cores=4,
-            outputFilePrefix="output/test",
+            outputFilePrefix=str(tmpdir),
             keep_discarded_files=False,
             taggd_chunk_size=100,
         )
@@ -175,10 +176,11 @@ def test_barcodeDemultiplexing():
             "--no-results-output",
             "barcodes.tsv",
             "reads.bam",
-            "output/test",
+            str(tmpdir),
         ]
 
         mock_popen.assert_called_once_with(
             expected_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=False
         )
+        assert str(tmpdir) + "_log.txt" in mock_open_file.call_args[0][0]
         assert total_reads == 80

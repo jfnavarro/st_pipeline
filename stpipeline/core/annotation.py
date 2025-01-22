@@ -13,6 +13,8 @@ import pysam
 
 from stpipeline.common.utils import file_ok
 
+logger = logging.getLogger("STPipeline")
+
 
 class UnknownChrom(Exception):
     """
@@ -211,7 +213,6 @@ def annotateReads(
     Raises:
         RuntimeError: If input files are missing or errors occur during annotation.
     """
-    logger = logging.getLogger("STPipeline")
 
     if not os.path.isfile(mappedReads):
         raise RuntimeError(f"Input file not found: {mappedReads}")
@@ -234,12 +235,12 @@ def annotateReads(
             outputDiscarded,
         )
     except Exception as e:
-        error = "Error during annotation. HTSEQ execution failed"
+        error = "Error during annotation: HTSEQ execution failed"
         logger.error(error)
         raise e
 
     if not file_ok(outputFile) or annotated == 0:
-        error = f"Error during annotation. Output file not present or empty {outputFile}"
+        error = f"Error during annotation: Output file not present or empty {outputFile}"
         logger.error(error)
         raise RuntimeError(error)
 

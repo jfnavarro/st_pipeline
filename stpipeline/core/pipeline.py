@@ -364,7 +364,7 @@ class Pipeline:
         )
         parser.add_argument(
             "--threads",
-            default=4,
+            default=8,
             metavar="[INT]",
             type=int,
             choices=range(1, 81),
