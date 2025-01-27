@@ -629,7 +629,7 @@ class Pipeline:
         )
         parser.add_argument(
             "--demultiplexing-chunk-size",
-            default=10000,
+            default=100000,
             metavar="[INT]",
             type=int,
             help="Chunk size for parallel processing (number of reads assigned to each thread) (default: %(default)s)",
