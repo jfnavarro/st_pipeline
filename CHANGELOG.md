@@ -8,7 +8,7 @@
 * Added a Docker container
 * Changed tests to pytest
 * Updated versions of dependencies
-* Performed code optimizations and clean ups
+* Performed code optimizations, refactorings and clean ups
 * Added more tests for almost full coveragge
 * Bumped taggd to 0.4.0
 * Changed documentation

@@ -873,7 +873,6 @@ class Pipeline:
         self.disable_annotation = options.disable_annotation
         self.transcriptome = options.transcriptome
         self.disable_umi = options.disable_umi
-        self.transcriptome = options.transcriptome
         if options.saturation_points is not None:
             self.saturation_points = [int(p) for p in options.saturation_points]  # type: ignore
         # Assign class parameters to the QA stats object
@@ -913,6 +912,7 @@ class Pipeline:
 
         if not self.disable_trimming:
             logger.info("Quality and trimming settings")
+            logger.info(f"Discarding reads that after trimming are shorter than {self.min_length_trimming}")
             if self.remove_polyA_distance > 0:
                 logger.info(f"Removing polyA sequences of a length of at least: {self.remove_polyA_distance}")
             if self.remove_polyT_distance > 0:
@@ -924,8 +924,10 @@ class Pipeline:
             if self.remove_polyN_distance > 0:
                 logger.info(f"Removing polyN sequences of a length of at least: {self.remove_polyN_distance}")
             logger.info(f"Allowing {self.adaptor_missmatches} mismatches when removing homopolymers")
-            logger.info(f"Remove reads whose AT content is {self.filter_AT_content}%")
-            logger.info(f"Remove reads whose GC content is {self.filter_GC_content}%")
+            logger.info(f"Discarding reads whose AT content is {self.filter_AT_content}%")
+            logger.info(f"Discarding reads whose GC content is {self.filter_GC_content}%")
+        else:
+            logger.info("Disabling Quality trimming step")
 
         if not self.disable_mapping:
             logger.info("Mapping settings")
@@ -941,6 +943,8 @@ class Pipeline:
                 logger.info("Not allowing multiple alignments when mapping with STAR")
             if self.two_pass_mode:
                 logger.info("Using the STAR 2-pass mode for the mapping step")
+        else:
+            logger.info("Disabling Mapping step")
 
         if not self.disable_barcode:
             logger.info("Demultiplexing settings")
@@ -954,15 +958,23 @@ class Pipeline:
             if self.taggd_trim_sequences is not None:
                 logger.info(f"TaggD trimming from the barcodes: {'-'.join(str(x) for x in self.taggd_trim_sequences)}")
             logger.info(f"TaggD chunk size: {self.taggd_chunk_size }")
+        else:
+            logger.info("Disabling Demultiplexing step")
 
-        if not self.disable_annotation:
+        if not self.disable_annotation and not self.transcriptome:
             logger.info("Annotation settings")
             logger.info("Annotation tool: HTSeq")
             logger.info(f"Annotation mode: {self.htseq_mode}")
             logger.info(f"Annotation strandness: {self.strandness}")
             logger.info(f"Annotation feature types: {','.join(self.htseq_features)}")
             if self.include_non_annotated:
-                logger.info("Including non annotated reads in the output")
+                logger.info("Anntatation including non annotated reads in the output")
+            if self.htseq_no_ambiguous:
+                logger.info("Annotation not including ambigous reads in the output")
+        elif self.transcriptome:
+            logger.info("Using the transcriptome to annotate genes")
+        else:
+            logger.info("Disabling Annotation step")
 
         if self.compute_saturation:
             logger.info("Computing saturation curve with several sub-samples...")
@@ -970,7 +982,7 @@ class Pipeline:
                 logger.info(f"Using the following points: {' '.join(str(p) for p in self.saturation_points)}")
 
         if not self.disable_umi:
-            logger.info("UMI settings")
+            logger.info("UMI Collapsing settings")
             logger.info(f"UMIs start position: {self.umi_start_position}")
             logger.info(f"UMIs end position: {self.umi_end_position}")
             logger.info(f"UMIs allowed mismatches: {self.umi_allowed_mismatches}")
@@ -979,9 +991,10 @@ class Pipeline:
                 f"Allowing an offset of {self.umi_counting_offset} when clustering UMIs by strand-start in a gene-spot"
             )
             logger.info(f"Allowing {self.umi_quality_bases} low quality bases in an UMI")
-            logger.info(f"Discarding reads that after trimming are shorter than {self.min_length_trimming}")
             if self.umi_filter:
                 logger.info(f"UMIs using filter: {self.umi_filter_template}")
+        else:
+            logger.info("Disabling UMI Collapsing step")
 
     def run(self) -> None:
         """
@@ -1012,42 +1025,42 @@ class Pipeline:
         # =================================================================
         # Get the barcode length
         barcode_length = len(list(read_barcode_file(self.ids).values())[0].sequence)
-        if not self.disable_trimming:
-            logger.info(f"Start filtering raw reads {globaltime.get_timestamp()}")
-            try:
-                stats = filter_input_data(
-                    self.fastq_fw,
-                    self.fastq_rv,
-                    FILENAMES["quality_trimmed_R2"],
-                    FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
-                    barcode_length,
-                    self.barcode_start,
-                    self.filter_AT_content,
-                    self.filter_GC_content,
-                    self.umi_start_position,
-                    self.umi_end_position,
-                    self.min_quality_trimming,
-                    self.min_length_trimming,
-                    self.remove_polyA_distance,
-                    self.remove_polyT_distance,
-                    self.remove_polyG_distance,
-                    self.remove_polyC_distance,
-                    self.remove_polyN_distance,
-                    self.qual64,
-                    self.umi_filter,
-                    self.umi_filter_template,
-                    self.umi_quality_bases,
-                    self.adaptor_missmatches,
-                    self.overhang,
-                    self.disable_umi,
-                    self.disable_barcode,
-                )
-                # update qa_stats
-                self.qa_stats.input_reads_reverse = stats[0]
-                self.qa_stats.reads_after_trimming_forward = stats[1]
-                self.qa_stats.reads_after_trimming_reverse = stats[1]
-            except Exception:
-                raise
+        logger.info(f"Start filtering raw reads {globaltime.get_timestamp()}")
+        try:
+            stats = filter_input_data(
+                self.fastq_fw,
+                self.fastq_rv,
+                FILENAMES["quality_trimmed_R2"],
+                FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
+                barcode_length,
+                self.barcode_start,
+                self.filter_AT_content,
+                self.filter_GC_content,
+                self.umi_start_position,
+                self.umi_end_position,
+                self.min_quality_trimming,
+                self.min_length_trimming,
+                self.remove_polyA_distance,
+                self.remove_polyT_distance,
+                self.remove_polyG_distance,
+                self.remove_polyC_distance,
+                self.remove_polyN_distance,
+                self.qual64,
+                self.umi_filter,
+                self.umi_filter_template,
+                self.umi_quality_bases,
+                self.adaptor_missmatches,
+                self.overhang,
+                self.disable_umi,
+                self.disable_barcode,
+                self.disable_trimming,
+            )
+            # update qa_stats
+            self.qa_stats.input_reads_reverse = stats[0]
+            self.qa_stats.reads_after_trimming_forward = stats[1]
+            self.qa_stats.reads_after_trimming_reverse = stats[1]
+        except Exception:
+            raise
 
         # =================================================================
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. rRNA(Optional)
@@ -1110,13 +1123,13 @@ class Pipeline:
         # =================================================================
         # STEP: Maps against the genome using STAR
         # =================================================================
+        input_mapping = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
         if not self.disable_mapping:
             logger.info(f"Starting genome alignment {globaltime.get_timestamp()}")
-            input_reads = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
             try:
                 # Make the alignment call
                 alignReads(
-                    input_reads,
+                    input_mapping,
                     self.ref_map,
                     FILENAMES["mapped"],
                     None,  #  Do not annotate on the fly
@@ -1147,6 +1160,8 @@ class Pipeline:
                     os.rename(temp_name, FILENAMES["mapped"])
             except Exception:
                 raise
+        else:
+            FILENAMES["mapped"] = input_mapping
 
         # =================================================================
         # STEP: DEMULTIPLEX READS Map against the barcodes (Optional)
@@ -1181,20 +1196,19 @@ class Pipeline:
                 subprocess.check_call(command, shell=True)
             except Exception:
                 raise
+        else:
+            FILENAMES["demultiplexed_matched"] = FILENAMES["mapped"]
 
         # =================================================================
         # STEP: annotate using htseq-count or the transcriptome (Optional)
         # =================================================================
         if not self.disable_annotation:
-            input_file = (
-                FILENAMES["demultiplexed_matched"] if FILENAMES["demultiplexed_matched"] else FILENAMES["mapped"]
-            )
             if self.transcriptome:
                 logger.info(f"Assigning gene names from transcriptome {globaltime.get_timestamp()}")
                 # Iterate the BAM file to set the gene name as the transcriptome"s entry
                 flag_read = "rb"
                 flag_write = "wb"
-                infile = pysam.AlignmentFile(input_file, flag_read)  # type: ignore
+                infile = pysam.AlignmentFile(FILENAMES["demultiplexed_matched"], flag_read)  # type: ignore
                 outfile = pysam.AlignmentFile(FILENAMES["annotated"], flag_write, template=infile)  # type: ignore
                 for rec in infile.fetch(until_eof=True):
                     # NOTE chrom may have to be trimmed to 250 characters max
@@ -1207,7 +1221,7 @@ class Pipeline:
                 logger.info(f"Starting annotation {globaltime.get_timestamp()}")
                 try:
                     stats = annotateReads(  # type: ignore
-                        input_file,
+                        FILENAMES["demultiplexed_matched"],
                         self.ref_annotation,  # type: ignore
                         FILENAMES["annotated"],
                         FILENAMES_DISCARDED["annotated_discarded"] if self.keep_discarded_files else None,
@@ -1227,8 +1241,8 @@ class Pipeline:
         # =================================================================
         # To compute saturation points we need the number of annotated reads
         # the fastest way is to get that information from the stats object
-        if self.compute_saturation and os.path.isfile(FILENAMES["annotated"]):
-            reads = (
+        if self.compute_saturation and not self.disable_annotation:
+            nreads = (
                 self.qa_stats.reads_after_annotation
                 if not self.transcriptome
                 else self.qa_stats.reads_after_demultiplexing
@@ -1236,7 +1250,7 @@ class Pipeline:
             logger.info(f"Starting computing saturation points {globaltime.get_timestamp()}")
             try:
                 compute_saturation(
-                    reads,
+                    nreads,
                     FILENAMES["annotated"],
                     self.ref_annotation,  # type: ignore
                     self.umi_cluster_algorithm,
@@ -1253,7 +1267,7 @@ class Pipeline:
         # =================================================================
         # STEP: Create dataset and remove duplicates
         # =================================================================
-        if os.path.isfile(FILENAMES["annotated"]):
+        if not self.disable_annotation:
             logger.info(f"Starting creating dataset {globaltime.get_timestamp()}")
             try:
                 stats = createDataset(  # type: ignore

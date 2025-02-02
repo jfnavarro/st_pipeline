@@ -85,6 +85,7 @@ def test_filter_input_data(mock_alignment_file, setup_fastq_files, tmp_path):
         overhang=2,
         disable_umi=False,
         disable_barcode=False,
+        disable_trimming=False,
     )
 
     assert total_reads == 6

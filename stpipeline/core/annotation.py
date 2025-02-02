@@ -85,6 +85,13 @@ def count_reads_in_features(
         RuntimeError: If an error occurs during processing.
         ValueError: If an invalid overlap mode or strand information is encountered.
     """
+    if samtype not in ["bam", "sam"]:
+        raise ValueError(f"Incorrect value for samtype {samtype}")
+    if stranded not in ["yes", "no", "reverse"]:
+        raise ValueError(f"Incorrect value for stranded option {stranded}")
+    if overlap_mode not in ["union", "intersection-strict", "intersection-nonempty"]:
+        raise ValueError(f"Incorrect value for overlap_mode option {overlap_mode}")
+
     # Set up filters
     filter_htseq = ["__too_low_aQual", "__not_aligned"]
     if not include_non_annotated:
@@ -101,7 +108,7 @@ def count_reads_in_features(
     saminfile.close()
 
     # Counter for annotated records
-    annotated = 0
+    count_reads_in_features.annotated = 0  # type: ignore
 
     def write_to_samout(read: HTSeq.SAM_Alignment, assignment: str) -> None:
         """
@@ -115,6 +122,7 @@ def count_reads_in_features(
             and not (filter_htseq_no_ambiguous and "__ambiguous" in assignment)
         ):
             samoutfile.write(sam_record)
+            count_reads_in_features.annotated += 1  # type: ignore
         elif outputDiscarded is not None:
             samdiscarded.write(sam_record)
 
@@ -122,10 +130,8 @@ def count_reads_in_features(
     features = HTSeq.GenomicArrayOfSets("auto", stranded != "no")
     counts = {}
     gff = HTSeq.GFF_Reader(gff_filename)
-
     if feature_type is None:
         feature_type = ["exon"]
-
     for f in gff:
         if f.type in feature_type:
             feature_id = f.attr.get(id_attribute)
@@ -140,46 +146,49 @@ def count_reads_in_features(
         raise RuntimeError(f"No features of type {','.join(feature_type)} found.")
 
     SAM_or_BAM_Reader = HTSeq.SAM_Reader if samtype == "sam" else HTSeq.BAM_Reader
+    com = ("M", "=", "X")
 
     try:
         read_seq = SAM_or_BAM_Reader(sam_filename)
     except Exception as e:
         raise RuntimeError("Error reading SAM/BAM file.") from e
 
-    for r in read_seq:
-        if not r.aligned:
-            write_to_samout(r, "__not_aligned")
-            continue
-        if r.aQual < minaqual:
-            write_to_samout(r, "__too_low_aQual")
-            continue
-        if stranded != "reverse":
-            iv_seq = (co.ref_iv for co in r.cigar if co.type == "M" and co.size > 0)
-        else:
-            iv_seq = (invert_strand(co.ref_iv) for co in r.cigar if co.type in ["M", "=", "X"] and co.size > 0)
+    try:
+        for r in read_seq:
+            if not r.aligned:
+                write_to_samout(r, "__not_aligned")
+                continue
+            if r.aQual < minaqual:
+                write_to_samout(r, "__too_low_aQual")
+                continue
+            if stranded != "reverse":
+                # NOTE: should perhaps use com here instead of just "M"
+                iv_seq = (co.ref_iv for co in r.cigar if co.type == "M" and co.size > 0)
+            else:
+                iv_seq = (invert_strand(co.ref_iv) for co in r.cigar if co.type in com and co.size > 0)
 
-        fs = set()  # type: ignore
-        for iv in iv_seq:
-            if iv.chrom not in features.chrom_vectors:
+            fs = set()  # type: ignore
+            for iv in iv_seq:
+                if iv.chrom not in features.chrom_vectors:
+                    fs = set()
+                    break
+                for _, fs2 in features[iv].steps():
+                    fs = fs.union(fs2) if overlap_mode == "union" else fs.intersection(fs2) if fs else fs2.copy()
+
+            if not fs:
                 write_to_samout(r, "__no_feature")
-                break
-            for _, fs2 in features[iv].steps():
-                fs = fs.union(fs2) if overlap_mode == "union" else fs.intersection(fs2) if fs else fs2.copy()
+            elif len(fs) > 1:
+                write_to_samout(r, f"__ambiguous[{'+'.join(fs)}]")
+            else:
+                write_to_samout(r, list(fs)[0])
+    except:
+        raise
+    finally:
+        samoutfile.close()
+        if outputDiscarded is not None:
+            samdiscarded.close()
 
-        if not fs:
-            write_to_samout(r, "__no_feature")
-        elif len(fs) > 1:
-            write_to_samout(r, f"__ambiguous[{'+'.join(fs)}]")
-            annotated += 1
-        else:
-            write_to_samout(r, list(fs)[0])
-            annotated += 1
-
-    samoutfile.close()
-    if outputDiscarded is not None:
-        samdiscarded.close()
-
-    return annotated
+    return count_reads_in_features.annotated  # type: ignore
 
 
 def annotateReads(

@@ -43,6 +43,7 @@ def filter_input_data(
     overhang: int,
     disable_umi: bool,
     disable_barcode: bool,
+    disable_trimming: bool,
 ) -> Tuple[int, int]:
     """
     Handles input read filtering and quality trimming for sequencing data (paired FASTQ files).
@@ -80,6 +81,7 @@ def filter_input_data(
         overhang: Overhang for barcode extraction.
         disable_umi: If True, skips UMI filtering.
         disable_barcode: If True, skips barcode extraction.
+        disable_trimming: If True, does not perform any trimming.
 
     Returns:
         Total reads processed and remaining reads after filtering.
@@ -137,13 +139,14 @@ def filter_input_data(
 
                 if not disable_umi:
                     umi_seq = sequence_fw[umi_start:umi_end]
-                    if umi_filter and not check_umi_template(umi_seq, umi_filter_template):
+                    if umi_filter and not disable_trimming and not check_umi_template(umi_seq, umi_filter_template):
                         dropped_umi_template += 1
                         discard_read = True
 
                     umi_qual = quality_fw[umi_start:umi_end]
                     if (
                         not discard_read
+                        and not disable_trimming
                         and len([b for b in umi_qual if (ord(b) - phred) < min_qual]) > umi_quality_bases
                     ):
                         dropped_umi += 1
@@ -153,6 +156,7 @@ def filter_input_data(
 
                 if (
                     not discard_read
+                    and not disable_trimming
                     and filter_AT_content > 0
                     and has_sufficient_content(sequence_rv, "AT", filter_AT_content)
                 ):
@@ -161,29 +165,30 @@ def filter_input_data(
 
                 if (
                     not discard_read
+                    and not disable_trimming
                     and filter_GC_content > 0
                     and has_sufficient_content(sequence_rv, "GC", filter_GC_content)
                 ):
                     dropped_GC += 1
                     discard_read = True
 
-                if not discard_read:
-                    if polyA_min_distance >= 5:
+                if not discard_read and not disable_trimming:
+                    if polyA_min_distance >= 5 and len(sequence_rv) > min_length:
                         sequence_rv, quality_rv = remove_adaptor(sequence_rv, quality_rv, adaptorA, adaptor_missmatches)
-                    if polyT_min_distance >= 5:
+                    if polyT_min_distance >= 5 and len(sequence_rv) > min_length:
                         sequence_rv, quality_rv = remove_adaptor(sequence_rv, quality_rv, adaptorT, adaptor_missmatches)
-                    if polyG_min_distance >= 5:
+                    if polyG_min_distance >= 5 and len(sequence_rv) > min_length:
                         sequence_rv, quality_rv = remove_adaptor(sequence_rv, quality_rv, adaptorG, adaptor_missmatches)
-                    if polyC_min_distance >= 5:
+                    if polyC_min_distance >= 5 and len(sequence_rv) > min_length:
                         sequence_rv, quality_rv = remove_adaptor(sequence_rv, quality_rv, adaptorC, adaptor_missmatches)
-                    if polyN_min_distance >= 5:
+                    if polyN_min_distance >= 5 and len(sequence_rv) > min_length:
                         sequence_rv, quality_rv = remove_adaptor(sequence_rv, quality_rv, adaptorN, adaptor_missmatches)
 
                     if len(sequence_rv) < min_length:
                         dropped_adaptor += 1
                         discard_read = True
 
-                if not discard_read:
+                if not discard_read and not disable_trimming:
                     sequence_rv, quality_rv = trim_quality(sequence_rv, quality_rv, min_qual, min_length, phred)
                     if not sequence_rv or not quality_rv:
                         too_short_after_trimming += 1
@@ -208,5 +213,11 @@ def filter_input_data(
     logger.info(f"Trimming stats {dropped_rv} reads have been dropped!")
     logger.info(f"Trimming stats you just lost about {(dropped_rv / total_reads):.2%} of your data")
     logger.info(f"Trimming stats reads remaining: {total_reads - dropped_rv}")
+    logger.info(f"Trimming stats dropped pairs due to incorrect UMI: {dropped_umi_template}")
+    logger.info(f"Trimming stats dropped pairs due to low quality UMI: {dropped_umi}")
+    logger.info(f"Trimming stats dropped pairs due to high AT content: {dropped_AT}")
+    logger.info(f"Trimming stats dropped pairs due to high GC content: {dropped_GC}")
+    logger.info(f"Trimming stats dropped pairs due to presence of artifacts: {dropped_adaptor}")
+    logger.info(f"Trimming stats dropped pairs due to being too short: {too_short_after_trimming}")
 
     return total_reads, total_reads - dropped_rv

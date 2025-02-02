@@ -33,11 +33,14 @@ def remove_adaptor(sequence: str, quality: str, adaptor: str, missmatches: int =
             pos = sequence.find(adaptor)
         else:
             candidates = regex.findall(rf"(?:{adaptor}){{s<={missmatches}}}", sequence, overlapped=False)
-            if candidates:
+            if len(candidates) > 0:
                 local_seq = candidates[0]
+                # Miss-matches may happen at the start
+                # so we account for it
                 local_pos = 0
                 if adaptor[0] != local_seq[0]:
                     local_pos = local_seq.find(adaptor[0])
+                # We now look for the first base of the matched adaptor
                 pos = sequence.find(local_seq[local_pos:])
             else:
                 pos = -1
