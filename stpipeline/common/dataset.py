@@ -9,7 +9,7 @@ import logging
 import os
 import random
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -179,15 +179,15 @@ def createDataset(
     aggregated_spot_counts = counts_table.sum(axis=1)
     aggregated_gene_counts = (counts_table != 0).sum(axis=1)
 
-    stats_dict = {}
-    stats_dict["max_genes_feature"] = aggregated_gene_counts.max()
-    stats_dict["min_genes_feature"] = aggregated_gene_counts.min()
-    stats_dict["max_reads_feature"] = aggregated_spot_counts.max()
-    stats_dict["min_reads_feature"] = aggregated_spot_counts.min()
-    stats_dict["average_reads_feature"] = np.mean(aggregated_spot_counts)
-    stats_dict["average_genes_feature"] = np.mean(aggregated_gene_counts)
-    stats_dict["std_reads_feature"] = np.std(aggregated_spot_counts)
-    stats_dict["std_genes_feature"] = np.std(aggregated_gene_counts)
+    stats_dict: Dict[str, Union[int, float]] = {}
+    stats_dict["max_genes_feature"] = int(aggregated_gene_counts.max())
+    stats_dict["min_genes_feature"] = int(aggregated_gene_counts.min())
+    stats_dict["max_reads_feature"] = float(aggregated_spot_counts.max())
+    stats_dict["min_reads_feature"] = float(aggregated_spot_counts.min())
+    stats_dict["average_reads_feature"] = float(np.mean(aggregated_spot_counts))
+    stats_dict["average_genes_feature"] = float(np.mean(aggregated_gene_counts))
+    stats_dict["std_reads_feature"] = float(np.std(aggregated_spot_counts))
+    stats_dict["std_genes_feature"] = float(np.std(aggregated_gene_counts))
     stats_dict["reads_after_duplicates_removal"] = int(total_reads)
     stats_dict["barcodes_found"] = total_spots
     stats_dict["genes_found"] = number_genes

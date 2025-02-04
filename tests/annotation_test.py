@@ -9,7 +9,7 @@ import HTSeq
 import pysam
 import pytest
 
-from stpipeline.core.annotation import annotateReads, count_reads_in_features, invert_strand
+from stpipeline.core.annotation import annotateReads, ReadCounter, invert_strand
 
 
 @pytest.fixture
@@ -70,7 +70,7 @@ def test_count_reads_in_features(mock_bam_file, mock_gff_file, tmp_path):
     output_file = tmp_path / "output.bam"
     discarded_file = tmp_path / "discarded.bam"
 
-    annotated_count = count_reads_in_features(
+    annotated_count = ReadCounter(
         sam_filename=mock_bam_file,
         gff_filename=mock_gff_file,
         samtype="bam",
@@ -82,8 +82,8 @@ def test_count_reads_in_features(mock_bam_file, mock_gff_file, tmp_path):
         samout=str(output_file),
         include_non_annotated=True,
         htseq_no_ambiguous=False,
-        outputDiscarded=str(discarded_file),
-    )
+        output_discarded=str(discarded_file),
+    ).count_reads()
 
     assert annotated_count > 0
     assert os.path.exists(output_file)
