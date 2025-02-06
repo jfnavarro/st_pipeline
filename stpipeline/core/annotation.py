@@ -176,22 +176,25 @@ class ReadCounter:
                     if self.stranded != "reverse"
                     else (invert_strand(co.ref_iv) for co in r.cigar if co.type in com and co.size > 0)
                 )
+                is_union = self.overlap_mode == "union"
+                is_strict = self.overlap_mode == "intersection-strict"
+                unknown_chr = False
                 fs = set()  # type: ignore
                 for iv in iv_seq:
                     if iv.chrom not in self.features.chrom_vectors:
-                        fs = set()
+                        unknown_chr = True
                         break
                     for _, fs2 in self.features[iv].steps():
-                        if self.overlap_mode == "union":
+                        if is_union:
                             fs = fs.union(fs2)
-                        elif len(fs2) > 0 or self.overlap_mode == "intersection-strict":
+                        elif len(fs2) > 0 or is_strict:
                             fs = fs.intersection(fs2) if fs else fs2.copy()
-                if not fs:
+                if not fs or unknown_chr:
                     self._write_to_samout(r, "__no_feature")
                 elif len(fs) > 1:
-                    self._write_to_samout(r, f"__ambiguous[{'+'.join(fs)}]")
+                    self._write_to_samout(r, "__ambiguous[" + "+".join(fs) + "]")
                 else:
-                    self._write_to_samout(r, list(fs)[0])
+                    self._write_to_samout(r, fs.pop())
         except Exception as e:
             raise RuntimeError("Error encountered during read counting") from e
         return self.annotated
