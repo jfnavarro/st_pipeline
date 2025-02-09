@@ -172,6 +172,19 @@ poetry run mkdocs build
 ## Publish package
 
 Ensure that you have configured your PyPi tokens.
+
+```console
+poetry config repositories.testpypi https://test.pypi.org/legacy/
+poetry config repositories.pypi https://upload.pypi.org/legacy/
+```
+
+and
+
+``` console
+poetry config pypi-token.pypi YOUR_PYPI_API_TOKEN
+poetry config pypi-token.testpypi YOUR_TEST_PYPI_API_TOKEN
+```
+
 Then run:
 
 ``` console
