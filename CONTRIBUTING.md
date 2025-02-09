@@ -169,4 +169,13 @@ You can also create the documentation manually by running:
 poetry run mkdocs build
 ```
 
-## Publish package (TODO)
+## Publish package
+
+Ensure that you have configured your PyPi tokens.
+Then run:
+
+``` console
+poetry build
+poetry publish -r test-pypi # optional
+poetry publish
+```
