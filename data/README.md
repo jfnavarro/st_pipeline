@@ -1,20 +1,17 @@
-These dataset were generated
-from the publicly available raw FASTQ files
-of the Mouse Olfatory Bulb Replicates number 4 and 9
-from the publication http://science.sciencemag.org/content/353/6294/78
+# Example datasets
 
+These datasets were generated from the publicly available raw FASTQ files
+of the Mouse Olfatory Bulb Replicates number 4 and 9 from the publication http://science.sciencemag.org/content/353/6294/78
 
-The data was analysed with the ST Pipeline 1.3.1
-and with a STAR genome index generated from
-the Mus Musculus Ensembl annotation version 86. 
-The annotation file used Mus Musculus GenCode 25 vM11.
-A contaminant genome STAR index was used generated
-from the Ensembl non conding RNA Mus musculus version 86.
+The data was analysed with the ST Pipeline 1.3.1 and with a STAR genome index generated from
+the Mus Musculus Ensembl annotation version 86. The annotation file used Mus Musculus GenCode 25 vM11.
+A contaminant genome STAR index was used generated from the Ensembl non coding RNA Mus musculus version 86.
 The IDs file used to demultiplex were the 1000L2 and 1000L5.
- 
-The following settings were used:
 
-st_pipeline_run.py \
+The following settings were used (NOTE that the name of the parameters in the example are for version 1.3.1):
+
+```bash
+st_pipeline_run \
   --output-folder OUTPUT \
   --ids id.txt \
   --ref-map path_to_genome_index \
@@ -36,3 +33,4 @@ st_pipeline_run.py \
   --min-length-qual-trimming 30 \
   --disable-clipping \
   R1.fastq R2.fastq
+```

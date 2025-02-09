@@ -1,0 +1,186 @@
+[tool.poetry]
+name = "stpipeline"
+version = "2.0.0"
+description = "ST Pipeline: An automated pipeline for spatial mapping of unique transcripts"
+authors = ["Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+keywords = ["visium", "analysis", "pipeline", "spatial", "transcriptomics", "toolkit"]
+repository = "https://github.com/jfnavarro/st_pipeline"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Topic :: Software Development",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+    "Environment :: Console",
+]
+include = [
+    { path = "README.md" },
+    { path = "LICENSE" },
+    { path = "doc/**" }
+]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+argparse = "^1.4.0"
+numpy = "^2.2.1"
+pandas = "^2.2.3"
+scipy = "^1.15.0"
+scikit-learn = "^1.6.0"
+regex = "^2024.11.6"
+pre-commit = "^4.0.1"
+taggd = ">=0.4.0"
+htseq = "^2.0.9"
+pysam = "^0.22.1"
+seaborn = "^0.13.2"
+types-regex = "^2024.11.6.20241221"
+pandas-stubs = "^2.2.3.241126"
+dnaio = "^1.2.3"
+distance = "^0.1.3"
+
+[tool.poetry.scripts]
+st_qa = "stpipeline.scripts.st_qa:main"
+st_pipeline_run = "stpipeline.scripts.st_pipeline_run:main"
+multi_qa = "stpipeline.scripts.multi_qa:main"
+merge_fastq = "stpipeline.scripts.merge_fastq:main"
+filter_gene_type_matrix = "stpipeline.scripts.filter_gene_type_matrix:main"
+convertEnsemblToNames = "stpipeline.scripts.convertEnsemblToNames:main"
+adjust_matrix_coordinates = "stpipeline.scripts.adjust_matrix_coordinates:main"
+
+[tool.poetry.extras]
+test = [
+    "pytest",
+    "pytest-cov"
+    ]
+
+dev = [
+    "tox",
+    "pre-commit",
+    "toml",
+    "ruff",
+    "isort"
+    ]
+
+doc = [
+    "mkdocs",
+    "mkdocs-include-markdown-plugin",
+    "mkdocs-material",
+    "mkdocstrings",
+    "mkdocstrings-python",
+    "mkdocs-autorefs",
+    "mike",
+    "setuptools",
+    "virtualenv"
+    ]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+    "makefile",
+    "docs",
+    "docsrc",
+    "*.yml",
+    "*.yaml",
+    "*.md",
+    "*.rst",
+    "*.ipynb",
+    "*.pyx",
+    "requirements.txt"
+]
+
+# Same as Black.
+line-length = 120
+indent-width = 4
+
+# Assume Python 3.9
+target-version = "py39"
+
+[tool.ruff.lint]
+ignore = ["E203","E266","F403","F401"]
+select = ["B","C","E","F","W","B9"]
+pydocstyle.convention = "google"
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 50
+
+[tool.mypy]
+# Ensure we know what we do
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unused_configs = true
+
+# Imports management
+ignore_missing_imports = false
+
+# Ensure full coverage
+disallow_untyped_defs = true
+#disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+# Restrict dynamic typing (a little)
+# e.g. `x: List[Any]` or x: List`
+disallow_any_generics = true
+
+# Show errors codes
+show_error_codes = true
+
+# From functions not declared to return Any
+warn_return_any = true
+
+exclude = ["tests", "docsrc"]

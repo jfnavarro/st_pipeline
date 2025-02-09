@@ -1,0 +1,45 @@
+repos:
+- repo: https://github.com/Lucas-C/pre-commit-hooks
+  rev: v1.5.4
+  hooks:
+  - id: forbid-crlf
+  - id: remove-crlf
+  - id: forbid-tabs
+    exclude_types: [csv, tsv]
+    exclude: ^(tests/|makefile)
+  - id: remove-tabs
+    exclude_types: [csv, tsv]
+    exclude: ^(tests/|makefile)
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.1.0
+  hooks:
+  - id: trailing-whitespace
+    exclude: ^tests
+  - id: end-of-file-fixer
+    exclude: ^tests
+  - id: check-merge-conflict
+  - id: pretty-format-json
+    args: [--autofix]
+  - id: check-yaml
+    args: [--unsafe]
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.1.14
+  hooks:
+  - id: ruff
+    args: [--fix]
+  - id: ruff-format
+- repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+  rev: v2.12.0
+  hooks:
+  - id: pretty-format-yaml
+    args: [--autofix, --indent, '2']
+- repo: local
+  hooks:
+  - id: mypy
+    name: mypy
+    entry: mypy
+    exclude: ^(tests/|docsrc/)
+    language: python
+    types: [python]
+    require_serial: true
+    verbose: true

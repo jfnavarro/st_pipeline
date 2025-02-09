@@ -1,109 +1,103 @@
-""" 
+"""
 This module contains some functions and utilities for SAM/BAM files
 """
 
-import pysam
-import os
 import math
+import os
+from typing import List
+
+import pysam
 
 
-def split_bam(input_bamfile_name, temp_dir, threads):
+def split_bam(input_bam: str, temp_dir: str, threads: int) -> List[str]:
     """
-    Splits a BAM file in to parts with equal read counts.
-    The number of parts to split the BAM File into equals the 
-    number of cores given as input.
-    :param input_bamfile_name: path to the BAM file to be splitted
-    :param temp_dir: path to the folder where to put the created files
-    :param threads: the number of CPU cores to use
-    :retuns: the list of splitted BAM files
+    Splits a BAM file into chunks with equal read counts. The number of chunks
+    equals the number of CPU cores specified.
+
+    Args:
+        input_bam: Path to the BAM file to be split.
+        temp_dir: Directory where the created files will be stored.
+        threads: Number of CPU cores to use for splitting.
+
+    Returns:
+        List of paths to the split BAM files.
     """
-    # Index and open the input BAM
-    pysam.index(input_bamfile_name,
-                os.path.join(temp_dir, '{0}.bai'.format(input_bamfile_name)))
-    input_bamfile = pysam.AlignmentFile(input_bamfile_name, mode='rb')
+    pysam.index(input_bam, os.path.join(temp_dir, f"{input_bam}.bai"))  # type: ignore
+    input_bamfile = pysam.AlignmentFile(input_bam, mode="rb")
     assert input_bamfile.check_index()
 
-    output_file_names = {part: os.path.join(temp_dir,
-                                            "{0}.part_{1}.bam".format(input_bamfile_name, part))
-                         for part in range(threads)}
-    # Open the output bam files
+    output_file_names = {part: os.path.join(temp_dir, f"{input_bam}.part_{part}.bam") for part in range(threads)}
+
     output_bamfiles = {
-        part: pysam.AlignmentFile(file_name, mode="wbu", template=input_bamfile) \
-        for part, file_name in output_file_names.iteritems()
+        part: pysam.AlignmentFile(file_name, mode="wb", template=input_bamfile)
+        for part, file_name in output_file_names.items()
     }
 
-    # Split the BAM file
     total_read_count = input_bamfile.mapped + input_bamfile.unmapped
-    reads_per_part = math.ceil(float(total_read_count) / threads)
-    _tmp_read_counter = 0
+    reads_per_part = math.ceil(total_read_count / threads)
+    read_counter = 0
     part = 0
     for record in input_bamfile.fetch(until_eof=True):
         output_bamfiles[part].write(record)
-        _tmp_read_counter += 1
-        if _tmp_read_counter == reads_per_part:
+        read_counter += 1
+        if read_counter == reads_per_part:
             part += 1
-            _tmp_read_counter = 0
+            read_counter = 0
+
     input_bamfile.close()
-    return output_file_names.values()
+    return list(output_file_names.values())
 
 
-def convert_to_AlignedSegment(header, sequence, quality,
-                              barcode_sequence, umi_sequence):
+def convert_to_AlignedSegment(
+    header: str, sequence: str, quality: str, barcode_sequence: str, umi_sequence: str
+) -> pysam.AlignedSegment:
     """
-    This function converts the input variables 
-    (header,sequence,quality,barcode_sequence,umi_sequence)
-    to a unaligned pysam.AlignedSegment with the umi and barcode 
-    informations as the following tags:
-        Tag  Value
-        "B0" barcode_sequence
-        "B3" umi_sequence
-    :param header: string with the header information
-    :param sequence: string with the DNA/RNA sequence
-    :param quality: string with the base calling quality values
-    :param barcode_sequence: string with the barcode sequence
-    :param umi_sequence: string with the unique molecular identifier sequence
-    """
+    Converts input variables to an unaligned `pysam.AlignedSegment` with UMI and
+    barcode information as tags.
 
-    # create
+    Args:
+        header: Header information for the segment.
+        sequence: DNA/RNA sequence.
+        quality: Base calling quality values.
+        barcode_sequence: Barcode sequence.
+        umi_sequence: Unique molecular identifier sequence.
+
+    Returns:
+        A new AlignedSegment object with the provided data.
+    """
     aligned_segment = pysam.AlignedSegment()
-
-    # Set the standard values
-    # Header must not contain empty spaces
     aligned_segment.query_name = header.split()[0]
     aligned_segment.query_sequence = sequence
     aligned_segment.query_qualities = pysam.qualitystring_to_array(quality)
-
-    # setting the flag to un_mapped
     aligned_segment.flag |= pysam.FUNMAP
-
-    # Set the tags
-    aligned_segment.set_tag('B0', barcode_sequence)
-    aligned_segment.set_tag('B3', umi_sequence)
-    aligned_segment.set_tag('RG', '0')
-
+    aligned_segment.set_tag("B0", barcode_sequence)
+    aligned_segment.set_tag("B3", umi_sequence)
+    aligned_segment.set_tag("RG", "0")
     return aligned_segment
 
 
-def merge_bam(merged_file_name, files_to_merge, ubam=False):
+def merge_bam(merged_file_name: str, files_to_merge: List[str], ubam: bool = False) -> int:
     """
-    Function for merging partial BAM files into one.
-    :param merged_file_name: name of the merged output bam file
-    :param files_to_merge: list with names of the partial bam files to merge
-    :param ubam: indicates unaligned bam file (True or False, default False)
-    :returns: the total number of records
+    Merges multiple partial BAM files into a single file.
+
+    Args:
+        merged_file_name: Path to the output merged BAM file.
+        files_to_merge: List of paths to the partial BAM files.
+        ubam: Indicates if the files are unaligned BAM (uBAM). Default is False.
+
+    Returns:
+        Total number of records in the merged BAM file.
     """
-    assert files_to_merge is not None and len(files_to_merge) > 0
-    num_ele = 0
-    with pysam.AlignmentFile(files_to_merge[0], mode='rb',
-                             check_sq=(not ubam)) as input_bamfile:
-        merged_file = pysam.AlignmentFile(merged_file_name,
-                                          mode="wb", template=input_bamfile)
-        # Simply merges the BAM files and creates a counter of annotated records
+    assert files_to_merge, "The list of files to merge cannot be empty."
+    num_records = 0
+
+    with pysam.AlignmentFile(files_to_merge[0], mode="rb", check_sq=not ubam) as input_bamfile:
+        merged_file = pysam.AlignmentFile(merged_file_name, mode="wb", template=input_bamfile)
         for file_name in files_to_merge:
-            input_bamfile = pysam.AlignmentFile(file_name, mode='rb', check_sq=(not ubam))
-            for record in input_bamfile.fetch(until_eof=True):
-                merged_file.write(record)
-                num_ele += 1
-            input_bamfile.close()
+            with pysam.AlignmentFile(file_name, mode="rb", check_sq=not ubam) as input_file:
+                for record in input_file.fetch(until_eof=True):
+                    merged_file.write(record)
+                    num_records += 1
         merged_file.close()
-    return num_ele
+
+    return num_records
