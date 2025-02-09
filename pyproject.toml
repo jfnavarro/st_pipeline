@@ -57,7 +57,7 @@ mkdocstrings = { version = "^0.20", optional = true }
 mkdocstrings-python = { version = "^0.9", optional = true }
 mkdocs-autorefs = { version = "^0.4", optional = true }
 mike = { version = "^1.1", optional = true }
-setuptools = { version = "^68", optional = true }
+setuptools = { version = ">=68,<71", optional = true }
 virtualenv = { version = "^20.21", optional = true }
 
 [tool.poetry.scripts]
