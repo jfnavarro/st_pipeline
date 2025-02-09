@@ -35,10 +35,22 @@ jobs:
         python -m pip install --upgrade pip
         pip install poetry
 
-    - name: Install system dependencies (STAR and samtools)
+    - name: Install samtools
       run: |
         sudo apt-get update
-        sudo apt-get install -y star samtools
+        sudo apt-get install -y samtools
+
+    - name: Install STAR (Precompiled Binary)
+      run: |
+        STAR_VERSION="2.7.11a"
+        wget -q https://github.com/alexdobin/STAR/releases/download/${STAR_VERSION}/STAR_${STAR_VERSION}_Linux_x86_64_static.tar.gz
+        tar -xzf STAR_${STAR_VERSION}_Linux_x86_64_static.tar.gz
+        sudo mv STAR /usr/local/bin/
+
+    - name: Verify STAR and samtools installation
+      run: |
+        STAR --version
+        samtools --version
 
     - name: test
       run: |
