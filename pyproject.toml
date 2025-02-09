@@ -54,17 +54,14 @@ convertEnsemblToNames = "stpipeline.scripts.convertEnsemblToNames:main"
 adjust_matrix_coordinates = "stpipeline.scripts.adjust_matrix_coordinates:main"
 
 [tool.poetry.extras]
-test = [
-    "pytest",
-    "pytest-cov"
-    ]
 
 dev = [
-    "tox",
     "pre-commit",
     "toml",
     "ruff",
-    "isort"
+    "isort",
+    "pytest",
+    "pytest-cov"
     ]
 
 doc = [
