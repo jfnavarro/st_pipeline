@@ -45,7 +45,7 @@ jobs:
         STAR_VERSION="2.7.11a"
         wget -q https://github.com/alexdobin/STAR/releases/download/${STAR_VERSION}/STAR_${STAR_VERSION}.zip
         unzip STAR_${STAR_VERSION}.zip
-        sudo mv Linux_x86_64_static/STAR /usr/local/bin/
+        sudo mv STAR_${STAR_VERSION}/Linux_x86_64_static/STAR /usr/local/bin/
 
     - name: Verify STAR and samtools installation
       run: |
