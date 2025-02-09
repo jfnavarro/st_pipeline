@@ -153,11 +153,11 @@ make clean
 
 A reminder for the maintainers on how to deploy.
 Make sure all your changes are committed (including an entry in CHANGELOG.md).
+Make sure you have updated the version in `pyproject.toml` and `stpipeline/version.py`.
 Then run:
 
 ``` console
-poetry run bump2version patch # possible: major / minor / patch
-git push
+git tag <version> -m "message"
 git push --tags
 ```
 
