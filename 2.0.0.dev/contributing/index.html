@@ -804,8 +804,15 @@ Then run:</p>
 <div class="highlight"><pre><span></span><code><span class="go">poetry run mkdocs build</span>
 </code></pre></div>
 <h3 id="publish-package">Publish package<a class="headerlink" href="#publish-package" title="Permanent link">&para;</a></h3>
-<p>Ensure that you have configured your PyPi tokens.
-Then run:</p>
+<p>Ensure that you have configured your PyPi tokens.</p>
+<div class="highlight"><pre><span></span><code><span class="go">poetry config repositories.testpypi https://test.pypi.org/legacy/</span>
+<span class="go">poetry config repositories.pypi https://upload.pypi.org/legacy/</span>
+</code></pre></div>
+<p>and</p>
+<div class="highlight"><pre><span></span><code><span class="go">poetry config pypi-token.pypi YOUR_PYPI_API_TOKEN</span>
+<span class="go">poetry config pypi-token.testpypi YOUR_TEST_PYPI_API_TOKEN</span>
+</code></pre></div>
+<p>Then run:</p>
 <div class="highlight"><pre><span></span><code><span class="go">poetry build</span>
 <span class="go">poetry publish -r test-pypi # optional</span>
 <span class="go">poetry publish</span>
