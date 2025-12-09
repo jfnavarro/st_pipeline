@@ -1123,8 +1123,8 @@ class Pipeline:
         # =================================================================
         # STEP: Maps against the genome using STAR
         # =================================================================
-        input_mapping = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
         if not self.disable_mapping:
+            input_mapping = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
             logger.info(f"Starting genome alignment {globaltime.get_timestamp()}")
             try:
                 # Make the alignment call
@@ -1161,7 +1161,10 @@ class Pipeline:
             except Exception:
                 raise
         else:
-            FILENAMES["mapped"] = input_mapping
+            # if mapping disabled, check that mapped.bam file exists
+            if not os.path.exists(FILENAMES["mapped"]):
+                logger.info(f"Argument '--disable-mapping' set but {FILENAMES['mapped']} is missing.")
+                sys.exit(1)
 
         # =================================================================
         # STEP: DEMULTIPLEX READS Map against the barcodes (Optional)
