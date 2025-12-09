@@ -1160,11 +1160,11 @@ class Pipeline:
                     os.rename(temp_name, FILENAMES["mapped"])
             except Exception:
                 raise
-        else:
-            # if mapping disabled, check that mapped.bam file exists
-            if not os.path.exists(FILENAMES["mapped"]):
-                logger.info(f"Argument '--disable-mapping' set but {FILENAMES['mapped']} is missing.")
-                sys.exit(1)
+        if self.disable_mapping and not os.path.exists(os.path.join(self.temp_folder, FILENAMES["mapped"])):
+            error = f"Error argument '--disable-mapping' is set but {os.path.basename(FILENAMES['mapped'])} is missing in {self.temp_folder}."
+            logger.error(error)
+            raise RuntimeError(error)
+            
 
         # =================================================================
         # STEP: DEMULTIPLEX READS Map against the barcodes (Optional)
