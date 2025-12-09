@@ -764,7 +764,7 @@ class Pipeline:
             "--disable-mapping",
             default=False,
             action="store_true",
-            help="Use this flag if you want to skip the mapping step",
+            help="Use this flag if you want to skip the mapping step. This requires that a file 'mapped.bam' is present in --temp-folder",
         )
         parser.add_argument(
             "--disable-annotation",
