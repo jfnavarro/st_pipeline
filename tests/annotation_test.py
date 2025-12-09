@@ -9,7 +9,7 @@ import HTSeq
 import pysam
 import pytest
 
-from stpipeline.core.annotation import annotateReads, ReadCounter, invert_strand
+from stpipeline.core.annotation import ReadCounter, annotateReads, invert_strand
 
 
 @pytest.fixture

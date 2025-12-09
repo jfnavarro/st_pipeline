@@ -204,12 +204,12 @@ class Pipeline:
             raise RuntimeError(error)
 
         if not self.disable_barcode and self.ids is None:
-            error = "Error IDs file is missing but the option to disable the " "demultiplexing step is not activated\n"
+            error = "Error IDs file is missing but the option to disable the demultiplexing step is not activated."
             logger.error(error)
             raise RuntimeError(error)
 
         if self.saturation_points is not None and not self.compute_saturation:
-            logger.warning("Saturation points are provided but the option" "to compute saturation is disabled.")
+            logger.warning("Saturation points are provided but the option to compute saturation is disabled.")
 
         if not self.disable_umi and self.umi_filter:
             # Check template validity
@@ -263,7 +263,7 @@ class Pipeline:
         # Add checks for trimming parameters, demultiplex parameters and UMI parameters
         if self.allowed_missed > self.allowed_kmer and not self.disable_barcode:
             error = (
-                "Error starting the pipeline.\n" "Taggd allowed mismatches is bigger or equal than the Taggd k-mer size"
+                "Error starting the pipeline.\nTaggd allowed mismatches is bigger or equal than the Taggd k-mer size"
             )
             logger.error(error)
             raise RuntimeError(error)
@@ -281,12 +281,12 @@ class Pipeline:
             raise RuntimeError(error)
 
         if self.umi_allowed_mismatches > (self.umi_end_position - self.umi_start_position) and not self.disable_umi:
-            error = "Error starting the pipeline.\n" "The allowed UMI mismatches is bigger than the UMI size"
+            error = "Error starting the pipeline.\nThe allowed UMI mismatches is bigger than the UMI size"
             logger.error(error)
             raise RuntimeError(error)
 
         if self.taggd_chunk_size < 100:
-            error = "Error starting the pipeline.\n" "The chunk size for the demultiplexing step is too small"
+            error = "Error starting the pipeline.\nThe chunk size for the demultiplexing step is too small"
             logger.error(error)
             raise RuntimeError(error)
 
@@ -329,7 +329,7 @@ class Pipeline:
             metavar="[FOLDER]",
             action=readable_dir,
             required=False,
-            help="Path to the folder with the STAR index " "for the genome that you want to use as reference",
+            help="Path to the folder with the STAR index for the genome that you want to use as reference",
         )
         parser.add_argument(
             "--ref-annotation",
@@ -429,7 +429,7 @@ class Pipeline:
             metavar="[INT]",
             type=int,
             choices=range(0, 35),
-            help="Remove PolyA stretches of the given length from R2 " "(Use 0 to disable it) (default: %(default)s)",
+            help="Remove PolyA stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)",
         )
         parser.add_argument(
             "--remove-polyT",
@@ -437,7 +437,7 @@ class Pipeline:
             metavar="[INT]",
             type=int,
             choices=range(0, 35),
-            help="Remove PolyT stretches of the given length from R2 " "(Use 0 to disable it) (default: %(default)s)",
+            help="Remove PolyT stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)",
         )
         parser.add_argument(
             "--remove-polyG",
@@ -453,7 +453,7 @@ class Pipeline:
             metavar="[INT]",
             type=int,
             choices=range(0, 35),
-            help="Remove PolyC stretches of the given length from R2 " "(Use 0 to disable it) (default: %(default)s)",
+            help="Remove PolyC stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)",
         )
         parser.add_argument(
             "--remove-polyN",
@@ -461,7 +461,7 @@ class Pipeline:
             metavar="[INT]",
             type=int,
             choices=range(0, 35),
-            help="Remove PolyN stretches of the given length from R2 " "(Use 0 to disable it) (default: %(default)s)",
+            help="Remove PolyN stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)",
         )
         parser.add_argument(
             "--homopolymer-mismatches",
@@ -469,7 +469,7 @@ class Pipeline:
             metavar="[INT]",
             type=int,
             choices=range(0, 9),
-            help="Number of mismatches allowed when removing " "homopolymers (A, T, G, C or N) (default: %(default)s)",
+            help="Number of mismatches allowed when removing homopolymers (A, T, G, C or N) (default: %(default)s)",
         )
         parser.add_argument(
             "--filter-AT-content",
@@ -578,7 +578,7 @@ class Pipeline:
             metavar="[INT]",
             type=int,
             choices=range(1, 51),
-            help="KMer size to use when demultiplexing against the " "barcodes with TaggD (default: %(default)s)",
+            help="KMer size to use when demultiplexing against the barcodes with TaggD (default: %(default)s)",
         )
         parser.add_argument(
             "--demultiplexing-overhang",
@@ -663,7 +663,7 @@ class Pipeline:
             type=str,
             metavar="[STRING]",
             choices=["no", "yes", "reverse"],
-            help="What strandness mode to use when annotating " "with htseq-count [no, yes(default), reverse]",
+            help="What strandness mode to use when annotating with htseq-count [no, yes(default), reverse]",
         )
         parser.add_argument(
             "--include-non-annotated",
@@ -695,14 +695,14 @@ class Pipeline:
             default=18,
             metavar="[INT]",
             type=int,
-            help="Position in R1 (base wise) of the first base of the " "UMI (starting by 0) (default: %(default)s)",
+            help="Position in R1 (base wise) of the first base of the UMI (starting by 0) (default: %(default)s)",
         )
         parser.add_argument(
             "--umi-end-position",
             default=27,
             metavar="[INT]",
             type=int,
-            help="Position in R1 (base wise) of the last base of the " "UMI (starting by 1) (default: %(default)s)",
+            help="Position in R1 (base wise) of the last base of the UMI (starting by 1) (default: %(default)s)",
         )
         parser.add_argument(
             "--umi-filter",
