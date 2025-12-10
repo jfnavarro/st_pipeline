@@ -225,7 +225,7 @@ st_pipeline_run [options] fastq_file_fw fastq_file_rv
                         Provide a list of values like this for example: 10000
                         20000 50000 100000
   --disable-trimming    Use this flag if you want to skip the trimming step
-  --disable-mapping     Use this flag if you want to skip the mapping step
+  --disable-mapping     Use this flag if you want to skip the mapping step. Requires that a 'mapped.bam' file is present in --temp-folder.
   --disable-annotation  Use this flag if you want to skip the annotation
   --disable-barcode     Use this flag if you want to skip the barcode
                         demultiplexing step
