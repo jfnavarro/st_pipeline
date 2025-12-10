@@ -197,7 +197,13 @@ class Pipeline:
             error = f"Error parsing parameters.\nIncorrect format for input files {self.fastq_fw} {self.fastq_rv}"
             logger.error(error)
             raise RuntimeError(error)
-
+        
+        # Check for presence of 'mapped.bam' if --disable-mapping is set
+        if self.disable_mapping and not os.path.exists(os.path.join(self.temp_folder, FILENAMES["mapped"])):
+            error = f"Error argument '--disable-mapping' is set but {FILENAMES['mapped']} is missing in {self.temp_folder}."
+            logger.error(error)
+            raise RuntimeError(error)
+        
         if not self.disable_barcode and not os.path.isfile(self.ids):
             error = f"Error parsing parameters.\nInvalid IDs file {self.ids}"
             logger.error(error)
@@ -1160,10 +1166,6 @@ class Pipeline:
                     os.rename(temp_name, FILENAMES["mapped"])
             except Exception:
                 raise
-        if self.disable_mapping and not os.path.exists(os.path.join(self.temp_folder, FILENAMES["mapped"])):
-            error = f"Error argument '--disable-mapping' is set but {os.path.basename(FILENAMES['mapped'])} is missing in {self.temp_folder}."
-            logger.error(error)
-            raise RuntimeError(error)
             
 
         # =================================================================
