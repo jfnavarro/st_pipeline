@@ -98,4 +98,4 @@ RUN adduser --system --group app \
     && chown -R app:app /app
 USER app
 
-CMD ["stpipeline", "--help"]
+CMD ["st_pipeline_run", "--help"]
