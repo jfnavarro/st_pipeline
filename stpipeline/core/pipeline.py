@@ -197,7 +197,13 @@ class Pipeline:
             error = f"Error parsing parameters.\nIncorrect format for input files {self.fastq_fw} {self.fastq_rv}"
             logger.error(error)
             raise RuntimeError(error)
-
+        
+        # Check for presence of 'mapped.bam' if --disable-mapping is set
+        if self.disable_mapping and not os.path.exists(os.path.join(self.temp_folder, FILENAMES["mapped"])):
+            error = f"Error argument '--disable-mapping' is set but {FILENAMES['mapped']} is missing in {self.temp_folder}."
+            logger.error(error)
+            raise RuntimeError(error)
+        
         if not self.disable_barcode and not os.path.isfile(self.ids):
             error = f"Error parsing parameters.\nInvalid IDs file {self.ids}"
             logger.error(error)
@@ -764,7 +770,7 @@ class Pipeline:
             "--disable-mapping",
             default=False,
             action="store_true",
-            help="Use this flag if you want to skip the mapping step",
+            help="Use this flag if you want to skip the mapping step. This requires that a file 'mapped.bam' is present in --temp-folder",
         )
         parser.add_argument(
             "--disable-annotation",
@@ -1123,8 +1129,8 @@ class Pipeline:
         # =================================================================
         # STEP: Maps against the genome using STAR
         # =================================================================
-        input_mapping = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
         if not self.disable_mapping:
+            input_mapping = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
             logger.info(f"Starting genome alignment {globaltime.get_timestamp()}")
             try:
                 # Make the alignment call
@@ -1160,8 +1166,7 @@ class Pipeline:
                     os.rename(temp_name, FILENAMES["mapped"])
             except Exception:
                 raise
-        else:
-            FILENAMES["mapped"] = input_mapping
+            
 
         # =================================================================
         # STEP: DEMULTIPLEX READS Map against the barcodes (Optional)
