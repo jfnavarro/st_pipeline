@@ -1,10 +1,7 @@
-FROM python:3.11.9-slim-bookworm AS builder
+FROM python:3.11.14-slim-bookworm AS builder
 
 # Environment for deterministic, non-interactive builds
 ENV PYTHONUNBUFFERED=1 \
-    POETRY_VERSION=2.0.1 \
-    POETRY_NO_INTERACTION=1 \
-    POETRY_VIRTUALENVS_CREATE=true \
     VENV_PATH=/opt/venv
 
 # System deps for building Python wheels and bio tools
@@ -25,9 +22,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Poetry
-RUN pip install --no-cache-dir "poetry==${POETRY_VERSION}"
-
 # Create and use a dedicated venv
 RUN python -m venv "${VENV_PATH}"
 ENV PATH="${VENV_PATH}/bin:${PATH}"
@@ -35,18 +29,12 @@ ENV PATH="${VENV_PATH}/bin:${PATH}"
 # Working directory
 WORKDIR /app/stpipeline
 
-# Copy only metadata first to maximize layer caching
-COPY pyproject.toml poetry.lock ./
+# Copy project
+COPY pyproject.toml README.md ./
+COPY ./stpipeline/ ./stpipeline
 
-# Install project dependencies (no source yet)
-RUN poetry install --no-root --no-directory
-
-# Copy project sources and other files
-COPY ./stpipeline/ ./stpipeline/
-COPY ./README.md ./
-
-# Install the package (this will create console scripts in ${VENV_PATH}/bin)
-RUN poetry install
+# Install project
+RUN pip install .
 
 # Build STAR
 WORKDIR /tmp
@@ -70,7 +58,7 @@ RUN wget -O samtools-1.17.tar.bz2 "https://github.com/samtools/samtools/releases
 RUN strip /usr/local/bin/STAR || true
 RUN find /usr/local/bin -maxdepth 1 -type f -name 'samtools' -exec strip {} \; || true
 
-FROM python:3.11.9-slim-bookworm
+FROM python:3.11.14-slim-bookworm
 
 # Minimal runtime deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -87,7 +75,7 @@ COPY --from=builder /usr/local/bin/STAR /usr/local/bin/STAR
 COPY --from=builder /usr/local/bin/samtools /usr/local/bin/samtools
 
 # Add scripts to PATH
-ENV PATH="${VENV_PATH}/bin:/app/bin:${PATH}"
+ENV PATH="${VENV_PATH}/bin:${PATH}"
 ENV PYTHONUNBUFFERED=1
 
 # App workdir
