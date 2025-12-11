@@ -1,62 +1,89 @@
-FROM python:3.11-slim
+FROM python:3.11.14-slim-bookworm AS builder
 
-# Set environment variables
-ENV POETRY_VERSION=2.0.1 \
-    PYTHONUNBUFFERED=1 \
-    POETRY_NO_INTERACTION=1 \
-    PATH="/root/.local/bin:$PATH"
+# Environment for deterministic, non-interactive builds
+ENV PYTHONUNBUFFERED=1 \
+    VENV_PATH=/opt/venv
 
-# Install system dependencies, Poetry, STAR, and Samtools
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-       build-essential \
-       curl \
-       libpq-dev \
-       libffi-dev \
-       libssl-dev \
-       git \
-       gcc \
-       wget \
-       unzip \
-       zlib1g-dev \
-       libbz2-dev \
-       liblzma-dev \
-       libcurl4-gnutls-dev \
-       libncurses5-dev \
-    && wget https://github.com/alexdobin/STAR/archive/refs/tags/2.7.10b.zip \
-    && unzip 2.7.10b.zip \
-    && cd STAR-2.7.10b/source \
-    && make STAR \
-    && mv STAR /usr/local/bin/ \
-    && mkdir -p /app \
-    && cd /app \
-    && wget https://github.com/samtools/samtools/releases/download/1.17/samtools-1.17.tar.bz2 \
+# System deps for building Python wheels and bio tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    gcc \
+    git \
+    wget \
+    unzip \
+    zlib1g-dev \
+    libbz2-dev \
+    liblzma-dev \
+    libcurl4-gnutls-dev \
+    libncurses5-dev \
+    libffi-dev \
+    libssl-dev \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create and use a dedicated venv
+RUN python -m venv "${VENV_PATH}"
+ENV PATH="${VENV_PATH}/bin:${PATH}"
+
+# Working directory
+WORKDIR /app/stpipeline
+
+# Copy project
+COPY pyproject.toml README.md ./
+COPY ./stpipeline/ ./stpipeline
+
+# Install project
+RUN pip install .
+
+# Build STAR
+WORKDIR /tmp
+RUN wget -O STAR-2.7.10b.zip "https://github.com/alexdobin/STAR/archive/refs/tags/2.7.10b.zip" \
+    && unzip STAR-2.7.10b.zip \
+    && make -C STAR-2.7.10b/source STAR \
+    && install -m 0755 STAR-2.7.10b/source/STAR /usr/local/bin/STAR \
+    && rm -rf STAR-2.7.10b STAR-2.7.10b.zip
+
+# Build Samtools
+RUN wget -O samtools-1.17.tar.bz2 "https://github.com/samtools/samtools/releases/download/1.17/samtools-1.17.tar.bz2" \
     && tar -xjf samtools-1.17.tar.bz2 \
     && cd samtools-1.17 \
     && ./configure \
-    && make \
+    && make -j"$(nproc)" \
     && make install \
-    && cd /app \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* 2.7.10b.zip STAR-2.7.10b samtools-1.17 samtools-1.17.tar.bz2
+    && cd /tmp \
+    && rm -rf samtools-1.17 samtools-1.17.tar.bz2
 
-# Install Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 -
+# Strip binaries to reduce size
+RUN strip /usr/local/bin/STAR || true
+RUN find /usr/local/bin -maxdepth 1 -type f -name 'samtools' -exec strip {} \; || true
 
-# Set working directory
-WORKDIR /app
+FROM python:3.11.14-slim-bookworm
 
-# Copy project files
-COPY pyproject.toml poetry.lock README.md /app/
+# Minimal runtime deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libbz2-dev \
+    liblzma-dev \
+    libcurl4-gnutls-dev \
+    libncurses5-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies using Poetry
-RUN poetry install --no-root --only main
+# Copy venv and installed binaries from builder
+ENV VENV_PATH=/opt/venv
+COPY --from=builder ${VENV_PATH} ${VENV_PATH}
+COPY --from=builder /usr/local/bin/STAR /usr/local/bin/STAR
+COPY --from=builder /usr/local/bin/samtools /usr/local/bin/samtools
 
-# Copy the entire project
-COPY . /app
+# Add scripts to PATH
+ENV PATH="${VENV_PATH}/bin:${PATH}"
+ENV PYTHONUNBUFFERED=1
 
-# Ensure scripts are executable
-RUN chmod +x /app/stpipeline/scripts/*.py
+# App workdir
+WORKDIR /app/stpipeline
 
-# Set entrypoint for the container
-ENTRYPOINT ["poetry", "run"]
+# Create a non-root user and ensure permissions
+RUN adduser --system --group app \
+    && chown -R app:app /app
+USER app
+
+CMD ["st_pipeline_run", "--help"]

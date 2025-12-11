@@ -6,7 +6,7 @@ of ST mapped reads (BAM file).
 
 import logging
 import os
-from typing import List, Optional, Tuple, Dict
+from typing import Dict, List, Optional, Tuple
 
 import HTSeq  # type: ignore
 import pysam
