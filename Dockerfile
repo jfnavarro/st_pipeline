@@ -8,7 +8,6 @@ ENV PYTHONUNBUFFERED=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
-    gcc \
     git \
     wget \
     unzip \
@@ -62,6 +61,7 @@ FROM python:3.11.14-slim-bookworm
 
 # Minimal runtime deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
     libbz2-dev \
     liblzma-dev \
     libcurl4-gnutls-dev \
