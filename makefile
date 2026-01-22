@@ -4,18 +4,17 @@ sources = stpipeline
 test: format lint unittest
 
 format:
-	poetry run isort $(sources) tests
-	poetry run  ruff format $(sources) tests
+	poetry run ruff format $(sources) tests
 
 lint:
 	poetry run ruff check --fix $(sources) tests
-	poetry run  mypy $(sources)
+	poetry run mypy $(sources)
 
 unittest:
-	poetry run  pytest
+	poetry run pytest
 
 coverage:
-	poetry run  pytest --cov=$(sources) --cov-branch --cov-report=term-missing tests
+	poetry run pytest --cov=$(sources) --cov-branch --cov-report=term-missing tests
 
 pre-commit:
 	pre-commit run --all-files
