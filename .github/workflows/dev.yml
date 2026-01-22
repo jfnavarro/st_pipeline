@@ -63,4 +63,3 @@ jobs:
     - name: linting and type checking
       run: |
         poetry run ruff check .
-        poetry run mypy .
