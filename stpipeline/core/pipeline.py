@@ -200,13 +200,15 @@ class Pipeline:
             error = f"Error parsing parameters.\nIncorrect format for input files {self.fastq_fw} {self.fastq_rv}"
             logger.error(error)
             raise RuntimeError(error)
-        
+
         # Check for presence of 'mapped.bam' if --disable-mapping is set
-        if self.disable_mapping and not os.path.exists(os.path.join(self.temp_folder, FILENAMES["mapped"])):
-            error = f"Error argument '--disable-mapping' is set but {FILENAMES['mapped']} is missing in {self.temp_folder}."
+        if self.disable_mapping and not os.path.exists(os.path.join(self.temp_folder, FILENAMES["mapped"])):  # type: ignore[call-overload]
+            error = (
+                f"Error argument '--disable-mapping' is set but {FILENAMES['mapped']} is missing in {self.temp_folder}."
+            )
             logger.error(error)
             raise RuntimeError(error)
-        
+
         if not self.disable_barcode and not os.path.isfile(self.ids):
             error = f"Error parsing parameters.\nInvalid IDs file {self.ids}"
             logger.error(error)
@@ -578,14 +580,13 @@ class Pipeline:
             type=int,
             help="The minimum alignment score for reads aligned with STAR."
             "\nAlignments will be output only if their score is higher"
-            "\nthan or equal to this value. (default: 0)"
+            "\nthan or equal to this value. (default: 0)",
         )
         parser.add_argument(
             "--star-min-score-ratio",
             default=0.66,
             type=float,
-            help="Minimum alignment score (as above) but normalized to"
-            "\nread length. (default: 0.66)"
+            help="Minimum alignment score (as above) but normalized to" "\nread length. (default: 0.66)",
         )
         parser.add_argument(
             "--star-min-matched-bases",
@@ -594,14 +595,13 @@ class Pipeline:
             help="The minimum number of matched bases for reads aligned"
             "\nwith STAR. Alignments will be output only if the number"
             "\nof matched bases is higher than or equal to this value."
-            "\n(default: 0)"
+            "\n(default: 0)",
         )
         parser.add_argument(
             "--star-min-matched-bases-ratio",
             default=0.66,
             type=float,
-            help="Minimum matched bases (as above) but normalized to"
-            "\nread length. (default: 0.66)"
+            help="Minimum matched bases (as above) but normalized to" "\nread length. (default: 0.66)",
         )
         parser.add_argument(
             "--demultiplexing-mismatches",
@@ -804,7 +804,8 @@ class Pipeline:
             "--disable-mapping",
             default=False,
             action="store_true",
-            help="Use this flag if you want to skip the mapping step. This requires that a file 'mapped.bam' is present in --temp-folder",
+            help="Use this flag if you want to skip the mapping step. This requires that a file 'mapped.bam' "
+            "is present in --temp-folder",
         )
         parser.add_argument(
             "--disable-annotation",
@@ -1137,7 +1138,7 @@ class Pipeline:
                     self.star_sort_mem_limit,
                     self.star_min_score,
                     self.star_min_score_ratio,
-                    self.star_min_matched_bases_ratio
+                    self.star_min_matched_bases_ratio,
                 )
                 # Extract the contaminant free reads (not aligned) from the output of STAR
                 # NOTE: this will not be needed when STAR allows to chose the discarded
@@ -1173,7 +1174,9 @@ class Pipeline:
         # STEP: Maps against the genome using STAR
         # =================================================================
         if not self.disable_mapping:
-            input_mapping = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
+            input_mapping = (
+                FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
+            )
             logger.info(f"Starting genome alignment {globaltime.get_timestamp()}")
             try:
                 # Make the alignment call
@@ -1197,7 +1200,7 @@ class Pipeline:
                     self.star_sort_mem_limit,
                     self.star_min_score,
                     self.star_min_score_ratio,
-                    self.star_min_matched_bases_ratio
+                    self.star_min_matched_bases_ratio,
                 )
                 # Remove secondary alignments and un-mapped
                 # NOTE: this will not be needed when STAR allows to chose the discarded
@@ -1212,7 +1215,6 @@ class Pipeline:
                     os.rename(temp_name, FILENAMES["mapped"])
             except Exception:
                 raise
-            
 
         # =================================================================
         # STEP: DEMULTIPLEX READS Map against the barcodes (Optional)
