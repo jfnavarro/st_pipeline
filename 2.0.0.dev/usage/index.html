@@ -770,6 +770,17 @@ these arrays is fully randomised.</p>
 <span class="go">                        The maximum available RAM for sorting BAM during</span>
 <span class="go">                        mapping with STAR. Default is 0 which means that it</span>
 <span class="go">                        will be set to the genome index size</span>
+<span class="go">  --star-min-score STAR_MIN_SCORE</span>
+<span class="go">                        The minimum alignment score for reads aligned with </span>
+<span class="go">                        STAR. Alignments will be output only if their</span>
+<span class="go">                        score is higher than or equal to this value. </span>
+<span class="go">                        (default: 0)</span>
+<span class="go">  --star-min-score-ratio STAR_MIN_SCORE_RATIO</span>
+<span class="go">                        Minimum alignment score (as above) but normalized to </span>
+<span class="go">                        read length. (default: 0.66)</span>
+<span class="go">  --star-min-matched-bases-ratio STAR_MIN_MATCHED_BASES_RATIO</span>
+<span class="go">                        Minimum matched bases normalized to read length. </span>
+<span class="go">                        (default: 0.66)</span>
 <span class="go">  --demultiplexing-mismatches [INT]</span>
 <span class="go">                        Number of allowed mismatches when demultiplexing the</span>
 <span class="go">                        reads against the barcodes with TaggD (default: 2)</span>
