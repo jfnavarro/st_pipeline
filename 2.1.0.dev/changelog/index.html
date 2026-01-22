@@ -1,0 +1,3166 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://github.com/jfnavarro/st_pipeline/2.1.0.dev/changelog/">
+      
+      
+        <link rel="prev" href="../contributing/">
+      
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.3">
+    
+    
+      
+        <title>Changelog - ST Pipeline</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.d7758b05.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="preference" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="ST Pipeline" class="md-header__button md-logo" aria-label="ST Pipeline" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ST Pipeline
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Changelog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jfnavarro/st_pipeline" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jfnavarro/st_pipeline
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="ST Pipeline" class="md-nav__button md-logo" aria-label="ST Pipeline" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    ST Pipeline
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jfnavarro/st_pipeline" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jfnavarro/st_pipeline
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Usage
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Modules
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Changelog
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Changelog
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#changelog" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changelog
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Changelog">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#version-210" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 2.1.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-200" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 2.0.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-182" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.8.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-181" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.8.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-180" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.8.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-179" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.7.9
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-178" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.7.8
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-176" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.7.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-173" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.7.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-172" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.7.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-165" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.6.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-162" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.6.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-161" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.6.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-160" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.6.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-151" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.5.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-150" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.5.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-145" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.4.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-141" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.4.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-140" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.4.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-135" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.3.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-134" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.3.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-133" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.3.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-132" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.3.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-131" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.3.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-130" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.3.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-126" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.2.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-125" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.2.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-124" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.2.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-123" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.2.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-122" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.2.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-121" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.2.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-120" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.2.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-117" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.1.7
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-116" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.1.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-115" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.1.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-111" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.1.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-110" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.1.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-104" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.0.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-103" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.0.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-102" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.0.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-101" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.0.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-100" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.0.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-099" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.9
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-096" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-095" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-094" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-093" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-092" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-091" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-090" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-089" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.9
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-088" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.8
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-087" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.7
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-085" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-084" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-083" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-082" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-081" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-080" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-077" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.7
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-076" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-075" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-074" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-073" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-072" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-071" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-070" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-069" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.9
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-068" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.8
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-067" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.7
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-066" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-065" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-064" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-063" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-062" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-061" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-059" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.9
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-058" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.8
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-057" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.7
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-056" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-055" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-054" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-053" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-052" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-051" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-050" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-049" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.9
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-048" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.8
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-047" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.7
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-046" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-045" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-044" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-043" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-042" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-041" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-040" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-039" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.9
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-038" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.8
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-037" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.7
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-036" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-035" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-034" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-033" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-032" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-031" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-030" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-025" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.2.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-024" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.2.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-023" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.2.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-022" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.2.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-021" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.2.1
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#changelog" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changelog
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Changelog">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#version-210" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 2.1.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-200" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 2.0.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-182" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.8.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-181" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.8.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-180" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.8.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-179" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.7.9
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-178" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.7.8
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-176" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.7.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-173" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.7.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-172" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.7.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-165" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.6.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-162" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.6.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-161" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.6.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-160" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.6.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-151" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.5.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-150" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.5.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-145" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.4.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-141" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.4.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-140" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.4.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-135" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.3.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-134" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.3.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-133" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.3.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-132" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.3.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-131" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.3.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-130" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.3.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-126" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.2.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-125" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.2.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-124" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.2.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-123" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.2.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-122" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.2.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-121" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.2.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-120" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.2.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-117" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.1.7
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-116" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.1.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-115" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.1.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-111" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.1.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-110" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.1.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-104" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.0.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-103" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.0.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-102" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.0.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-101" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.0.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-100" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 1.0.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-099" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.9
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-096" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-095" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-094" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-093" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-092" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-091" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-090" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.9.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-089" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.9
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-088" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.8
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-087" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.7
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-085" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-084" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-083" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-082" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-081" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-080" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.8.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-077" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.7
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-076" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-075" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-074" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-073" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-072" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-071" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-070" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.7.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-069" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.9
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-068" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.8
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-067" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.7
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-066" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-065" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-064" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-063" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-062" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-061" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.6.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-059" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.9
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-058" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.8
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-057" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.7
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-056" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-055" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-054" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-053" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-052" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-051" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-050" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.5.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-049" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.9
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-048" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.8
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-047" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.7
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-046" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-045" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-044" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-043" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-042" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-041" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-040" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.4.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-039" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.9
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-038" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.8
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-037" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.7
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-036" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.6
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-035" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-034" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-033" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-032" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-031" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-030" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.3.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-025" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.2.5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-024" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.2.4
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-023" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.2.3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-022" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.2.2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-021" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version 0.2.1
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>Changelog</h1>
+
+<!-- BEGIN INCLUDE ../CHANGELOG.md -->
+<h2 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h2>
+<h3 id="version-210">Version 2.1.0<a class="headerlink" href="#version-210" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added extra STAR parameters for reads filtering (@johnne)</li>
+<li>Added Docker build action (@johnne)</li>
+<li>Update Docker recipe (@johnne)</li>
+<li>Fix a bug when using --disable-mapping (@johnne)
+*</li>
+</ul>
+<h3 id="version-200">Version 2.0.0<a class="headerlink" href="#version-200" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Refactor code to modern Python (black, mypy, isort)</li>
+<li>Added Github Actions</li>
+<li>Added pre-commit hooks</li>
+<li>Changed the build configuration to Poetry</li>
+<li>Added a Docker container</li>
+<li>Changed tests to pytest</li>
+<li>Updated versions of dependencies</li>
+<li>Performed code optimizations, refactorings and clean ups</li>
+<li>Added more tests for almost full coveragge</li>
+<li>Bumped taggd to 0.4.0</li>
+<li>Changed documentation</li>
+<li>Added --demultiplex-chunk-size option</li>
+</ul>
+<h3 id="version-182">Version 1.8.2<a class="headerlink" href="#version-182" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added annotation (htseq) feature type as parameter</li>
+</ul>
+<h3 id="version-181">Version 1.8.1<a class="headerlink" href="#version-181" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fix a small bug when having the UMI before the BARCODE</li>
+</ul>
+<h3 id="version-180">Version 1.8.0<a class="headerlink" href="#version-180" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Improved the unit-tests</li>
+<li>Make input data a positional arguments in extra scripts</li>
+</ul>
+<h3 id="version-179">Version 1.7.9<a class="headerlink" href="#version-179" title="Permanent link">&para;</a></h3>
+<ul>
+<li>--ref-map is not a required parameter now when --disable_mapping is used</li>
+<li>Create dataset and compute saturation steps are only performed if the annotated
+file is present</li>
+<li>Fixed bug in merge_fastq.py</li>
+<li>Fixed bugs in st_qa.py</li>
+</ul>
+<h3 id="version-178">Version 1.7.8<a class="headerlink" href="#version-178" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Updated docs</li>
+<li>Added flags to skip (trimming, mapping and annotation)</li>
+<li>Fixed a bug in the compute saturation option</li>
+<li>Restored the unittests</li>
+<li>Improvements when dealing with ambiguous and no_feature genes</li>
+</ul>
+<h3 id="version-176">Version 1.7.6<a class="headerlink" href="#version-176" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Ported to Python 3</li>
+</ul>
+<h3 id="version-173">Version 1.7.3<a class="headerlink" href="#version-173" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a small bug when soring the output of taggd</li>
+<li>Improved the st_qa.py script</li>
+</ul>
+<h3 id="version-172">Version 1.7.2<a class="headerlink" href="#version-172" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Removed parallel code for un-necessary parts</li>
+<li>Added option to provide saturation points</li>
+</ul>
+<h3 id="version-165">Version 1.6.5<a class="headerlink" href="#version-165" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Improved the st_qa.py script</li>
+<li>Few small improvements in the annotation step</li>
+<li>Added support to use a transcriptome (--transcriptome)</li>
+</ul>
+<h3 id="version-162">Version 1.6.2<a class="headerlink" href="#version-162" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a error in the parameters</li>
+</ul>
+<h3 id="version-161">Version 1.6.1<a class="headerlink" href="#version-161" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added option to disable the barcode demultiplexing step</li>
+<li>Added option to disable the UMI filtering step</li>
+</ul>
+<h3 id="version-160">Version 1.6.0<a class="headerlink" href="#version-160" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Made the parsing of unique UMIs gene by gene and parallel</li>
+<li>AdjacentBi is now the default method for UMI counting</li>
+<li>Made the trimming function output the trimmed R2 in BAM format with the barcode and UMI</li>
+<li>Made the mapping function works with a BAM file as input (latest STAR release)</li>
+<li>Made the annotation function parallel</li>
+<li>Made the quality step parallel</li>
+<li>Improvements in speed and memory (constant memory use)</li>
+<li>The STAR genome loading strategy can be now set</li>
+<li>Added an affinity based method to cluster UMIs</li>
+<li>Added option to set the STAR BAM sort memory limit</li>
+</ul>
+<h3 id="version-151">Version 1.5.1<a class="headerlink" href="#version-151" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug that will output the matrix of counts inverted</li>
+</ul>
+<h3 id="version-150">Version 1.5.0<a class="headerlink" href="#version-150" title="Permanent link">&para;</a></h3>
+<ul>
+<li>st_qa.py generate expression heatmap plots</li>
+<li>Fixed a minor bug in the computation of the saturation curves</li>
+<li>adjust_matrix_coordinates now does not update the coordinates by default</li>
+<li>adjust_matrix_coordiantes works with the latest ST Spot detector format</li>
+<li>small updates in the fastq merging script</li>
+<li>relaxed a bit the restriction checks for some parameters</li>
+</ul>
+<h3 id="version-145">Version 1.4.5<a class="headerlink" href="#version-145" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added extra scripts:<ul>
+<li>merge_bcl : merge BCL files based in patterns</li>
+<li>filter_gene_type_matrix : filter gene in output data based on Ensembl gene types</li>
+</ul>
+</li>
+<li>Bumped Pysam and HTSeq</li>
+</ul>
+<h3 id="version-141">Version 1.4.1<a class="headerlink" href="#version-141" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Small update to make the PIP installation more robust</li>
+</ul>
+<h3 id="version-140">Version 1.4.0<a class="headerlink" href="#version-140" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Small update to make the PIP installation more robust</li>
+</ul>
+<h3 id="version-135">Version 1.3.5<a class="headerlink" href="#version-135" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Optimized the counting of UMIs by strand, start-pos and offset</li>
+</ul>
+<h3 id="version-134">Version 1.3.4<a class="headerlink" href="#version-134" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a typo in one of the parameter that caused the pipeline to not run</li>
+</ul>
+<h3 id="version-133">Version 1.3.3<a class="headerlink" href="#version-133" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Disabled spliced alignments by default</li>
+</ul>
+<h3 id="version-132">Version 1.3.2<a class="headerlink" href="#version-132" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Optimized the mapping and annotation steps</li>
+</ul>
+<h3 id="version-131">Version 1.3.1<a class="headerlink" href="#version-131" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Homopolymer miss-matches is a parameter now</li>
+<li>Removing now also PolyNs (parameter)</li>
+</ul>
+<h3 id="version-130">Version 1.3.0<a class="headerlink" href="#version-130" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added more methods to cluster UMIs</li>
+<li>Optimized the UMI counting algorithm</li>
+<li>Optimized the memory use</li>
+</ul>
+<h3 id="version-126">Version 1.2.6<a class="headerlink" href="#version-126" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Take into account soft-clipped bases when computing start/end positions</li>
+</ul>
+<h3 id="version-125">Version 1.2.5<a class="headerlink" href="#version-125" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Changed the limit range of some parameters</li>
+</ul>
+<h3 id="version-124">Version 1.2.4<a class="headerlink" href="#version-124" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed small bugs</li>
+<li>Small improvements in st_qa.py and convertEnsemblToNames.py</li>
+</ul>
+<h3 id="version-123">Version 1.2.3<a class="headerlink" href="#version-123" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Bumped TaggD version</li>
+<li>Added more stats to the dataset output</li>
+<li>Added scripts to compute stats</li>
+<li>Added new option for TaggD</li>
+</ul>
+<h3 id="version-122">Version 1.2.2<a class="headerlink" href="#version-122" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed bugs in convertEnsemblToNames</li>
+<li>Added some parameters for TaggD demultiplexing</li>
+<li>Bumped version of TaggD</li>
+</ul>
+<h3 id="version-121">Version 1.2.1<a class="headerlink" href="#version-121" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Made homopolymers filters enabled by default</li>
+<li>Added a test dataset to the docs</li>
+</ul>
+<h3 id="version-120">Version 1.2.0<a class="headerlink" href="#version-120" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a small bug in the deletion of the tmp folder</li>
+</ul>
+<h3 id="version-117">Version 1.1.7<a class="headerlink" href="#version-117" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Make sure to remove tmp files even if an error happens</li>
+</ul>
+<h3 id="version-116">Version 1.1.6<a class="headerlink" href="#version-116" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed bug that would leave some files in /tmp</li>
+<li>Allowed mis-matches when removing adaptors is now 2</li>
+</ul>
+<h3 id="version-115">Version 1.1.5<a class="headerlink" href="#version-115" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Removed some un-necessary parameters</li>
+</ul>
+<h3 id="version-111">Version 1.1.1<a class="headerlink" href="#version-111" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Simplified the two pass mode</li>
+</ul>
+<h3 id="version-110">Version 1.1.0<a class="headerlink" href="#version-110" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added flag to discard reads mapping to anti-sense strand</li>
+<li>Parameters for GC content filter instead of using the same value as AT content filter</li>
+<li>Fixed a small bug in the logging of some parameters</li>
+</ul>
+<h3 id="version-104">Version 1.0.4<a class="headerlink" href="#version-104" title="Permanent link">&para;</a></h3>
+<ul>
+<li>When removing adaptors (homopolymers streches) allow to up to 3 missmatches</li>
+<li>Added GC content filter (same % as AT content)</li>
+</ul>
+<h3 id="version-103">Version 1.0.3<a class="headerlink" href="#version-103" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a minor bug in the counting of UMIs or - strand</li>
+</ul>
+<h3 id="version-102">Version 1.0.2<a class="headerlink" href="#version-102" title="Permanent link">&para;</a></h3>
+<ul>
+<li>If no temp folder is given a new unique one is created on top of the execution folder</li>
+<li>integrate createDataset.py into the code of the pipeline</li>
+<li>Adjusted some parameters names and descriptions (no UMI is default)</li>
+<li>Added sliding window when counting unique molecules</li>
+<li>Added support to bzip</li>
+</ul>
+<h3 id="version-101">Version 1.0.1<a class="headerlink" href="#version-101" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed small bug in the parsing of the umi quality parameter</li>
+</ul>
+<h3 id="version-100">Version 1.0.0<a class="headerlink" href="#version-100" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added option to check for UMI quality</li>
+<li>Optimized the UMI template check code</li>
+<li>Optimized how the unique molecules are counted</li>
+<li>Better stats for the quality filter step</li>
+<li>Updated convertEnsemblToNames script</li>
+<li>Updated stringdocs</li>
+</ul>
+<h3 id="version-099">Version 0.9.9<a class="headerlink" href="#version-099" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Small bug fixes</li>
+</ul>
+<h3 id="version-096">Version 0.9.6<a class="headerlink" href="#version-096" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug with the non ambiguous option</li>
+<li>Fix a bug in the saturation computation</li>
+</ul>
+<h3 id="version-095">Version 0.9.5<a class="headerlink" href="#version-095" title="Permanent link">&para;</a></h3>
+<ul>
+<li>When a R2 is trimmed its correspondant R1 is trimmed as well</li>
+</ul>
+<h3 id="version-094">Version 0.9.4<a class="headerlink" href="#version-094" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a stupid bug in the compute saturation option</li>
+</ul>
+<h3 id="version-093">Version 0.9.3<a class="headerlink" href="#version-093" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Changed the rRNA filter so the BAM output does not need to be sorted</li>
+</ul>
+<h3 id="version-092">Version 0.9.2<a class="headerlink" href="#version-092" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug in the parsing of parameters</li>
+</ul>
+<h3 id="version-091">Version 0.9.1<a class="headerlink" href="#version-091" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a small bug with the location of discarded files</li>
+</ul>
+<h3 id="version-090">Version 0.9.0<a class="headerlink" href="#version-090" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Replaced JSON for data frame in the output format</li>
+<li>Replaced python gzip for system call (faster)</li>
+<li>Changed the logic of how the filenames are stored and handled</li>
+</ul>
+<h3 id="version-089">Version 0.8.9<a class="headerlink" href="#version-089" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Improved the error messages and error handling</li>
+</ul>
+<h3 id="version-088">Version 0.8.8<a class="headerlink" href="#version-088" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Removed barcodes IDs from the output file</li>
+</ul>
+<h3 id="version-087">Version 0.8.7<a class="headerlink" href="#version-087" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Updated comments, manual and license</li>
+<li>Small improvements</li>
+</ul>
+<h3 id="version-085">Version 0.8.5<a class="headerlink" href="#version-085" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug in the computation of saturation curves</li>
+</ul>
+<h3 id="version-084">Version 0.8.4<a class="headerlink" href="#version-084" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added a normal hash with INT keys to increase speed and reduce memory</li>
+<li>Using the gene_id for annotation again</li>
+</ul>
+<h3 id="version-083">Version 0.8.3<a class="headerlink" href="#version-083" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added parameter for strandness in annotation (yes by default)</li>
+<li>Simplified a bit the quality trimming step (do not account for user input trimmed bases)</li>
+</ul>
+<h3 id="version-082">Version 0.8.2<a class="headerlink" href="#version-082" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added stats for annotated reads</li>
+<li>Replaced shelve dict for sqldict</li>
+<li>Fixed some small bugs in the annotation</li>
+</ul>
+<h3 id="version-081">Version 0.8.1<a class="headerlink" href="#version-081" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Removed the pair mode keep option</li>
+<li>Removed un-neccessary pair mode and mapped checks
+  after alignment</li>
+</ul>
+<h3 id="version-080">Version 0.8.0<a class="headerlink" href="#version-080" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added option to do the STAR 2 pass mode</li>
+<li>Removed option to run pipeline without IDs</li>
+<li>Speed improvements</li>
+<li>Perform demultiplex after mapping</li>
+<li>No attaching the barcode to reverse reads</li>
+<li>Removing some parameters</li>
+<li>Some improvements in stDataPlotter</li>
+<li>Option to use BAM format</li>
+<li>Removed annotation filtering step</li>
+<li>Removed forward trimming parameters</li>
+<li>Output gene names even with ENSEMBL</li>
+</ul>
+<h3 id="version-077">Version 0.7.7<a class="headerlink" href="#version-077" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Small memory improvements</li>
+<li>Updates in plotting script</li>
+</ul>
+<h3 id="version-076">Version 0.7.6<a class="headerlink" href="#version-076" title="Permanent link">&para;</a></h3>
+<ul>
+<li>End coordinates now contain the whole read length</li>
+<li>Make annotation strand aware (reverse)</li>
+<li>Updated to STAR 2.5</li>
+</ul>
+<h3 id="version-075">Version 0.7.5<a class="headerlink" href="#version-075" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a small bug</li>
+</ul>
+<h3 id="version-074">Version 0.7.4<a class="headerlink" href="#version-074" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added some memory improvements</li>
+</ul>
+<h3 id="version-073">Version 0.7.3<a class="headerlink" href="#version-073" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added parameters for inverse trimming</li>
+<li>Memory and speed optimizations in createDatasets</li>
+<li>Added option for low_memory use</li>
+</ul>
+<h3 id="version-072">Version 0.7.2<a class="headerlink" href="#version-072" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added unique genes to saturation points</li>
+<li>Added option to keep non-annotated reads</li>
+</ul>
+<h3 id="version-071">Version 0.7.1<a class="headerlink" href="#version-071" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed some small bugs</li>
+</ul>
+<h3 id="version-070">Version 0.7.0<a class="headerlink" href="#version-070" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug in the saturation points</li>
+<li>Removed counttrie as option for clustering</li>
+<li>Updated and improved CTTS scripts</li>
+<li>Updated datfa plotter color list</li>
+</ul>
+<h3 id="version-069">Version 0.6.9<a class="headerlink" href="#version-069" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug in the saturation points</li>
+</ul>
+<h3 id="version-068">Version 0.6.8<a class="headerlink" href="#version-068" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Improved speed and memory in createDatasets</li>
+<li>Changed saturation points to fixed values that grow exp</li>
+<li>Improved speed in computation of saturation points</li>
+<li>Small bug fixes</li>
+<li>Upgraded json2Scatter with many improvements</li>
+<li>Rename json2scatter to stDataPlotter</li>
+</ul>
+<h3 id="version-067">Version 0.6.7<a class="headerlink" href="#version-067" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug in the hierarchical clustering</li>
+<li>Added the input parameter to qa_stats</li>
+<li>Append experiment name to output files</li>
+<li>Added option to compute saturation points</li>
+<li>Added tool to plot stdata and clusters with aligned image</li>
+</ul>
+<h3 id="version-066">Version 0.6.6<a class="headerlink" href="#version-066" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug in the hierarchical clustering</li>
+<li>Fixed a bug in the printed stats</li>
+</ul>
+<h3 id="version-065">Version 0.6.5<a class="headerlink" href="#version-065" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug in retrieving the version of the software</li>
+<li>Added time stamps in different steps</li>
+<li>Added a UMI template quality filter</li>
+</ul>
+<h3 id="version-064">Version 0.6.4<a class="headerlink" href="#version-064" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug in counttrie clustering method</li>
+<li>Improved sorting of molecular barcodes prior clustering</li>
+<li>Added hiearachical clustering option</li>
+</ul>
+<h3 id="version-063">Version 0.6.3<a class="headerlink" href="#version-063" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Removed reads.json</li>
+<li>Added qa_stats.json to the output</li>
+<li>Restored old versioning system</li>
+<li>Removed hadoop related stuff</li>
+<li>Added support for gziped input files</li>
+</ul>
+<h3 id="version-062">Version 0.6.2<a class="headerlink" href="#version-062" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Improved the log a bit</li>
+<li>Added parameters for max,min intron size and max gap size</li>
+</ul>
+<h3 id="version-061">Version 0.6.1<a class="headerlink" href="#version-061" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed some bugs in the prefix trie</li>
+</ul>
+<h3 id="version-059">Version 0.5.9<a class="headerlink" href="#version-059" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added an option to find molecular barcodes clusters using a prefix trie</li>
+</ul>
+<h3 id="version-058">Version 0.5.8<a class="headerlink" href="#version-058" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug in the function to retrieve the pipeline version</li>
+</ul>
+<h3 id="version-057">Version 0.5.7<a class="headerlink" href="#version-057" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug with --disable-multimap option</li>
+</ul>
+<h3 id="version-056">Version 0.5.6<a class="headerlink" href="#version-056" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a typo in a parameter</li>
+<li>Fixed a bug that caused some parameters to not work</li>
+</ul>
+<h3 id="version-055">Version 0.5.5<a class="headerlink" href="#version-055" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added some extra debugging info in createDatasets</li>
+<li>Output the read name in the BED output file</li>
+<li>Changed --allowed-kimera for --allowed-kmer</li>
+<li>Added version as parameter and log message</li>
+</ul>
+<h3 id="version-054">Version 0.5.4<a class="headerlink" href="#version-054" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added parameter to disable soft clipping in mapping</li>
+<li>Disable softclipping in rRNA filter</li>
+<li>Make sure that discarded reads after rRNA filter are replaced by Ns</li>
+<li>Improved stats info a bit</li>
+</ul>
+<h3 id="version-053">Version 0.5.3<a class="headerlink" href="#version-053" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Bumped Taggd to 0.2.2</li>
+</ul>
+<h3 id="version-052">Version 0.5.2<a class="headerlink" href="#version-052" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug in the rRNA filter that would cause to not discard
+rRNA mapped reads</li>
+</ul>
+<h3 id="version-051">Version 0.5.1<a class="headerlink" href="#version-051" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added check when UMI is the same as barcode</li>
+<li>Added more stats</li>
+<li>Added percentiles distributiosn stats for createDAtaset</li>
+<li>Added support for BAM and SAM (not functional now)</li>
+<li>Added option to disable multiple aligned reads</li>
+<li>Fixed a bug in the bed file</li>
+</ul>
+<h3 id="version-050">Version 0.5.0<a class="headerlink" href="#version-050" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added AT content filter in quality trimming</li>
+<li>Added min mapped length filter after mapping</li>
+<li>Make sure one of the multiple aligned reads is set as not multiple
+aligned so it can be annotated</li>
+<li>Discard the other multiple aligned reads after mapping</li>
+<li>Disable sorting</li>
+<li>Restored back to use gene_id as column for annotation</li>
+</ul>
+<h3 id="version-049">Version 0.4.9<a class="headerlink" href="#version-049" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Changed naming convention</li>
+<li>Added support for normal RNA analysis</li>
+</ul>
+<h3 id="version-048">Version 0.4.8<a class="headerlink" href="#version-048" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Improved STAR configuration</li>
+<li>Added mapping post processing to filter out and adjust reversed reads</li>
+<li>Changed to use gene_name for annotation</li>
+<li>Fixed some bugs and some improvements</li>
+<li>Fixed bugs in the trimming</li>
+</ul>
+<h3 id="version-047">Version 0.4.7<a class="headerlink" href="#version-047" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Improved stats</li>
+<li>Fixed a bug that would remove original input files</li>
+<li>Added a script to convert ENSEMBL ids to gene names</li>
+</ul>
+<h3 id="version-046">Version 0.4.6<a class="headerlink" href="#version-046" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug that would not compute the number of discarded reads
+when using molecular barcodes</li>
+</ul>
+<h3 id="version-045">Version 0.4.5<a class="headerlink" href="#version-045" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug in the barcodes JSON output</li>
+</ul>
+<h3 id="version-044">Version 0.4.4<a class="headerlink" href="#version-044" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug in the molecular barcodes algorithm</li>
+<li>Fixed a bug that would keep the original fastq reads in the system</li>
+<li>Update taggd version</li>
+</ul>
+<h3 id="version-043">Version 0.4.3<a class="headerlink" href="#version-043" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Small improvements with error checking and log in the mapping</li>
+<li>Fixed a bug that would remove the file after filtering annoted reads</li>
+<li>Make the sorting by name instead by position due to a bug in htseq-count</li>
+</ul>
+<h3 id="version-042">Version 0.4.2<a class="headerlink" href="#version-042" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug in the capture of parameters</li>
+</ul>
+<h3 id="version-041">Version 0.4.1<a class="headerlink" href="#version-041" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Improved the logs</li>
+<li>Fixed few bugs</li>
+</ul>
+<h3 id="version-040">Version 0.4.0<a class="headerlink" href="#version-040" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added back taggd</li>
+<li>Added BED file to output</li>
+<li>Added STAR</li>
+<li>Optimized workflow</li>
+<li>do rRNA filter first</li>
+<li>Optimized annotation</li>
+<li>Optimized trimming</li>
+<li>Output reads do not contain duplicates</li>
+</ul>
+<h3 id="version-039">Version 0.3.9<a class="headerlink" href="#version-039" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Allowing molecular barcodes to be before the barcodes</li>
+</ul>
+<h3 id="version-038">Version 0.3.8<a class="headerlink" href="#version-038" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added back findIndexes</li>
+</ul>
+<h3 id="version-037">Version 0.3.7<a class="headerlink" href="#version-037" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Removed cutadapt dependency</li>
+</ul>
+<h3 id="version-036">Version 0.3.6<a class="headerlink" href="#version-036" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a bug in the installation</li>
+</ul>
+<h3 id="version-035">Version 0.3.5<a class="headerlink" href="#version-035" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added options to remove PolyC fix bugs in adaptors removal</li>
+</ul>
+<h3 id="version-034">Version 0.3.4<a class="headerlink" href="#version-034" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added test for STAR and STAR binary to dependencies</li>
+<li>Added TAGGD and removed findIndexes</li>
+<li>Improved install script</li>
+<li>Added options to remove adaptors (PolyA, PolyT and PolyG)</li>
+<li>Exchanged Bowtie as primary mapper with STAR.</li>
+</ul>
+<h3 id="version-033">Version 0.3.3<a class="headerlink" href="#version-033" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added option to keep files with discarded reads/barcodes</li>
+<li>Internal refactoring and optimization</li>
+</ul>
+<h3 id="version-032">Version 0.3.2<a class="headerlink" href="#version-032" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Outputted reads JSON now only has the portion of the read that was used to map</li>
+<li>Cutadapt is integrated but only using the quality trimming for now</li>
+<li>Internal refactoring and optimizations</li>
+</ul>
+<h3 id="version-031">Version 0.3.1<a class="headerlink" href="#version-031" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added small unit-test for molecular barcodes</li>
+<li>Added more molecular barcodes algorithms (using a naive one for now)</li>
+<li>Fixed small issues in JSON parsing libraries</li>
+</ul>
+<h3 id="version-030">Version 0.3.0<a class="headerlink" href="#version-030" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Rewrite createDatasets.py</li>
+<li>Clean up repository and deprecated files</li>
+<li>Change the unit-test library and structure</li>
+<li>Refactor the unit-test (use pipeline API instead of command line calls)</li>
+<li>Ensure unit-test remove tmp files when failing</li>
+<li>Add better error handling</li>
+<li>Add unit-test for Molecular Barcodes</li>
+<li>Add Molecular Barcodes functionality</li>
+<li>General refactor and clean up</li>
+<li>Add invoke options (clean, build, install)</li>
+<li>Fix an important bug in createDatasets that caused incorrect
+  computation of reads counts</li>
+</ul>
+<h3 id="version-025">Version 0.2.5<a class="headerlink" href="#version-025" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Improved installers</li>
+<li>Small bug fixes</li>
+<li>Added basic uni-test to do a run of the pipeline</li>
+</ul>
+<h3 id="version-024">Version 0.2.4<a class="headerlink" href="#version-024" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Some optimizations and bug fixes</li>
+</ul>
+<h3 id="version-023">Version 0.2.3<a class="headerlink" href="#version-023" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed a error with new version of HTSeq-count that will discard more reads</li>
+</ul>
+<h3 id="version-022">Version 0.2.2<a class="headerlink" href="#version-022" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added extra parameters</li>
+<li>Fixed some typos</li>
+<li>Fixed a bug that caused to remove some bases from the barcode ID in the rw reads</li>
+</ul>
+<h3 id="version-021">Version 0.2.1<a class="headerlink" href="#version-021" title="Permanent link">&para;</a></h3>
+<ul>
+<li>code refactored and modularized</li>
+<li>add argparse for parameters parsing</li>
+<li>add API for Amazon EMR and terminal version</li>
+<li>better error handling</li>
+<li>optimized code</li>
+<li>new version of FindIndexes</li>
+<li>remove dependencies</li>
+<li>added proper installers and documentation</li>
+</ul>
+<!-- END INCLUDE -->
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/jfnavarro/st_pipeline" target="_blank" rel="noopener" title="Github" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="mailto:jc.fernandez.navarro@gmail.com" target="_blank" rel="noopener" title="" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m20 8-8 5-8-5V6l8 5 8-5m0-2H4c-1.11 0-2 .89-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.indexes", "navigation.instant", "navigation.tabs.sticky"], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f1b6f286.min.js"></script>
+      
+    
+  </body>
+</html>
