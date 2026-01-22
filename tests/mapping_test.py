@@ -54,6 +54,9 @@ def test_alignReads():
             include_non_mapped=True,
             star_genome_loading="NoSharedMemory",
             star_sort_mem_limit=64000000,
+            star_min_score=0,
+            star_min_score_ratio=0.66,
+            star_min_matched_bases_ratio=0.66,
         )
 
         # Assertions for subprocess call
@@ -97,6 +100,12 @@ def test_alignReads():
             "NoSharedMemory",
             "--limitBAMsortRAM",
             "64000000",
+            "--outFilterScoreMin",
+            "0",
+            "--outFilterScoreMinOverLread",
+            "0.66",
+            "--outFilterMatchNminOverLread",
+            "0.66",
             "--readFilesType",
             "SAM",
             "SE",

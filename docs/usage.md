@@ -134,6 +134,17 @@ st_pipeline_run [options] fastq_file_fw fastq_file_rv
                         The maximum available RAM for sorting BAM during
                         mapping with STAR. Default is 0 which means that it
                         will be set to the genome index size
+  --star-min-score STAR_MIN_SCORE
+                        The minimum alignment score for reads aligned with 
+                        STAR. Alignments will be output only if their
+                        score is higher than or equal to this value. 
+                        (default: 0)
+  --star-min-score-ratio STAR_MIN_SCORE_RATIO
+                        Minimum alignment score (as above) but normalized to 
+                        read length. (default: 0.66)
+  --star-min-matched-bases-ratio STAR_MIN_MATCHED_BASES_RATIO
+                        Minimum matched bases normalized to read length. 
+                        (default: 0.66)
   --demultiplexing-mismatches [INT]
                         Number of allowed mismatches when demultiplexing the
                         reads against the barcodes with TaggD (default: 2)
@@ -225,7 +236,7 @@ st_pipeline_run [options] fastq_file_fw fastq_file_rv
                         Provide a list of values like this for example: 10000
                         20000 50000 100000
   --disable-trimming    Use this flag if you want to skip the trimming step
-  --disable-mapping     Use this flag if you want to skip the mapping step
+  --disable-mapping     Use this flag if you want to skip the mapping step. Requires that a 'mapped.bam' file is present in --temp-folder.
   --disable-annotation  Use this flag if you want to skip the annotation
   --disable-barcode     Use this flag if you want to skip the barcode
                         demultiplexing step

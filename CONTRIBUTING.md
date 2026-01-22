@@ -58,7 +58,7 @@ git clone git@github.com:jfnavarro/st_pipeline.git
 5. Install dependencies and start your virtualenv:
 
 ``` console
-poetry install -E test -E doc -E dev
+poetry install -E doc -E dev
 ```
 
 Note that you can use your own Python environment (e.g Anaconda) by
@@ -134,7 +134,7 @@ make lint
 To run the tests
 
 ``` console
-make unittet
+make unittest
 ```
 
 To run the tests with coverage

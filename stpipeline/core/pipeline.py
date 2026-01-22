@@ -122,6 +122,9 @@ class Pipeline:
         self.adaptor_missmatches = 0
         self.star_genome_loading = "NoSharedMemory"
         self.star_sort_mem_limit = 0
+        self.star_min_score = 0
+        self.star_min_score_ratio = 0.66
+        self.star_min_matched_bases_ratio = 0.66
         self.disable_trimming = False
         self.disable_mapping = False
         self.disable_annotation = False
@@ -195,6 +198,14 @@ class Pipeline:
             and not self.fastq_rv.endswith(".bz2")
         ):
             error = f"Error parsing parameters.\nIncorrect format for input files {self.fastq_fw} {self.fastq_rv}"
+            logger.error(error)
+            raise RuntimeError(error)
+
+        # Check for presence of 'mapped.bam' if --disable-mapping is set
+        if self.disable_mapping and not os.path.exists(os.path.join(self.temp_folder, FILENAMES["mapped"])):  # type: ignore[call-overload]
+            error = (
+                f"Error argument '--disable-mapping' is set but {FILENAMES['mapped']} is missing in {self.temp_folder}."
+            )
             logger.error(error)
             raise RuntimeError(error)
 
@@ -564,6 +575,35 @@ class Pipeline:
             "\nDefault is 0 which means that it will be set to the genome index size",
         )
         parser.add_argument(
+            "--star-min-score",
+            default=0,
+            type=int,
+            help="The minimum alignment score for reads aligned with STAR."
+            "\nAlignments will be output only if their score is higher"
+            "\nthan or equal to this value. (default: 0)",
+        )
+        parser.add_argument(
+            "--star-min-score-ratio",
+            default=0.66,
+            type=float,
+            help="Minimum alignment score (as above) but normalized to" "\nread length. (default: 0.66)",
+        )
+        parser.add_argument(
+            "--star-min-matched-bases",
+            default=0,
+            type=int,
+            help="The minimum number of matched bases for reads aligned"
+            "\nwith STAR. Alignments will be output only if the number"
+            "\nof matched bases is higher than or equal to this value."
+            "\n(default: 0)",
+        )
+        parser.add_argument(
+            "--star-min-matched-bases-ratio",
+            default=0.66,
+            type=float,
+            help="Minimum matched bases (as above) but normalized to" "\nread length. (default: 0.66)",
+        )
+        parser.add_argument(
             "--demultiplexing-mismatches",
             default=2,
             metavar="[INT]",
@@ -764,7 +804,8 @@ class Pipeline:
             "--disable-mapping",
             default=False,
             action="store_true",
-            help="Use this flag if you want to skip the mapping step",
+            help="Use this flag if you want to skip the mapping step. This requires that a file 'mapped.bam' "
+            "is present in --temp-folder",
         )
         parser.add_argument(
             "--disable-annotation",
@@ -867,6 +908,9 @@ class Pipeline:
         self.adaptor_missmatches = options.homopolymer_mismatches
         self.star_genome_loading = options.star_genome_loading
         self.star_sort_mem_limit = options.star_sort_mem_limit
+        self.star_min_score = options.star_min_score
+        self.star_min_score_ratio = options.star_min_score_ratio
+        self.star_min_matched_bases_ratio = options.star_min_matched_bases_ratio
         self.disable_barcode = options.disable_barcode
         self.disable_trimming = options.disable_trimming
         self.disable_mapping = options.disable_mapping
@@ -937,6 +981,9 @@ class Pipeline:
             logger.info(f"Mapping minimum intron size allowed (splice alignments) with STAR: {self.min_intron_size}")
             logger.info(f"Mapping maximum intron size allowed (splice alignments) with STAR: {self.max_intron_size}")
             logger.info(f"STAR genome loading strategy: {self.star_genome_loading}")
+            logger.info(f"STAR minimum alignment score: {self.star_min_score}")
+            logger.info(f"STAR minimum alignment score ratio: {self.star_min_score_ratio}")
+            logger.info(f"STAR minimum matched bases ratio: {self.star_min_matched_bases_ratio}")
             if self.disable_clipping:
                 logger.info("Not allowing soft clipping when mapping with STAR")
             if self.disable_multimap:
@@ -1089,6 +1136,9 @@ class Pipeline:
                     True,  # Include un-aligned reads in the output
                     self.star_genome_loading,
                     self.star_sort_mem_limit,
+                    self.star_min_score,
+                    self.star_min_score_ratio,
+                    self.star_min_matched_bases_ratio,
                 )
                 # Extract the contaminant free reads (not aligned) from the output of STAR
                 # NOTE: this will not be needed when STAR allows to chose the discarded
@@ -1123,8 +1173,10 @@ class Pipeline:
         # =================================================================
         # STEP: Maps against the genome using STAR
         # =================================================================
-        input_mapping = FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
         if not self.disable_mapping:
+            input_mapping = (
+                FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
+            )
             logger.info(f"Starting genome alignment {globaltime.get_timestamp()}")
             try:
                 # Make the alignment call
@@ -1146,6 +1198,9 @@ class Pipeline:
                     self.keep_discarded_files,
                     self.star_genome_loading,
                     self.star_sort_mem_limit,
+                    self.star_min_score,
+                    self.star_min_score_ratio,
+                    self.star_min_matched_bases_ratio,
                 )
                 # Remove secondary alignments and un-mapped
                 # NOTE: this will not be needed when STAR allows to chose the discarded
@@ -1160,8 +1215,6 @@ class Pipeline:
                     os.rename(temp_name, FILENAMES["mapped"])
             except Exception:
                 raise
-        else:
-            FILENAMES["mapped"] = input_mapping
 
         # =================================================================
         # STEP: DEMULTIPLEX READS Map against the barcodes (Optional)

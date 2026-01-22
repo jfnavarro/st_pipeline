@@ -32,6 +32,9 @@ def alignReads(
     include_non_mapped: bool,
     star_genome_loading: str,
     star_sort_mem_limit: int,
+    star_min_score: int,
+    star_min_score_ratio: float,
+    star_min_matched_bases_ratio: float,
 ) -> int:
     """
     Perform sequence alignment using STAR.
@@ -54,6 +57,9 @@ def alignReads(
         include_non_mapped: If True, include unaligned reads in the output.
         star_genome_loading: Type of genome loading for STAR.
         star_sort_mem_limit: Memory limit for BAM sorting by STAR.
+        star_min_score: Minimum alignment score for reads mapped with STAR.
+        star_min_score_ratio: As above but normalized to read length.
+        star_min_matched_bases_ratio: As above but normalized to read length.
 
     Returns:
         The total number of reads mapped.
@@ -118,6 +124,12 @@ def alignReads(
         star_genome_loading,
         "--limitBAMsortRAM",
         str(star_sort_mem_limit),
+        "--outFilterScoreMin",
+        str(star_min_score),
+        "--outFilterScoreMinOverLread",
+        str(star_min_score_ratio),
+        "--outFilterMatchNminOverLread",
+        str(star_min_matched_bases_ratio),
         "--readFilesType",
         "SAM",
         "SE",  # Input in BAM format
