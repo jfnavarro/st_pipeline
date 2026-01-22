@@ -2545,4 +2545,4 @@ doc = ["mike", "mkdocs", "mkdocs-autorefs", "mkdocs-include-markdown-plugin", "m
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "b95e6e20a21069d9e73e7758241dd924f4ae5d6217f6a81e1bd5cd85ac9af1f9"
+content-hash = "ea16c625a0e039c26d2269c2a6eaac0a15196fa2859a321633accf8d5f93d07b"

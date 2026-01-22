@@ -75,6 +75,7 @@ dev = [
     "toml",
     "ruff",
     "isort",
+    "mypy",
     "pytest",
     "pytest-cov"
     ]

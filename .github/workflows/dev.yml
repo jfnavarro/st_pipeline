@@ -1,4 +1,4 @@
-name: dev build CI
+name: CI
 
 # Controls when the action will run.
 on:
@@ -52,13 +52,15 @@ jobs:
         STAR --version
         samtools --version
 
-    - name: test
+    - name: Install project dependencies
       run: |
         poetry install -E dev
+
+    - name: test
+      run: |
         poetry run pytest
 
     - name: linting and type checking
       run: |
-        poetry install -E dev
         poetry run ruff check .
         poetry run mypy .
