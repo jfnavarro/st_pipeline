@@ -1,11 +1,10 @@
 # Changelog
 
-## Version 2.1.0
+## Version 2.1.0
 * Added extra STAR parameters for reads filtering (@johnne)
 * Added Docker build action (@johnne)
 * Update Docker recipe (@johnne)
 * Fix a bug when using --disable-mapping (@johnne)
-*
 
 ## Version 2.0.0
 * Refactor code to modern Python (black, mypy, isort)

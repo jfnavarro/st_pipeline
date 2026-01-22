@@ -57,48 +57,9 @@ jobs:
         poetry install -E dev
         poetry run pytest
 
-  publish_dev_build:
-    needs: test
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pages: write
-      id-token: write
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-
-    - name: Install Poetry
+    - name: linting and type checking
       run: |
-        python -m pip install --upgrade pip
-        pip install poetry
-
-    - name: Install dependencies
-      run: |
-        poetry install -E doc
-
-    - name: Build documentation
-      run: |
-        poetry run mkdocs build
-
-    - name: Configure git identity
-      run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-    - name: Configure git auth
-      run: |
-        git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-
-    - name: Publish with mike
-      run: |
-        VERSION="$(poetry version --short).dev"
-        # If your Pages branch is not gh-pages, add: -b <branch>
-        poetry run mike deploy -p "$VERSION"
-        poetry run mike set-default -p "$VERSION"
+        poetry install -E dev
+        poetry run ruff check .
+        poetry run isort --check-only .
+        poetry run mypy .
