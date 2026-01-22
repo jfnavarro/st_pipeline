@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "stpipeline"
-version = "2.0.0"
+version = "2.1.0"
 description = "ST Pipeline: An automated pipeline for spatial mapping of unique transcripts"
 authors = ["Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>"]
 license = "MIT"
