@@ -1072,42 +1072,46 @@ class Pipeline:
         # =================================================================
         # Get the barcode length
         barcode_length = len(list(read_barcode_file(self.ids).values())[0].sequence)
-        logger.info(f"Start filtering raw reads {globaltime.get_timestamp()}")
-        try:
-            stats = filter_input_data(
-                self.fastq_fw,
-                self.fastq_rv,
-                FILENAMES["quality_trimmed_R2"],
-                FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
-                barcode_length,
-                self.barcode_start,
-                self.filter_AT_content,
-                self.filter_GC_content,
-                self.umi_start_position,
-                self.umi_end_position,
-                self.min_quality_trimming,
-                self.min_length_trimming,
-                self.remove_polyA_distance,
-                self.remove_polyT_distance,
-                self.remove_polyG_distance,
-                self.remove_polyC_distance,
-                self.remove_polyN_distance,
-                self.qual64,
-                self.umi_filter,
-                self.umi_filter_template,
-                self.umi_quality_bases,
-                self.adaptor_missmatches,
-                self.overhang,
-                self.disable_umi,
-                self.disable_barcode,
-                self.disable_trimming,
-            )
-            # update qa_stats
-            self.qa_stats.input_reads_reverse = stats[0]
-            self.qa_stats.reads_after_trimming_forward = stats[1]
-            self.qa_stats.reads_after_trimming_reverse = stats[1]
-        except Exception:
-            raise
+        # Check if quality trimmed file exists
+        if not os.path.exists(FILENAMES["quality_trimmed_R2"]):
+            logger.info(f"Start filtering raw reads {globaltime.get_timestamp()}")
+            try:
+                stats = filter_input_data(
+                    self.fastq_fw,
+                    self.fastq_rv,
+                    FILENAMES["quality_trimmed_R2"],
+                    FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
+                    barcode_length,
+                    self.barcode_start,
+                    self.filter_AT_content,
+                    self.filter_GC_content,
+                    self.umi_start_position,
+                    self.umi_end_position,
+                    self.min_quality_trimming,
+                    self.min_length_trimming,
+                    self.remove_polyA_distance,
+                    self.remove_polyT_distance,
+                    self.remove_polyG_distance,
+                    self.remove_polyC_distance,
+                    self.remove_polyN_distance,
+                    self.qual64,
+                    self.umi_filter,
+                    self.umi_filter_template,
+                    self.umi_quality_bases,
+                    self.adaptor_missmatches,
+                    self.overhang,
+                    self.disable_umi,
+                    self.disable_barcode,
+                    self.disable_trimming,
+                )
+                # update qa_stats
+                self.qa_stats.input_reads_reverse = stats[0]
+                self.qa_stats.reads_after_trimming_forward = stats[1]
+                self.qa_stats.reads_after_trimming_reverse = stats[1]
+            except Exception:
+                raise
+        else:
+            logger.info(f"Using already existing {FILENAMES["quality_trimmed_R2"]} file")
 
         # =================================================================
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. rRNA(Optional)
@@ -1220,35 +1224,38 @@ class Pipeline:
         # STEP: DEMULTIPLEX READS Map against the barcodes (Optional)
         # =================================================================
         if not self.disable_barcode:
-            logger.info(f"Starting barcode demultiplexing {globaltime.get_timestamp()}")
-            try:
-                stats = barcodeDemultiplexing(  # type: ignore
-                    FILENAMES["mapped"],
-                    self.ids,
-                    self.allowed_missed,
-                    self.allowed_kmer,
-                    self.overhang,
-                    self.taggd_metric,
-                    self.taggd_multiple_hits_keep_one,
-                    self.taggd_trim_sequences,
-                    self.threads,
-                    FILENAMES["demultiplexed_prefix"],  # Prefix for output files
-                    self.keep_discarded_files,
-                    self.taggd_chunk_size,
-                )
-                # pdate qa_stats
-                self.qa_stats.reads_after_demultiplexing = stats  # type: ignore
+            if not os.path.exists(FILENAMES["demultiplexed_matched"]):
+                logger.info(f"Starting barcode demultiplexing {globaltime.get_timestamp()}")
+                try:
+                    stats = barcodeDemultiplexing(  # type: ignore
+                        FILENAMES["mapped"],
+                        self.ids,
+                        self.allowed_missed,
+                        self.allowed_kmer,
+                        self.overhang,
+                        self.taggd_metric,
+                        self.taggd_multiple_hits_keep_one,
+                        self.taggd_trim_sequences,
+                        self.threads,
+                        FILENAMES["demultiplexed_prefix"],  # Prefix for output files
+                        self.keep_discarded_files,
+                        self.taggd_chunk_size,
+                    )
+                    # pdate qa_stats
+                    self.qa_stats.reads_after_demultiplexing = stats  # type: ignore
 
-                # TODO TaggD does not output the BAM file sorted
-                command = "samtools sort -T {}/sort_bam -@ {} -o {} {}".format(
-                    self.temp_folder,
-                    self.threads,
-                    FILENAMES["demultiplexed_matched"],
-                    FILENAMES["demultiplexed_matched"],
-                )
-                subprocess.check_call(command, shell=True)
-            except Exception:
-                raise
+                    # TODO TaggD does not output the BAM file sorted
+                    command = "samtools sort -T {}/sort_bam -@ {} -o {} {}".format(
+                        self.temp_folder,
+                        self.threads,
+                        FILENAMES["demultiplexed_matched"],
+                        FILENAMES["demultiplexed_matched"],
+                    )
+                    subprocess.check_call(command, shell=True)
+                except Exception:
+                    raise
+            else:
+                logger.info(f"Using already existing {FILENAMES["demultiplexed_matched"]} file")
         else:
             FILENAMES["demultiplexed_matched"] = FILENAMES["mapped"]
 
