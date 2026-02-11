@@ -72,6 +72,8 @@ st_pipeline_run [options] fastq_file_fw fastq_file_rv
                         Path of the location for temporary files
   --keep-discarded-files
                         Keep files with discarded reads in every step
+  --force               Overwrite existing files (affects 'R2_quality_trimmed.bam' 
+                        and 'demultiplexed_matched.bam')
   --qual-64             Use phred-64 quality instead of phred-33(default) in
                         the quality trimming step
   --min-length-qual-trimming [INT]

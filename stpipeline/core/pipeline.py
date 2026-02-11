@@ -371,7 +371,10 @@ class Pipeline:
             help="Do not remove temporary/intermediary files (useful for debugging)",
         )
         parser.add_argument(
-            "--verbose", action="store_true", default=False, help="Show extra information on the log file"
+            "--verbose",
+            action="store_true",
+            default=False,
+            help="Show extra information on the log file",
         )
         parser.add_argument(
             "--threads",
@@ -395,7 +398,11 @@ class Pipeline:
             help="Name of the file that we want to use to store the logs (default output to screen)",
         )
         parser.add_argument(
-            "--output-folder", metavar="[FOLDER]", action=readable_dir, default=None, help="Path of the output folder"
+            "--output-folder",
+            metavar="[FOLDER]",
+            action=readable_dir,
+            default=None,
+            help="Path of the output folder",
         )
         parser.add_argument(
             "--temp-folder",
@@ -411,6 +418,12 @@ class Pipeline:
             help="Keep files with discarded reads in every step",
         )
         parser.add_argument(
+            "--force",
+            action="store_true",
+            default=False,
+            help="Force overwriting existing files",
+        )
+        parser.add_argument(
             "--qual-64",
             action="store_true",
             default=False,
@@ -422,8 +435,7 @@ class Pipeline:
             metavar="[INT]",
             type=int,
             choices=range(5, 151),
-            help="Minimum length of the reads after trimming, "
-            "shorter reads will be discarded (default: %(default)s)",
+            help="Minimum length of the reads after trimming, shorter reads will be discarded (default: %(default)s)",
         )
         parser.add_argument(
             "--min-quality-trimming",
@@ -456,7 +468,7 @@ class Pipeline:
             metavar="[INT]",
             type=int,
             choices=range(0, 35),
-            help="Remove PolyG stretches of the given length from R2 " "(Use 0 to disable it) (default: %(default)s)",
+            help="Remove PolyG stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)",
         )
         parser.add_argument(
             "--remove-polyC",
@@ -586,7 +598,7 @@ class Pipeline:
             "--star-min-score-ratio",
             default=0.66,
             type=float,
-            help="Minimum alignment score (as above) but normalized to" "\nread length. (default: 0.66)",
+            help="Minimum alignment score (as above) but normalized to\nread length. (default: 0.66)",
         )
         parser.add_argument(
             "--star-min-matched-bases",
@@ -601,7 +613,7 @@ class Pipeline:
             "--star-min-matched-bases-ratio",
             default=0.66,
             type=float,
-            help="Minimum matched bases (as above) but normalized to" "\nread length. (default: 0.66)",
+            help="Minimum matched bases (as above) but normalized to\nread length. (default: 0.66)",
         )
         parser.add_argument(
             "--demultiplexing-mismatches",
@@ -880,6 +892,7 @@ class Pipeline:
         self.umi_start_position = options.umi_start_position
         self.umi_end_position = options.umi_end_position
         self.keep_discarded_files = options.keep_discarded_files
+        self.force = options.force
         self.remove_polyA_distance = options.remove_polyA
         self.remove_polyT_distance = options.remove_polyT
         self.remove_polyG_distance = options.remove_polyG
@@ -1004,7 +1017,7 @@ class Pipeline:
                 logger.info("TaggD multiple hits keep one (random) is enabled")
             if self.taggd_trim_sequences is not None:
                 logger.info(f"TaggD trimming from the barcodes: {'-'.join(str(x) for x in self.taggd_trim_sequences)}")
-            logger.info(f"TaggD chunk size: {self.taggd_chunk_size }")
+            logger.info(f"TaggD chunk size: {self.taggd_chunk_size}")
         else:
             logger.info("Disabling Demultiplexing step")
 
@@ -1072,42 +1085,46 @@ class Pipeline:
         # =================================================================
         # Get the barcode length
         barcode_length = len(list(read_barcode_file(self.ids).values())[0].sequence)
-        logger.info(f"Start filtering raw reads {globaltime.get_timestamp()}")
-        try:
-            stats = filter_input_data(
-                self.fastq_fw,
-                self.fastq_rv,
-                FILENAMES["quality_trimmed_R2"],
-                FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None,
-                barcode_length,
-                self.barcode_start,
-                self.filter_AT_content,
-                self.filter_GC_content,
-                self.umi_start_position,
-                self.umi_end_position,
-                self.min_quality_trimming,
-                self.min_length_trimming,
-                self.remove_polyA_distance,
-                self.remove_polyT_distance,
-                self.remove_polyG_distance,
-                self.remove_polyC_distance,
-                self.remove_polyN_distance,
-                self.qual64,
-                self.umi_filter,
-                self.umi_filter_template,
-                self.umi_quality_bases,
-                self.adaptor_missmatches,
-                self.overhang,
-                self.disable_umi,
-                self.disable_barcode,
-                self.disable_trimming,
-            )
-            # update qa_stats
-            self.qa_stats.input_reads_reverse = stats[0]
-            self.qa_stats.reads_after_trimming_forward = stats[1]
-            self.qa_stats.reads_after_trimming_reverse = stats[1]
-        except Exception:
-            raise
+        # Check if quality trimmed file exists
+        if not os.path.exists(FILENAMES["quality_trimmed_R2"]) or self.force:
+            logger.info(f"Start filtering raw reads {globaltime.get_timestamp()}")
+            try:
+                stats = filter_input_data(
+                    self.fastq_fw,
+                    self.fastq_rv,
+                    FILENAMES["quality_trimmed_R2"],
+                    (FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None),
+                    barcode_length,
+                    self.barcode_start,
+                    self.filter_AT_content,
+                    self.filter_GC_content,
+                    self.umi_start_position,
+                    self.umi_end_position,
+                    self.min_quality_trimming,
+                    self.min_length_trimming,
+                    self.remove_polyA_distance,
+                    self.remove_polyT_distance,
+                    self.remove_polyG_distance,
+                    self.remove_polyC_distance,
+                    self.remove_polyN_distance,
+                    self.qual64,
+                    self.umi_filter,
+                    self.umi_filter_template,
+                    self.umi_quality_bases,
+                    self.adaptor_missmatches,
+                    self.overhang,
+                    self.disable_umi,
+                    self.disable_barcode,
+                    self.disable_trimming,
+                )
+                # update qa_stats
+                self.qa_stats.input_reads_reverse = stats[0]
+                self.qa_stats.reads_after_trimming_forward = stats[1]
+                self.qa_stats.reads_after_trimming_reverse = stats[1]
+            except Exception:
+                raise
+        else:
+            logger.info(f"Using already existing {FILENAMES['quality_trimmed_R2']} file")
 
         # =================================================================
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. rRNA(Optional)
@@ -1209,7 +1226,10 @@ class Pipeline:
                     temp_name = os.path.join(self.temp_folder, next(tempfile._get_candidate_names()))  # type: ignore
                     # Note use 260 to also discard multiple-alignments
                     command = "samtools view -b -h -F 4 -@ {} -o {} -U {} {}".format(
-                        self.threads, temp_name, FILENAMES_DISCARDED["mapped_discarded"], FILENAMES["mapped"]
+                        self.threads,
+                        temp_name,
+                        FILENAMES_DISCARDED["mapped_discarded"],
+                        FILENAMES["mapped"],
                     )
                     subprocess.check_call(command, shell=True)
                     os.rename(temp_name, FILENAMES["mapped"])
@@ -1220,35 +1240,38 @@ class Pipeline:
         # STEP: DEMULTIPLEX READS Map against the barcodes (Optional)
         # =================================================================
         if not self.disable_barcode:
-            logger.info(f"Starting barcode demultiplexing {globaltime.get_timestamp()}")
-            try:
-                stats = barcodeDemultiplexing(  # type: ignore
-                    FILENAMES["mapped"],
-                    self.ids,
-                    self.allowed_missed,
-                    self.allowed_kmer,
-                    self.overhang,
-                    self.taggd_metric,
-                    self.taggd_multiple_hits_keep_one,
-                    self.taggd_trim_sequences,
-                    self.threads,
-                    FILENAMES["demultiplexed_prefix"],  # Prefix for output files
-                    self.keep_discarded_files,
-                    self.taggd_chunk_size,
-                )
-                # pdate qa_stats
-                self.qa_stats.reads_after_demultiplexing = stats  # type: ignore
+            if not os.path.exists(FILENAMES["demultiplexed_matched"]) or self.force:
+                logger.info(f"Starting barcode demultiplexing {globaltime.get_timestamp()}")
+                try:
+                    stats = barcodeDemultiplexing(  # type: ignore
+                        FILENAMES["mapped"],
+                        self.ids,
+                        self.allowed_missed,
+                        self.allowed_kmer,
+                        self.overhang,
+                        self.taggd_metric,
+                        self.taggd_multiple_hits_keep_one,
+                        self.taggd_trim_sequences,
+                        self.threads,
+                        FILENAMES["demultiplexed_prefix"],  # Prefix for output files
+                        self.keep_discarded_files,
+                        self.taggd_chunk_size,
+                    )
+                    # pdate qa_stats
+                    self.qa_stats.reads_after_demultiplexing = stats  # type: ignore
 
-                # TODO TaggD does not output the BAM file sorted
-                command = "samtools sort -T {}/sort_bam -@ {} -o {} {}".format(
-                    self.temp_folder,
-                    self.threads,
-                    FILENAMES["demultiplexed_matched"],
-                    FILENAMES["demultiplexed_matched"],
-                )
-                subprocess.check_call(command, shell=True)
-            except Exception:
-                raise
+                    # TODO TaggD does not output the BAM file sorted
+                    command = "samtools sort -T {}/sort_bam -@ {} -o {} {}".format(
+                        self.temp_folder,
+                        self.threads,
+                        FILENAMES["demultiplexed_matched"],
+                        FILENAMES["demultiplexed_matched"],
+                    )
+                    subprocess.check_call(command, shell=True)
+                except Exception:
+                    raise
+            else:
+                logger.info(f"Using already existing {FILENAMES['demultiplexed_matched']} file")
         else:
             FILENAMES["demultiplexed_matched"] = FILENAMES["mapped"]
 
@@ -1277,7 +1300,7 @@ class Pipeline:
                         FILENAMES["demultiplexed_matched"],
                         self.ref_annotation,  # type: ignore
                         FILENAMES["annotated"],
-                        FILENAMES_DISCARDED["annotated_discarded"] if self.keep_discarded_files else None,
+                        (FILENAMES_DISCARDED["annotated_discarded"] if self.keep_discarded_files else None),
                         self.htseq_mode,
                         self.strandness,
                         self.htseq_no_ambiguous,
