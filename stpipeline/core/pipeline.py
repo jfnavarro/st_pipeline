@@ -151,11 +151,7 @@ class Pipeline:
                 shutil.rmtree(star_temp1)
             if os.path.isdir(star_temp2):
                 shutil.rmtree(star_temp2)
-            if (
-                self.clean
-                and not self.keep_discarded_files
-                and self.temp_folder != self.output_folder
-            ):
+            if self.clean and not self.keep_discarded_files and self.temp_folder != self.output_folder:
                 shutil.rmtree(self.temp_folder)
 
     def sanityCheck(self) -> None:
@@ -207,7 +203,9 @@ class Pipeline:
 
         # Check for presence of 'mapped.bam' if --disable-mapping is set
         if self.disable_mapping and not os.path.exists(os.path.join(self.temp_folder, FILENAMES["mapped"])):  # type: ignore[call-overload]
-            error = f"Error argument '--disable-mapping' is set but {FILENAMES['mapped']} is missing in {self.temp_folder}."
+            error = (
+                f"Error argument '--disable-mapping' is set but {FILENAMES['mapped']} is missing in {self.temp_folder}."
+            )
             logger.error(error)
             raise RuntimeError(error)
 
@@ -222,9 +220,7 @@ class Pipeline:
             raise RuntimeError(error)
 
         if self.saturation_points is not None and not self.compute_saturation:
-            logger.warning(
-                "Saturation points are provided but the option to compute saturation is disabled."
-            )
+            logger.warning("Saturation points are provided but the option to compute saturation is disabled.")
 
         if not self.disable_umi and self.umi_filter:
             # Check template validity
@@ -234,9 +230,7 @@ class Pipeline:
                 logger.error(error)
                 raise RuntimeError(error)
             # Check template length
-            if len(self.umi_filter_template) != (
-                self.umi_end_position - self.umi_start_position
-            ):
+            if len(self.umi_filter_template) != (self.umi_end_position - self.umi_start_position):
                 error = f"Error the UMI template given does not have the correct length {self.umi_filter_template}."
                 logger.error(error)
                 raise RuntimeError(error)
@@ -279,7 +273,9 @@ class Pipeline:
 
         # Add checks for trimming parameters, demultiplex parameters and UMI parameters
         if self.allowed_missed > self.allowed_kmer and not self.disable_barcode:
-            error = "Error starting the pipeline.\nTaggd allowed mismatches is bigger or equal than the Taggd k-mer size"
+            error = (
+                "Error starting the pipeline.\nTaggd allowed mismatches is bigger or equal than the Taggd k-mer size"
+            )
             logger.error(error)
             raise RuntimeError(error)
 
@@ -295,11 +291,7 @@ class Pipeline:
             logger.error(error)
             raise RuntimeError(error)
 
-        if (
-            self.umi_allowed_mismatches
-            > (self.umi_end_position - self.umi_start_position)
-            and not self.disable_umi
-        ):
+        if self.umi_allowed_mismatches > (self.umi_end_position - self.umi_start_position) and not self.disable_umi:
             error = "Error starting the pipeline.\nThe allowed UMI mismatches is bigger than the UMI size"
             logger.error(error)
             raise RuntimeError(error)
@@ -320,9 +312,7 @@ class Pipeline:
             logger.error(error)
             raise RuntimeError(error)
 
-    def createParameters(
-        self, parser: argparse.ArgumentParser
-    ) -> argparse.ArgumentParser:
+    def createParameters(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         """
         Adds the pipeline"s parameters to a given
         Argparse object and returns it.
@@ -332,15 +322,11 @@ class Pipeline:
             def __call__(self, parser, namespace, values, option_string=None) -> None:  # type: ignore
                 prospective_dir = values
                 if not os.path.isdir(prospective_dir):
-                    raise argparse.ArgumentTypeError(
-                        f"{prospective_dir} is not a valid path"
-                    )
+                    raise argparse.ArgumentTypeError(f"{prospective_dir} is not a valid path")
                 if os.access(prospective_dir, os.R_OK):
                     setattr(namespace, self.dest, prospective_dir)
                 else:
-                    raise argparse.ArgumentTypeError(
-                        f"{prospective_dir} is not a readable dir"
-                    )
+                    raise argparse.ArgumentTypeError(f"{prospective_dir} is not a readable dir")
 
         parser.add_argument("fastq_files", nargs=2)
         parser.add_argument(
@@ -449,8 +435,7 @@ class Pipeline:
             metavar="[INT]",
             type=int,
             choices=range(5, 151),
-            help="Minimum length of the reads after trimming, "
-            "shorter reads will be discarded (default: %(default)s)",
+            help="Minimum length of the reads after trimming, shorter reads will be discarded (default: %(default)s)",
         )
         parser.add_argument(
             "--min-quality-trimming",
@@ -483,8 +468,7 @@ class Pipeline:
             metavar="[INT]",
             type=int,
             choices=range(0, 35),
-            help="Remove PolyG stretches of the given length from R2 "
-            "(Use 0 to disable it) (default: %(default)s)",
+            help="Remove PolyG stretches of the given length from R2 (Use 0 to disable it) (default: %(default)s)",
         )
         parser.add_argument(
             "--remove-polyC",
@@ -614,8 +598,7 @@ class Pipeline:
             "--star-min-score-ratio",
             default=0.66,
             type=float,
-            help="Minimum alignment score (as above) but normalized to"
-            "\nread length. (default: 0.66)",
+            help="Minimum alignment score (as above) but normalized to\nread length. (default: 0.66)",
         )
         parser.add_argument(
             "--star-min-matched-bases",
@@ -630,8 +613,7 @@ class Pipeline:
             "--star-min-matched-bases-ratio",
             default=0.66,
             type=float,
-            help="Minimum matched bases (as above) but normalized to"
-            "\nread length. (default: 0.66)",
+            help="Minimum matched bases (as above) but normalized to\nread length. (default: 0.66)",
         )
         parser.add_argument(
             "--demultiplexing-mismatches",
@@ -862,9 +844,7 @@ class Pipeline:
             help="Use this flag if you want to use transcriptome instead of a genome, the gene tag will be "
             "obtained from the transcriptome file",
         )
-        parser.add_argument(
-            "--version", action="version", version="%(prog)s " + str(version_number)
-        )
+        parser.add_argument("--version", action="version", version="%(prog)s " + str(version_number))
         return parser
 
     def load_parameters(self, options: argparse.Namespace) -> None:
@@ -935,9 +915,7 @@ class Pipeline:
         self.umi_quality_bases = options.umi_quality_bases
         self.umi_counting_offset = options.umi_counting_offset
         self.taggd_metric = options.demultiplexing_metric
-        self.taggd_multiple_hits_keep_one = (
-            options.demultiplexing_multiple_hits_keep_one
-        )
+        self.taggd_multiple_hits_keep_one = options.demultiplexing_multiple_hits_keep_one
         self.taggd_trim_sequences = options.demultiplexing_trim_sequences
         self.taggd_chunk_size = options.demultiplexing_chunk_size
         self.adaptor_missmatches = options.homopolymer_mismatches
@@ -956,11 +934,7 @@ class Pipeline:
             self.saturation_points = [int(p) for p in options.saturation_points]  # type: ignore
         # Assign class parameters to the QA stats object
         attributes = inspect.getmembers(self, lambda a: not (inspect.isroutine(a)))
-        attributes_filtered = {
-            a[0]: a[1]
-            for a in attributes
-            if not (a[0].startswith("__") and a[0].endswith("__"))
-        }
+        attributes_filtered = {a[0]: a[1] for a in attributes if not (a[0].startswith("__") and a[0].endswith("__"))}
         # Assign general parameters to the qa_stats object
         self.qa_stats.input_parameters = attributes_filtered  # type: ignore
         self.qa_stats.annotation_tool = f"htseq-count {get_htseq_count_version()}"
@@ -990,45 +964,25 @@ class Pipeline:
         if self.ref_annotation is not None:
             logger.info(f"Reference annotation file: {self.ref_annotation}")
         if self.contaminant_index is not None:
-            logger.info(
-                f"Using contamination filter STAR index: {self.contaminant_index}"
-            )
+            logger.info(f"Using contamination filter STAR index: {self.contaminant_index}")
         logger.info(f"CPU Nodes: {self.threads}")
 
         if not self.disable_trimming:
             logger.info("Quality and trimming settings")
-            logger.info(
-                f"Discarding reads that after trimming are shorter than {self.min_length_trimming}"
-            )
+            logger.info(f"Discarding reads that after trimming are shorter than {self.min_length_trimming}")
             if self.remove_polyA_distance > 0:
-                logger.info(
-                    f"Removing polyA sequences of a length of at least: {self.remove_polyA_distance}"
-                )
+                logger.info(f"Removing polyA sequences of a length of at least: {self.remove_polyA_distance}")
             if self.remove_polyT_distance > 0:
-                logger.info(
-                    f"Removing polyT sequences of a length of at least: {self.remove_polyT_distance}"
-                )
+                logger.info(f"Removing polyT sequences of a length of at least: {self.remove_polyT_distance}")
             if self.remove_polyG_distance > 0:
-                logger.info(
-                    f"Removing polyG sequences of a length of at least: {self.remove_polyG_distance}"
-                )
+                logger.info(f"Removing polyG sequences of a length of at least: {self.remove_polyG_distance}")
             if self.remove_polyC_distance > 0:
-                logger.info(
-                    f"Removing polyC sequences of a length of at least: {self.remove_polyC_distance}"
-                )
+                logger.info(f"Removing polyC sequences of a length of at least: {self.remove_polyC_distance}")
             if self.remove_polyN_distance > 0:
-                logger.info(
-                    f"Removing polyN sequences of a length of at least: {self.remove_polyN_distance}"
-                )
-            logger.info(
-                f"Allowing {self.adaptor_missmatches} mismatches when removing homopolymers"
-            )
-            logger.info(
-                f"Discarding reads whose AT content is {self.filter_AT_content}%"
-            )
-            logger.info(
-                f"Discarding reads whose GC content is {self.filter_GC_content}%"
-            )
+                logger.info(f"Removing polyN sequences of a length of at least: {self.remove_polyN_distance}")
+            logger.info(f"Allowing {self.adaptor_missmatches} mismatches when removing homopolymers")
+            logger.info(f"Discarding reads whose AT content is {self.filter_AT_content}%")
+            logger.info(f"Discarding reads whose GC content is {self.filter_GC_content}%")
         else:
             logger.info("Disabling Quality trimming step")
 
@@ -1037,20 +991,12 @@ class Pipeline:
             logger.info(f"Mapping reverse trimming: {self.trimming_rv}")
             logger.info(f"Mapping inverse reverse trimming: {self.inverse_trimming_rv}")
             logger.info("Mapping tool: STAR")
-            logger.info(
-                f"Mapping minimum intron size allowed (splice alignments) with STAR: {self.min_intron_size}"
-            )
-            logger.info(
-                f"Mapping maximum intron size allowed (splice alignments) with STAR: {self.max_intron_size}"
-            )
+            logger.info(f"Mapping minimum intron size allowed (splice alignments) with STAR: {self.min_intron_size}")
+            logger.info(f"Mapping maximum intron size allowed (splice alignments) with STAR: {self.max_intron_size}")
             logger.info(f"STAR genome loading strategy: {self.star_genome_loading}")
             logger.info(f"STAR minimum alignment score: {self.star_min_score}")
-            logger.info(
-                f"STAR minimum alignment score ratio: {self.star_min_score_ratio}"
-            )
-            logger.info(
-                f"STAR minimum matched bases ratio: {self.star_min_matched_bases_ratio}"
-            )
+            logger.info(f"STAR minimum alignment score ratio: {self.star_min_score_ratio}")
+            logger.info(f"STAR minimum matched bases ratio: {self.star_min_matched_bases_ratio}")
             if self.disable_clipping:
                 logger.info("Not allowing soft clipping when mapping with STAR")
             if self.disable_multimap:
@@ -1070,10 +1016,8 @@ class Pipeline:
             if self.taggd_multiple_hits_keep_one:
                 logger.info("TaggD multiple hits keep one (random) is enabled")
             if self.taggd_trim_sequences is not None:
-                logger.info(
-                    f"TaggD trimming from the barcodes: {'-'.join(str(x) for x in self.taggd_trim_sequences)}"
-                )
-            logger.info(f"TaggD chunk size: {self.taggd_chunk_size }")
+                logger.info(f"TaggD trimming from the barcodes: {'-'.join(str(x) for x in self.taggd_trim_sequences)}")
+            logger.info(f"TaggD chunk size: {self.taggd_chunk_size}")
         else:
             logger.info("Disabling Demultiplexing step")
 
@@ -1095,9 +1039,7 @@ class Pipeline:
         if self.compute_saturation:
             logger.info("Computing saturation curve with several sub-samples...")
             if self.saturation_points is not None:
-                logger.info(
-                    f"Using the following points: {' '.join(str(p) for p in self.saturation_points)}"
-                )
+                logger.info(f"Using the following points: {' '.join(str(p) for p in self.saturation_points)}")
 
         if not self.disable_umi:
             logger.info("UMI Collapsing settings")
@@ -1108,9 +1050,7 @@ class Pipeline:
             logger.info(
                 f"Allowing an offset of {self.umi_counting_offset} when clustering UMIs by strand-start in a gene-spot"
             )
-            logger.info(
-                f"Allowing {self.umi_quality_bases} low quality bases in an UMI"
-            )
+            logger.info(f"Allowing {self.umi_quality_bases} low quality bases in an UMI")
             if self.umi_filter:
                 logger.info(f"UMIs using filter: {self.umi_filter_template}")
         else:
@@ -1153,11 +1093,7 @@ class Pipeline:
                     self.fastq_fw,
                     self.fastq_rv,
                     FILENAMES["quality_trimmed_R2"],
-                    (
-                        FILENAMES_DISCARDED["quality_trimmed_discarded"]
-                        if self.keep_discarded_files
-                        else None
-                    ),
+                    (FILENAMES_DISCARDED["quality_trimmed_discarded"] if self.keep_discarded_files else None),
                     barcode_length,
                     self.barcode_start,
                     self.filter_AT_content,
@@ -1188,9 +1124,7 @@ class Pipeline:
             except Exception:
                 raise
         else:
-            logger.info(
-                f"Using already existing {FILENAMES['quality_trimmed_R2']} file"
-            )
+            logger.info(f"Using already existing {FILENAMES['quality_trimmed_R2']} file")
 
         # =================================================================
         # CONDITIONAL STEP: Filter out contaminated reads, e.g. rRNA(Optional)
@@ -1198,9 +1132,7 @@ class Pipeline:
         if self.contaminant_index:
             # To remove contaminants sequence we align the reads to the contaminant genome
             # and keep the un-mapped reads
-            logger.info(
-                f"Starting contaminant filter alignment {globaltime.get_timestamp()}"
-            )
+            logger.info(f"Starting contaminant filter alignment {globaltime.get_timestamp()}")
             try:
                 # Make the contaminant filter call
                 alignReads(
@@ -1229,15 +1161,9 @@ class Pipeline:
                 # NOTE: this will not be needed when STAR allows to chose the discarded
                 # reads format (BAM)
                 # We also need to set the NH tag to Null so to be able to run STAR again
-                infile = pysam.AlignmentFile(
-                    FILENAMES_DISCARDED["contaminated_discarded"], "rb"
-                )
-                out_unmap = pysam.AlignmentFile(
-                    FILENAMES["contaminated_clean"], "wb", template=infile
-                )
-                temp_name = os.path.join(
-                    self.temp_folder, next(tempfile._get_candidate_names())
-                )
+                infile = pysam.AlignmentFile(FILENAMES_DISCARDED["contaminated_discarded"], "rb")
+                out_unmap = pysam.AlignmentFile(FILENAMES["contaminated_clean"], "wb", template=infile)
+                temp_name = os.path.join(self.temp_folder, next(tempfile._get_candidate_names()))
                 out_map = pysam.AlignmentFile(temp_name, "wb", template=infile)
                 for sam_record in infile.fetch(until_eof=True):
                     try:
@@ -1266,9 +1192,7 @@ class Pipeline:
         # =================================================================
         if not self.disable_mapping:
             input_mapping = (
-                FILENAMES["contaminated_clean"]
-                if self.contaminant_index
-                else FILENAMES["quality_trimmed_R2"]
+                FILENAMES["contaminated_clean"] if self.contaminant_index else FILENAMES["quality_trimmed_R2"]
             )
             logger.info(f"Starting genome alignment {globaltime.get_timestamp()}")
             try:
@@ -1317,9 +1241,7 @@ class Pipeline:
         # =================================================================
         if not self.disable_barcode:
             if not os.path.exists(FILENAMES["demultiplexed_matched"]) or self.force:
-                logger.info(
-                    f"Starting barcode demultiplexing {globaltime.get_timestamp()}"
-                )
+                logger.info(f"Starting barcode demultiplexing {globaltime.get_timestamp()}")
                 try:
                     stats = barcodeDemultiplexing(  # type: ignore
                         FILENAMES["mapped"],
@@ -1349,9 +1271,7 @@ class Pipeline:
                 except Exception:
                     raise
             else:
-                logger.info(
-                    f"Using already existing {FILENAMES['demultiplexed_matched']} file"
-                )
+                logger.info(f"Using already existing {FILENAMES['demultiplexed_matched']} file")
         else:
             FILENAMES["demultiplexed_matched"] = FILENAMES["mapped"]
 
@@ -1360,9 +1280,7 @@ class Pipeline:
         # =================================================================
         if not self.disable_annotation:
             if self.transcriptome:
-                logger.info(
-                    f"Assigning gene names from transcriptome {globaltime.get_timestamp()}"
-                )
+                logger.info(f"Assigning gene names from transcriptome {globaltime.get_timestamp()}")
                 # Iterate the BAM file to set the gene name as the transcriptome"s entry
                 flag_read = "rb"
                 flag_write = "wb"
@@ -1382,11 +1300,7 @@ class Pipeline:
                         FILENAMES["demultiplexed_matched"],
                         self.ref_annotation,  # type: ignore
                         FILENAMES["annotated"],
-                        (
-                            FILENAMES_DISCARDED["annotated_discarded"]
-                            if self.keep_discarded_files
-                            else None
-                        ),
+                        (FILENAMES_DISCARDED["annotated_discarded"] if self.keep_discarded_files else None),
                         self.htseq_mode,
                         self.strandness,
                         self.htseq_no_ambiguous,
@@ -1409,9 +1323,7 @@ class Pipeline:
                 if not self.transcriptome
                 else self.qa_stats.reads_after_demultiplexing
             )
-            logger.info(
-                f"Starting computing saturation points {globaltime.get_timestamp()}"
-            )
+            logger.info(f"Starting computing saturation points {globaltime.get_timestamp()}")
             try:
                 compute_saturation(
                     nreads,
